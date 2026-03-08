@@ -29,8 +29,8 @@
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/anything.git
-   cd anything
+   git clone https://github.com/PIYUSH-MISHRA-00/Anything.git
+   cd Anything
    ```
 
 2. Install dependencies:
@@ -63,7 +63,3 @@ When you first launch the app, you will be taken through the onboarding process.
 ## Contributing
 
 Contributions, issues, and feature requests are welcome!
-
-## License
-
-This project is licensed under the MIT License.
