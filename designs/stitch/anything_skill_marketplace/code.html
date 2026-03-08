@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Skill Marketplace</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#00eeff",
+                        "background-light": "#f5f8f8",
+                        "background-dark": "#0f2223",
+                        "charcoal": "#121d1e",
+                        "violet-glow": "#8b5cf6"
+                    },
+                    fontFamily: {
+                        "display": ["Inter"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        .glass-card {
+            background: rgba(18, 29, 30, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            box-shadow: 0 0 15px rgba(139, 92, 246, 0.1);
+        }
+        .violet-border-glow:hover {
+            border-color: rgba(139, 92, 246, 0.8);
+            box-shadow: 0 0 20px rgba(139, 92, 246, 0.2);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen flex flex-col">
+<!-- Top Navigation -->
+<header class="sticky top-0 z-50 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
+<div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-3xl">grid_view</span>
+<h1 class="text-xl font-bold tracking-tight">Skill Marketplace</h1>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-800">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<div class="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center border border-primary/50">
+<span class="material-symbols-outlined text-primary text-sm">person</span>
+</div>
+</div>
+</div>
+</header>
+<main class="flex-1 max-w-7xl mx-auto w-full px-4 py-6 pb-32">
+<!-- Search Bar -->
+<div class="mb-8">
+<div class="relative group">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors">search</span>
+<input class="w-full bg-slate-100 dark:bg-charcoal border border-slate-200 dark:border-slate-800 rounded-xl py-4 pl-12 pr-4 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all placeholder:text-slate-500" placeholder="Search AI Skills (e.g. 'Data Analysis', 'Creative Writing')" type="text"/>
+</div>
+</div>
+<!-- Categories -->
+<div class="flex gap-3 mb-8 overflow-x-auto pb-2 no-scrollbar">
+<button class="px-5 py-2 bg-primary text-background-dark font-semibold rounded-full text-sm">All Skills</button>
+<button class="px-5 py-2 bg-slate-100 dark:bg-charcoal border border-slate-200 dark:border-slate-800 rounded-full text-sm hover:border-primary transition-colors">Productivity</button>
+<button class="px-5 py-2 bg-slate-100 dark:bg-charcoal border border-slate-200 dark:border-slate-800 rounded-full text-sm hover:border-primary transition-colors">Lifestyle</button>
+<button class="px-5 py-2 bg-slate-100 dark:bg-charcoal border border-slate-200 dark:border-slate-800 rounded-full text-sm hover:border-primary transition-colors">Development</button>
+<button class="px-5 py-2 bg-slate-100 dark:bg-charcoal border border-slate-200 dark:border-slate-800 rounded-full text-sm hover:border-primary transition-colors">Finance</button>
+</div>
+<h2 class="text-lg font-semibold mb-6 flex items-center gap-2">
+<span class="text-primary material-symbols-outlined">auto_awesome</span>
+            Featured AI Skills
+        </h2>
+<!-- Skill Cards Grid -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+<!-- Card 1: Coding Assistant -->
+<div class="glass-card violet-border-glow rounded-xl p-5 flex flex-col transition-all duration-300">
+<div class="w-12 h-12 rounded-lg bg-violet-600/20 flex items-center justify-center mb-4 border border-violet-500/30">
+<span class="material-symbols-outlined text-violet-400">code</span>
+</div>
+<h3 class="text-lg font-bold mb-2">Coding Assistant</h3>
+<p class="text-slate-400 text-sm leading-relaxed mb-4 flex-1">Expert code generation, debugging, and refactoring across 20+ languages.</p>
+<div class="flex items-center gap-1 mb-4">
+<span class="material-symbols-outlined text-yellow-500 text-sm fill-current">star</span>
+<span class="text-sm font-medium">4.9</span>
+<span class="text-xs text-slate-500 ml-1">(12.4k)</span>
+</div>
+<button class="w-full py-2.5 bg-primary/10 hover:bg-primary text-primary hover:text-background-dark font-bold rounded-lg transition-all border border-primary/20">
+                    Install
+                </button>
+</div>
+<!-- Card 2: Travel Planner -->
+<div class="glass-card violet-border-glow rounded-xl p-5 flex flex-col transition-all duration-300">
+<div class="w-12 h-12 rounded-lg bg-violet-600/20 flex items-center justify-center mb-4 border border-violet-500/30">
+<span class="material-symbols-outlined text-violet-400">explore</span>
+</div>
+<h3 class="text-lg font-bold mb-2">Travel Planner</h3>
+<p class="text-slate-400 text-sm leading-relaxed mb-4 flex-1">Personalized itineraries, flight tracking, and local hidden gem discovery.</p>
+<div class="flex items-center gap-1 mb-4">
+<span class="material-symbols-outlined text-yellow-500 text-sm fill-current">star</span>
+<span class="text-sm font-medium">4.8</span>
+<span class="text-xs text-slate-500 ml-1">(8.2k)</span>
+</div>
+<button class="w-full py-2.5 bg-primary/10 hover:bg-primary text-primary hover:text-background-dark font-bold rounded-lg transition-all border border-primary/20">
+                    Install
+                </button>
+</div>
+<!-- Card 3: Finance Advisor -->
+<div class="glass-card violet-border-glow rounded-xl p-5 flex flex-col transition-all duration-300">
+<div class="w-12 h-12 rounded-lg bg-violet-600/20 flex items-center justify-center mb-4 border border-violet-500/30">
+<span class="material-symbols-outlined text-violet-400">account_balance_wallet</span>
+</div>
+<h3 class="text-lg font-bold mb-2">Finance Advisor</h3>
+<p class="text-slate-400 text-sm leading-relaxed mb-4 flex-1">Smart budgeting, investment tips, and real-time expense analysis.</p>
+<div class="flex items-center gap-1 mb-4">
+<span class="material-symbols-outlined text-yellow-500 text-sm fill-current">star</span>
+<span class="text-sm font-medium">4.7</span>
+<span class="text-xs text-slate-500 ml-1">(15.1k)</span>
+</div>
+<button class="w-full py-2.5 bg-primary/10 hover:bg-primary text-primary hover:text-background-dark font-bold rounded-lg transition-all border border-primary/20">
+                    Install
+                </button>
+</div>
+<!-- Card 4: Fitness Coach -->
+<div class="glass-card violet-border-glow rounded-xl p-5 flex flex-col transition-all duration-300">
+<div class="w-12 h-12 rounded-lg bg-violet-600/20 flex items-center justify-center mb-4 border border-violet-500/30">
+<span class="material-symbols-outlined text-violet-400">fitness_center</span>
+</div>
+<h3 class="text-lg font-bold mb-2">Fitness Coach</h3>
+<p class="text-slate-400 text-sm leading-relaxed mb-4 flex-1">Custom workouts, nutrition tracking, and AI-driven posture correction.</p>
+<div class="flex items-center gap-1 mb-4">
+<span class="material-symbols-outlined text-yellow-500 text-sm fill-current">star</span>
+<span class="text-sm font-medium">4.9</span>
+<span class="text-xs text-slate-500 ml-1">(22k)</span>
+</div>
+<button class="w-full py-2.5 bg-primary/10 hover:bg-primary text-primary hover:text-background-dark font-bold rounded-lg transition-all border border-primary/20">
+                    Install
+                </button>
+</div>
+</div>
+</main>
+<!-- Persistent AI Command Bar -->
+<div class="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-background-dark to-transparent pointer-events-none">
+<div class="max-w-3xl mx-auto w-full pointer-events-auto">
+<div class="bg-charcoal/90 backdrop-blur-xl border border-primary/30 rounded-2xl p-2 shadow-2xl flex items-center gap-3">
+<div class="flex-1 relative">
+<input class="w-full bg-transparent border-none focus:ring-0 text-slate-100 placeholder:text-slate-500 pl-4 py-3" placeholder="Ask AI to find or configure a skill..." type="text"/>
+</div>
+<button class="bg-primary p-3 rounded-xl flex items-center justify-center shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-background-dark font-bold">send</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Bottom Nav Bar -->
+<nav class="fixed bottom-0 left-0 right-0 z-40 lg:hidden">
+<div class="bg-charcoal/80 backdrop-blur-md border-t border-slate-800 flex justify-around items-center py-2 px-6">
+<a class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="text-[10px] font-medium">Home</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-primary" href="#">
+<span class="material-symbols-outlined">storefront</span>
+<span class="text-[10px] font-medium">Market</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">extension</span>
+<span class="text-[10px] font-medium">My Skills</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-[10px] font-medium">Settings</span>
+</a>
+</div>
+</nav>
+</body></html>

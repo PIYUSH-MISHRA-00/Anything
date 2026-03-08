@@ -1,0 +1,7 @@
+Analyzing security...
+
+  error - encryption_manager.dart:47:12 - A value of type 'Future<String>' can't be returned from the method 'encryptData' because it has a return type of 'String'. - return_of_invalid_type
+  error - encryption_manager.dart:54:12 - A value of type 'Future<dynamic>' can't be returned from the method 'decryptData' because it has a return type of 'String'. - return_of_invalid_type
+  error - kaalka_service.dart:25:19 - The named parameter 'secretKey' isn't defined. Try correcting the name to an existing named parameter's name, or defining a named parameter with the name 'secretKey'. - undefined_named_parameter
+
+3 issues found.

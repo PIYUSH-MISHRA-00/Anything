@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Anything AI - Memory Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#00eeff",
+                        "background-light": "#f5f8f8",
+                        "background-dark": "#0f2223",
+                    },
+                    fontFamily: {
+                        "display": ["Inter"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        .glass-card {
+            background: rgba(15, 34, 35, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(0, 238, 255, 0.15);
+            box-shadow: 0 0 15px rgba(0, 238, 255, 0.05);
+        }
+        .glow-border:hover {
+            border-color: rgba(0, 238, 255, 0.5);
+            box-shadow: 0 0 20px rgba(0, 238, 255, 0.1);
+        }
+        .glow-text {
+            text-shadow: 0 0 8px rgba(0, 238, 255, 0.4);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen flex flex-col">
+<header class="sticky top-0 z-50 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md border-b border-primary/10">
+<div class="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary text-2xl">memory</span>
+<h1 class="text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100">Memory</h1>
+</div>
+<div class="flex gap-2">
+<button class="p-2 rounded-lg hover:bg-primary/10 text-slate-600 dark:text-slate-400">
+<span class="material-symbols-outlined">settings</span>
+</button>
+</div>
+</div>
+</header>
+<main class="flex-1 max-w-4xl mx-auto w-full px-4 py-6 space-y-8">
+<section class="glass-card rounded-xl p-6 border-l-4 border-l-primary">
+<div class="flex flex-col gap-4">
+<div class="flex justify-between items-end">
+<div>
+<p class="text-sm font-medium text-primary/80 uppercase tracking-widest mb-1">System Status</p>
+<h2 class="text-2xl font-bold text-slate-900 dark:text-slate-100">Context Confidence Score</h2>
+</div>
+<span class="text-4xl font-bold text-primary glow-text">92%</span>
+</div>
+<div class="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-2.5 overflow-hidden">
+<div class="bg-primary h-2.5 rounded-full shadow-[0_0_10px_rgba(0,238,255,0.6)]" style="width: 92%"></div>
+</div>
+<p class="text-sm text-slate-500 dark:text-slate-400 italic">
+<span class="material-symbols-outlined text-xs align-middle mr-1">verified</span>
+                    Neural pathways optimized. All local data is current and encrypted.
+                </p>
+</div>
+</section>
+<section>
+<div class="flex justify-between items-center mb-4">
+<h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">Preferred Tools</h3>
+<button class="text-xs font-medium text-primary hover:underline uppercase tracking-wider">Configure</button>
+</div>
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+<div class="glass-card glow-border p-4 rounded-xl flex flex-col items-center gap-3 transition-all cursor-pointer">
+<div class="bg-primary/10 p-3 rounded-lg">
+<span class="material-symbols-outlined text-primary">terminal</span>
+</div>
+<span class="text-sm font-medium">Python</span>
+</div>
+<div class="glass-card glow-border p-4 rounded-xl flex flex-col items-center gap-3 transition-all cursor-pointer">
+<div class="bg-primary/10 p-3 rounded-lg">
+<span class="material-symbols-outlined text-primary">language</span>
+</div>
+<span class="text-sm font-medium">Search</span>
+</div>
+<div class="glass-card glow-border p-4 rounded-xl flex flex-col items-center gap-3 transition-all cursor-pointer">
+<div class="bg-primary/10 p-3 rounded-lg">
+<span class="material-symbols-outlined text-primary">cloud_done</span>
+</div>
+<span class="text-sm font-medium">Cloud</span>
+</div>
+<div class="glass-card glow-border p-4 rounded-xl flex flex-col items-center gap-3 transition-all cursor-pointer">
+<div class="bg-primary/10 p-3 rounded-lg">
+<span class="material-symbols-outlined text-primary">visibility</span>
+</div>
+<span class="text-sm font-medium">Vision</span>
+</div>
+</div>
+</section>
+<section>
+<div class="flex justify-between items-center mb-4">
+<h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">Frequent Workflows</h3>
+</div>
+<div class="space-y-3">
+<div class="glass-card glow-border p-4 rounded-xl flex items-center justify-between group transition-all">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-lg bg-gradient-to-br from-primary/20 to-transparent flex items-center justify-center border border-primary/20">
+<span class="material-symbols-outlined text-primary">data_object</span>
+</div>
+<div>
+<h4 class="font-medium">JSON Schema Generation</h4>
+<p class="text-xs text-slate-500">Used 14 times this week</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-slate-400 group-hover:text-primary transition-colors">arrow_forward_ios</span>
+</div>
+<div class="glass-card glow-border p-4 rounded-xl flex items-center justify-between group transition-all">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-lg bg-gradient-to-br from-primary/20 to-transparent flex items-center justify-center border border-primary/20">
+<span class="material-symbols-outlined text-primary">translate</span>
+</div>
+<div>
+<h4 class="font-medium">Technical Documentation</h4>
+<p class="text-xs text-slate-500">Used 8 times this week</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-slate-400 group-hover:text-primary transition-colors">arrow_forward_ios</span>
+</div>
+</div>
+</section>
+<section>
+<div class="flex justify-between items-center mb-4">
+<h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">Saved Projects</h3>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+<div class="relative group overflow-hidden rounded-xl h-48 border border-primary/10">
+<img class="w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-500" data-alt="Abstract cyber pattern of floating blue nodes" src="https://lh3.googleusercontent.com/aida-public/AB6AXuApiFcOMdizgMQgGY0mhsGcfKtvo0Ksa7S-UlXcM6xo2KeUMVkpN3UNlhFCrJ2UbAO2jCLS3nppfR-clkBNLPiOjrglQQtfWUHn2xvlhhR3JYuH5TsvfEIV_f-ZRImcQpC2HqBEgiKhZdGr2__JzLtNyVgkBO0igIj60hEWXQX3Jku_85XbSxo2FqWgJFiz8SRCxivWdAWZd6xV4SBPrXBU3ZfjhteLK4LH8yOzp62YJMb8hxb8XNTp4a-WvTGwK-NDe7bWCV7Z76Ps"/>
+<div class="absolute inset-0 bg-gradient-to-t from-background-dark via-background-dark/40 to-transparent p-4 flex flex-col justify-end">
+<h4 class="font-bold text-white">Quantum Simulation</h4>
+<p class="text-xs text-primary font-medium tracking-wide uppercase">Active Context</p>
+</div>
+</div>
+<div class="relative group overflow-hidden rounded-xl h-48 border border-primary/10">
+<img class="w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-500" data-alt="Minimalist abstract dark blue glass sculpture" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCSYE4sSlfEtp9X3OLmxny2LnBYSfy9Vsl39sOmmI66YSrLgmgM3sK944drHiv3ppkgwqM_ufsr_n_OPJ2UGrj_nH6hZJsO452L5h6QA6-p2A26ruLjrIlS6b1rtwE36cHogX3BMuViMLMCA5EXpJJRiGp-hMSbv0JrjNyqMjHzRNp2ZmNd6evLAD0g2Rw9r_jHNZQW91Eh9IJY5cFrcF7moQzFMBGJejmhRs8oATz7FvT0ERbtB7OSTd4WDTZcwCujjW0PmW2H2hGt"/>
+<div class="absolute inset-0 bg-gradient-to-t from-background-dark via-background-dark/40 to-transparent p-4 flex flex-col justify-end">
+<h4 class="font-bold text-white">E-commerce Backend</h4>
+<p class="text-xs text-slate-400 font-medium tracking-wide uppercase">Archived</p>
+</div>
+</div>
+</div>
+</section>
+<section class="pt-6 border-t border-primary/10 space-y-6">
+<div class="flex flex-wrap gap-3">
+<button class="flex items-center gap-2 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 px-5 py-2.5 rounded-lg transition-all font-semibold">
+<span class="material-symbols-outlined text-sm">edit</span>
+                    Edit Memory
+                </button>
+<button class="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 px-5 py-2.5 rounded-lg transition-all font-semibold">
+<span class="material-symbols-outlined text-sm">delete</span>
+                    Delete Entries
+                </button>
+<button class="flex items-center gap-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/30 px-5 py-2.5 rounded-lg transition-all font-semibold ml-auto">
+<span class="material-symbols-outlined text-sm">restart_alt</span>
+                    Reset Memory
+                </button>
+</div>
+<div class="glass-card p-4 rounded-xl flex items-start gap-4 border-primary/5">
+<span class="material-symbols-outlined text-primary/60">encrypted</span>
+<p class="text-xs leading-relaxed text-slate-500 dark:text-slate-400 uppercase tracking-widest">
+                    All memory is stored locally and protected by <span class="text-primary font-bold">Kaalka encryption</span>. Your private data never leaves this device unless explicitly shared.
+                </p>
+</div>
+</section>
+</main>
+<nav class="sticky bottom-0 z-50 bg-background-light dark:bg-[#101818] border-t border-primary/10 px-4 py-2 flex justify-around">
+<a class="flex flex-col items-center gap-1 text-slate-500 dark:text-slate-400 hover:text-primary" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="text-[10px] font-medium uppercase">Home</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-primary" href="#">
+<span class="material-symbols-outlined">memory</span>
+<span class="text-[10px] font-medium uppercase">Memory</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-500 dark:text-slate-400 hover:text-primary" href="#">
+<span class="material-symbols-outlined">folder</span>
+<span class="text-[10px] font-medium uppercase">Projects</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-500 dark:text-slate-400 hover:text-primary" href="#">
+<span class="material-symbols-outlined">person</span>
+<span class="text-[10px] font-medium uppercase">Profile</span>
+</a>
+</nav>
+<div class="h-4 bg-background-light dark:bg-background-dark"></div>
+</body></html>

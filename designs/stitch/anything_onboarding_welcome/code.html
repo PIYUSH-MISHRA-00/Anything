@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Welcome to Anything</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#00eeff",
+                        "background-light": "#f5f8f8",
+                        "background-dark": "#0f2223",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .glowing-border {
+            box-shadow: 0 0 15px rgba(0, 238, 255, 0.4);
+            border: 1px solid rgba(0, 238, 255, 0.5);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display">
+<div class="relative flex min-h-screen w-full flex-col overflow-x-hidden">
+<nav class="flex items-center justify-end p-6">
+<button class="text-primary/70 hover:text-primary transition-colors text-sm font-semibold tracking-wider uppercase">
+                Skip
+            </button>
+</nav>
+<main class="flex-1 flex flex-col items-center justify-center px-6 @container">
+<div class="w-full max-w-md aspect-square mb-12 relative group">
+<div class="absolute inset-0 bg-primary/10 rounded-full blur-3xl opacity-20"></div>
+<div class="w-full h-full bg-cover bg-center rounded-xl overflow-hidden border border-primary/20 shadow-2xl relative z-10" data-alt="Futuristic UI dashboard being constructed by glowing digital light paths" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDUCHtWi6ajy7XQmnoQ0Ofwfj0HktRexe5mczq72G_0dsy5ukSF_MdPFxw_VtXkg4jAxDu6s8PZ94Js158ae8JxSKdGl0py3rLvDyv4G_O4CT9SOC4uA4uYXR7ugMXtrvLQjMplmlqz8iZYo1NMrTiiKxau6gU07U135MtEC6UHOh25Oy4vU-F9B7JzdZiWDP7JBAccfERkGT9ISOzma2UKTofD_r63W7hsIr2cxIxjoqiFE48-pmngXoBZuT87kUEUOGP010H-0nqW");'>
+<div class="absolute inset-0 bg-gradient-to-t from-background-dark/80 via-transparent to-transparent"></div>
+</div>
+</div>
+<div class="text-center space-y-4 max-w-sm mx-auto">
+<h1 class="text-slate-100 text-4xl font-bold tracking-tight leading-tight">
+                    Welcome to <span class="text-primary">Anything</span>
+</h1>
+<p class="text-slate-400 text-lg font-normal leading-relaxed">
+                    The first AI interface that builds tools for you.
+                </p>
+</div>
+<div class="flex flex-row items-center justify-center gap-3 py-10">
+<div class="h-1.5 w-8 rounded-full bg-primary shadow-[0_0_8px_rgba(0,238,255,0.6)]"></div>
+<div class="h-1.5 w-1.5 rounded-full bg-primary/20"></div>
+<div class="h-1.5 w-1.5 rounded-full bg-primary/20"></div>
+</div>
+</main>
+<footer class="p-8 flex flex-col items-center gap-4">
+<button class="w-full max-w-sm bg-primary text-background-dark font-bold py-4 rounded-xl glowing-border flex items-center justify-center gap-2 group hover:brightness-110 transition-all">
+<span>Next</span>
+<span class="material-symbols-outlined text-xl">arrow_forward</span>
+</button>
+<p class="text-xs text-slate-500 uppercase tracking-[0.2em] pt-2">Step 1 of 3</p>
+</footer>
+</div>
+</body></html>

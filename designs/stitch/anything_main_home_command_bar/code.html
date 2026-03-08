@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Anything AI - Home</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#00eeff",
+                        "background-light": "#f5f8f8",
+                        "background-dark": "#0f2223",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        .glass-panel {
+            background: rgba(15, 34, 35, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(0, 238, 255, 0.1);
+        }
+        .action-card-glow:hover {
+            box-shadow: 0 0 20px rgba(0, 238, 255, 0.15);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen flex flex-col">
+<!-- Top App Bar -->
+<header class="flex items-center justify-between p-6">
+<div class="flex items-center gap-3">
+<div class="size-10 rounded-full bg-primary/20 flex items-center justify-center border border-primary/30 overflow-hidden">
+<div class="w-full h-full bg-cover bg-center" data-alt="User profile minimalist avatar icon" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAZAiA06ehxxibQ8PtwcrcjK-XTFIaavfgnegCY5udf93bfqTOsTP-XdVdF1550pvaY5v980q5cb4j-wHj0EYf7tAb1UYUzwwKMEbY8n3d-h8E7lduxmslMF40zGC5ht8C9VjlAOitNIZ6_TBHrRaDoDw_5zNiCpVOcf2kF0HoE5i-OtLNPL2LY5s9B4I287YBrA9QfI8cfCKdpOtOQj23tptIXYirPSTvX80p_L5odQNKbieta8f0_JZUH3aFAqkuPIbF-XIZ87dRM')"></div>
+</div>
+<span class="text-xl font-bold tracking-tight text-primary">Anything</span>
+</div>
+<button class="size-10 flex items-center justify-center rounded-full bg-slate-800/50 hover:bg-slate-800 transition-colors">
+<span class="material-symbols-outlined text-slate-100">settings</span>
+</button>
+</header>
+<!-- Hero Greeting Section -->
+<main class="flex-1 px-6 pb-32">
+<div class="pt-8 pb-10">
+<h1 class="text-5xl font-bold tracking-tight mb-2">Good morning</h1>
+<p class="text-slate-400 text-lg">What do you want to do today?</p>
+</div>
+<!-- Action Cards Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<!-- Plan my day -->
+<div class="group cursor-pointer action-card-glow flex flex-col justify-between p-6 rounded-xl bg-slate-900/40 border border-slate-800 hover:border-primary/50 transition-all">
+<div class="flex items-start justify-between">
+<div class="p-3 rounded-lg bg-primary/10 text-primary">
+<span class="material-symbols-outlined text-3xl">calendar_today</span>
+</div>
+<span class="material-symbols-outlined text-slate-500 group-hover:text-primary transition-colors">arrow_outward</span>
+</div>
+<div class="mt-8">
+<h3 class="text-xl font-bold mb-1">Plan my day</h3>
+<p class="text-slate-400 text-sm">Organize your schedule with AI</p>
+</div>
+</div>
+<!-- Track my portfolio -->
+<div class="group cursor-pointer action-card-glow flex flex-col justify-between p-6 rounded-xl bg-slate-900/40 border border-slate-800 hover:border-primary/50 transition-all">
+<div class="flex items-start justify-between">
+<div class="p-3 rounded-lg bg-primary/10 text-primary">
+<span class="material-symbols-outlined text-3xl">monitoring</span>
+</div>
+<span class="material-symbols-outlined text-slate-500 group-hover:text-primary transition-colors">arrow_outward</span>
+</div>
+<div class="mt-8">
+<h3 class="text-xl font-bold mb-1">Track my portfolio</h3>
+<p class="text-slate-400 text-sm">Real-time market insights</p>
+</div>
+</div>
+<!-- Continue workspace -->
+<div class="group cursor-pointer action-card-glow flex flex-col justify-between p-6 rounded-xl bg-slate-900/40 border border-slate-800 hover:border-primary/50 transition-all md:col-span-2">
+<div class="flex items-center gap-6">
+<div class="p-4 rounded-lg bg-primary/10 text-primary shrink-0">
+<span class="material-symbols-outlined text-4xl">workspaces</span>
+</div>
+<div class="flex-1">
+<div class="flex items-center justify-between">
+<h3 class="text-xl font-bold">Continue my workspace</h3>
+<span class="material-symbols-outlined text-slate-500 group-hover:text-primary transition-colors">play_circle</span>
+</div>
+<p class="text-slate-400 text-sm mt-1">Pick up where you left off on 'Project Titan'</p>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Raycast-style Command Bar -->
+<div class="fixed bottom-0 left-0 right-0 p-6 flex justify-center pointer-events-none">
+<div class="w-full max-w-2xl glass-panel rounded-2xl shadow-2xl pointer-events-auto flex items-center p-2 gap-2 overflow-hidden border border-white/10">
+<button class="p-3 text-slate-400 hover:text-primary transition-colors rounded-xl hover:bg-white/5">
+<span class="material-symbols-outlined">add</span>
+</button>
+<input class="flex-1 bg-transparent border-none focus:ring-0 text-lg placeholder:text-slate-500 text-slate-100 py-3" placeholder="Ask Anything..." type="text"/>
+<div class="flex items-center gap-1 pr-2">
+<button class="p-3 text-slate-400 hover:text-primary transition-colors rounded-xl hover:bg-white/5">
+<span class="material-symbols-outlined">mic</span>
+</button>
+<div class="h-8 w-[1px] bg-slate-700 mx-1"></div>
+<div class="hidden sm:flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-slate-400 text-xs font-bold">
+<span>⌘</span>
+<span>K</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Decorative Glows -->
+<div class="fixed top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/5 blur-[120px] rounded-full pointer-events-none"></div>
+<div class="fixed bottom-[-5%] right-[-5%] w-[30%] h-[30%] bg-primary/10 blur-[100px] rounded-full pointer-events-none"></div>
+</body></html>
