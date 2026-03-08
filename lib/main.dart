@@ -43,7 +43,7 @@ class _AnythingAppState extends ConsumerState<AnythingApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Anything - AI OS',
+      title: 'Anything',
       navigatorKey: navigatorKey,
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark().copyWith(
