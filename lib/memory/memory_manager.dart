@@ -59,4 +59,9 @@ class MemoryManager {
     if (result.isEmpty) return null;
     return await _encryptionManager.decryptData(result.first['encrypted_value'] as String);
   }
+
+  Future<void> deleteConversation(int id) async {
+    final db = await _sqliteService.database;
+    await db.delete('conversation_memory', where: 'id = ?', whereArgs: [id]);
+  }
 }

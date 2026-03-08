@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'app_shell.dart';
+import 'workspace_screen.dart';
 
 class WorkspacesScreen extends StatelessWidget {
   const WorkspacesScreen({super.key});
@@ -8,77 +10,65 @@ class WorkspacesScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFF0F172A),
       appBar: AppBar(
-        title: const Text('Saved Workspaces', style: TextStyle(color: Colors.white)),
+        title: const Text('Workspaces', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
+        automaticallyImplyLeading: false,
       ),
-      body: ListView.builder(
+      body: ListView(
+        padding: const EdgeInsets.all(20),
+        children: [
+          const Text('Your saved workspaces', style: TextStyle(color: Colors.white54, fontSize: 15)),
+          const SizedBox(height: 20),
+          _buildWorkspaceCard(context, 'Startup Workspace', 'Business plan and market analysis', Icons.rocket_launch, Colors.blueAccent),
+          _buildWorkspaceCard(context, 'Coding Workspace', 'Code generation and debugging', Icons.code, Colors.cyanAccent),
+          _buildWorkspaceCard(context, 'Study Workspace', 'Notes and flashcards', Icons.school, Colors.purpleAccent),
+        ],
+      ),
+    );
+  }
+
+  void _openWorkspace(BuildContext context, String title) {
+    AppShell.stateKey.currentState?.setIndex(0);
+    WorkspaceScreen.stateKey.currentState?.handleExternalQuery('Load my $title');
+  }
+
+  Widget _buildWorkspaceCard(BuildContext context, String title, String subtitle, IconData icon, Color color) {
+    return InkWell(
+      onTap: () => _openWorkspace(context, title),
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
-        itemCount: 3,
-        itemBuilder: (context, index) {
-          final titles = ['Startup Workspace', 'Coding Workspace', 'Study Workspace'];
-          return Card(
-            color: Colors.white.withValues(alpha: 0.05),
-            margin: const EdgeInsets.symmetric(vertical: 8),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            child: ListTile(
-              leading: const Icon(Icons.dashboard_customize, color: Colors.blueAccent),
-              title: Text(titles[index], style: const TextStyle(color: Colors.white)),
-              trailing: const Icon(Icons.arrow_forward_ios, color: Colors.white54, size: 16),
-              onTap: () {
-                Navigator.pop(context); // Go back to workspace screen conceptually
-              },
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: color, size: 22),
             ),
-          );
-        },
-      ),
-    );
-  }
-}
-
-class TemplatesScreen extends StatelessWidget {
-  const TemplatesScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
-      appBar: AppBar(
-        title: const Text('Workspace Templates', style: TextStyle(color: Colors.white)),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
-      ),
-      body: GridView.count(
-        crossAxisCount: 2,
-        padding: const EdgeInsets.all(16),
-        crossAxisSpacing: 16,
-        mainAxisSpacing: 16,
-        children: [
-          _buildTemplateCard('Startup Planner', Icons.rocket_launch),
-          _buildTemplateCard('Study Dashboard', Icons.book),
-          _buildTemplateCard('Fitness Tracker', Icons.fitness_center),
-          _buildTemplateCard('Crypto Tracker', Icons.currency_bitcoin),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTemplateCard(String title, IconData icon) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white24),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, size: 48, color: Colors.blueAccent),
-          const SizedBox(height: 16),
-          Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        ],
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w500)),
+                  const SizedBox(height: 4),
+                  Text(subtitle, style: const TextStyle(color: Colors.white38, fontSize: 13)),
+                ],
+              ),
+            ),
+            const Icon(Icons.arrow_forward_ios, color: Colors.white24, size: 16),
+          ],
+        ),
       ),
     );
   }

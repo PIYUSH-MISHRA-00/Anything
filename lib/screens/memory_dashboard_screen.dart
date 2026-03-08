@@ -61,8 +61,36 @@ class _MemoryDashboardScreenState extends ConsumerState<MemoryDashboardScreen> {
                         ),
                         trailing: IconButton(
                           icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
-                          onPressed: () {
-                            // Impl deletion using SQLite
+                          onPressed: () async {
+                            final success = await showDialog<bool>(
+                              context: context,
+                              builder: (context) => AlertDialog(
+                                backgroundColor: const Color(0xFF1E293B),
+                                title: const Text('Delete Memory', style: TextStyle(color: Colors.white)),
+                                content: const Text('Are you sure you want to delete this memory?', style: TextStyle(color: Colors.white70)),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(context, false),
+                                    child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+                                  ),
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(context, true),
+                                    child: const Text('Delete', style: TextStyle(color: Colors.redAccent)),
+                                  ),
+                                ],
+                              ),
+                            );
+
+                            if (success == true) {
+                              if (!mounted) return;
+                              final manager = ref.read(memoryManagerProvider);
+                              await manager.deleteConversation(item['id'] as int);
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Memory deleted'), backgroundColor: Colors.redAccent),
+                                );
+                              }
+                            }
                           },
                         ),
                       ),

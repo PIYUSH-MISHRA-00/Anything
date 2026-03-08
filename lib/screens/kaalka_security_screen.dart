@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../security/encryption_manager.dart';
+import '../widgets/analogue_clock_picker.dart';
 
 class KaalkaSecurityScreen extends ConsumerStatefulWidget {
   const KaalkaSecurityScreen({super.key});
@@ -12,15 +13,16 @@ class KaalkaSecurityScreen extends ConsumerStatefulWidget {
 class _KaalkaSecurityScreenState extends ConsumerState<KaalkaSecurityScreen> {
   bool _enableEncryption = true;
   bool _useLiveTime = false;
-  TimeOfDay _selectedTime = const TimeOfDay(hour: 0, minute: 5);
-  int _selectedSeconds = 30;
+  int _hours = 0;
+  int _minutes = 5;
+  int _seconds = 30;
 
   void _saveSettings() {
     final manager = ref.read(encryptionManagerProvider);
     manager.configureTimeSeed(
-      hours: _selectedTime.hour, 
-      minutes: _selectedTime.minute, 
-      seconds: _selectedSeconds,
+      hours: _hours,
+      minutes: _minutes,
+      seconds: _seconds,
       useLiveTime: _useLiveTime,
     );
     ScaffoldMessenger.of(context).showSnackBar(
@@ -28,32 +30,10 @@ class _KaalkaSecurityScreenState extends ConsumerState<KaalkaSecurityScreen> {
     );
   }
 
-  Future<void> _pickTime() async {
-    final time = await showTimePicker(
-      context: context,
-      initialTime: _selectedTime,
-      builder: (context, child) {
-        return Theme(
-          data: ThemeData.dark().copyWith(
-            colorScheme: const ColorScheme.dark(
-              primary: Colors.blueAccent,
-              surface: Color(0xFF1E293B),
-            ),
-          ),
-          child: child!,
-        );
-      },
-    );
-    if (time != null) {
-      setState(() {
-        _selectedTime = time;
-      });
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    final String timeStr = '${_selectedTime.hour.toString().padLeft(2, '0')}:${_selectedTime.minute.toString().padLeft(2, '0')}:${_selectedSeconds.toString().padLeft(2, '0')}';
+    final String timeStr =
+        '${_hours.toString().padLeft(2, '0')}:${_minutes.toString().padLeft(2, '0')}:${_seconds.toString().padLeft(2, '0')}';
 
     return Scaffold(
       backgroundColor: const Color(0xFF0F172A),
@@ -68,10 +48,14 @@ class _KaalkaSecurityScreenState extends ConsumerState<KaalkaSecurityScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Kaalka Time-Key Security', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white)),
+            const Text('Kaalka Time-Key Security',
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white)),
             const SizedBox(height: 8),
-            const Text('Time-derived encryption keys', style: TextStyle(fontSize: 16, color: Colors.white54)),
+            const Text('Time-derived encryption keys',
+                style: TextStyle(fontSize: 16, color: Colors.white54)),
             const SizedBox(height: 32),
+
+            // Toggle cards
             Container(
               decoration: BoxDecoration(
                 color: Colors.white.withValues(alpha: 0.05),
@@ -89,7 +73,8 @@ class _KaalkaSecurityScreenState extends ConsumerState<KaalkaSecurityScreen> {
                   const Divider(color: Colors.white24),
                   SwitchListTile(
                     title: const Text('Use live system time', style: TextStyle(color: Colors.white)),
-                    subtitle: const Text('Generates continuously varying encryption keys.', style: TextStyle(color: Colors.white54)),
+                    subtitle: const Text('Seed = current time, continuously varying.',
+                        style: TextStyle(color: Colors.white54)),
                     value: _useLiveTime,
                     onChanged: _enableEncryption ? (val) => setState(() => _useLiveTime = val) : null,
                     activeThumbColor: Colors.blueAccent,
@@ -97,56 +82,41 @@ class _KaalkaSecurityScreenState extends ConsumerState<KaalkaSecurityScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 32),
+
+            // Clock picker (only when not using live time)
             if (!_useLiveTime && _enableEncryption) ...[
-              const Center(child: Text('Key Seed Time', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white))),
+              const SizedBox(height: 32),
+              const Center(
+                child: Text('Key Seed Time',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+              ),
+              const SizedBox(height: 8),
+              const Center(
+                child: Text('Drag clock hands to set the encryption key seed.',
+                    style: TextStyle(fontSize: 13, color: Colors.white38)),
+              ),
               const SizedBox(height: 24),
+
+              // Analog clock
               Center(
-                child: GestureDetector(
-                  onTap: _pickTime,
-                  child: Container(
-                    width: 200,
-                    height: 200,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.white.withValues(alpha: 0.05),
-                      border: Border.all(color: Colors.blueAccent.withValues(alpha: 0.5), width: 2),
-                      boxShadow: [
-                        BoxShadow(color: Colors.blueAccent.withValues(alpha: 0.2), blurRadius: 20, spreadRadius: 5),
-                      ],
-                    ),
-                    child: Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(Icons.access_time, size: 40, color: Colors.blueAccent),
-                          const SizedBox(height: 12),
-                          Text(
-                            '${_selectedTime.hour.toString().padLeft(2, '0')}:${_selectedTime.minute.toString().padLeft(2, '0')}',
-                            style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white),
-                          ),
-                        ],
-                      ),
-                    ),
+                child: SizedBox(
+                  width: 220,
+                  height: 220,
+                  child: AnalogueClockPicker(
+                    hours: _hours,
+                    minutes: _minutes,
+                    seconds: _seconds,
+                    onTimeChanged: (time) {
+                      setState(() {
+                        _hours = time.hours;
+                        _minutes = time.minutes;
+                        _seconds = time.seconds;
+                      });
+                    },
                   ),
                 ),
               ),
-              const SizedBox(height: 24),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text('Seconds:', style: TextStyle(color: Colors.white70, fontSize: 16)),
-                  Slider(
-                    value: _selectedSeconds.toDouble(),
-                    min: 0,
-                    max: 59,
-                    divisions: 59,
-                    label: _selectedSeconds.toString(),
-                    activeColor: Colors.blueAccent,
-                    onChanged: (val) => setState(() => _selectedSeconds = val.toInt()),
-                  ),
-                ],
-              ),
+
               const SizedBox(height: 24),
               Center(
                 child: Container(
@@ -157,11 +127,13 @@ class _KaalkaSecurityScreenState extends ConsumerState<KaalkaSecurityScreen> {
                   ),
                   child: Text(
                     'Kaalka key seed: $timeStr',
-                    style: const TextStyle(color: Colors.blueAccent, fontSize: 16, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                        color: Colors.blueAccent, fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                 ),
               ),
             ],
+
             const SizedBox(height: 40),
             SizedBox(
               width: double.infinity,
@@ -172,7 +144,8 @@ class _KaalkaSecurityScreenState extends ConsumerState<KaalkaSecurityScreen> {
                   backgroundColor: Colors.blueAccent,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
                 ),
-                child: const Text('Save Security Settings', style: TextStyle(fontSize: 16, color: Colors.white)),
+                child: const Text('Save Security Settings',
+                    style: TextStyle(fontSize: 16, color: Colors.white)),
               ),
             ),
           ],

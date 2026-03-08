@@ -44,6 +44,12 @@ dependencies:
   sqflite: ^2.4.2
   google_fonts: ^8.0.2
   path: ^1.9.1
+  url_launcher: ^6.3.2
+  file_picker: ^10.3.10
+  permission_handler: ^12.0.1
+  shimmer: ^3.0.0
+  record: ^6.2.0
+  webview_flutter: ^4.10.0
 
 dev_dependencies:
   flutter_test:
@@ -55,6 +61,13 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^5.0.0
+  flutter_launcher_icons: ^0.14.1
+
+flutter_launcher_icons:
+  android: "ic_launcher"
+  ios: true
+  image_path: "assets/images/app_icon.png"
+  min_sdk_android: 21
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

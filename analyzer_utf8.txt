@@ -1,0 +1,6 @@
+﻿Analyzing lib...
+
+   info - screens\memory_dashboard_screen.dart:90:52 - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check. Guard a 'State.context' use with a 'mounted' check on the State, and other BuildContext use with a 'mounted' check on the BuildContext. - use_build_context_synchronously
+   info - screens\workspace_screen.dart:47:8 - Unnecessary override. Try adding behavior in the overriding member or removing the override. - unnecessary_overrides
+
+2 issues found.

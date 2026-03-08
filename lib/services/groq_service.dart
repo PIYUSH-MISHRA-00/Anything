@@ -27,6 +27,10 @@ class GroqService {
     return await _secureStorage.read(key: _groqApiKey);
   }
 
+  Future<void> deleteApiKey() async {
+    await _secureStorage.delete(key: _groqApiKey);
+  }
+
   Future<bool> testApiKey(String apiKey) async {
     try {
       final response = await http.get(
@@ -34,10 +38,36 @@ class GroqService {
         headers: {
           'Authorization': 'Bearer $apiKey',
         },
-      );
+      ).timeout(const Duration(seconds: 15));
       return response.statusCode == 200;
     } catch (e) {
       return false;
+    }
+  }
+
+  /// Sends a real test prompt to validate the API key works end-to-end.
+  Future<String> testConnection(String apiKey) async {
+    try {
+      final response = await http.post(
+        Uri.parse(_groqApiUrl),
+        headers: {
+          'Authorization': 'Bearer $apiKey',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'model': 'gemma2-9b-it',
+          'messages': [{'role': 'user', 'content': 'Connection test. Reply with: Connected successfully.'}],
+        }),
+      ).timeout(const Duration(seconds: 15));
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return data['choices'][0]['message']['content'];
+      } else {
+        return 'Error: ${response.statusCode} — ${response.reasonPhrase}';
+      }
+    } catch (e) {
+      return 'Connection failed: $e';
     }
   }
 

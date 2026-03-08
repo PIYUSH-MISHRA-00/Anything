@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:home_widget/home_widget.dart';
 import 'screens/splash_screen.dart';
-import 'screens/workspace_screen.dart';
+import 'screens/app_shell.dart';
 
 // Global Key for navigation to handle deep links
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -33,7 +33,7 @@ class _AnythingAppState extends ConsumerState<AnythingApp> {
        if (query != null && query.isNotEmpty) {
          // Deep link routing into the AI workspace specifically to handle the intent query
          navigatorKey.currentState?.pushAndRemoveUntil(
-           MaterialPageRoute(builder: (_) => const WorkspaceScreen()),
+           MaterialPageRoute(builder: (_) => const AppShell()),
            (route) => false,
          );
        }

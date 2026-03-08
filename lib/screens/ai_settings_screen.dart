@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'groq_settings_screen.dart';
 import 'kaalka_security_screen.dart';
+import 'personal_context_screen.dart';
+import 'skills_marketplace_screen.dart';
 
 class AISettingsScreen extends StatelessWidget {
   const AISettingsScreen({super.key});
@@ -40,7 +42,15 @@ class AISettingsScreen extends StatelessWidget {
             title: 'Personal Context',
             subtitle: 'Manage what the AI learns about you',
             icon: Icons.person_outline,
-            onTap: () {},
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PersonalContextScreen())),
+          ),
+          const SizedBox(height: 12),
+          _buildSettingsCard(
+            context,
+            title: 'Skills Marketplace',
+            subtitle: 'Discover and install AI skills',
+            icon: Icons.extension_outlined,
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SkillsMarketplaceScreen())),
           ),
         ],
       ),

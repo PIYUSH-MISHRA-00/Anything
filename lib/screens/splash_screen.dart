@@ -1,15 +1,19 @@
 import 'package:flutter/material.dart';
+import '../widgets/custom_hub_logo.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:async';
+import '../memory/memory_manager.dart';
 import 'onboarding_screen.dart';
+import 'app_shell.dart';
 
-class SplashScreen extends StatefulWidget {
+class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
   @override
-  State<SplashScreen> createState() => _SplashScreenState();
+  ConsumerState<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
+class _SplashScreenState extends ConsumerState<SplashScreen> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _animation;
 
@@ -25,11 +29,38 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
       CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
     );
 
-    Timer(const Duration(seconds: 4), () {
+    _navigateAfterSplash();
+  }
+
+  Future<void> _navigateAfterSplash() async {
+    // Give the splash animation time to display
+    await Future.delayed(const Duration(seconds: 3));
+
+    if (!mounted) return;
+
+    // Check if onboarding has been completed
+    try {
+      final memoryManager = ref.read(memoryManagerProvider);
+      final onboardingCompleted = await memoryManager.getPreference('onboarding_completed');
+
+      if (!mounted) return;
+
+      if (onboardingCompleted == 'true') {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const AppShell()),
+        );
+      } else {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const OnboardingScreen()),
+        );
+      }
+    } catch (e) {
+      // If the database isn't ready or any error, default to onboarding
+      if (!mounted) return;
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (_) => const OnboardingScreen()),
       );
-    });
+    }
   }
 
   @override
@@ -67,7 +98,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                         )
                       ],
                     ),
-                    child: const Icon(Icons.hub, size: 50, color: Colors.white),
+                    child: const CustomHubLogo(size: 50),
                   ),
                 );
               },

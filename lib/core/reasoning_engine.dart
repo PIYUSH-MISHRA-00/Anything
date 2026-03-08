@@ -17,9 +17,13 @@ class ReasoningEngine {
 
   ReasoningEngine(this._groqService, this._intentEngine, this._contextEngine);
 
-  Future<String> evaluateAndGenerateAUIL(String userInput, Map<String, dynamic> toolResults) async {
+  Future<String> evaluateAndGenerateAUIL(String userInput, Map<String, dynamic> toolResults, {String? fileContext}) async {
     final intentJson = await _intentEngine.analyzeIntent(userInput);
     final contextData = await _contextEngine.compileContext();
+
+    final fileSection = fileContext != null
+        ? '\nAttached File Content:\n$fileContext\n'
+        : '';
 
     final systemPrompt = '''
 You are the Generative UI Reasoning Engine for the "Anything" application.
@@ -29,7 +33,7 @@ Input Context:
 User Intent: $intentJson
 Personal Context: $contextData
 Tool Execution Results: $toolResults
-
+$fileSection
 Output requirements:
 Return ONLY a valid JSON object matching the AUIL schema. No markdown blocks.
 
@@ -38,8 +42,8 @@ Example output:
   "layout": "dashboard",
   "components": [
     { "type": "header", "content": "Your Trip to Japan" },
-    { "type": "weather_widget", "data": "tool_results_weather" },
-    { "type": "kanban_board", "data": "tool_results_planning" }
+    { "type": "text_block", "content": "Summary of your plan" },
+    { "type": "metric_card", "data": { "title": "Budget", "value": "\$2000" } }
   ]
 }
 ''';
