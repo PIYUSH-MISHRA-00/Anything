@@ -232,73 +232,76 @@ void main() {
   });
 
   group('Protection survives restart', () {
-    test('protected Experience persists across repository recreation', () async {
-      final dbSuffix = DateTime.now().millisecondsSinceEpoch;
-      final repo1 = SqliteExperienceRepository(
-        dbName: 'test_restart_1_$dbSuffix.db',
-      );
-      final provider1 = KaalkaProtectionProvider(
-        config: const ProtectionConfig(enabled: true),
-      );
-      final service1 = ExperienceProtectionService(
-        provider: provider1,
-        repository: repo1,
-      );
+    test(
+      'protected Experience persists across repository recreation',
+      () async {
+        final dbSuffix = DateTime.now().millisecondsSinceEpoch;
+        final repo1 = SqliteExperienceRepository(
+          dbName: 'test_restart_1_$dbSuffix.db',
+        );
+        final provider1 = KaalkaProtectionProvider(
+          config: const ProtectionConfig(enabled: true),
+        );
+        final service1 = ExperienceProtectionService(
+          provider: provider1,
+          repository: repo1,
+        );
 
-      final package = createCalculatorPackage();
-      final experienceId = package.manifest.experienceId;
+        final package = createCalculatorPackage();
+        final experienceId = package.manifest.experienceId;
 
-      await repo1.savePackage(package);
-      await repo1.saveMetadata(
-        ExperienceMetadataRecord(
-          id: experienceId,
-          name: package.manifest.name,
-          description: package.manifest.description,
-          category: 'utility',
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-        ),
-      );
+        await repo1.savePackage(package);
+        await repo1.saveMetadata(
+          ExperienceMetadataRecord(
+            id: experienceId,
+            name: package.manifest.name,
+            description: package.manifest.description,
+            category: 'utility',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ),
+        );
 
-      final customTime = DateTime(2025, 6, 10, 8, 15, 0);
-      final protectResult = await service1.protectWithCustomTime(
-        package: package,
-        experienceId: experienceId,
-        customTime: customTime,
-      );
-      expect(protectResult, isA<ProtectionSucceeded>());
+        final customTime = DateTime(2025, 6, 10, 8, 15, 0);
+        final protectResult = await service1.protectWithCustomTime(
+          package: package,
+          experienceId: experienceId,
+          customTime: customTime,
+        );
+        expect(protectResult, isA<ProtectionSucceeded>());
 
-      await repo1.close();
+        await repo1.close();
 
-      final repo2 = SqliteExperienceRepository(
-        dbName: 'test_restart_1_$dbSuffix.db',
-      );
-      final provider2 = KaalkaProtectionProvider(
-        config: const ProtectionConfig(enabled: true),
-      );
-      final service2 = ExperienceProtectionService(
-        provider: provider2,
-        repository: repo2,
-      );
+        final repo2 = SqliteExperienceRepository(
+          dbName: 'test_restart_1_$dbSuffix.db',
+        );
+        final provider2 = KaalkaProtectionProvider(
+          config: const ProtectionConfig(enabled: true),
+        );
+        final service2 = ExperienceProtectionService(
+          provider: provider2,
+          repository: repo2,
+        );
 
-      final metadata = await repo2.getMetadata(experienceId);
-      expect(metadata, isNotNull);
-      expect(metadata!.isProtected, isTrue);
+        final metadata = await repo2.getMetadata(experienceId);
+        expect(metadata, isNotNull);
+        expect(metadata!.isProtected, isTrue);
 
-      final envelope = await repo2.getProtectedEnvelope(experienceId);
-      expect(envelope, isNotNull);
+        final envelope = await repo2.getProtectedEnvelope(experienceId);
+        expect(envelope, isNotNull);
 
-      final timeSeed = TimeSeed(hours: 8, minutes: 15, seconds: 0);
-      final unprotectResult = await service2.unprotect(
-        experienceId: experienceId,
-        timeSeed: timeSeed,
-      );
-      expect(unprotectResult, isA<UnprotectionSucceeded>());
+        final timeSeed = TimeSeed(hours: 8, minutes: 15, seconds: 0);
+        final unprotectResult = await service2.unprotect(
+          experienceId: experienceId,
+          timeSeed: timeSeed,
+        );
+        expect(unprotectResult, isA<UnprotectionSucceeded>());
 
-      final succeeded = unprotectResult as UnprotectionSucceeded;
-      expect(succeeded.package.manifest.name, equals('Calculator'));
+        final succeeded = unprotectResult as UnprotectionSucceeded;
+        expect(succeeded.package.manifest.name, equals('Calculator'));
 
-      await repo2.close();
-    });
+        await repo2.close();
+      },
+    );
   });
 }

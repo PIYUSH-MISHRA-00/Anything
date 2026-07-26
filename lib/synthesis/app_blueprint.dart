@@ -24,7 +24,7 @@ class AppBlueprint {
     required this.name,
     required this.description,
     this.archetypes = const [],
-    this.domain = AppDomain.custom,
+    this.tags = const [],
     this.entities = const [],
     this.views = const [],
     this.actions = const [],
@@ -38,7 +38,11 @@ class AppBlueprint {
   final String name;
   final String description;
   final List<AppArchetype> archetypes;
-  final AppDomain domain;
+
+  /// Open-world domain tags (e.g. 'personal_knowledge', 'plant_care', 'inventory').
+  /// Unknown domains require no source-code change.
+  final List<String> tags;
+
   final List<BlueprintEntity> entities;
   final List<BlueprintView> views;
   final List<BlueprintAction> actions;
@@ -52,7 +56,7 @@ class AppBlueprint {
     String? name,
     String? description,
     List<AppArchetype>? archetypes,
-    AppDomain? domain,
+    List<String>? tags,
     List<BlueprintEntity>? entities,
     List<BlueprintView>? views,
     List<BlueprintAction>? actions,
@@ -66,7 +70,7 @@ class AppBlueprint {
       name: name ?? this.name,
       description: description ?? this.description,
       archetypes: archetypes ?? this.archetypes,
-      domain: domain ?? this.domain,
+      tags: tags ?? this.tags,
       entities: entities ?? this.entities,
       views: views ?? this.views,
       actions: actions ?? this.actions,
@@ -82,7 +86,7 @@ class AppBlueprint {
     'name': name,
     'description': description,
     'archetypes': archetypes.map((a) => a.name).toList(),
-    'domain': domain.name,
+    'tags': tags,
     'entities': entities.map((e) => e.toJson()).toList(),
     'views': views.map((v) => v.toJson()).toList(),
     'actions': actions.map((a) => a.toJson()).toList(),
@@ -100,7 +104,7 @@ class AppBlueprint {
       archetypes: (json['archetypes'] as List)
           .map((a) => AppArchetype.values.firstWhere((e) => e.name == a))
           .toList(),
-      domain: AppDomain.values.firstWhere((e) => e.name == json['domain']),
+      tags: (json['tags'] as List?)?.cast<String>() ?? [],
       entities: (json['entities'] as List)
           .map((e) => BlueprintEntity.fromJson(e as Map<String, dynamic>))
           .toList(),
@@ -127,7 +131,7 @@ class AppBlueprint {
   }
 }
 
-/// A semantic entity in the blueprint (e.g. "Expense", "Habit", "Note").
+/// A semantic entity in the blueprint (e.g. "Plant", "Loan", "Product").
 class BlueprintEntity {
   const BlueprintEntity({
     required this.id,
@@ -239,7 +243,7 @@ class BlueprintField {
   }
 }
 
-/// A semantic view in the blueprint (e.g. "Overview", "Add Expense").
+/// A semantic view in the blueprint (e.g. "Overview", "Add Plant").
 class BlueprintView {
   const BlueprintView({
     required this.id,
@@ -354,7 +358,7 @@ class BlueprintViewSection {
 /// Section type classification.
 enum BlueprintSectionType { list, summary, form, detail, chart }
 
-/// A semantic action in the blueprint (e.g. "add expense", "toggle habit").
+/// A semantic action in the blueprint (e.g. "add record", "toggle item").
 class BlueprintAction {
   const BlueprintAction({
     required this.id,
@@ -409,7 +413,7 @@ enum BlueprintActionType {
   navigate,
 }
 
-/// A derived/computed value in the blueprint (e.g. "total expenses", "streak").
+/// A derived/computed value in the blueprint (e.g. "total amount", "streak").
 class BlueprintDerivedValue {
   const BlueprintDerivedValue({
     required this.id,

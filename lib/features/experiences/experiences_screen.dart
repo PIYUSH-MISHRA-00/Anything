@@ -76,25 +76,28 @@ class _ExperiencesScreenState extends State<ExperiencesScreen> {
         ).then((_) => _loadExperiences());
 
       case OpenProtectionInputRequired():
-        _showProtectionInputAndResume(result.experienceId, result.experienceName);
+        _showProtectionInputAndResume(
+          result.experienceId,
+          result.experienceName,
+        );
 
       case OpenNotFound(:final message):
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(message)),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(message)));
         }
       case OpenInvalid(:final message):
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(message)),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(message)));
         }
       case OpenFailed(:final message):
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(message)),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(message)));
         }
     }
   }
@@ -157,9 +160,9 @@ class _ExperiencesScreenState extends State<ExperiencesScreen> {
           ),
         ).then((_) => _loadExperiences());
       } else if (openResult is OpenFailed && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(openResult.message)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(openResult.message)));
       }
     } else if (option == 'custom') {
       final now = DateTime.now();
@@ -208,9 +211,9 @@ class _ExperiencesScreenState extends State<ExperiencesScreen> {
           ),
         ).then((_) => _loadExperiences());
       } else if (openResult is OpenFailed && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(openResult.message)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(openResult.message)));
       }
     }
   }

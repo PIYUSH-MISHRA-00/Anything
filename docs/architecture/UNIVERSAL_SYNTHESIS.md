@@ -2,12 +2,14 @@
 
 ## Overview
 
-Stage 10 transforms Anything from a Calculator-specific creation system into a general-purpose app synthesis engine. The architecture proves that a single pipeline can generate fundamentally different application structures from natural-language intent.
+Stage 10/10.1 transforms Anything from a Calculator-specific creation system into a general-purpose app synthesis engine. The architecture proves that a single pipeline can generate fundamentally different application structures from natural-language intent, with no domain-specific hardcoding.
+
+**Stage 10.1 key change:** All domain-specific logic has been removed from the synthesis engine. Domain knowledge now lives in the `ApplicationReasoner` (deterministic or model-backed), not in templates or pattern code.
 
 ## Architecture Diagram
 
 ```
-User Intent ("Make me a notes app")
+User Intent ("Make me a plant care tracker")
     │
     ▼
 IntentClassifier ──→ IntentCategory (create/modify/open)
@@ -18,12 +20,20 @@ ModelUnderstandingService ──→ IntentUnderstanding
     │                         ├─ category
     │                         ├─ confidence
     │                         ├─ networkNeed
-    │                         └─ ambiguities
+    │                         └─ creationNeed
     ▼
-SynthesisPlanner ──→ SynthesisResult
-    │                 ├─ AppBlueprint
-    │                 ├─ patterns applied
-    │                 └─ synthesis notes
+ApplicationReasoner ──→ SemanticApp (or ProviderRequired)
+    │                   ├─ entities [SemanticEntity]
+    │                   ├─ views [SemanticView]
+    │                   ├─ actions [SemanticAction]
+    │                   ├─ derivedValues [SemanticDerivedValue]
+    │                   ├─ tags ['plant_care', 'tracker']
+    │                   └─ archetypes [tracker]
+    ▼
+SynthesisPlanner ──→ AppBlueprint
+    │                 ├─ builds from SemanticApp
+    │                 ├─ derives archetypes from structure
+    │                 └─ applies structural patterns
     ▼
 AppBlueprint (technology-independent)
     │  ├─ archetypes [collection, tracker, planner, dashboard, ...]
@@ -31,6 +41,7 @@ AppBlueprint (technology-independent)
     │  ├─ views [BlueprintView with sections]
     │  ├─ actions [BlueprintAction]
     │  ├─ derivedValues [BlueprintDerivedValue]
+    │  ├─ tags ['plant_care', 'tracker'] (open-world)
     │  └─ offlinePolicy / networkConfig
     ▼
 BlueprintValidator ──→ BlueprintValidation
@@ -38,12 +49,17 @@ BlueprintValidator ──→ BlueprintValidation
     │                   ├─ errors
     │                   └─ warnings
     ▼
-GenericPackageBuilder ──→ ExperiencePackage
-    │                      ├─ InterfaceDefinition (screens + navigation)
-    │                      ├─ BehaviorGraph (events + mutations + calculations)
-    │                      ├─ StateSchema (form inputs + derived values)
-    │                      ├─ DataSchema (entities + fields)
-    │                      └─ integrity hash
+BlueprintToSpecConverter ──→ ExperienceSpec
+    │                        ├─ derives category from archetypes
+    │                        ├─ converts to CreationEngine format
+    │                        └─ applies capability requirements
+    ▼
+CreationEngine ──→ ExperiencePackage
+    │              ├─ InterfaceDefinition (screens + navigation)
+    │              ├─ BehaviorGraph (events + mutations + calculations)
+    │              ├─ StateSchema (form inputs + derived values)
+    │              ├─ DataSchema (entities + fields)
+    │              └─ integrity hash
     ▼
 AnythingRuntime ──→ ExperienceSession
     │                ├─ StateEngine (reactive state)
@@ -58,27 +74,66 @@ Running Application
 
 ### AppArchetype (lib/synthesis/app_archetype.dart)
 
-High-level structural classification:
+High-level structural classification (enum, no domain knowledge):
 - `utility` — no persistence, no network (Calculator)
-- `collection` — manages records (Notes, Reading List)
-- `tracker` — periodic/daily state (Habit Tracker)
-- `planner` — tasks with dates/status (Study Planner)
-- `dashboard` — summary-first with aggregation (Expense Tracker)
-- `reference` — external information (Weather)
+- `collection` — manages records (e.g. Notes, Reading List)
+- `tracker` — periodic/daily state (e.g. Habit Tracker)
+- `planner` — tasks with dates/status (e.g. Study Planner)
+- `dashboard` — summary-first with aggregation (e.g. Expense Tracker)
+- `reference` — external information (e.g. Weather)
 - `workflow` — multi-step process
 - `hybrid` — combines archetypes
+
+**Stage 10.1:** `AppDomain` enum was removed. Domain tags are now open-world `List<String>` on `AppBlueprint`.
+
+### ApplicationReasoner (lib/synthesis/application_reasoner.dart)
+
+**Stage 10.1 (NEW):** Typed contract for semantic reasoning from natural language.
+
+Returns one of:
+- `ReasoningReady` — complete `SemanticApp` ready for synthesis
+- `ReasoningProviderRequired` — model needed for complex/novel intent
+- `ReasoningFailed` — unparseable intent
+
+`SemanticApp` contains:
+- `entities` — typed entities with fields, actions, computed values
+- `views` — screens with sections
+- `tags` — open-world domain tags (e.g. `['plant_care', 'tracker']`)
+- `archetypes` — structural archetypes derived from semantic structure
+
+### DeterministicReasoner (lib/synthesis/deterministic_reasoner.dart)
+
+**Stage 10.1 (NEW):** No-AI fallback for simple structural requests.
+
+Handles intents matching generic structural patterns:
+- Collection: "store X", "save X"
+- Tracker: "track X daily", "habit"
+- Planner: "plan X", "schedule X"
+- Dashboard: "summary of X", "overview of X"
+
+Returns `ReasoningProviderRequired` for complex/novel requests.
+
+### ModelApplicationReasoner (lib/synthesis/model_reasoner.dart)
+
+**Stage 10.1 (NEW):** ModelProvider-backed reasoning for complex intents.
+
+- Sends structured prompt with strict JSON schema
+- Parses model output into `SemanticApp` with validation
+- BYOK via existing `ModelProviderRegistry`
+- Privacy-minimal context (objective + category only)
 
 ### AppBlueprint (lib/synthesis/app_blueprint.dart)
 
 Technology-independent semantic description of a synthesized application. Describes WHAT the app is, not HOW it's implemented.
 
 Key structures:
-- `BlueprintEntity` — semantic entities (Note, Habit, Expense)
+- `BlueprintEntity` — semantic entities (e.g. Plant, Loan, Product)
 - `BlueprintField` — typed fields with constraints
 - `BlueprintView` — views with purpose and sections
 - `BlueprintAction` — user actions (create, update, delete, toggle)
 - `BlueprintDerivedValue` — computed values (sum, count, streak)
 - `BlueprintNetworkConfig` — network requirements
+- `tags: List<String>` — open-world domain tags
 
 ### BlueprintValidator (lib/synthesis/blueprint_validator.dart)
 
@@ -90,22 +145,28 @@ Validates blueprints before synthesis:
 
 ### SynthesisPatterns (lib/synthesis/synthesis_patterns.dart)
 
-Reusable building blocks for app synthesis:
-- `CollectionPattern` — Notes, Reading List
-- `TrackerPattern` — Habit Tracker
-- `PlannerPattern` — Study Planner
-- `DashboardPattern` — Expense Tracker
+**Stage 10.1:** Simplified to structural-only. Patterns accept pre-built entities/views/actions and apply structural wiring (navigation, state bindings, event hooks). No domain knowledge.
 
-Patterns define default entities, views, actions, and derived values for each archetype.
+- `CollectionPattern` — list-based storage structure
+- `TrackerPattern` — periodic tracking structure
+- `PlannerPattern` — task scheduling structure
+- `DashboardPattern` — summary aggregation structure
 
 ### SynthesisPlanner (lib/synthesis/synthesis_planner.dart)
 
-Converts IntentUnderstanding into AppBlueprint:
-1. Detects primary archetype from objective
-2. Selects appropriate synthesis patterns
-3. Applies patterns to build structure
-4. Customizes from understanding details
-5. Returns complete AppBlueprint
+**Stage 10.1:** Delegates semantic reasoning to `ApplicationReasoner`, then converts `SemanticApp` to `AppBlueprint`.
+
+1. Calls `ApplicationReasoner.reason(intent)`
+2. Receives `SemanticApp` with entities, views, actions, tags
+3. Converts to `AppBlueprint` with structural patterns
+4. Derives archetypes from semantic structure (not domain keywords)
+5. Returns complete `AppBlueprint`
+
+### BlueprintToSpecConverter (lib/synthesis/blueprint_to_spec.dart)
+
+**Stage 10.1:** Category derived from archetypes and structure, not domain strings.
+
+Converts `AppBlueprint` into `ExperienceSpec` for the existing CreationEngine pipeline.
 
 ### GenericPackageBuilder (lib/synthesis/generic_package_builder.dart)
 
@@ -116,9 +177,7 @@ Converts AppBlueprint into ExperiencePackage:
 - Builds DataSchema from entities
 - Computes integrity hash
 
-### BlueprintToSpecConverter (lib/synthesis/blueprint_to_spec.dart)
-
-Converts AppBlueprint into ExperienceSpec for the existing CreationEngine pipeline.
+**Audit confirmed:** No domain branches — all entity/view/action handling is generic.
 
 ## Data Flow
 
@@ -126,13 +185,15 @@ Converts AppBlueprint into ExperienceSpec for the existing CreationEngine pipeli
 1. User provides natural language intent
 2. IntentClassifier categorizes (create/modify/open)
 3. ModelUnderstandingService produces IntentUnderstanding
-4. SynthesisPlanner detects archetype and applies patterns
-5. AppBlueprint is produced
-6. BlueprintValidator validates the blueprint
-7. GenericPackageBuilder creates ExperiencePackage
-8. Package is validated and persisted
-9. BirthSequence plays
-10. AnythingRuntime opens the experience
+4. ApplicationReasoner reasons about intent (deterministic or model-backed)
+5. Returns SemanticApp with entities, views, actions, tags
+6. SynthesisPlanner converts to AppBlueprint
+7. BlueprintValidator validates the blueprint
+8. BlueprintToSpecConverter converts to ExperienceSpec
+9. CreationEngine produces ExperiencePackage
+10. Package is validated and persisted
+11. BirthSequence plays
+12. AnythingRuntime opens the experience
 
 ### Modification Flow
 1. User requests change ("Add tags to notes")
@@ -183,12 +244,20 @@ Navigation is declarative (NavigationDefinition) and owned by Runtime.
 - Experience isolation maintained
 - Kaalka protection works across all archetypes
 
+## Open-World Domain Model
+
+**Stage 10.1:** Domain knowledge is no longer hardcoded.
+
+- `AppBlueprint.tags` — open-world list of domain strings
+- Unknown domains require no source-code change
+- Domain knowledge lives in `ApplicationReasoner`
+- Patterns and planners are domain-agnostic
+
 ## No AI Required
 
-For deterministic golden archetypes (Notes, Habits, Expenses, Study, Reading):
-- Creation works without ModelProvider
-- Creation works without KnowledgeProvider
+For deterministic structural intents (collection, tracker, planner, dashboard):
+- `DeterministicReasoner` handles without model
 - All synthesis is deterministic
 - Tests verify offline creation
 
-AI-assisted creation is optional for novel/ambiguous requests.
+AI-assisted creation is used for complex/novel intents that require domain reasoning.

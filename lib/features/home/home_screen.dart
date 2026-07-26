@@ -212,21 +212,21 @@ class HomeScreenState extends State<HomeScreen> {
 
       case OpenNotFound(:final message):
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(message)),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(message)));
         }
       case OpenInvalid(:final message):
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(message)),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(message)));
         }
       case OpenFailed(:final message):
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(message)),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(message)));
         }
     }
   }
@@ -290,9 +290,9 @@ class HomeScreenState extends State<HomeScreen> {
           ),
         ).then((_) => _loadRecent());
       } else if (openResult is OpenFailed && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(openResult.message)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(openResult.message)));
       }
     } else if (option == 'custom') {
       final now = DateTime.now();
@@ -341,9 +341,9 @@ class HomeScreenState extends State<HomeScreen> {
           ),
         ).then((_) => _loadRecent());
       } else if (openResult is OpenFailed && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(openResult.message)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(openResult.message)));
       }
     }
   }

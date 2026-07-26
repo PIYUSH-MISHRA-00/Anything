@@ -16,12 +16,16 @@ import 'package:anything/kernel/classification/intent_category.dart';
 import 'package:anything/kernel/outcomes/kernel_outcome.dart';
 import 'package:anything/kernel/understanding/intent_understanding.dart';
 import 'package:anything/kernel/understanding/model_understanding_service.dart';
-import 'package:anything/kernel/specification/experience_spec_builder.dart';
 import 'package:anything/kernel/specification/experience_spec.dart';
 import 'package:anything/kernel/planning/execution_plan.dart';
 import 'package:anything/kernel/resolution/experience_resolver.dart';
 import 'package:anything/capabilities/registry/capability_registry.dart';
 import 'package:anything/knowledge/knowledge_acquisition_engine.dart';
+import 'package:anything/synthesis/application_reasoner.dart';
+import 'package:anything/synthesis/deterministic_reasoner.dart';
+import 'package:anything/synthesis/synthesis_planner.dart';
+import 'package:anything/synthesis/blueprint_to_spec.dart';
+import 'package:anything/synthesis/blueprint_validator.dart';
 
 /// The Anything Kernel.
 class AnythingKernel {
@@ -29,20 +33,21 @@ class AnythingKernel {
   final CapabilityRegistry _capabilityRegistry;
   final ModelUnderstandingService _understandingService;
   final IntentClassifier _classifier;
-  final ExperienceSpecBuilder _specBuilder;
   final KnowledgeAcquisitionEngine _knowledgeEngine;
+  final ApplicationReasoner _reasoner;
 
   AnythingKernel({
     required ModelProviderRegistry providerRegistry,
     ExperienceResolver? experienceResolver,
     CapabilityRegistry? capabilityRegistry,
     KnowledgeAcquisitionEngine? knowledgeEngine,
+    ApplicationReasoner? reasoner,
   }) : _experienceResolver = experienceResolver ?? ExperienceResolver(),
        _capabilityRegistry = capabilityRegistry ?? CapabilityRegistry(),
        _understandingService = ModelUnderstandingService(providerRegistry),
        _classifier = IntentClassifier(),
-       _specBuilder = ExperienceSpecBuilder(),
-       _knowledgeEngine = knowledgeEngine ?? KnowledgeAcquisitionEngine();
+       _knowledgeEngine = knowledgeEngine ?? KnowledgeAcquisitionEngine(),
+       _reasoner = reasoner ?? const DeterministicReasoner();
 
   /// Process an intent through the full Kernel pipeline.
   Future<KernelOutcome> processIntent(Intent intent) async {
@@ -88,13 +93,32 @@ class AnythingKernel {
         );
       }
 
-      // Step 5: Build ExperienceSpec
-      final spec = _specBuilder.build(
-        understanding: understanding,
-        intent: intent,
-      );
+      // Step 5: Reason about the application (new synthesis path)
+      final planner = SynthesisPlanner(_reasoner);
+      final synthesisResult = await planner.plan(understanding);
 
-      // Step 6: Acquire knowledge if needed
+      // Check if reasoning needs a provider
+      if (synthesisResult.notes.any((n) => n.contains('Provider required'))) {
+        return ProviderRequired(
+          message: 'Connect an AI provider to create this kind of app',
+          timestamp: DateTime.now(),
+        );
+      }
+
+      // Step 6: Validate blueprint
+      final validation = BlueprintValidator.validate(synthesisResult.blueprint);
+      if (!validation.isValid) {
+        return PlanningFailed(
+          error: validation.errors.join('; '),
+          message: 'Blueprint validation failed',
+          timestamp: DateTime.now(),
+        );
+      }
+
+      // Step 7: Convert to ExperienceSpec
+      final spec = BlueprintToSpecConverter.convert(synthesisResult.blueprint);
+
+      // Step 8: Acquire knowledge if needed
       if (spec.knowledgeRequirements.isNotEmpty) {
         await _knowledgeEngine.acquire(
           requirements: spec.knowledgeRequirements,
@@ -102,7 +126,7 @@ class AnythingKernel {
         );
       }
 
-      // Step 7: Resolve capabilities
+      // Step 9: Resolve capabilities
       final capabilityIds = spec.requiredCapabilities
           .map((c) => c.capabilityId)
           .toList();
@@ -119,20 +143,20 @@ class AnythingKernel {
         );
       }
 
-      // Step 7: Build ExecutionPlan
+      // Step 10: Build ExecutionPlan
       final plan = _buildPlan(spec);
 
-      // Step 8: Validate plan
-      final validation = plan.validate();
-      if (!validation.isValid) {
+      // Step 11: Validate plan
+      final planValidation = plan.validate();
+      if (!planValidation.isValid) {
         return PlanningFailed(
-          error: validation.errors.join('; '),
+          error: planValidation.errors.join('; '),
           message: 'Planning encountered issues',
           timestamp: DateTime.now(),
         );
       }
 
-      // Step 9: Return the plan
+      // Step 12: Return the plan
       return ExecutionPlanReady(
         plan: plan,
         specification: spec,

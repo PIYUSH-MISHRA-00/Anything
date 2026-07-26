@@ -214,8 +214,9 @@ void main() {
       await coordinator.openExperience(experienceId);
 
       final events = await activity.list(limit: 10);
-      final openedEvents =
-          events.where((e) => e.type == 'opened' && e.experienceId == experienceId).toList();
+      final openedEvents = events
+          .where((e) => e.type == 'opened' && e.experienceId == experienceId)
+          .toList();
       expect(openedEvents.length, equals(1));
     });
   });

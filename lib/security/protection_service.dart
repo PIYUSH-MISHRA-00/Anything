@@ -200,7 +200,10 @@ class ExperienceProtectionService {
       );
 
       // 5. Persist: store the envelope, update metadata, remove plaintext package.
-      await _repository.saveProtectedEnvelope(experienceId, envelope.serialize());
+      await _repository.saveProtectedEnvelope(
+        experienceId,
+        envelope.serialize(),
+      );
       await _repository.updateProtectionState(experienceId, true);
 
       // Remove the plaintext package — only the envelope is stored.
@@ -209,9 +212,7 @@ class ExperienceProtectionService {
       return ProtectionSucceeded(envelope: envelope);
     } catch (e) {
       // Protection failed — original package remains untouched.
-      return ProtectionFailed(
-        message: 'Protection failed: ${e.toString()}',
-      );
+      return ProtectionFailed(message: 'Protection failed: ${e.toString()}');
     }
   }
 
@@ -266,8 +267,9 @@ class ExperienceProtectionService {
 
       // 5. Verify integrity — compare content hash.
       final candidateJson = jsonEncode(candidatePackage.toJson());
-      final candidateHash =
-          sha256.convert(utf8.encode(candidateJson)).toString();
+      final candidateHash = sha256
+          .convert(utf8.encode(candidateJson))
+          .toString();
 
       if (candidateHash != envelope.originalContentHash) {
         return const UnprotectionFailed(
@@ -276,8 +278,7 @@ class ExperienceProtectionService {
       }
 
       // 6. Validate with the package validator.
-      final validation =
-          ExperiencePackageValidator.validate(candidatePackage);
+      final validation = ExperiencePackageValidator.validate(candidatePackage);
       if (!validation.isValid) {
         return const UnprotectionFailed(
           message: 'Package validation failed after unprotection',
@@ -300,5 +301,3 @@ class ExperienceProtectionService {
     }
   }
 }
-
-

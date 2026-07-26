@@ -86,61 +86,55 @@ void main() {
       },
     );
 
-    test(
-      'opening via coordinator uses created ID, not first recent',
-      () async {
-        final provider = KaalkaProtectionProvider(
-          config: const ProtectionConfig(enabled: true),
-        );
-        final protectionService = ExperienceProtectionService(
-          provider: provider,
-          repository: repository,
-        );
-        final coordinator = ExperienceOpeningCoordinator(
-          repository: repository,
-          activity: ActivityRepository(),
-          protectionService: protectionService,
-        );
+    test('opening via coordinator uses created ID, not first recent', () async {
+      final provider = KaalkaProtectionProvider(
+        config: const ProtectionConfig(enabled: true),
+      );
+      final protectionService = ExperienceProtectionService(
+        provider: provider,
+        repository: repository,
+      );
+      final coordinator = ExperienceOpeningCoordinator(
+        repository: repository,
+        activity: ActivityRepository(),
+        protectionService: protectionService,
+      );
 
-        final packageA = createCalculatorPackage();
-        await repository.savePackage(packageA);
-        await repository.saveMetadata(
-          ExperienceMetadataRecord(
-            id: packageA.manifest.experienceId,
-            name: 'Calculator A',
-            description: 'Older calculator',
-            category: 'utility',
-            createdAt: DateTime(2025, 1, 1),
-            updatedAt: DateTime(2025, 1, 1),
-          ),
-        );
+      final packageA = createCalculatorPackage();
+      await repository.savePackage(packageA);
+      await repository.saveMetadata(
+        ExperienceMetadataRecord(
+          id: packageA.manifest.experienceId,
+          name: 'Calculator A',
+          description: 'Older calculator',
+          category: 'utility',
+          createdAt: DateTime(2025, 1, 1),
+          updatedAt: DateTime(2025, 1, 1),
+        ),
+      );
 
-        final packageB = createCalculatorPackage();
-        await repository.savePackage(packageB);
-        await repository.saveMetadata(
-          ExperienceMetadataRecord(
-            id: packageB.manifest.experienceId,
-            name: 'Calculator B',
-            description: 'Newer calculator',
-            category: 'utility',
-            createdAt: DateTime(2025, 6, 1),
-            updatedAt: DateTime(2025, 6, 1),
-          ),
-        );
+      final packageB = createCalculatorPackage();
+      await repository.savePackage(packageB);
+      await repository.saveMetadata(
+        ExperienceMetadataRecord(
+          id: packageB.manifest.experienceId,
+          name: 'Calculator B',
+          description: 'Newer calculator',
+          category: 'utility',
+          createdAt: DateTime(2025, 6, 1),
+          updatedAt: DateTime(2025, 6, 1),
+        ),
+      );
 
-        final result = await coordinator.openExperience(
-          packageB.manifest.experienceId,
-        );
+      final result = await coordinator.openExperience(
+        packageB.manifest.experienceId,
+      );
 
-        expect(result, isA<OpenReady>());
-        final ready = result as OpenReady;
-        expect(
-          ready.experienceId,
-          equals(packageB.manifest.experienceId),
-        );
-        expect(ready.experienceName, equals('Calculator B'));
-      },
-    );
+      expect(result, isA<OpenReady>());
+      final ready = result as OpenReady;
+      expect(ready.experienceId, equals(packageB.manifest.experienceId));
+      expect(ready.experienceName, equals('Calculator B'));
+    });
   });
 
   group('Protection State vs Activity', () {
@@ -172,70 +166,64 @@ void main() {
       await repository.close();
     });
 
-    test(
-      'Activity history is not used as protection state',
-      () async {
-        final package = createCalculatorPackage();
-        final experienceId = package.manifest.experienceId;
+    test('Activity history is not used as protection state', () async {
+      final package = createCalculatorPackage();
+      final experienceId = package.manifest.experienceId;
 
-        await repository.savePackage(package);
-        await repository.saveMetadata(
-          ExperienceMetadataRecord(
-            id: experienceId,
-            name: package.manifest.name,
-            description: package.manifest.description,
-            category: 'utility',
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
-          ),
-        );
+      await repository.savePackage(package);
+      await repository.saveMetadata(
+        ExperienceMetadataRecord(
+          id: experienceId,
+          name: package.manifest.name,
+          description: package.manifest.description,
+          category: 'utility',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        ),
+      );
 
-        await activity.record(
-          ActivityEvent(
-            id: 'evt-fake-protected',
-            type: 'protected',
-            experienceId: experienceId,
-            experienceName: 'Calculator',
-            message: 'Protected Calculator',
-            timestamp: DateTime.now(),
-          ),
-        );
-
-        final result = await coordinator.openExperience(experienceId);
-        expect(result, isA<OpenReady>());
-      },
-    );
-
-    test(
-      'protected state survives Activity clearing',
-      () async {
-        final package = createCalculatorPackage();
-        final experienceId = package.manifest.experienceId;
-
-        await repository.savePackage(package);
-        await repository.saveMetadata(
-          ExperienceMetadataRecord(
-            id: experienceId,
-            name: package.manifest.name,
-            description: package.manifest.description,
-            category: 'utility',
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
-          ),
-        );
-
-        final customTime = DateTime(2025, 6, 10, 8, 15, 0);
-        await protectionService.protectWithCustomTime(
-          package: package,
+      await activity.record(
+        ActivityEvent(
+          id: 'evt-fake-protected',
+          type: 'protected',
           experienceId: experienceId,
-          customTime: customTime,
-        );
+          experienceName: 'Calculator',
+          message: 'Protected Calculator',
+          timestamp: DateTime.now(),
+        ),
+      );
 
-        await activity.clearAll();
+      final result = await coordinator.openExperience(experienceId);
+      expect(result, isA<OpenReady>());
+    });
 
-        final result = await coordinator.openExperience(experienceId);
-        expect(result, isA<OpenProtectionInputRequired>());
-      },
-    );
+    test('protected state survives Activity clearing', () async {
+      final package = createCalculatorPackage();
+      final experienceId = package.manifest.experienceId;
+
+      await repository.savePackage(package);
+      await repository.saveMetadata(
+        ExperienceMetadataRecord(
+          id: experienceId,
+          name: package.manifest.name,
+          description: package.manifest.description,
+          category: 'utility',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        ),
+      );
+
+      final customTime = DateTime(2025, 6, 10, 8, 15, 0);
+      await protectionService.protectWithCustomTime(
+        package: package,
+        experienceId: experienceId,
+        customTime: customTime,
+      );
+
+      await activity.clearAll();
+
+      final result = await coordinator.openExperience(experienceId);
+      expect(result, isA<OpenProtectionInputRequired>());
+    });
   });
 }

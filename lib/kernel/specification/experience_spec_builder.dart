@@ -1,7 +1,7 @@
 /// Builds ExperienceSpec from IntentUnderstanding.
 ///
-/// Uses smart defaults and the understanding to produce
-/// a complete, versioned specification.
+/// This is a fallback builder used when the synthesis pipeline is not available.
+/// It uses generic derivation from understanding structure, not domain keywords.
 library;
 
 import 'package:uuid/uuid.dart';
@@ -47,7 +47,6 @@ class ExperienceSpecBuilder {
   }
 
   String _deriveName(IntentUnderstanding understanding) {
-    // Capitalize first letter of objective
     final obj = understanding.objective;
     if (obj.isEmpty) return 'Untitled Experience';
     return obj[0].toUpperCase() + obj.substring(1);
@@ -60,75 +59,19 @@ class ExperienceSpecBuilder {
   }
 
   ExperienceCategory _deriveCategory(IntentUnderstanding understanding) {
-    final obj = understanding.objective.toLowerCase();
-    if (obj.contains('calculator') || obj.contains('math')) {
-      return ExperienceCategory.tool;
-    }
-    if (obj.contains('tracker') || obj.contains('habit')) {
-      return ExperienceCategory.productivity;
-    }
-    if (obj.contains('budget') ||
-        obj.contains('expense') ||
-        obj.contains('finance')) {
-      return ExperienceCategory.finance;
-    }
-    if (obj.contains('health') ||
-        obj.contains('water') ||
-        obj.contains('exercise')) {
-      return ExperienceCategory.health;
-    }
-    if (obj.contains('timer') || obj.contains('pomodoro')) {
-      return ExperienceCategory.productivity;
-    }
-    if (obj.contains('weather')) {
+    // Generic derivation from understanding structure, not domain keywords
+    if (understanding.networkNeed == NetworkNeed.required) {
       return ExperienceCategory.utility;
     }
     return ExperienceCategory.unknown;
   }
 
   InteractionModel _deriveInteractionModel(IntentUnderstanding understanding) {
-    final obj = understanding.objective.toLowerCase();
-    if (obj.contains('calculator') || obj.contains('timer')) {
-      return InteractionModel.directManipulation;
-    }
-    if (obj.contains('tracker') || obj.contains('planner')) {
-      return InteractionModel.formBased;
-    }
-    if (obj.contains('dashboard')) {
-      return InteractionModel.dashboard;
-    }
-    return InteractionModel.directManipulation;
+    // Generic derivation from understanding structure
+    return InteractionModel.formBased;
   }
 
   UIRequirements _deriveUIRequirements(IntentUnderstanding understanding) {
-    final obj = understanding.objective.toLowerCase();
-
-    if (obj.contains('calculator')) {
-      return const UIRequirements(
-        description: 'Calculator interface',
-        primaryViews: ['main calculator view'],
-        inputElements: ['numeric keypad', 'operation buttons'],
-        displayElements: ['result display', 'expression display'],
-      );
-    }
-
-    if (obj.contains('tracker') || obj.contains('habit')) {
-      return const UIRequirements(
-        description: 'Tracker interface with data entry and history',
-        primaryViews: ['tracker view', 'history view'],
-        inputElements: ['data entry form', 'date picker'],
-        displayElements: ['progress display', 'streak counter', 'history list'],
-      );
-    }
-
-    if (obj.contains('weather')) {
-      return const UIRequirements(
-        description: 'Weather dashboard',
-        primaryViews: ['current weather', 'forecast'],
-        displayElements: ['temperature', 'conditions', 'forecast cards'],
-      );
-    }
-
     return UIRequirements(
       description: 'Interface for ${understanding.objective}',
     );
@@ -137,66 +80,6 @@ class ExperienceSpecBuilder {
   List<FunctionalRequirement> _deriveFunctionalRequirements(
     IntentUnderstanding understanding,
   ) {
-    final obj = understanding.objective.toLowerCase();
-
-    if (obj.contains('calculator')) {
-      return [
-        const FunctionalRequirement(
-          id: 'fr-001',
-          description: 'Perform addition',
-          acceptanceCriteria: ['Correctly adds two numbers'],
-        ),
-        const FunctionalRequirement(
-          id: 'fr-002',
-          description: 'Perform subtraction',
-          acceptanceCriteria: ['Correctly subtracts two numbers'],
-        ),
-        const FunctionalRequirement(
-          id: 'fr-003',
-          description: 'Perform multiplication',
-          acceptanceCriteria: ['Correctly multiplies two numbers'],
-        ),
-        const FunctionalRequirement(
-          id: 'fr-004',
-          description: 'Perform division',
-          acceptanceCriteria: [
-            'Correctly divides two numbers',
-            'Handles division by zero',
-          ],
-        ),
-        const FunctionalRequirement(
-          id: 'fr-005',
-          description: 'Display calculation result',
-          acceptanceCriteria: ['Result is visible and accurate'],
-        ),
-      ];
-    }
-
-    if (obj.contains('tracker') || obj.contains('habit')) {
-      return [
-        const FunctionalRequirement(
-          id: 'fr-001',
-          description: 'Log daily entries',
-          acceptanceCriteria: ['User can mark completion for today'],
-        ),
-        const FunctionalRequirement(
-          id: 'fr-002',
-          description: 'View history',
-          acceptanceCriteria: ['Shows past entries in a list or calendar'],
-        ),
-        const FunctionalRequirement(
-          id: 'fr-003',
-          description: 'Track streaks',
-          acceptanceCriteria: ['Calculates current and best streaks'],
-        ),
-        const FunctionalRequirement(
-          id: 'fr-004',
-          description: 'Persist data locally',
-          acceptanceCriteria: ['Data survives app restart'],
-        ),
-      ];
-    }
-
     return [
       FunctionalRequirement(
         id: 'fr-001',
@@ -208,25 +91,6 @@ class ExperienceSpecBuilder {
   StateRequirements _deriveStateRequirements(
     IntentUnderstanding understanding,
   ) {
-    final obj = understanding.objective.toLowerCase();
-
-    if (obj.contains('calculator')) {
-      return const StateRequirements(
-        description: 'Ephemeral calculation state',
-        requiresEphemeralState: true,
-        requiresPersistentState: false,
-      );
-    }
-
-    if (obj.contains('tracker') || obj.contains('habit')) {
-      return const StateRequirements(
-        description: 'Persistent tracking data',
-        requiresEphemeralState: true,
-        requiresPersistentState: true,
-        stateEntities: ['habit_entry', 'streak_data'],
-      );
-    }
-
     return const StateRequirements(
       description: 'Standard application state',
       requiresEphemeralState: true,
@@ -236,16 +100,6 @@ class ExperienceSpecBuilder {
   StorageRequirements _deriveStorageRequirements(
     IntentUnderstanding understanding,
   ) {
-    final obj = understanding.objective.toLowerCase();
-
-    if (obj.contains('tracker') || obj.contains('habit')) {
-      return const StorageRequirements(
-        description: 'Local SQLite database for habit data',
-        storageType: StorageType.localDatabase,
-        requiresDatabase: true,
-      );
-    }
-
     return const StorageRequirements(
       description: 'No persistent storage required',
       storageType: StorageType.none,
@@ -255,18 +109,6 @@ class ExperienceSpecBuilder {
   List<ServiceRequirement> _deriveServiceRequirements(
     IntentUnderstanding understanding,
   ) {
-    final obj = understanding.objective.toLowerCase();
-
-    if (obj.contains('tracker') || obj.contains('habit')) {
-      return const [
-        ServiceRequirement(
-          id: 'svc-001',
-          description: 'Local database access',
-          type: ServiceType.localDatabase,
-        ),
-      ];
-    }
-
     return const [];
   }
 
@@ -284,28 +126,15 @@ class ExperienceSpecBuilder {
   BackendClassification _deriveBackendClassification(
     IntentUnderstanding understanding,
   ) {
-    final obj = understanding.objective.toLowerCase();
-
-    if (obj.contains('tracker') || obj.contains('habit')) {
-      return BackendClassification.localDatabase;
-    }
-
     if (understanding.networkNeed == NetworkNeed.required) {
       return BackendClassification.externalApi;
     }
-
     return BackendClassification.none;
   }
 
   List<RequiredCapability> _deriveRequiredCapabilities(
     IntentUnderstanding understanding,
   ) {
-    final obj = understanding.objective.toLowerCase();
-
-    if (obj.contains('tracker') || obj.contains('habit')) {
-      return const [RequiredCapability(capabilityId: 'local-database')];
-    }
-
     return const [];
   }
 

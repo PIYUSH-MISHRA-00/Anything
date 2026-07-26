@@ -80,7 +80,7 @@ class SqliteExperienceRepository {
   final String _dbName;
 
   SqliteExperienceRepository({String dbName = 'anything_experiences.db'})
-      : _dbName = dbName;
+    : _dbName = dbName;
 
   Future<Database> get database async {
     if (_database != null) return _database!;

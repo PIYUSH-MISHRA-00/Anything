@@ -32,21 +32,6 @@ enum AppArchetype {
   hybrid,
 }
 
-/// Domain classification for semantic understanding.
-enum AppDomain {
-  notes,
-  habits,
-  finances,
-  education,
-  reading,
-  weather,
-  health,
-  productivity,
-  reference,
-  entertainment,
-  custom,
-}
-
 /// Persistence classification for offline behavior.
 enum OfflinePolicy {
   /// Works entirely without internet.

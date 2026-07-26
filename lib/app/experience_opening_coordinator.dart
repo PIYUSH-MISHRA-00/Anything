@@ -74,8 +74,7 @@ class ExperienceOpeningCoordinator {
     ExperienceProtectionService? protectionService,
   }) : _repository = repository ?? SqliteExperienceRepository(),
        _activity = activity ?? ActivityRepository(),
-       _protectionService =
-           protectionService ?? ExperienceProtectionService();
+       _protectionService = protectionService ?? ExperienceProtectionService();
 
   /// Open an Experience by its ID.
   ///
@@ -151,8 +150,7 @@ class ExperienceOpeningCoordinator {
     switch (result) {
       case UnprotectionSucceeded():
         // Validate the unprotected package
-        final validation =
-            ExperiencePackageValidator.validate(result.package);
+        final validation = ExperiencePackageValidator.validate(result.package);
         if (!validation.isValid) {
           return const OpenInvalid(message: 'App data is corrupted');
         }
@@ -184,8 +182,7 @@ class ExperienceOpeningCoordinator {
       case UnprotectionNotProtected():
         // Should not reach here if metadata.isProtected was true,
         // but handle gracefully: treat as unprotected.
-        final validation =
-            ExperiencePackageValidator.validate(result.package);
+        final validation = ExperiencePackageValidator.validate(result.package);
         if (!validation.isValid) {
           return const OpenInvalid(message: 'App data is corrupted');
         }

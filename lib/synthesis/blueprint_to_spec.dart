@@ -3,6 +3,9 @@
 /// Converts an AppBlueprint into an ExperienceSpec that the CreationEngine
 /// can consume. This bridges the semantic synthesis layer with the
 /// existing creation pipeline.
+///
+/// This converter does NOT contain domain-specific knowledge.
+/// All category/interaction/UI derivation is based on blueprint structure.
 library;
 
 import '../kernel/specification/experience_spec.dart';
@@ -17,7 +20,7 @@ class BlueprintToSpecConverter {
       id: blueprint.id,
       name: blueprint.name,
       description: blueprint.description,
-      category: _mapDomainToCategory(blueprint.domain),
+      category: _deriveCategory(blueprint),
       interactionModel: _deriveInteractionModel(blueprint),
       uiRequirements: _deriveUIRequirements(blueprint),
       functionalRequirements: _deriveFunctionalRequirements(blueprint),
@@ -26,7 +29,7 @@ class BlueprintToSpecConverter {
       dataEntities: _deriveDataEntities(blueprint),
       serviceRequirements: _deriveServiceRequirements(blueprint),
       networkRequirements: _deriveNetworkRequirements(blueprint),
-      permissionRequirements: _derivePermissionRequirements(blueprint),
+      permissionRequirements: const [],
       backendClassification: _deriveBackendClassification(blueprint),
       requiredCapabilities: _deriveRequiredCapabilities(blueprint),
       protectionRequirements: const ProtectionRequirements(),
@@ -38,31 +41,28 @@ class BlueprintToSpecConverter {
     );
   }
 
-  static ExperienceCategory _mapDomainToCategory(AppDomain domain) {
-    switch (domain) {
-      case AppDomain.notes:
-        return ExperienceCategory.productivity;
-      case AppDomain.habits:
-        return ExperienceCategory.health;
-      case AppDomain.finances:
-        return ExperienceCategory.finance;
-      case AppDomain.education:
-        return ExperienceCategory.education;
-      case AppDomain.reading:
-        return ExperienceCategory.reference;
-      case AppDomain.weather:
-        return ExperienceCategory.utility;
-      case AppDomain.health:
-        return ExperienceCategory.health;
-      case AppDomain.productivity:
-        return ExperienceCategory.productivity;
-      case AppDomain.reference:
-        return ExperienceCategory.reference;
-      case AppDomain.entertainment:
-        return ExperienceCategory.entertainment;
-      case AppDomain.custom:
-        return ExperienceCategory.unknown;
+  /// Derive category from blueprint structure and tags (not domain keywords).
+  static ExperienceCategory _deriveCategory(AppBlueprint blueprint) {
+    // Use archetypes to determine category
+    if (blueprint.archetypes.contains(AppArchetype.utility)) {
+      return ExperienceCategory.tool;
     }
+    if (blueprint.archetypes.contains(AppArchetype.dashboard)) {
+      return ExperienceCategory.productivity;
+    }
+    if (blueprint.archetypes.contains(AppArchetype.planner)) {
+      return ExperienceCategory.productivity;
+    }
+    if (blueprint.archetypes.contains(AppArchetype.reference)) {
+      return ExperienceCategory.reference;
+    }
+    if (blueprint.archetypes.contains(AppArchetype.tracker)) {
+      return ExperienceCategory.productivity;
+    }
+    if (blueprint.networkConfig != null) {
+      return ExperienceCategory.utility;
+    }
+    return ExperienceCategory.unknown;
   }
 
   static InteractionModel _deriveInteractionModel(AppBlueprint blueprint) {
@@ -71,6 +71,12 @@ class BlueprintToSpecConverter {
     }
     if (blueprint.archetypes.contains(AppArchetype.dashboard)) {
       return InteractionModel.dashboard;
+    }
+    if (blueprint.archetypes.contains(AppArchetype.planner)) {
+      return InteractionModel.formBased;
+    }
+    if (blueprint.archetypes.contains(AppArchetype.tracker)) {
+      return InteractionModel.formBased;
     }
     return InteractionModel.formBased;
   }
@@ -180,12 +186,6 @@ class BlueprintToSpecConverter {
       networkNeed: NetworkNeed.none,
       description: 'No network required',
     );
-  }
-
-  static List<PermissionRequirement> _derivePermissionRequirements(
-    AppBlueprint blueprint,
-  ) {
-    return [];
   }
 
   static BackendClassification _deriveBackendClassification(
