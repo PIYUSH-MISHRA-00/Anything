@@ -40,7 +40,10 @@ class _GroqWebViewScreenState extends State<GroqWebViewScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFF0F172A),
       appBar: AppBar(
-        title: const Text('Groq Console', style: TextStyle(color: Colors.white)),
+        title: const Text(
+          'Groq Console',
+          style: TextStyle(color: Colors.white),
+        ),
         backgroundColor: const Color(0xFF1E293B),
         iconTheme: const IconThemeData(color: Colors.white),
         actions: [

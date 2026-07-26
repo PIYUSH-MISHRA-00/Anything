@@ -25,7 +25,10 @@ class AISettingsScreen extends StatelessWidget {
             title: 'Groq AI Configuration',
             subtitle: 'Manage API keys and AI models',
             icon: Icons.memory,
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const GroqSettingsScreen())),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const GroqSettingsScreen()),
+            ),
           ),
           const SizedBox(height: 12),
           _buildSettingsCard(
@@ -33,7 +36,10 @@ class AISettingsScreen extends StatelessWidget {
             title: 'Kaalka Security',
             subtitle: 'Time-derived encryption keys',
             icon: Icons.security,
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const KaalkaSecurityScreen())),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const KaalkaSecurityScreen()),
+            ),
           ),
           // Additional mock settings
           const SizedBox(height: 12),
@@ -42,7 +48,10 @@ class AISettingsScreen extends StatelessWidget {
             title: 'Personal Context',
             subtitle: 'Manage what the AI learns about you',
             icon: Icons.person_outline,
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PersonalContextScreen())),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const PersonalContextScreen()),
+            ),
           ),
           const SizedBox(height: 12),
           _buildSettingsCard(
@@ -50,14 +59,25 @@ class AISettingsScreen extends StatelessWidget {
             title: 'Skills Marketplace',
             subtitle: 'Discover and install AI skills',
             icon: Icons.extension_outlined,
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SkillsMarketplaceScreen())),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const SkillsMarketplaceScreen(),
+              ),
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildSettingsCard(BuildContext context, {required String title, required String subtitle, required IconData icon, required VoidCallback onTap}) {
+  Widget _buildSettingsCard(
+    BuildContext context, {
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
     return Card(
       color: Colors.white.withValues(alpha: 0.05),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -70,9 +90,19 @@ class AISettingsScreen extends StatelessWidget {
           ),
           child: Icon(icon, color: Colors.blueAccent),
         ),
-        title: Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: Text(
+          title,
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         subtitle: Text(subtitle, style: const TextStyle(color: Colors.white54)),
-        trailing: const Icon(Icons.arrow_forward_ios, color: Colors.white54, size: 16),
+        trailing: const Icon(
+          Icons.arrow_forward_ios,
+          color: Colors.white54,
+          size: 16,
+        ),
         onTap: onTap,
       ),
     );

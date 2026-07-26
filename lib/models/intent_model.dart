@@ -24,12 +24,12 @@ class IntentModel {
   }
 
   Map<String, dynamic> toJson() => {
-        'action': action,
-        'category': category,
-        'tools_needed': toolsNeeded,
-        'confidence': confidence,
-        'entity_subject': entitySubject,
-      };
+    'action': action,
+    'category': category,
+    'tools_needed': toolsNeeded,
+    'confidence': confidence,
+    'entity_subject': entitySubject,
+  };
 
   bool get requiresTools => toolsNeeded.isNotEmpty;
   bool get isHighConfidence => confidence > 0.7;

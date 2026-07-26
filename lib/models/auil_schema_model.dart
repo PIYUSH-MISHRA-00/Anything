@@ -1,4 +1,4 @@
-﻿class AUILSchema {
+class AUILSchema {
   final String layout;
   final List<AUILComponent> components;
 
@@ -6,8 +6,10 @@
 
   factory AUILSchema.fromJson(Map<String, dynamic> json) {
     var componentList = json['components'] as List? ?? [];
-    List<AUILComponent> components = componentList.map((c) => AUILComponent.fromJson(c)).toList();
-    
+    List<AUILComponent> components = componentList
+        .map((c) => AUILComponent.fromJson(c))
+        .toList();
+
     return AUILSchema(
       layout: json['layout'] ?? 'dashboard',
       components: components,

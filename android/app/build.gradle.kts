@@ -5,10 +5,16 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+configurations.all {
+    resolutionStrategy {
+        force("androidx.appcompat:appcompat:1.6.1")
+    }
+}
+
 android {
     namespace = "com.anything.anything"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    ndkVersion = "27.0.12077973"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11

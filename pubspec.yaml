@@ -34,9 +34,11 @@ dependencies:
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
-  kaalka: 5.0.0
+  # Canonical protection library
+  kaalka: ^5.0.0
+  # Canonical knowledge extraction library
+  webweavex: ^3.0.0
   flutter_secure_storage: ^10.0.0
-  home_widget: ^0.9.0
   fl_chart: ^1.1.1
   flutter_riverpod: ^3.2.1
   http: ^1.6.0
@@ -50,10 +52,15 @@ dependencies:
   shimmer: ^3.0.0
   record: ^6.2.0
   webview_flutter: ^4.10.0
+  uuid: ^4.5.1
+  shared_preferences: ^2.3.4
+  speech_to_text: ^7.4.0
+  crypto: ^3.0.3
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  sqflite_common_ffi: ^2.3.0
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is

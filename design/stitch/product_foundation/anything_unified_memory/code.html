@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Memory Interface - Contextual Clusters</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "outline-variant": "#c5c5d4",
+                        "surface-container-highest": "#d3e4fe",
+                        "background": "#f8f9ff",
+                        "surface-variant": "#d3e4fe",
+                        "surface-container-lowest": "#ffffff",
+                        "primary": "#11278a",
+                        "on-secondary-fixed-variant": "#2f2ebe",
+                        "surface": "#f8f9ff",
+                        "on-surface-variant": "#454652",
+                        "primary-container": "#2e41a1",
+                        "on-primary-fixed-variant": "#2a3d9d",
+                        "on-tertiary-fixed": "#171c23",
+                        "on-error": "#ffffff",
+                        "on-tertiary-container": "#b6bbc5",
+                        "outline": "#757683",
+                        "secondary-fixed-dim": "#c0c1ff",
+                        "secondary-fixed": "#e1e0ff",
+                        "surface-bright": "#f8f9ff",
+                        "on-tertiary": "#ffffff",
+                        "error": "#ba1a1a",
+                        "on-primary-fixed": "#00105a",
+                        "on-tertiary-fixed-variant": "#424750",
+                        "tertiary-fixed": "#dee2ed",
+                        "on-background": "#0b1c30",
+                        "on-surface": "#0b1c30",
+                        "inverse-on-surface": "#eaf1ff",
+                        "secondary": "#4648d4",
+                        "primary-fixed": "#dee0ff",
+                        "primary-fixed-dim": "#bac3ff",
+                        "error-container": "#ffdad6",
+                        "surface-dim": "#cbdbf5",
+                        "on-secondary": "#ffffff",
+                        "inverse-surface": "#213145",
+                        "surface-container": "#e5eeff",
+                        "on-error-container": "#93000a",
+                        "secondary-container": "#6063ee",
+                        "inverse-primary": "#bac3ff",
+                        "surface-container-low": "#eff4ff",
+                        "on-secondary-fixed": "#07006c",
+                        "surface-container-high": "#dce9ff",
+                        "on-secondary-container": "#fffbff",
+                        "tertiary": "#2f343d",
+                        "surface-tint": "#4456b6",
+                        "tertiary-fixed-dim": "#c2c6d1",
+                        "on-primary-container": "#aab6ff",
+                        "tertiary-container": "#464b54",
+                        "on-primary": "#ffffff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "1rem",
+                        "lg": "2rem",
+                        "xl": "3rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "margin-desktop": "40px",
+                        "container-max": "1280px",
+                        "margin-mobile": "16px",
+                        "gutter": "24px",
+                        "unit": "8px"
+                    },
+                    "fontFamily": {
+                        "label-sm": ["Public Sans"],
+                        "link-relationship": ["Public Sans"],
+                        "body-md": ["Public Sans"],
+                        "display-lg": ["Public Sans"],
+                        "display-lg-mobile": ["Public Sans"],
+                        "headline-md": ["Public Sans"]
+                    },
+                    "fontSize": {
+                        "label-sm": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "link-relationship": ["14px", { "lineHeight": "20px", "fontWeight": "500" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "display-lg-mobile": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style type="text/tailwindcss">
+        @layer utilities {
+            .glass-panel {
+                @apply bg-surface/80 backdrop-blur-xl border border-black/5;
+            }
+            .memory-glow {
+                box-shadow: 0px 4px 20px rgba(46, 65, 161, 0.15);
+            }
+            .connector-line {
+                @apply w-px h-8 bg-outline-variant/40 mx-auto;
+            }
+            .horizontal-connector {
+                @apply h-px w-8 bg-outline-variant/40 my-auto;
+            }
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background min-h-screen antialiased selection:bg-primary-fixed selection:text-on-primary-fixed">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-surface/80 dark:bg-surface/80 backdrop-blur-xl border-b border-black/5 dark:border-white/5 flex items-center justify-between px-margin-mobile w-full h-16 transition-transform duration-200">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary dark:text-primary-fixed-dim hover:opacity-80 transition-opacity cursor-pointer">vaccines</span>
+<h1 class="font-headline-md text-headline-md font-bold tracking-tight text-primary dark:text-primary-fixed-dim">Anything</h1>
+</div>
+<span class="material-symbols-outlined text-primary dark:text-primary-fixed-dim hover:opacity-80 transition-opacity cursor-pointer">settings_brightness</span>
+</header>
+<!-- Main Canvas -->
+<main class="pt-24 pb-32 px-margin-mobile md:px-margin-desktop max-w-container-max mx-auto space-y-gutter flex flex-col">
+<!-- Memory Pulse -->
+<section class="flex justify-center w-full animate-fade-in-down">
+<div class="inline-flex items-center gap-2 bg-surface-container-highest px-4 py-2 rounded-full border border-surface-tint/10 shadow-sm">
+<div class="relative flex h-3 w-3">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+<span class="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Memory Neural Link Active</span>
+</div>
+</section>
+<!-- Current Focus -->
+<section class="flex flex-col gap-unit">
+<h2 class="font-headline-md text-headline-md text-on-background pl-2">Current Focus</h2>
+<div class="relative glass-panel rounded-xl p-6 md:p-8 memory-glow border-primary/20">
+<div class="flex flex-col gap-6">
+<!-- Central Node -->
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-full bg-primary flex items-center justify-center shadow-lg">
+<span class="material-symbols-outlined text-on-primary" style="font-variation-settings: 'FILL' 1;">work</span>
+</div>
+<div>
+<h3 class="font-display-lg-mobile md:font-display-lg text-display-lg-mobile md:text-display-lg text-primary">Project Alpha: Startup</h3>
+<span class="font-label-sm text-label-sm text-secondary-container bg-secondary-fixed/50 px-2 py-1 rounded-full inline-block mt-1">Active Cluster</span>
+</div>
+</div>
+<div class="connector-line -mt-2 -mb-2 ml-5"></div>
+<!-- Nested Relationships Grid -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 pl-10 md:pl-4">
+<!-- Node: Code -->
+<div class="flex flex-row md:flex-col items-center md:items-start gap-3 bg-surface-container-lowest p-4 rounded-lg border border-outline-variant/30 hover:shadow-md transition-shadow cursor-pointer group">
+<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center group-hover:bg-primary-fixed transition-colors">
+<span class="material-symbols-outlined text-primary">code</span>
+</div>
+<div class="flex flex-col">
+<span class="font-link-relationship text-link-relationship text-on-surface">Core Infrastructure</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Flutter &amp; Firebase</span>
+</div>
+</div>
+<!-- Node: Brand Assets -->
+<div class="flex flex-row md:flex-col items-center md:items-start gap-3 bg-surface-container-lowest p-4 rounded-lg border border-outline-variant/30 hover:shadow-md transition-shadow cursor-pointer group">
+<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center group-hover:bg-primary-fixed transition-colors">
+<span class="material-symbols-outlined text-primary">palette</span>
+</div>
+<div class="flex flex-col">
+<span class="font-link-relationship text-link-relationship text-on-surface">Brand Identity</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Figma &amp; Assets</span>
+</div>
+</div>
+<!-- Node: Market Research -->
+<div class="flex flex-row md:flex-col items-center md:items-start gap-3 bg-surface-container-lowest p-4 rounded-lg border border-outline-variant/30 hover:shadow-md transition-shadow cursor-pointer group">
+<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center group-hover:bg-primary-fixed transition-colors">
+<span class="material-symbols-outlined text-primary">analytics</span>
+</div>
+<div class="flex flex-col">
+<span class="font-link-relationship text-link-relationship text-on-surface">Market Analysis</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Competitor Data</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Recents (Contextual Grouping) -->
+<section class="flex flex-col gap-unit mt-6">
+<div class="flex items-center justify-between pl-2 pr-2">
+<h2 class="font-headline-md text-headline-md text-on-background">Recents: Creative Exploration</h2>
+<span class="material-symbols-outlined text-outline cursor-pointer hover:text-primary transition-colors">more_horiz</span>
+</div>
+<div class="flex flex-nowrap overflow-x-auto pb-4 gap-4 snap-x hide-scrollbar">
+<!-- Recent Item 1 -->
+<div class="snap-center shrink-0 w-64 glass-panel rounded-lg overflow-hidden flex flex-col group cursor-pointer hover:memory-glow transition-all duration-300">
+<div class="h-32 bg-surface-container-high relative flex items-center justify-center">
+<span class="material-symbols-outlined text-4xl text-primary/50">smartphone</span>
+<div class="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent"></div>
+</div>
+<div class="p-4 flex flex-col gap-1">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase">Flutter Repository</span>
+<span class="font-link-relationship text-link-relationship text-on-surface truncate">Onboarding_Flow_v2.dart</span>
+</div>
+</div>
+<!-- Recent Item 2 -->
+<div class="snap-center shrink-0 w-64 glass-panel rounded-lg overflow-hidden flex flex-col group cursor-pointer hover:memory-glow transition-all duration-300">
+<div class="h-32 bg-secondary-fixed-dim/20 relative flex items-center justify-center">
+<span class="material-symbols-outlined text-4xl text-secondary/50">description</span>
+<div class="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent"></div>
+</div>
+<div class="p-4 flex flex-col gap-1">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase">PDF Document</span>
+<span class="font-link-relationship text-link-relationship text-on-surface truncate">User_Testing_Results_Q3.pdf</span>
+</div>
+</div>
+<!-- Recent Item 3 -->
+<div class="snap-center shrink-0 w-64 glass-panel rounded-lg overflow-hidden flex flex-col group cursor-pointer hover:memory-glow transition-all duration-300">
+<div class="h-32 relative">
+<img class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" data-alt="A highly abstract, ethereal digital rendering of a startup ecosystem, featuring glowing neon nodes connecting in a vast, dark architectural space. Soft, ambient volumetric lighting illuminates the scene with deep blues and purples, conveying a sense of advanced artificial intelligence and modern technological innovation in a pristine, premium glassmorphic style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDmeRLdFWETbjtMOPhFZalFiBcHf9QLVTwDvKa0fkGdX2bgNA60GO6OKvWcJfGwBiu9JkmF-Sz_WxNPfhNs7zJfzR6msj6zYOdagifQ8kWdWOt2Y4ombPAVUa-c5_roFGmxx_YoMAdkMf-3pvdWnEeDELUpekvJiiMo_BR7j1tVkKiaG0Oh5fCk4lzBRjPpusoBJkQenF91av2AkiyXlgU4uPuk2TEiW_mFmGw1ApYTAgezIQIPfhFRHmIUN-6smvRFDWY0tb1YoeQ"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent"></div>
+<span class="absolute bottom-2 left-2 material-symbols-outlined text-white text-sm">image</span>
+</div>
+<div class="p-4 flex flex-col gap-1">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase">Midjourney Gen</span>
+<span class="font-link-relationship text-link-relationship text-on-surface truncate">Abstract_Concept_Art.png</span>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-md rounded-full bg-surface-container-lowest/70 dark:bg-tertiary/70 backdrop-blur-2xl border border-black/5 dark:border-white/5 shadow-lg z-50 flex justify-around items-center p-2 mx-auto">
+<!-- Home -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant/70 dark:text-on-tertiary-container/70 px-4 py-1.5 hover:text-primary dark:hover:text-primary-fixed-dim transition-all duration-200 ease-out group" href="#">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform">tap_and_play</span>
+<span class="font-label-sm text-label-sm mt-1">Home</span>
+</a>
+<!-- My Apps -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant/70 dark:text-on-tertiary-container/70 px-4 py-1.5 hover:text-primary dark:hover:text-primary-fixed-dim transition-all duration-200 ease-out group" href="#">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform">apps</span>
+<span class="font-label-sm text-label-sm mt-1">My Apps</span>
+</a>
+<!-- Activity -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant/70 dark:text-on-tertiary-container/70 px-4 py-1.5 hover:text-primary dark:hover:text-primary-fixed-dim transition-all duration-200 ease-out group" href="#">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform">insights</span>
+<span class="font-label-sm text-label-sm mt-1">Activity</span>
+</a>
+<!-- Workspace (Active for this specific contextual interface) -->
+<a class="flex flex-col items-center justify-center bg-primary dark:bg-primary-container text-on-primary dark:text-on-primary-container rounded-full px-4 py-1.5 transition-all duration-300 scale-90" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">grid_view</span>
+<span class="font-label-sm text-label-sm mt-1">Workspace</span>
+</a>
+</nav>
+<style>
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</body></html>

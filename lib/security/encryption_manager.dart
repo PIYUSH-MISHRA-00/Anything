@@ -32,26 +32,16 @@ class EncryptionManager {
     if (_useLiveTime) {
       return _kaalkaService.generateLiveSeed();
     }
-
-    return _kaalkaService.generateSeed(
-      _seedHours,
-      _seedMinutes,
-      _seedSeconds,
-    );
+    return _kaalkaService.generateSeed(_seedHours, _seedMinutes, _seedSeconds);
   }
 
   Future<String> encryptData(String plainText) async {
     final seed = _currentSeed();
-    final cipher = _kaalkaService.createCipher();
-
-    return await cipher.encrypt(plainText, timeKey: seed);
+    return await _kaalkaService.encryptText(plainText, timeKey: seed);
   }
 
   Future<String> decryptData(String cipherText) async {
     final seed = _currentSeed();
-    final cipher = _kaalkaService.createCipher();
-
-    final result = await cipher.decrypt(cipherText, timeKey: seed);
-    return result.toString();
+    return await _kaalkaService.decryptText(cipherText, timeKey: seed);
   }
 }

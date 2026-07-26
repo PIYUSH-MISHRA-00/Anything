@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Anything - Performance Profiler</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@500;600&amp;family=Inter:wght@400;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-tint": "#4456b6",
+                    "on-surface-variant": "#454652",
+                    "tertiary-container": "#4b4b44",
+                    "on-tertiary": "#ffffff",
+                    "surface": "#fcf9f8",
+                    "surface-container": "#f0eded",
+                    "on-secondary-fixed": "#1b1c1a",
+                    "on-background": "#1c1b1b",
+                    "on-error-container": "#93000a",
+                    "on-secondary-fixed-variant": "#464744",
+                    "inverse-surface": "#313030",
+                    "surface-dim": "#dcd9d9",
+                    "secondary-fixed-dim": "#c7c7c3",
+                    "inverse-primary": "#bac3ff",
+                    "outline-variant": "#c5c5d4",
+                    "on-secondary-container": "#626360",
+                    "on-tertiary-container": "#bcbbb2",
+                    "background": "#fcf9f8",
+                    "secondary-fixed": "#e3e2df",
+                    "surface-container-high": "#eae7e7",
+                    "on-tertiary-fixed-variant": "#474741",
+                    "surface-container-lowest": "#ffffff",
+                    "on-primary-fixed": "#00105a",
+                    "surface-variant": "#e5e2e1",
+                    "outline": "#757683",
+                    "on-error": "#ffffff",
+                    "inverse-on-surface": "#f3f0ef",
+                    "error": "#ba1a1a",
+                    "primary-fixed-dim": "#bac3ff",
+                    "primary-container": "#2e41a1",
+                    "secondary-container": "#e0e0dc",
+                    "on-primary": "#ffffff",
+                    "tertiary-fixed": "#e5e3d9",
+                    "surface-container-highest": "#e5e2e1",
+                    "on-primary-fixed-variant": "#2a3d9d",
+                    "on-primary-container": "#aab6ff",
+                    "on-secondary": "#ffffff",
+                    "tertiary": "#34342e",
+                    "primary-fixed": "#dee0ff",
+                    "primary": "#11278a",
+                    "on-surface": "#1c1b1b",
+                    "secondary": "#5e5f5c",
+                    "error-container": "#ffdad6",
+                    "surface-container-low": "#f6f3f2",
+                    "surface-bright": "#fcf9f8",
+                    "on-tertiary-fixed": "#1b1c17",
+                    "tertiary-fixed-dim": "#c8c7be"
+            },
+            "borderRadius": {
+                    "DEFAULT": "1rem",
+                    "lg": "2rem",
+                    "xl": "3rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "gutter": "24px",
+                    "stack-md": "32px",
+                    "stack-lg": "64px",
+                    "stack-sm": "16px",
+                    "container-padding": "32px",
+                    "unit": "8px"
+            },
+            "fontFamily": {
+                    "headline-lg-mobile": ["Public Sans"],
+                    "label-sm": ["Inter"],
+                    "headline-md": ["Public Sans"],
+                    "body-md": ["Inter"],
+                    "body-lg": ["Inter"],
+                    "headline-lg": ["Public Sans"]
+            },
+            "fontSize": {
+                    "headline-lg-mobile": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "label-sm": ["12px", {"lineHeight": "1.2", "letterSpacing": "0.08em", "fontWeight": "600"}],
+                    "headline-md": ["24px", {"lineHeight": "1.3", "letterSpacing": "0em", "fontWeight": "500"}],
+                    "body-md": ["16px", {"lineHeight": "1.5", "letterSpacing": "0.01em", "fontWeight": "400"}],
+                    "body-lg": ["18px", {"lineHeight": "1.6", "letterSpacing": "0.01em", "fontWeight": "400"}],
+                    "headline-lg": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "600"}]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+        .glass-card {
+            background: linear-gradient(135deg, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0.4) 100%);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255,255,255,0.6);
+            box-shadow: 0 8px 32px rgba(17, 39, 138, 0.05);
+        }
+        .metric-sparkline {
+            width: 100%;
+            height: 48px;
+            background: repeating-linear-gradient(90deg, transparent, transparent 10px, rgba(17, 39, 138, 0.03) 10px, rgba(17, 39, 138, 0.03) 20px);
+            position: relative;
+            overflow: hidden;
+            border-radius: 8px;
+        }
+        .metric-sparkline::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 60%;
+            background: linear-gradient(0deg, rgba(17, 39, 138, 0.1) 0%, transparent 100%);
+        }
+        .violation-pulse {
+            animation: pulse-border 2s infinite;
+        }
+        @keyframes pulse-border {
+            0% { border-color: rgba(186, 26, 26, 0.2); }
+            50% { border-color: rgba(186, 26, 26, 0.6); box-shadow: 0 0 15px rgba(186, 26, 26, 0.1); }
+            100% { border-color: rgba(186, 26, 26, 0.2); }
+        }
+        .progress-bar-fill {
+            transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background antialiased min-h-screen font-body-md selection:bg-primary-container selection:text-on-primary-container">
+<!-- TopAppBar -->
+<header class="bg-surface/80 dark:bg-surface/80 backdrop-blur-md docked full-width top-0 sticky shadow-sm z-40 transition-all">
+<div class="flex justify-between items-center px-container-padding h-20 w-full max-w-[1440px] mx-auto">
+<div class="flex items-center gap-unit cursor-pointer hover:scale-105 transition-transform duration-200">
+<img alt="User profile" class="w-10 h-10 rounded-full border-2 border-surface-container" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDr9TXSAOUbBI9YEAkyIpedMVU-e9_JkoczsS_PXHlOY4mkigXT-1CtHQAMvouudSDh-dMfLAhf3zZM-yRVAA4H7kz6mL8QS5DKNuk8jxwMeALGftGSA_bl2R39dKl_I1FL9ROL2pIqwwRyboKyaFFpJ8iHJJfzLVFQCFDJegLtj6zXeCzKj4T7cpo3z-Z0VUcThUx1NCvkWd3q2I9PCEphaT_JRo9mvR8GKg_T29jD5JFaG1cDwr5_omEay_hGPYVq-oEFeq9NCCw"/>
+</div>
+<div class="font-headline-md text-headline-md font-semibold text-primary dark:text-inverse-primary">
+                Anything
+            </div>
+<button aria-label="Toggle dark mode" class="w-10 h-10 flex items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-container-high transition-colors hover:scale-105">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">dark_mode</span>
+</button>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="max-w-[1440px] mx-auto px-container-padding py-stack-md lg:py-stack-lg flex flex-col gap-stack-lg mb-24 md:mb-0">
+<!-- Header Section -->
+<section class="flex flex-col md:flex-row justify-between items-start md:items-end gap-stack-sm">
+<div>
+<h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background mb-unit">Performance Profiler</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl">Real-time monitoring of application vitals, resource utilization, and budget constraints.</p>
+</div>
+<div class="flex items-center gap-3 bg-surface-container-low px-4 py-2 rounded-full border border-surface-variant">
+<span class="w-3 h-3 rounded-full bg-primary animate-pulse"></span>
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Live Telemetry</span>
+</div>
+</section>
+<!-- Bento Grid Layout -->
+<div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-gutter">
+<!-- Key Metrics Column (Spans 1 cols on desktop, full on mobile) -->
+<div class="flex flex-col gap-gutter lg:col-span-1">
+<!-- Startup Time Card -->
+<div class="glass-card rounded-3xl p-stack-sm flex flex-col justify-between h-[200px] hover:shadow-md transition-shadow">
+<div class="flex justify-between items-start">
+<div class="flex items-center gap-2 text-on-surface-variant">
+<span class="material-symbols-outlined text-[20px]">speed</span>
+<h3 class="font-body-md text-body-md font-medium">App Startup</h3>
+</div>
+<span class="text-[11px] font-semibold px-2 py-1 bg-surface-container rounded-md text-secondary">WARM</span>
+</div>
+<div>
+<div class="flex items-baseline gap-2 mb-2">
+<span class="font-headline-md text-headline-md text-on-background font-semibold">142</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">ms</span>
+</div>
+<div class="metric-sparkline">
+<!-- Faux SVG line for sparkline -->
+<svg class="absolute bottom-0 w-full h-full" preserveaspectratio="none" viewbox="0 0 100 40">
+<path d="M0 30 Q 10 20, 20 35 T 40 25 T 60 30 T 80 15 T 100 20" fill="none" stroke="#11278a" stroke-linecap="round" stroke-width="2"></path>
+</svg>
+</div>
+</div>
+</div>
+<!-- Frame Rate Card -->
+<div class="glass-card rounded-3xl p-stack-sm flex flex-col justify-between h-[200px] hover:shadow-md transition-shadow">
+<div class="flex justify-between items-start">
+<div class="flex items-center gap-2 text-on-surface-variant">
+<span class="material-symbols-outlined text-[20px]">movie_filter</span>
+<h3 class="font-body-md text-body-md font-medium">Render Rate</h3>
+</div>
+<span class="text-[11px] font-semibold px-2 py-1 bg-surface-container rounded-md text-secondary">TARGET: 120</span>
+</div>
+<div>
+<div class="flex items-baseline gap-2 mb-2">
+<span class="font-headline-md text-headline-md text-on-background font-semibold">118</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">FPS</span>
+</div>
+<div class="metric-sparkline">
+<svg class="absolute bottom-0 w-full h-full" preserveaspectratio="none" viewbox="0 0 100 40">
+<path d="M0 10 L 20 12 L 40 5 L 60 15 L 80 8 L 100 10" fill="none" stroke="#11278a" stroke-linecap="round" stroke-width="2"></path>
+</svg>
+</div>
+</div>
+</div>
+</div>
+<!-- Main Resource Visualization (Spans 2-3 cols) -->
+<div class="lg:col-span-2 md:col-span-2 flex flex-col gap-gutter">
+<div class="glass-card rounded-3xl p-stack-md flex-1 flex flex-col relative overflow-hidden">
+<div class="flex justify-between items-center mb-stack-sm z-10">
+<h2 class="font-headline-md text-headline-md text-on-background">Resource Utilization</h2>
+<button class="text-primary font-label-sm text-label-sm uppercase hover:underline">View Detailed Logs</button>
+</div>
+<div class="flex flex-col gap-6 z-10 mt-auto">
+<!-- CPU Usage -->
+<div>
+<div class="flex justify-between mb-2">
+<span class="font-body-md text-body-md text-on-surface-variant flex items-center gap-2"><span class="material-symbols-outlined text-[18px]">memory</span> CPU</span>
+<span class="font-body-md text-body-md font-semibold text-on-background">42%</span>
+</div>
+<div class="w-full bg-surface-container-high rounded-full h-3 overflow-hidden border border-surface-variant">
+<div class="bg-primary h-3 rounded-full progress-bar-fill" style="width: 42%"></div>
+</div>
+</div>
+<!-- Memory Usage -->
+<div>
+<div class="flex justify-between mb-2">
+<span class="font-body-md text-body-md text-on-surface-variant flex items-center gap-2"><span class="material-symbols-outlined text-[18px]">storage</span> Memory Allocation</span>
+<span class="font-body-md text-body-md font-semibold text-on-background">840 MB / 2 GB</span>
+</div>
+<div class="w-full bg-surface-container-high rounded-full h-3 overflow-hidden border border-surface-variant">
+<div class="bg-surface-tint h-3 rounded-full progress-bar-fill" style="width: 42%"></div>
+</div>
+</div>
+<!-- Battery Impact -->
+<div>
+<div class="flex justify-between mb-2">
+<span class="font-body-md text-body-md text-on-surface-variant flex items-center gap-2"><span class="material-symbols-outlined text-[18px]">battery_charging_full</span> Power Draw</span>
+<span class="font-body-md text-body-md font-semibold text-on-background">Low Impact</span>
+</div>
+<div class="w-full bg-surface-container-high rounded-full h-3 overflow-hidden border border-surface-variant">
+<div class="bg-secondary h-3 rounded-full progress-bar-fill" style="width: 15%"></div>
+</div>
+</div>
+</div>
+<!-- Decorative background element -->
+<div class="absolute -right-20 -bottom-20 w-64 h-64 bg-primary-container rounded-full opacity-5 blur-3xl"></div>
+</div>
+</div>
+<!-- Alerts & Violations (Spans 1 col) -->
+<div class="lg:col-span-1 md:col-span-3 flex flex-col gap-gutter">
+<div class="glass-card rounded-3xl p-stack-sm flex-1 flex flex-col border border-error-container violation-pulse">
+<div class="flex items-center gap-3 mb-4">
+<div class="w-10 h-10 rounded-full bg-error-container text-on-error-container flex items-center justify-center">
+<span class="material-symbols-outlined">warning</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-background">Budget Violations</h3>
+</div>
+<div class="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+<div class="flex flex-col gap-3">
+<!-- Violation Item -->
+<div class="bg-surface p-4 rounded-2xl border border-surface-variant hover:shadow-sm transition-shadow">
+<div class="flex justify-between items-start mb-2">
+<span class="font-label-sm text-label-sm text-error uppercase">Latency Spike</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">2m ago</span>
+</div>
+<p class="font-body-md text-body-md text-on-background mb-3">Execution latency exceeded 50ms budget during model inference.</p>
+<div class="bg-surface-container-low p-3 rounded-xl">
+<p class="font-body-md text-body-md text-on-surface-variant text-[14px]">
+<strong class="text-on-background block mb-1">Suggested Optimization:</strong>
+                                        Context Pruning suggested to reduce NPU load prior to generation phase.
+                                    </p>
+</div>
+</div>
+</div>
+</div>
+<button class="mt-4 w-full py-3 bg-surface-container rounded-full font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider hover:bg-surface-variant transition-colors">Acknowledge All</button>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar (Hidden on Desktop) -->
+<nav class="bg-surface/90 dark:bg-surface/90 backdrop-blur-xl fixed bottom-0 w-full z-50 rounded-t-lg shadow-[0_-4px_20px_rgba(0,0,0,0.05)] border-t-0 bg-surface-container-low dark:bg-surface-container-lowest md:hidden">
+<div class="flex justify-around items-center px-4 py-4 max-w-[1440px] mx-auto">
+<div class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-secondary-container/50 transition-colors rounded-full px-4 py-2 cursor-pointer">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">home</span>
+<span class="font-label-sm text-label-sm mt-1">Home</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-secondary-container/50 transition-colors rounded-full px-4 py-2 cursor-pointer">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">add_circle</span>
+<span class="font-label-sm text-label-sm mt-1">Create</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-secondary-container/50 transition-colors rounded-full px-4 py-2 cursor-pointer">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">apps</span>
+<span class="font-label-sm text-label-sm mt-1">Library</span>
+</div>
+<div class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full px-6 py-2 scale-110 transition-transform duration-300 cursor-pointer">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">settings</span>
+<span class="font-label-sm text-label-sm mt-1">Settings</span>
+</div>
+</div>
+</nav>
+<script>
+        // Simple animation trigger for progress bars on load
+        document.addEventListener('DOMContentLoaded', () => {
+            const bars = document.querySelectorAll('.progress-bar-fill');
+            bars.forEach(bar => {
+                const targetWidth = bar.style.width;
+                bar.style.width = '0%';
+                setTimeout(() => {
+                    bar.style.width = targetWidth;
+                }, 100);
+            });
+        });
+    </script>
+</body></html>

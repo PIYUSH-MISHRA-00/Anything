@@ -18,7 +18,8 @@ class WebSearchService {
     // Use AI to generate simulated search results based on knowledge
     final response = await _groq.generateResponse(
       prompt: 'Search query: $query',
-      systemPrompt: '''You are a search results generator. Given a query, provide 3-5 relevant search results.
+      systemPrompt:
+          '''You are a search results generator. Given a query, provide 3-5 relevant search results.
 
 Output ONLY a valid JSON array. No markdown. No explanation.
 
@@ -35,14 +36,24 @@ Format:
       if (startIdx != -1 && endIdx != -1) {
         final jsonStr = response.substring(startIdx, endIdx + 1);
         final List<dynamic> decoded = jsonDecode(jsonStr);
-        return decoded.map((item) => Map<String, String>.from(
-          (item as Map).map((k, v) => MapEntry(k.toString(), v.toString())),
-        )).toList();
+        return decoded
+            .map(
+              (item) => Map<String, String>.from(
+                (item as Map).map(
+                  (k, v) => MapEntry(k.toString(), v.toString()),
+                ),
+              ),
+            )
+            .toList();
       }
     } catch (_) {}
 
     return [
-      {'title': 'Search result for: $query', 'snippet': 'AI-generated result', 'url': ''},
+      {
+        'title': 'Search result for: $query',
+        'snippet': 'AI-generated result',
+        'url': '',
+      },
     ];
   }
 }

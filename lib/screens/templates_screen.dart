@@ -10,7 +10,10 @@ class TemplatesScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFF0F172A),
       appBar: AppBar(
-        title: const Text('Templates', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: const Text(
+          'Templates',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
         backgroundColor: Colors.transparent,
         elevation: 0,
         automaticallyImplyLeading: false,
@@ -26,24 +29,69 @@ class TemplatesScreen extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             _buildCategory(context, 'Productivity', [
-              _TemplateItem(Icons.rocket_launch, 'Startup Planner', 'Business plan, pitch deck, market analysis', Colors.blueAccent),
-              _TemplateItem(Icons.school, 'Study Dashboard', 'Notes, flashcards, progress tracking', Colors.purpleAccent),
-              _TemplateItem(Icons.task_alt, 'Project Manager', 'Kanban boards, timelines, team tasks', Colors.tealAccent),
+              _TemplateItem(
+                Icons.rocket_launch,
+                'Startup Planner',
+                'Business plan, pitch deck, market analysis',
+                Colors.blueAccent,
+              ),
+              _TemplateItem(
+                Icons.school,
+                'Study Dashboard',
+                'Notes, flashcards, progress tracking',
+                Colors.purpleAccent,
+              ),
+              _TemplateItem(
+                Icons.task_alt,
+                'Project Manager',
+                'Kanban boards, timelines, team tasks',
+                Colors.tealAccent,
+              ),
             ]),
             const SizedBox(height: 24),
             _buildCategory(context, 'Finance', [
-              _TemplateItem(Icons.currency_bitcoin, 'Crypto Tracker', 'Live prices, portfolio, alerts', Colors.orangeAccent),
-              _TemplateItem(Icons.account_balance, 'Budget Planner', 'Income, expenses, savings goals', Colors.greenAccent),
+              _TemplateItem(
+                Icons.currency_bitcoin,
+                'Crypto Tracker',
+                'Live prices, portfolio, alerts',
+                Colors.orangeAccent,
+              ),
+              _TemplateItem(
+                Icons.account_balance,
+                'Budget Planner',
+                'Income, expenses, savings goals',
+                Colors.greenAccent,
+              ),
             ]),
             const SizedBox(height: 24),
             _buildCategory(context, 'Health & Lifestyle', [
-              _TemplateItem(Icons.fitness_center, 'Fitness Tracker', 'Workouts, nutrition, progress', Colors.redAccent),
-              _TemplateItem(Icons.flight, 'Travel Planner', 'Itineraries, budget, packing list', Colors.cyanAccent),
+              _TemplateItem(
+                Icons.fitness_center,
+                'Fitness Tracker',
+                'Workouts, nutrition, progress',
+                Colors.redAccent,
+              ),
+              _TemplateItem(
+                Icons.flight,
+                'Travel Planner',
+                'Itineraries, budget, packing list',
+                Colors.cyanAccent,
+              ),
             ]),
             const SizedBox(height: 24),
             _buildCategory(context, 'Creative', [
-              _TemplateItem(Icons.edit_note, 'Content Calendar', 'Social media, blog posts, scheduling', Colors.pinkAccent),
-              _TemplateItem(Icons.auto_stories, 'Research Assistant', 'Sources, notes, citations', Colors.indigoAccent),
+              _TemplateItem(
+                Icons.edit_note,
+                'Content Calendar',
+                'Social media, blog posts, scheduling',
+                Colors.pinkAccent,
+              ),
+              _TemplateItem(
+                Icons.auto_stories,
+                'Research Assistant',
+                'Sources, notes, citations',
+                Colors.indigoAccent,
+              ),
             ]),
           ],
         ),
@@ -51,11 +99,22 @@ class TemplatesScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildCategory(BuildContext context, String title, List<_TemplateItem> items) {
+  Widget _buildCategory(
+    BuildContext context,
+    String title,
+    List<_TemplateItem> items,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(title, style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w600)),
+        Text(
+          title,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 17,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
         const SizedBox(height: 12),
         ...items.map((item) => _buildTemplateCard(context, item)),
       ],
@@ -66,7 +125,9 @@ class TemplatesScreen extends StatelessWidget {
     // Switch to Home tab
     AppShell.stateKey.currentState?.setIndex(0);
     // Trigger intent in WorkspaceScreen
-    WorkspaceScreen.stateKey.currentState?.handleExternalQuery('Create a ${item.title}');
+    WorkspaceScreen.stateKey.currentState?.handleExternalQuery(
+      'Create a ${item.title}',
+    );
   }
 
   Widget _buildTemplateCard(BuildContext context, _TemplateItem item) {
@@ -96,13 +157,27 @@ class TemplatesScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(item.title, style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w500)),
+                  Text(
+                    item.title,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
                   const SizedBox(height: 4),
-                  Text(item.description, style: const TextStyle(color: Colors.white38, fontSize: 13)),
+                  Text(
+                    item.description,
+                    style: const TextStyle(color: Colors.white38, fontSize: 13),
+                  ),
                 ],
               ),
             ),
-            const Icon(Icons.arrow_forward_ios, color: Colors.white24, size: 16),
+            const Icon(
+              Icons.arrow_forward_ios,
+              color: Colors.white24,
+              size: 16,
+            ),
           ],
         ),
       ),

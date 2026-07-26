@@ -17,7 +17,11 @@ class ReasoningEngine {
 
   ReasoningEngine(this._groqService, this._intentEngine, this._contextEngine);
 
-  Future<String> evaluateAndGenerateAUIL(String userInput, Map<String, dynamic> toolResults, {String? fileContext}) async {
+  Future<String> evaluateAndGenerateAUIL(
+    String userInput,
+    Map<String, dynamic> toolResults, {
+    String? fileContext,
+  }) async {
     final intentJson = await _intentEngine.analyzeIntent(userInput);
     final contextData = await _contextEngine.compileContext();
 
@@ -25,7 +29,8 @@ class ReasoningEngine {
         ? '\nAttached File Content:\n$fileContext\n'
         : '';
 
-    final systemPrompt = '''
+    final systemPrompt =
+        '''
 You are the Generative UI Reasoning Engine for the "Anything" application.
 Your goal is to output a structured AUIL (Anything UI Language) schema.
 

@@ -59,7 +59,12 @@ class HeaderWidget extends StatelessWidget {
       padding: const EdgeInsets.only(top: 8, bottom: 16),
       child: Text(
         content,
-        style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 0.5),
+        style: const TextStyle(
+          fontSize: 24,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+          letterSpacing: 0.5,
+        ),
       ),
     );
   }
@@ -75,7 +80,14 @@ class TextBlockWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Text(content, style: const TextStyle(fontSize: 15, color: Colors.white70, height: 1.5)),
+      child: Text(
+        content,
+        style: const TextStyle(
+          fontSize: 15,
+          color: Colors.white70,
+          height: 1.5,
+        ),
+      ),
     );
   }
 }
@@ -99,10 +111,19 @@ class MetricCardWidget extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(data?['title'] ?? 'Metric', style: const TextStyle(color: Colors.white54, fontSize: 13)),
+          Text(
+            data?['title'] ?? 'Metric',
+            style: const TextStyle(color: Colors.white54, fontSize: 13),
+          ),
           const SizedBox(height: 8),
-          Text(data?['value']?.toString() ?? '--',
-              style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white)),
+          Text(
+            data?['value']?.toString() ?? '--',
+            style: const TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
         ],
       ),
     );
@@ -133,13 +154,24 @@ class ChartWidget extends StatelessWidget {
           borderData: FlBorderData(show: false),
           lineBarsData: [
             LineChartBarData(
-              spots: const [FlSpot(0, 1), FlSpot(1, 1.5), FlSpot(2, 1.4), FlSpot(3, 3.4), FlSpot(4, 2), FlSpot(5, 2.2), FlSpot(6, 1.8)],
+              spots: const [
+                FlSpot(0, 1),
+                FlSpot(1, 1.5),
+                FlSpot(2, 1.4),
+                FlSpot(3, 3.4),
+                FlSpot(4, 2),
+                FlSpot(5, 2.2),
+                FlSpot(6, 1.8),
+              ],
               isCurved: true,
               color: Colors.blueAccent,
               barWidth: 3,
               isStrokeCapRound: true,
               dotData: const FlDotData(show: false),
-              belowBarData: BarAreaData(show: true, color: Colors.blueAccent.withValues(alpha: 0.15)),
+              belowBarData: BarAreaData(
+                show: true,
+                color: Colors.blueAccent.withValues(alpha: 0.15),
+              ),
             ),
           ],
         ),
@@ -164,7 +196,9 @@ class TableWidget extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
       ),
-      child: const Center(child: Text('Data Table', style: TextStyle(color: Colors.white54))),
+      child: const Center(
+        child: Text('Data Table', style: TextStyle(color: Colors.white54)),
+      ),
     );
   }
 }
@@ -195,7 +229,14 @@ class KanbanWidget extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(col, style: const TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold, fontSize: 13)),
+                  Text(
+                    col,
+                    style: const TextStyle(
+                      color: Colors.blueAccent,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                    ),
+                  ),
                   const SizedBox(height: 8),
                   Expanded(
                     child: Container(
@@ -205,7 +246,13 @@ class KanbanWidget extends StatelessWidget {
                         color: Colors.white.withValues(alpha: 0.03),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: Text('Sample task', style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 12)),
+                      child: Text(
+                        'Sample task',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.5),
+                          fontSize: 12,
+                        ),
+                      ),
                     ),
                   ),
                 ],
@@ -237,7 +284,14 @@ class FormWidget extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Quick Form', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+          const Text(
+            'Quick Form',
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+            ),
+          ),
           const SizedBox(height: 16),
           TextField(
             style: const TextStyle(color: Colors.white),
@@ -246,7 +300,10 @@ class FormWidget extends StatelessWidget {
               hintStyle: const TextStyle(color: Colors.white30),
               filled: true,
               fillColor: Colors.white.withValues(alpha: 0.05),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
             ),
           ),
         ],
@@ -274,13 +331,33 @@ class NotesWidget extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(children: [
-            Icon(Icons.sticky_note_2, color: Colors.blueAccent.withValues(alpha: 0.7), size: 18),
-            const SizedBox(width: 8),
-            const Text('Notes', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
-          ]),
+          Row(
+            children: [
+              Icon(
+                Icons.sticky_note_2,
+                color: Colors.blueAccent.withValues(alpha: 0.7),
+                size: 18,
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'Notes',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: 12),
-          Text(data?['content'] ?? 'Your notes here...', style: const TextStyle(color: Colors.white60, fontSize: 14, height: 1.5)),
+          Text(
+            data?['content'] ?? 'Your notes here...',
+            style: const TextStyle(
+              color: Colors.white60,
+              fontSize: 14,
+              height: 1.5,
+            ),
+          ),
         ],
       ),
     );
@@ -308,17 +385,34 @@ class ProgressBarWidget extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-            Text(label, style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.w500)),
-            Text('${(progress * 100).toInt()}%', style: const TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold)),
-          ]),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                label,
+                style: const TextStyle(
+                  color: Colors.white70,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              Text(
+                '${(progress * 100).toInt()}%',
+                style: const TextStyle(
+                  color: Colors.blueAccent,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: 10),
           ClipRRect(
             borderRadius: BorderRadius.circular(8),
             child: LinearProgressIndicator(
               value: progress,
               backgroundColor: Colors.white.withValues(alpha: 0.08),
-              valueColor: const AlwaysStoppedAnimation<Color>(Colors.blueAccent),
+              valueColor: const AlwaysStoppedAnimation<Color>(
+                Colors.blueAccent,
+              ),
               minHeight: 8,
             ),
           ),
@@ -344,7 +438,10 @@ class ContainerWidget extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
       ),
-      child: Text(data?['content'] ?? '', style: const TextStyle(color: Colors.white70, fontSize: 14)),
+      child: Text(
+        data?['content'] ?? '',
+        style: const TextStyle(color: Colors.white70, fontSize: 14),
+      ),
     );
   }
 }
@@ -364,10 +461,15 @@ class ButtonWidget extends StatelessWidget {
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.blueAccent,
           foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
         ),
-        child: Text(data?['label'] ?? 'Action', style: const TextStyle(fontSize: 15)),
+        child: Text(
+          data?['label'] ?? 'Action',
+          style: const TextStyle(fontSize: 15),
+        ),
       ),
     );
   }
@@ -390,7 +492,10 @@ class InputWidget extends StatelessWidget {
           hintStyle: const TextStyle(color: Colors.white30),
           filled: true,
           fillColor: Colors.white.withValues(alpha: 0.05),
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none,
+          ),
         ),
       ),
     );
@@ -405,7 +510,9 @@ class ListWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final items = (data?['items'] as List?)?.cast<String>() ?? ['Item 1', 'Item 2', 'Item 3'];
+    final items =
+        (data?['items'] as List?)?.cast<String>() ??
+        ['Item 1', 'Item 2', 'Item 3'];
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 8),
       decoration: BoxDecoration(
@@ -415,8 +522,15 @@ class ListWidget extends StatelessWidget {
       child: Column(
         children: items.map((item) {
           return ListTile(
-            leading: Icon(Icons.circle, size: 8, color: Colors.blueAccent.withValues(alpha: 0.7)),
-            title: Text(item, style: const TextStyle(color: Colors.white70, fontSize: 14)),
+            leading: Icon(
+              Icons.circle,
+              size: 8,
+              color: Colors.blueAccent.withValues(alpha: 0.7),
+            ),
+            title: Text(
+              item,
+              style: const TextStyle(color: Colors.white70, fontSize: 14),
+            ),
           );
         }).toList(),
       ),
@@ -443,15 +557,31 @@ class CalendarWidget extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(children: [
-            const Icon(Icons.calendar_month, color: Colors.blueAccent, size: 20),
-            const SizedBox(width: 8),
-            const Text('Calendar', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
-          ]),
+          Row(
+            children: [
+              const Icon(
+                Icons.calendar_month,
+                color: Colors.blueAccent,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'Calendar',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: 12),
           const Text('Today', style: TextStyle(color: Colors.white54)),
           const SizedBox(height: 8),
-          Text(DateTime.now().toString().split(' ')[0], style: const TextStyle(color: Colors.white70, fontSize: 18)),
+          Text(
+            DateTime.now().toString().split(' ')[0],
+            style: const TextStyle(color: Colors.white70, fontSize: 18),
+          ),
         ],
       ),
     );
@@ -481,7 +611,12 @@ class GridWidget extends StatelessWidget {
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
             ),
-            child: Center(child: Text('${i + 1}', style: const TextStyle(color: Colors.white38))),
+            child: Center(
+              child: Text(
+                '${i + 1}',
+                style: const TextStyle(color: Colors.white38),
+              ),
+            ),
           );
         }),
       ),
@@ -507,7 +642,14 @@ class ChatWidget extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Chat', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
+          const Text(
+            'Chat',
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 15,
+            ),
+          ),
           const SizedBox(height: 12),
           _chatBubble('AI', 'How can I help you?', true),
           _chatBubble('You', data?['message'] ?? 'Hello!', false),
@@ -524,8 +666,14 @@ class ChatWidget extends StatelessWidget {
         children: [
           CircleAvatar(
             radius: 14,
-            backgroundColor: isAI ? Colors.blueAccent.withValues(alpha: 0.2) : Colors.white.withValues(alpha: 0.1),
-            child: Icon(isAI ? Icons.smart_toy : Icons.person, size: 14, color: isAI ? Colors.blueAccent : Colors.white54),
+            backgroundColor: isAI
+                ? Colors.blueAccent.withValues(alpha: 0.2)
+                : Colors.white.withValues(alpha: 0.1),
+            child: Icon(
+              isAI ? Icons.smart_toy : Icons.person,
+              size: 14,
+              color: isAI ? Colors.blueAccent : Colors.white54,
+            ),
           ),
           const SizedBox(width: 8),
           Expanded(
@@ -535,7 +683,10 @@ class ChatWidget extends StatelessWidget {
                 color: Colors.white.withValues(alpha: 0.03),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Text(message, style: const TextStyle(color: Colors.white70, fontSize: 13)),
+              child: Text(
+                message,
+                style: const TextStyle(color: Colors.white70, fontSize: 13),
+              ),
             ),
           ),
         ],
@@ -560,9 +711,24 @@ class ActivityFeedWidget extends StatelessWidget {
       ),
       child: Column(
         children: [
-          _activityItem(Icons.check_circle, 'Task completed', '2 min ago', Colors.greenAccent),
-          _activityItem(Icons.upload_file, 'File uploaded', '15 min ago', Colors.blueAccent),
-          _activityItem(Icons.analytics, 'Analysis done', '1 hr ago', Colors.orangeAccent),
+          _activityItem(
+            Icons.check_circle,
+            'Task completed',
+            '2 min ago',
+            Colors.greenAccent,
+          ),
+          _activityItem(
+            Icons.upload_file,
+            'File uploaded',
+            '15 min ago',
+            Colors.blueAccent,
+          ),
+          _activityItem(
+            Icons.analytics,
+            'Analysis done',
+            '1 hr ago',
+            Colors.orangeAccent,
+          ),
         ],
       ),
     );
@@ -571,8 +737,14 @@ class ActivityFeedWidget extends StatelessWidget {
   Widget _activityItem(IconData icon, String text, String time, Color color) {
     return ListTile(
       leading: Icon(icon, color: color, size: 20),
-      title: Text(text, style: const TextStyle(color: Colors.white70, fontSize: 14)),
-      trailing: Text(time, style: const TextStyle(color: Colors.white38, fontSize: 12)),
+      title: Text(
+        text,
+        style: const TextStyle(color: Colors.white70, fontSize: 14),
+      ),
+      trailing: Text(
+        time,
+        style: const TextStyle(color: Colors.white38, fontSize: 12),
+      ),
     );
   }
 }
@@ -593,7 +765,10 @@ class FallbackWidget extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: Colors.redAccent.withValues(alpha: 0.5)),
       ),
-      child: Text('Unsupported component: $type', style: const TextStyle(color: Colors.redAccent)),
+      child: Text(
+        'Unsupported component: $type',
+        style: const TextStyle(color: Colors.redAccent),
+      ),
     );
   }
 }

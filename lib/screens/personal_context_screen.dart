@@ -6,7 +6,8 @@ class PersonalContextScreen extends ConsumerStatefulWidget {
   const PersonalContextScreen({super.key});
 
   @override
-  ConsumerState<PersonalContextScreen> createState() => _PersonalContextScreenState();
+  ConsumerState<PersonalContextScreen> createState() =>
+      _PersonalContextScreenState();
 }
 
 class _PersonalContextScreenState extends ConsumerState<PersonalContextScreen> {
@@ -33,7 +34,10 @@ class _PersonalContextScreenState extends ConsumerState<PersonalContextScreen> {
     await manager.savePreference('user_bio', _bioController.text.trim());
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Personal context saved'), backgroundColor: Colors.blueAccent),
+        const SnackBar(
+          content: Text('Personal context saved'),
+          backgroundColor: Colors.blueAccent,
+        ),
       );
     }
   }
@@ -43,13 +47,18 @@ class _PersonalContextScreenState extends ConsumerState<PersonalContextScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFF0F172A),
       appBar: AppBar(
-        title: const Text('Personal Context', style: TextStyle(color: Colors.white)),
+        title: const Text(
+          'Personal Context',
+          style: TextStyle(color: Colors.white),
+        ),
         backgroundColor: Colors.transparent,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: Colors.blueAccent))
+          ? const Center(
+              child: CircularProgressIndicator(color: Colors.blueAccent),
+            )
           : SingleChildScrollView(
               padding: const EdgeInsets.all(24),
               child: Column(
@@ -57,7 +66,11 @@ class _PersonalContextScreenState extends ConsumerState<PersonalContextScreen> {
                 children: [
                   const Text(
                     'AI Personalization',
-                    style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   const Text(
@@ -65,11 +78,18 @@ class _PersonalContextScreenState extends ConsumerState<PersonalContextScreen> {
                     style: TextStyle(color: Colors.white54, fontSize: 14),
                   ),
                   const SizedBox(height: 32),
-                  _buildTextField('Your Name', _nameController, hint: 'What should the AI call you?'),
+                  _buildTextField(
+                    'Your Name',
+                    _nameController,
+                    hint: 'What should the AI call you?',
+                  ),
                   const SizedBox(height: 24),
-                  _buildTextField('About You', _bioController, 
-                    hint: 'Interests, profession, preferences...', 
-                    maxLines: 5),
+                  _buildTextField(
+                    'About You',
+                    _bioController,
+                    hint: 'Interests, profession, preferences...',
+                    maxLines: 5,
+                  ),
                   const SizedBox(height: 40),
                   SizedBox(
                     width: double.infinity,
@@ -78,9 +98,14 @@ class _PersonalContextScreenState extends ConsumerState<PersonalContextScreen> {
                       onPressed: _saveContext,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.blueAccent,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
-                      child: const Text('Save Context', style: TextStyle(color: Colors.white, fontSize: 16)),
+                      child: const Text(
+                        'Save Context',
+                        style: TextStyle(color: Colors.white, fontSize: 16),
+                      ),
                     ),
                   ),
                 ],
@@ -89,11 +114,23 @@ class _PersonalContextScreenState extends ConsumerState<PersonalContextScreen> {
     );
   }
 
-  Widget _buildTextField(String label, TextEditingController controller, {String? hint, int maxLines = 1}) {
+  Widget _buildTextField(
+    String label,
+    TextEditingController controller, {
+    String? hint,
+    int maxLines = 1,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.w500)),
+        Text(
+          label,
+          style: const TextStyle(
+            color: Colors.white70,
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
         const SizedBox(height: 8),
         TextField(
           controller: controller,
@@ -106,7 +143,9 @@ class _PersonalContextScreenState extends ConsumerState<PersonalContextScreen> {
             fillColor: Colors.white.withValues(alpha: 0.05),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+              borderSide: BorderSide(
+                color: Colors.white.withValues(alpha: 0.1),
+              ),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),

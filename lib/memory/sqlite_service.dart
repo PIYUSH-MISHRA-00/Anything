@@ -1,4 +1,4 @@
-﻿import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 
@@ -19,11 +19,7 @@ class SQLiteService {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, filePath);
 
-    return await openDatabase(
-      path,
-      version: 1,
-      onCreate: _createDB,
-    );
+    return await openDatabase(path, version: 1, onCreate: _createDB);
   }
 
   Future _createDB(Database db, int version) async {
@@ -34,7 +30,7 @@ class SQLiteService {
         encrypted_value TEXT NOT NULL
       )
     ''');
-    
+
     await db.execute('''
       CREATE TABLE conversation_memory(
         id INTEGER PRIMARY KEY AUTOINCREMENT,

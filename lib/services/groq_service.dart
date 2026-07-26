@@ -15,8 +15,9 @@ final groqServiceProvider = Provider<GroqService>((ref) {
 class GroqService {
   final FlutterSecureStorage _secureStorage;
   static const String _groqApiKey = 'GROQ_API_KEY';
-  static const String _groqApiUrl = 'https://api.groq.com/openai/v1/chat/completions';
-  
+  static const String _groqApiUrl =
+      'https://api.groq.com/openai/v1/chat/completions';
+
   GroqService(this._secureStorage);
 
   Future<void> saveApiKey(String apiKey) async {
@@ -33,12 +34,12 @@ class GroqService {
 
   Future<bool> testApiKey(String apiKey) async {
     try {
-      final response = await http.get(
-        Uri.parse('https://api.groq.com/openai/v1/models'),
-        headers: {
-          'Authorization': 'Bearer $apiKey',
-        },
-      ).timeout(const Duration(seconds: 15));
+      final response = await http
+          .get(
+            Uri.parse('https://api.groq.com/openai/v1/models'),
+            headers: {'Authorization': 'Bearer $apiKey'},
+          )
+          .timeout(const Duration(seconds: 15));
       return response.statusCode == 200;
     } catch (e) {
       return false;
@@ -48,17 +49,25 @@ class GroqService {
   /// Sends a real test prompt to validate the API key works end-to-end.
   Future<String> testConnection(String apiKey) async {
     try {
-      final response = await http.post(
-        Uri.parse(_groqApiUrl),
-        headers: {
-          'Authorization': 'Bearer $apiKey',
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({
-          'model': 'gemma2-9b-it',
-          'messages': [{'role': 'user', 'content': 'Connection test. Reply with: Connected successfully.'}],
-        }),
-      ).timeout(const Duration(seconds: 15));
+      final response = await http
+          .post(
+            Uri.parse(_groqApiUrl),
+            headers: {
+              'Authorization': 'Bearer $apiKey',
+              'Content-Type': 'application/json',
+            },
+            body: jsonEncode({
+              'model': 'gemma2-9b-it',
+              'messages': [
+                {
+                  'role': 'user',
+                  'content':
+                      'Connection test. Reply with: Connected successfully.',
+                },
+              ],
+            }),
+          )
+          .timeout(const Duration(seconds: 15));
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -79,7 +88,9 @@ class GroqService {
   }) async {
     final apiKey = await getApiKey();
     if (apiKey == null || apiKey.isEmpty) {
-      throw Exception('Groq API Key not configured. Please add it in settings.');
+      throw Exception(
+        'Groq API Key not configured. Please add it in settings.',
+      );
     }
 
     final messages = [];
@@ -95,10 +106,7 @@ class GroqService {
           'Authorization': 'Bearer $apiKey',
           'Content-Type': 'application/json',
         },
-        body: jsonEncode({
-          'model': modelToUse,
-          'messages': messages,
-        }),
+        body: jsonEncode({'model': modelToUse, 'messages': messages}),
       );
     }
 
@@ -113,7 +121,9 @@ class GroqService {
       final data = jsonDecode(response.body);
       return data['choices'][0]['message']['content'];
     } else {
-      throw Exception('Failed to generate response using both models. Last error: ${response.body}');
+      throw Exception(
+        'Failed to generate response using both models. Last error: ${response.body}',
+      );
     }
   }
 }

@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Anything Trace &amp; Observability</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Public+Sans:wght@500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-tint": "#4456b6",
+                        "on-surface-variant": "#454652",
+                        "tertiary-container": "#4b4b44",
+                        "on-tertiary": "#ffffff",
+                        "surface": "#fcf9f8",
+                        "surface-container": "#f0eded",
+                        "on-secondary-fixed": "#1b1c1a",
+                        "on-background": "#1c1b1b",
+                        "on-error-container": "#93000a",
+                        "on-secondary-fixed-variant": "#464744",
+                        "inverse-surface": "#313030",
+                        "surface-dim": "#dcd9d9",
+                        "secondary-fixed-dim": "#c7c7c3",
+                        "inverse-primary": "#bac3ff",
+                        "outline-variant": "#c5c5d4",
+                        "on-secondary-container": "#626360",
+                        "on-tertiary-container": "#bcbbb2",
+                        "background": "#fcf9f8",
+                        "secondary-fixed": "#e3e2df",
+                        "surface-container-high": "#eae7e7",
+                        "on-tertiary-fixed-variant": "#474741",
+                        "surface-container-lowest": "#ffffff",
+                        "on-primary-fixed": "#00105a",
+                        "surface-variant": "#e5e2e1",
+                        "outline": "#757683",
+                        "on-error": "#ffffff",
+                        "inverse-on-surface": "#f3f0ef",
+                        "error": "#ba1a1a",
+                        "primary-fixed-dim": "#bac3ff",
+                        "primary-container": "#2e41a1",
+                        "secondary-container": "#e0e0dc",
+                        "on-primary": "#ffffff",
+                        "tertiary-fixed": "#e5e3d9",
+                        "surface-container-highest": "#e5e2e1",
+                        "on-primary-fixed-variant": "#2a3d9d",
+                        "on-primary-container": "#aab6ff",
+                        "on-secondary": "#ffffff",
+                        "tertiary": "#34342e",
+                        "primary-fixed": "#dee0ff",
+                        "primary": "#11278a",
+                        "on-surface": "#1c1b1b",
+                        "secondary": "#5e5f5c",
+                        "error-container": "#ffdad6",
+                        "surface-container-low": "#f6f3f2",
+                        "surface-bright": "#fcf9f8",
+                        "on-tertiary-fixed": "#1b1c17",
+                        "tertiary-fixed-dim": "#c8c7be"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "1rem",
+                        "lg": "2rem",
+                        "xl": "3rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "gutter": "24px",
+                        "stack-md": "32px",
+                        "stack-lg": "64px",
+                        "stack-sm": "16px",
+                        "container-padding": "32px",
+                        "unit": "8px"
+                    },
+                    "fontFamily": {
+                        "headline-lg-mobile": ["Public Sans"],
+                        "label-sm": ["Inter"],
+                        "headline-md": ["Public Sans"],
+                        "body-md": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "headline-lg": ["Public Sans"]
+                    },
+                    "fontSize": {
+                        "headline-lg-mobile": ["32px", { "lineHeight": "1.2", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "label-sm": ["12px", { "lineHeight": "1.2", "letterSpacing": "0.08em", "fontWeight": "600" }],
+                        "headline-md": ["24px", { "lineHeight": "1.3", "letterSpacing": "0em", "fontWeight": "500" }],
+                        "body-md": ["16px", { "lineHeight": "1.5", "letterSpacing": "0.01em", "fontWeight": "400" }],
+                        "body-lg": ["18px", { "lineHeight": "1.6", "letterSpacing": "0.01em", "fontWeight": "400" }],
+                        "headline-lg": ["48px", { "lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            background-color: var(--color-background);
+            color: var(--color-on-background);
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined.fill {
+            font-variation-settings: 'FILL' 1;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background font-body-md antialiased min-h-screen flex flex-col">
+<!-- TopAppBar -->
+<header class="bg-surface/80 dark:bg-surface/80 backdrop-blur-md docked full-width top-0 sticky bg-surface dark:bg-surface shadow-sm z-40">
+<div class="flex justify-between items-center px-container-padding h-20 w-full max-w-[1440px] mx-auto">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full overflow-hidden bg-surface-container flex items-center justify-center shrink-0">
+<img class="w-full h-full object-cover" data-alt="A macro shot of a sleek, abstract geometric sculpture in a bright, modern studio. The sculpture is composed of intertwined metallic spheres and soft matte ceramic planes, reflecting a sophisticated, light-mode design ethos. The lighting is soft and diffused, creating subtle highlights and deep, clean shadows. A high-end, minimal aesthetic pervades the image." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBPRSsc9vTNiRxggDMQc-cEAgjaZUCu3iFrr1mwX5CT-4qxcZPD0EgPVjgM4DYyZGlC8mvZ5E_0iRkp29GaK4M-suImA8qwqXCA1euh9bjkHQo0IEueAtPM8uXCYPsKu4DDLG99sU6W8bcT7YXhzSMN0NaEPLh8L5UhnZZUqatSpmQPSKgmYYeURYq5HyOHe9EZmWA8X4UwVZe_s2cLd-_sZfca_V07W0h0oUZJqIpK-WTcgSenC1ykOTYp6h-elRed8PhwlRVtq9A"/>
+</div>
+<h1 class="font-headline-md text-headline-md font-semibold text-primary dark:text-inverse-primary">Anything</h1>
+</div>
+<button class="w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant dark:text-on-surface-variant hover:scale-105 transition-transform duration-200 active:scale-95 transition-all focus:outline-none focus:ring-2 focus:ring-primary">
+<span class="material-symbols-outlined" data-icon="dark_mode">dark_mode</span>
+</button>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-grow w-full max-w-[1440px] mx-auto px-container-padding py-stack-lg flex flex-col gap-stack-lg relative z-10">
+<!-- Header Section -->
+<section class="flex flex-col gap-4 max-w-3xl">
+<div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-surface-container-high w-fit">
+<span class="w-2 h-2 rounded-full bg-primary"></span>
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Trace Execution</span>
+</div>
+<h2 class="font-headline-lg text-headline-lg md:font-headline-lg md:text-headline-lg text-on-background">Root Cause Analysis</h2>
+<p class="font-body-lg text-body-lg text-on-surface-variant">Intent: 'Draft a Project Proposal' — Trace ID: <span class="font-mono text-sm bg-surface-container px-2 py-1 rounded">TRC-8F92A-4B</span></p>
+</section>
+<!-- Bento Grid Layout -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter">
+<!-- Timeline Card (Spans 8 cols on desktop) -->
+<div class="lg:col-span-8 bg-surface-container-lowest rounded-xl p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-surface-container-high/50 flex flex-col gap-stack-md relative overflow-hidden group">
+<div class="absolute top-0 right-0 w-64 h-64 bg-primary-container/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 transition-transform duration-1000 group-hover:scale-110 pointer-events-none"></div>
+<div class="flex justify-between items-end relative z-10">
+<h3 class="font-headline-md text-headline-md text-on-background">Distributed Trace</h3>
+<div class="flex items-center gap-4 font-label-sm text-label-sm text-on-surface-variant">
+<span>Total Duration: 1240ms</span>
+<div class="h-4 w-px bg-outline-variant"></div>
+<span class="text-primary flex items-center gap-1"><span class="material-symbols-outlined text-[16px]">check_circle</span> Success</span>
+</div>
+</div>
+<!-- Trace Waterfall -->
+<div class="flex flex-col gap-2 relative z-10">
+<!-- Kernel Span -->
+<div class="flex flex-col gap-1">
+<div class="flex justify-between items-center text-sm mb-1">
+<span class="font-medium text-on-background flex items-center gap-2"><span class="material-symbols-outlined text-[16px] text-outline">memory</span> Kernel Orchestrator</span>
+<span class="text-on-surface-variant text-xs">0ms</span>
+</div>
+<div class="w-full h-8 bg-surface-container rounded-md overflow-hidden relative">
+<div class="absolute left-0 top-0 h-full w-full bg-primary/20 rounded-md"></div>
+<span class="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-on-surface-variant font-mono">1240ms</span>
+</div>
+</div>
+<!-- Event Bus Span -->
+<div class="flex flex-col gap-1 mt-2">
+<div class="flex justify-between items-center text-sm mb-1 ml-[10%]">
+<span class="font-medium text-on-background flex items-center gap-2"><span class="material-symbols-outlined text-[16px] text-outline">sync_alt</span> Event Bus</span>
+<span class="text-on-surface-variant text-xs">120ms</span>
+</div>
+<div class="w-full h-8 bg-transparent rounded-md overflow-hidden relative">
+<div class="absolute left-[10%] top-0 h-full w-[80%] bg-secondary-container rounded-md border border-outline-variant/30 flex items-center px-2">
+<span class="text-[10px] text-on-surface-variant font-mono truncate">EVT_ROUTER_FWD</span>
+</div>
+<span class="absolute right-[12%] top-1/2 -translate-y-1/2 text-[10px] text-on-surface-variant font-mono">980ms</span>
+</div>
+</div>
+<!-- Knowledge Engine Span -->
+<div class="flex flex-col gap-1 mt-1">
+<div class="flex justify-between items-center text-sm mb-1 ml-[15%]">
+<span class="font-medium text-on-background flex items-center gap-2"><span class="material-symbols-outlined text-[16px] text-outline">database</span> Knowledge Engine Retrieval</span>
+<span class="text-on-surface-variant text-xs">180ms</span>
+</div>
+<div class="w-full h-8 bg-transparent rounded-md overflow-hidden relative">
+<div class="absolute left-[15%] top-0 h-full w-[30%] bg-surface-tint/10 rounded-md border border-surface-tint/20 flex items-center px-2">
+<span class="text-[10px] text-primary font-mono truncate">Q_VEC_SEARCH (200)</span>
+</div>
+<span class="absolute left-[47%] top-1/2 -translate-y-1/2 text-[10px] text-on-surface-variant font-mono">350ms</span>
+</div>
+</div>
+<!-- Model Orchestration Span -->
+<div class="flex flex-col gap-1 mt-1">
+<div class="flex justify-between items-center text-sm mb-1 ml-[45%]">
+<span class="font-medium text-on-background flex items-center gap-2"><span class="material-symbols-outlined text-[16px] text-outline">smart_toy</span> Model Inference (LLM)</span>
+<span class="text-on-surface-variant text-xs">550ms</span>
+</div>
+<div class="w-full h-8 bg-transparent rounded-md overflow-hidden relative">
+<div class="absolute left-[45%] top-0 h-full w-[50%] bg-tertiary-container/10 rounded-md border border-tertiary-container/20 flex items-center px-2">
+<span class="text-[10px] text-tertiary font-mono truncate">GEN_TOKENS (200)</span>
+</div>
+<span class="absolute right-[2%] top-1/2 -translate-y-1/2 text-[10px] text-on-surface-variant font-mono">650ms</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Details Sidebar (Spans 4 cols on desktop) -->
+<div class="lg:col-span-4 flex flex-col gap-gutter">
+<!-- Status Card -->
+<div class="bg-surface-container-lowest rounded-xl p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-surface-container-high/50 flex flex-col gap-4">
+<h3 class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Node Status</h3>
+<ul class="flex flex-col gap-3">
+<li class="flex items-center justify-between">
+<span class="font-body-md text-sm text-on-background">Kernel</span>
+<span class="flex items-center gap-1 text-xs font-mono text-primary"><span class="material-symbols-outlined text-[14px]">check</span> Healthy</span>
+</li>
+<li class="flex items-center justify-between">
+<span class="font-body-md text-sm text-on-background">Event Bus</span>
+<span class="flex items-center gap-1 text-xs font-mono text-primary"><span class="material-symbols-outlined text-[14px]">check</span> Healthy</span>
+</li>
+<li class="flex items-center justify-between">
+<span class="font-body-md text-sm text-on-background">Knowledge Engine</span>
+<span class="flex items-center gap-1 text-xs font-mono text-outline"><span class="material-symbols-outlined text-[14px]">warning</span> High Latency</span>
+</li>
+<li class="flex items-center justify-between">
+<span class="font-body-md text-sm text-on-background">Model Orch</span>
+<span class="flex items-center gap-1 text-xs font-mono text-primary"><span class="material-symbols-outlined text-[14px]">check</span> Healthy</span>
+</li>
+</ul>
+</div>
+<!-- Privacy Logs Card -->
+<div class="bg-surface-container-lowest rounded-xl p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-surface-container-high/50 flex-grow flex flex-col gap-4">
+<div class="flex justify-between items-center">
+<h3 class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Privacy-Redacted Log</h3>
+<span class="material-symbols-outlined text-[18px] text-outline">lock</span>
+</div>
+<div class="bg-surface-container rounded-lg p-4 font-mono text-[11px] text-on-secondary-fixed-variant overflow-y-auto max-h-48 whitespace-pre-wrap flex-grow border border-outline-variant/20">
+[INFO] [0ms] INTENT_RECEIVED: 'Draft a Project Proposal'
+[DEBUG] [5ms] KERNEL: Auth context validated. User: [REDACTED]
+[INFO] [120ms] EVT_BUS: Routing intent to Knowledge Engine...
+[DEBUG] [185ms] KNOWLEDGE: Query vectors formulated.
+[WARN] [450ms] KNOWLEDGE: Vector DB response delayed (+150ms).
+[INFO] [530ms] KNOWLEDGE: Context retrieved. Tokens: 4092.
+[INFO] [550ms] MODEL_ORCH: Commencing inference (Model: [REDACTED_V4])
+[DEBUG] [1100ms] MODEL_ORCH: Generation complete. Tokens: 840.
+[INFO] [1240ms] KERNEL: Response formulated and dispatched.
+                    </div>
+</div>
+</div>
+</div>
+</main>
+</body></html>

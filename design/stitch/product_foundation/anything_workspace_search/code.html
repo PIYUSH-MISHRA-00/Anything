@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Workspace Search &amp; Memory</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@500;600&amp;family=Inter:wght@400;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-variant": "#e5e2e1",
+                        "on-primary-fixed-variant": "#2a3d9d",
+                        "on-error": "#ffffff",
+                        "on-primary": "#ffffff",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-tint": "#4456b6",
+                        "secondary-fixed": "#e3e2df",
+                        "surface-container-low": "#f6f3f2",
+                        "on-secondary-fixed-variant": "#464744",
+                        "on-secondary-fixed": "#1b1c1a",
+                        "outline-variant": "#c5c5d4",
+                        "surface-container": "#f0eded",
+                        "inverse-surface": "#313030",
+                        "tertiary-fixed": "#e5e3d9",
+                        "on-surface": "#1c1b1b",
+                        "on-error-container": "#93000a",
+                        "tertiary-container": "#4b4b44",
+                        "on-tertiary": "#ffffff",
+                        "on-secondary": "#ffffff",
+                        "background": "#fcf9f8",
+                        "inverse-primary": "#bac3ff",
+                        "surface": "#fcf9f8",
+                        "surface-container-high": "#eae7e7",
+                        "secondary": "#5e5f5c",
+                        "outline": "#757683",
+                        "tertiary-fixed-dim": "#c8c7be",
+                        "on-secondary-container": "#626360",
+                        "surface-container-highest": "#e5e2e1",
+                        "on-surface-variant": "#454652",
+                        "primary-container": "#2e41a1",
+                        "on-primary-fixed": "#00105a",
+                        "error-container": "#ffdad6",
+                        "inverse-on-surface": "#f3f0ef",
+                        "secondary-fixed-dim": "#c7c7c3",
+                        "on-background": "#1c1b1b",
+                        "error": "#ba1a1a",
+                        "primary-fixed": "#dee0ff",
+                        "primary": "#11278a",
+                        "primary-fixed-dim": "#bac3ff",
+                        "on-primary-container": "#aab6ff",
+                        "surface-bright": "#fcf9f8",
+                        "on-tertiary-fixed-variant": "#474741",
+                        "on-tertiary-fixed": "#1b1c17",
+                        "surface-dim": "#dcd9d9",
+                        "on-tertiary-container": "#bcbbb2",
+                        "tertiary": "#34342e",
+                        "secondary-container": "#e0e0dc"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "1rem",
+                        "lg": "2rem",
+                        "xl": "3rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "unit": "8px",
+                        "stack-sm": "16px",
+                        "gutter": "24px",
+                        "stack-md": "32px",
+                        "stack-lg": "64px",
+                        "container-padding": "32px"
+                    },
+                    "fontFamily": {
+                        "label-sm": ["Inter"],
+                        "headline-lg": ["Public Sans"],
+                        "body-md": ["Inter"],
+                        "headline-md": ["Public Sans"],
+                        "body-lg": ["Inter"],
+                        "headline-lg-mobile": ["Public Sans"]
+                    },
+                    "fontSize": {
+                        "label-sm": ["12px", { "lineHeight": "1.2", "letterSpacing": "0.08em", "fontWeight": "600" }],
+                        "headline-lg": ["48px", { "lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+                        "body-md": ["16px", { "lineHeight": "1.5", "letterSpacing": "0.01em", "fontWeight": "400" }],
+                        "headline-md": ["24px", { "lineHeight": "1.3", "letterSpacing": "0em", "fontWeight": "500" }],
+                        "body-lg": ["18px", { "lineHeight": "1.6", "letterSpacing": "0.01em", "fontWeight": "400" }],
+                        "headline-lg-mobile": ["32px", { "lineHeight": "1.2", "letterSpacing": "-0.01em", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            background-color: theme('colors.background');
+            color: theme('colors.on-background');
+        }
+        
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+
+        .ambient-shadow {
+            box-shadow: 0 10px 40px -10px rgba(17, 39, 138, 0.08);
+        }
+
+        .chip-active {
+            background-color: theme('colors.primary-container');
+            color: theme('colors.on-primary-container');
+        }
+        
+        .chip-inactive {
+            background-color: theme('colors.surface-container');
+            color: theme('colors.on-surface-variant');
+        }
+        
+        .chip-inactive:hover {
+            background-color: theme('colors.surface-container-high');
+        }
+        
+        /* Custom scrollbar for horizontal chip list */
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="antialiased min-h-screen flex flex-col relative pb-[120px] md:pb-0 pt-20">
+<!-- Top App Bar (Shared Component) -->
+<header class="fixed top-0 w-full z-50 bg-surface/80 backdrop-blur-xl shadow-sm transition-all duration-500 ease-out hidden md:block">
+<div class="flex justify-between items-center px-gutter h-20 w-full max-w-[1440px] mx-auto">
+<div class="flex items-center gap-4">
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-variant/50 transition-colors text-on-surface-variant">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">arrow_back</span>
+</button>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">bubble_chart</span>
+<h1 class="font-headline-md text-headline-md tracking-tight text-primary">Workspace</h1>
+</div>
+</div>
+<!-- Desktop Nav Cluster -->
+<nav class="flex items-center gap-2">
+<a class="flex items-center gap-2 px-4 py-2 rounded-full hover:bg-surface-variant/50 transition-colors text-on-surface-variant font-label-sm text-label-sm" href="#">
+<span class="material-symbols-outlined">home_max</span> Home
+                </a>
+<a class="flex items-center gap-2 px-4 py-2 rounded-full bg-primary-container/20 text-primary font-medium font-label-sm text-label-sm" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">grid_view</span> Workspace
+                </a>
+<a class="flex items-center gap-2 px-4 py-2 rounded-full hover:bg-surface-variant/50 transition-colors text-on-surface-variant font-label-sm text-label-sm" href="#">
+<span class="material-symbols-outlined">qr_code_2</span> Activity
+                </a>
+</nav>
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-surface-container overflow-hidden border border-outline-variant/20 hover:scale-105 transition-transform duration-300 cursor-pointer">
+<img alt="User profile" class="w-full h-full object-cover" data-alt="A close up, soft focus portrait of a professional in a bright, modern setting with minimal background clutter. Lighting is high-key and natural, fitting a refined, calm UI aesthetic. Colors are subtle, leaning towards warm neutrals." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAvIE7mCppNTX-5dEqY2Cf4TBS9XJRcN5Z8juwWXbEzlg2Jc453aqyQ8AEuHJHpCFNRBjTLWBazmhSs8cjav8230Xb9kuU5MNbjo-AM-UIK_yswDPnJNe0oM4BDW-kQ9kmIQspCIikGyq83W-nJsVf5j23w7AlYEarohuY0owRSzLwbw3kUVCPOz-807X22E-mYrgTyIYrDv6XCAjxXQdR_T1zTytvG8Us2nx_R4Aamj-Pp4xckcvjPiUACrfDbFRAQ6faEvbM4t8E"/>
+</div>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-grow w-full max-w-[1440px] mx-auto px-5 md:px-gutter pt-8 md:pt-12 flex flex-col gap-stack-lg">
+<!-- Search Section -->
+<section class="flex flex-col gap-stack-sm items-center max-w-3xl mx-auto w-full">
+<div class="text-center mb-4">
+<h2 class="font-headline-md text-headline-md text-on-surface mb-2">Memory Search</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">Searching within <span class="font-semibold text-primary">Sustainable Urban Mobility</span></p>
+</div>
+<!-- Search Input -->
+<div class="relative w-full ambient-shadow rounded-full group">
+<div class="absolute inset-y-0 left-0 pl-6 flex items-center pointer-events-none text-on-surface-variant group-focus-within:text-primary transition-colors">
+<span class="material-symbols-outlined" style="font-size: 28px;">search</span>
+</div>
+<input class="w-full pl-16 pr-12 py-5 bg-surface-container-lowest border-none rounded-full font-body-lg text-body-lg text-on-surface placeholder-on-surface-variant focus:ring-2 focus:ring-primary/20 transition-shadow outline-none" placeholder="Ask or search memory..." type="text" value="Autonomous electric bus routing algorithms"/>
+<button class="absolute inset-y-0 right-2 my-auto w-12 h-12 flex items-center justify-center rounded-full bg-primary text-on-primary hover:scale-105 transition-transform">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">arrow_forward</span>
+</button>
+</div>
+<!-- Filter Chips -->
+<div class="flex overflow-x-auto hide-scrollbar w-full py-2 gap-3 justify-start md:justify-center mt-4">
+<button class="chip-active px-6 py-2.5 rounded-full font-label-sm text-label-sm flex items-center gap-2 whitespace-nowrap transition-colors">
+<span class="material-symbols-outlined text-[18px]">done_all</span> All Types
+                </button>
+<button class="chip-inactive px-6 py-2.5 rounded-full font-label-sm text-label-sm flex items-center gap-2 whitespace-nowrap transition-colors">
+<span class="material-symbols-outlined text-[18px]">description</span> Notes
+                </button>
+<button class="chip-inactive px-6 py-2.5 rounded-full font-label-sm text-label-sm flex items-center gap-2 whitespace-nowrap transition-colors">
+<span class="material-symbols-outlined text-[18px]">folder</span> Files
+                </button>
+<button class="chip-inactive px-6 py-2.5 rounded-full font-label-sm text-label-sm flex items-center gap-2 whitespace-nowrap transition-colors">
+<span class="material-symbols-outlined text-[18px]">code</span> Generated Code
+                </button>
+<button class="chip-inactive px-6 py-2.5 rounded-full font-label-sm text-label-sm flex items-center gap-2 whitespace-nowrap transition-colors">
+<span class="material-symbols-outlined text-[18px]">science</span> Research
+                </button>
+<button class="chip-inactive px-6 py-2.5 rounded-full font-label-sm text-label-sm flex items-center gap-2 whitespace-nowrap transition-colors">
+<span class="material-symbols-outlined text-[18px]">forum</span> Messages
+                </button>
+</div>
+</section>
+<!-- Results Bento Grid -->
+<section class="grid grid-cols-1 md:grid-cols-3 gap-6 pb-stack-lg">
+<!-- Result Card 1: Research Note (Span 2 cols on desktop) -->
+<article class="md:col-span-2 glass-panel rounded-xl p-container-padding ambient-shadow hover:-translate-y-1 transition-transform duration-300 cursor-pointer flex flex-col gap-4">
+<div class="flex justify-between items-start">
+<div class="flex items-center gap-2 text-primary font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[18px]">description</span> Research Note
+                    </div>
+<span class="text-on-surface-variant font-label-sm text-label-sm">2 days ago</span>
+</div>
+<div>
+<h3 class="font-headline-md text-headline-md text-on-surface mb-2">Efficiency metrics for autonomous routing</h3>
+<p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+                        The recent simulation data indicates a <span class="bg-primary-container/20 text-on-primary-container px-1 rounded">14% improvement in energy efficiency</span> when implementing the dynamic predictive routing model across the central business district zone. This requires further validation against peak traffic historicals.
+                    </p>
+</div>
+<div class="flex flex-wrap gap-2 mt-auto pt-4 border-t border-surface-variant/50">
+<span class="px-3 py-1 rounded bg-surface-container text-on-surface-variant font-label-sm text-[10px]">#simulation</span>
+<span class="px-3 py-1 rounded bg-surface-container text-on-surface-variant font-label-sm text-[10px]">#metrics</span>
+</div>
+</article>
+<!-- Result Card 2: PDF File -->
+<article class="glass-panel rounded-xl p-container-padding ambient-shadow hover:-translate-y-1 transition-transform duration-300 cursor-pointer flex flex-col gap-4">
+<div class="flex justify-between items-start">
+<div class="flex items-center gap-2 text-secondary font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[18px]">picture_as_pdf</span> File
+                    </div>
+<span class="text-on-surface-variant font-label-sm text-label-sm">Last week</span>
+</div>
+<div class="flex-grow flex flex-col justify-center items-center py-4">
+<div class="w-20 h-28 bg-surface-container rounded shadow-sm border border-outline-variant/20 flex flex-col items-center justify-center mb-4 relative overflow-hidden">
+<div class="absolute inset-0 bg-gradient-to-br from-white/40 to-transparent z-10"></div>
+<span class="material-symbols-outlined text-[40px] text-error opacity-80">picture_as_pdf</span>
+</div>
+<h3 class="font-headline-md text-[18px] font-medium text-center text-on-surface line-clamp-2">Oslo_Traffic_Study_2023.pdf</h3>
+</div>
+</article>
+<!-- Result Card 3: Code Snippet -->
+<article class="md:col-span-3 bg-inverse-surface rounded-xl p-container-padding shadow-lg hover:-translate-y-1 transition-transform duration-300 cursor-pointer flex flex-col md:flex-row gap-6">
+<div class="flex-shrink-0 md:w-1/3 flex flex-col gap-4">
+<div class="flex items-center gap-2 text-primary-fixed font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[18px]">code</span> Generated Code
+                    </div>
+<h3 class="font-headline-md text-headline-md text-surface-container-lowest">A* Pathfinding Implementation</h3>
+<p class="font-body-md text-body-md text-surface-variant/80">
+                        Python script generated to simulate basic grid-based route optimization for electric buses, factoring in charging station node proximity.
+                    </p>
+<span class="text-secondary-fixed-dim font-label-sm text-label-sm mt-auto pt-4">Generated 4 hours ago</span>
+</div>
+<div class="flex-grow bg-[#1e1e1e] rounded-lg p-4 overflow-hidden relative font-mono text-[13px] leading-relaxed text-[#d4d4d4]">
+<div class="absolute top-2 right-2 flex gap-1">
+<div class="w-3 h-3 rounded-full bg-[#ff5f56]"></div>
+<div class="w-3 h-3 rounded-full bg-[#ffbd2e]"></div>
+<div class="w-3 h-3 rounded-full bg-[#27c93f]"></div>
+</div>
+<pre class="mt-4 overflow-x-auto hide-scrollbar"><code class="language-python"><span class="text-[#569cd6]">def</span> <span class="text-[#dcdcaa]">calculate_optimal_route</span>(start_node, end_node, grid, battery_level):
+    <span class="text-[#6a9955]"># Initialize open and closed sets</span>
+    open_set = [start_node]
+    came_from = {}
+    
+    g_score = {node: <span class="text-[#569cd6]">float</span>(<span class="text-[#ce9178]">'inf'</span>) <span class="text-[#569cd6]">for</span> node <span class="text-[#569cd6]">in</span> grid}
+    g_score[start_node] = <span class="text-[#b5cea8]">0</span>
+    
+    <span class="text-[#569cd6]">while</span> open_set:
+        current = <span class="text-[#dcdcaa]">get_lowest_f_score</span>(open_set)
+        
+        <span class="text-[#569cd6]">if</span> current == end_node:
+            <span class="text-[#569cd6]">return</span> <span class="text-[#dcdcaa]">reconstruct_path</span>(came_from, current)</code></pre>
+</div>
+</article>
+</section>
+</main>
+<!-- Bottom Nav Bar (Mobile Only - Shared Component) -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-container-padding pb-8 pt-4 bg-surface/90 dark:bg-surface-container-highest/90 backdrop-blur-2xl border-t border-outline-variant/10 shadow-[0_-4px_24px_rgba(17,39,138,0.05)] rounded-t-xl md:hidden">
+<a class="flex flex-col items-center justify-center gap-1 text-on-surface-variant hover:bg-surface-variant/50 transition-colors p-2 rounded-lg" href="#">
+<span class="material-symbols-outlined">home_max</span>
+<span class="font-label-sm text-[10px]">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center gap-1 text-on-surface-variant hover:bg-surface-variant/50 transition-colors p-2 rounded-lg" href="#">
+<span class="material-symbols-outlined">widgets</span>
+<span class="font-label-sm text-[10px]">My Apps</span>
+</a>
+<a class="flex flex-col items-center justify-center gap-1 text-on-surface-variant hover:bg-surface-variant/50 transition-colors p-2 rounded-lg" href="#">
+<span class="material-symbols-outlined">qr_code_2</span>
+<span class="font-label-sm text-[10px]">Activity</span>
+</a>
+<a class="flex flex-col items-center justify-center gap-1 text-primary dark:text-primary-fixed-dim bg-primary-container/20 rounded-full px-6 py-2 Active: scale-95 duration-200" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">grid_view</span>
+<span class="font-label-sm text-[10px] font-semibold">Workspace</span>
+</a>
+<a class="flex flex-col items-center justify-center gap-1 text-on-surface-variant hover:bg-surface-variant/50 transition-colors p-2 rounded-lg" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-sm text-[10px]">Settings</span>
+</a>
+</nav>
+</body></html>

@@ -1,4 +1,4 @@
-﻿import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'tool_registry.dart';
 
 final toolRouterProvider = Provider<ToolRouter>((ref) {
@@ -11,7 +11,10 @@ class ToolRouter {
 
   ToolRouter(this._registry);
 
-  Future<Map<String, dynamic>> executeTools(List<String> toolNames, String intentPayload) async {
+  Future<Map<String, dynamic>> executeTools(
+    List<String> toolNames,
+    String intentPayload,
+  ) async {
     Map<String, dynamic> results = {};
 
     for (var toolName in toolNames) {

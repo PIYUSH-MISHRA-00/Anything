@@ -58,7 +58,8 @@ class _GroqSettingsScreenState extends ConsumerState<GroqSettingsScreen> {
 
     final groq = ref.read(groqServiceProvider);
     final result = await groq.testConnection(key);
-    final success = !result.startsWith('Error') && !result.startsWith('Connection failed');
+    final success =
+        !result.startsWith('Error') && !result.startsWith('Connection failed');
 
     setState(() {
       _isTesting = false;
@@ -106,7 +107,10 @@ class _GroqSettingsScreenState extends ConsumerState<GroqSettingsScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFF0F172A),
       appBar: AppBar(
-        title: const Text('Groq AI Configuration', style: TextStyle(color: Colors.white)),
+        title: const Text(
+          'Groq AI Configuration',
+          style: TextStyle(color: Colors.white),
+        ),
         backgroundColor: Colors.transparent,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
@@ -135,16 +139,33 @@ class _GroqSettingsScreenState extends ConsumerState<GroqSettingsScreen> {
                           color: Colors.blueAccent.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: const Icon(Icons.key, color: Colors.blueAccent, size: 24),
+                        child: const Icon(
+                          Icons.key,
+                          color: Colors.blueAccent,
+                          size: 24,
+                        ),
                       ),
                       const SizedBox(width: 16),
                       const Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('API Key Required', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600)),
+                            Text(
+                              'API Key Required',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                             SizedBox(height: 4),
-                            Text('Get a free key from the Groq console', style: TextStyle(color: Colors.white54, fontSize: 13)),
+                            Text(
+                              'Get a free key from the Groq console',
+                              style: TextStyle(
+                                color: Colors.white54,
+                                fontSize: 13,
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -163,11 +184,16 @@ class _GroqSettingsScreenState extends ConsumerState<GroqSettingsScreen> {
               child: OutlinedButton.icon(
                 onPressed: _openGroqConsole,
                 icon: const Icon(Icons.open_in_new, size: 18),
-                label: const Text('Open Groq Console', style: TextStyle(fontSize: 15)),
+                label: const Text(
+                  'Open Groq Console',
+                  style: TextStyle(fontSize: 15),
+                ),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: Colors.blueAccent,
                   side: const BorderSide(color: Colors.blueAccent),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
                 ),
               ),
             ),
@@ -193,7 +219,9 @@ class _GroqSettingsScreenState extends ConsumerState<GroqSettingsScreen> {
                 filled: true,
                 fillColor: Colors.white.withValues(alpha: 0.05),
                 enabledBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.15)),
+                  borderSide: BorderSide(
+                    color: Colors.white.withValues(alpha: 0.15),
+                  ),
                   borderRadius: BorderRadius.circular(14),
                 ),
                 focusedBorder: OutlineInputBorder(
@@ -224,14 +252,22 @@ class _GroqSettingsScreenState extends ConsumerState<GroqSettingsScreen> {
                           ? const SizedBox(
                               width: 18,
                               height: 18,
-                              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
                             )
                           : const Icon(Icons.wifi_tethering, size: 18),
-                      label: Text(_isTesting ? 'Testing...' : 'Test', style: const TextStyle(fontSize: 14)),
+                      label: Text(
+                        _isTesting ? 'Testing...' : 'Test',
+                        style: const TextStyle(fontSize: 14),
+                      ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF334155),
                         foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
                       ),
                     ),
                   ),
@@ -246,14 +282,22 @@ class _GroqSettingsScreenState extends ConsumerState<GroqSettingsScreen> {
                           ? const SizedBox(
                               width: 18,
                               height: 18,
-                              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
                             )
                           : const Icon(Icons.save, size: 18),
-                      label: Text(_isSaving ? 'Saving...' : 'Save Key', style: const TextStyle(fontSize: 14)),
+                      label: Text(
+                        _isSaving ? 'Saving...' : 'Save Key',
+                        style: const TextStyle(fontSize: 14),
+                      ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.blueAccent,
                         foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
                       ),
                     ),
                   ),
@@ -270,10 +314,15 @@ class _GroqSettingsScreenState extends ConsumerState<GroqSettingsScreen> {
                 child: TextButton.icon(
                   onPressed: _deleteKey,
                   icon: const Icon(Icons.delete_outline, size: 18),
-                  label: const Text('Delete API Key', style: TextStyle(fontSize: 14)),
+                  label: const Text(
+                    'Delete API Key',
+                    style: TextStyle(fontSize: 14),
+                  ),
                   style: TextButton.styleFrom(
                     foregroundColor: Colors.redAccent.withValues(alpha: 0.8),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
                   ),
                 ),
               ),
@@ -284,25 +333,34 @@ class _GroqSettingsScreenState extends ConsumerState<GroqSettingsScreen> {
               const SizedBox(height: 20),
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 14,
+                ),
                 decoration: BoxDecoration(
-                  color: (_statusSuccess == true
-                          ? Colors.greenAccent
-                          : Colors.redAccent)
-                      .withValues(alpha: 0.1),
+                  color:
+                      (_statusSuccess == true
+                              ? Colors.greenAccent
+                              : Colors.redAccent)
+                          .withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: (_statusSuccess == true
-                            ? Colors.greenAccent
-                            : Colors.redAccent)
-                        .withValues(alpha: 0.3),
+                    color:
+                        (_statusSuccess == true
+                                ? Colors.greenAccent
+                                : Colors.redAccent)
+                            .withValues(alpha: 0.3),
                   ),
                 ),
                 child: Row(
                   children: [
                     Icon(
-                      _statusSuccess == true ? Icons.check_circle : Icons.error_outline,
-                      color: _statusSuccess == true ? Colors.greenAccent : Colors.redAccent,
+                      _statusSuccess == true
+                          ? Icons.check_circle
+                          : Icons.error_outline,
+                      color: _statusSuccess == true
+                          ? Colors.greenAccent
+                          : Colors.redAccent,
                       size: 20,
                     ),
                     const SizedBox(width: 12),
@@ -310,7 +368,9 @@ class _GroqSettingsScreenState extends ConsumerState<GroqSettingsScreen> {
                       child: Text(
                         _statusMessage!,
                         style: TextStyle(
-                          color: _statusSuccess == true ? Colors.greenAccent : Colors.redAccent,
+                          color: _statusSuccess == true
+                              ? Colors.greenAccent
+                              : Colors.redAccent,
                           fontSize: 14,
                         ),
                       ),
@@ -338,11 +398,23 @@ class _GroqSettingsScreenState extends ConsumerState<GroqSettingsScreen> {
               borderRadius: BorderRadius.circular(8),
             ),
             child: Center(
-              child: Text(number, style: const TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold, fontSize: 13)),
+              child: Text(
+                number,
+                style: const TextStyle(
+                  color: Colors.blueAccent,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                ),
+              ),
             ),
           ),
           const SizedBox(width: 12),
-          Expanded(child: Text(text, style: const TextStyle(color: Colors.white70, fontSize: 14))),
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(color: Colors.white70, fontSize: 14),
+            ),
+          ),
         ],
       ),
     );

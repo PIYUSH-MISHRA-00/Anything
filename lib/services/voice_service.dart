@@ -1,117 +1,174 @@
-import 'dart:io';
-import 'dart:convert';
-import 'package:http/http.dart' as http;
+/// Voice input service for Anything.
+///
+/// Provides speech-to-text functionality using platform speech recognition.
+/// On Android, uses the device's built-in speech recognition.
+/// No audio is sent to AI providers — this is local speech recognition only.
+library;
+
+import 'dart:async';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:path/path.dart' as p;
-import 'package:record/record.dart';
-import 'package:path_provider/path_provider.dart';
-import 'groq_service.dart';
+import 'package:speech_to_text/speech_to_text.dart' as stt;
+import 'package:speech_to_text/speech_recognition_result.dart';
+import 'package:permission_handler/permission_handler.dart';
 
-final voiceServiceProvider = Provider<VoiceService>((ref) {
-  final groqService = ref.watch(groqServiceProvider);
-  return VoiceService(groqService);
-});
+/// State of the voice input system.
+enum VoiceState { idle, listening, processing, error, unavailable }
 
-class VoiceService {
-  final GroqService _groqService;
-  final AudioRecorder _recorder = AudioRecorder();
-  String? _recordingPath;
-  bool _isRecording = false;
+/// Result of a voice recognition attempt.
+class VoiceResult {
+  final String text;
+  final bool isFinal;
+  final double confidence;
 
-  VoiceService(this._groqService);
+  const VoiceResult({
+    required this.text,
+    required this.isFinal,
+    this.confidence = 0.0,
+  });
+}
 
-  bool get isRecording => _isRecording;
+/// Voice input service using platform speech recognition.
+class VoiceInputService extends ChangeNotifier {
+  final stt.SpeechToText _speech = stt.SpeechToText();
+  VoiceState _state = VoiceState.idle;
+  String _currentText = '';
+  String? _errorMessage;
+  bool _isInitialized = false;
 
-  Future<bool> hasPermission() async {
-    return await _recorder.hasPermission();
+  VoiceState get state => _state;
+  String get currentText => _currentText;
+  String? get errorMessage => _errorMessage;
+  bool get isListening => _state == VoiceState.listening;
+  bool get isAvailable => _state != VoiceState.unavailable;
+
+  /// Initialize the speech recognition system.
+  Future<bool> initialize() async {
+    if (_isInitialized) return true;
+    try {
+      _isInitialized = await _speech.initialize(
+        onStatus: _onStatus,
+        onError: _onError,
+      );
+      if (!_isInitialized) {
+        _setState(VoiceState.unavailable);
+      }
+      return _isInitialized;
+    } catch (e) {
+      _setState(VoiceState.unavailable);
+      _errorMessage = 'Speech recognition unavailable';
+      notifyListeners();
+      return false;
+    }
   }
 
-  Future<void> startRecording() async {
-    if (_isRecording) return;
+  /// Request microphone permission.
+  Future<bool> requestPermission() async {
+    final status = await Permission.microphone.request();
+    return status.isGranted;
+  }
 
-    final hasPerms = await _recorder.hasPermission();
-    if (!hasPerms) {
-      throw Exception('Microphone permission not granted.');
+  /// Start listening for speech.
+  Future<void> startListening() async {
+    if (_state == VoiceState.listening) return;
+
+    // Check permission first
+    if (!await requestPermission()) {
+      _setState(VoiceState.error);
+      _errorMessage = 'Microphone permission denied';
+      notifyListeners();
+      return;
     }
 
-    final dir = await getTemporaryDirectory();
-    _recordingPath = p.join(dir.path, 'voice_command_${DateTime.now().millisecondsSinceEpoch}.m4a');
-
-    await _recorder.start(
-      const RecordConfig(
-        encoder: AudioEncoder.aacLc,
-        sampleRate: 16000,
-        numChannels: 1,
-      ),
-      path: _recordingPath!,
-    );
-    _isRecording = true;
-  }
-
-  Future<void> cancelRecording() async {
-    if (!_isRecording) return;
-    await _recorder.stop();
-    _isRecording = false;
-    // Delete the temp file
-    if (_recordingPath != null) {
-      final file = File(_recordingPath!);
-      if (await file.exists()) {
-        await file.delete();
+    // Initialize if needed
+    if (!_isInitialized) {
+      final available = await initialize();
+      if (!available) {
+        _setState(VoiceState.unavailable);
+        _errorMessage = 'Speech recognition unavailable on this device';
+        notifyListeners();
+        return;
       }
     }
-    _recordingPath = null;
-  }
 
-  Future<String> stopAndTranscribe() async {
-    if (!_isRecording) {
-      throw Exception('Not currently recording.');
-    }
+    _currentText = '';
+    _errorMessage = null;
+    _setState(VoiceState.listening);
 
-    final path = await _recorder.stop();
-    _isRecording = false;
-
-    if (path == null || path.isEmpty) {
-      throw Exception('Recording failed — no audio file produced.');
-    }
-
-    _recordingPath = path;
-
-    // Send to Groq Whisper API
-    final apiKey = await _groqService.getApiKey();
-    if (apiKey == null || apiKey.isEmpty) {
-      throw Exception('Groq API Key not configured. Please add it in Settings.');
-    }
-
-    final file = File(_recordingPath!);
-    if (!await file.exists()) {
-      throw Exception('Audio file not found.');
-    }
-
-    final request = http.MultipartRequest(
-      'POST',
-      Uri.parse('https://api.groq.com/openai/v1/audio/transcriptions'),
-    );
-    request.headers['Authorization'] = 'Bearer $apiKey';
-    request.fields['model'] = 'whisper-large-v3';
-    request.fields['language'] = 'en';
-    request.files.add(await http.MultipartFile.fromPath('file', _recordingPath!));
-
-    final streamedResponse = await request.send().timeout(const Duration(seconds: 30));
-    final response = await http.Response.fromStream(streamedResponse);
-
-    // Clean up temp file
-    await file.delete();
-    _recordingPath = null;
-
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      return data['text'] ?? '';
-    } else {
-      throw Exception('Whisper transcription failed: ${response.body}');
+    try {
+      await _speech.listen(
+        onResult: _onResult,
+        listenOptions: stt.SpeechListenOptions(
+          listenFor: const Duration(seconds: 30),
+          pauseFor: const Duration(seconds: 3),
+          localeId: 'en_US',
+        ),
+      );
+    } catch (e) {
+      _setState(VoiceState.error);
+      _errorMessage = 'Failed to start listening';
+      notifyListeners();
     }
   }
 
+  /// Stop listening and return the recognized text.
+  Future<String> stopListening() async {
+    if (_state != VoiceState.listening) return _currentText;
+
+    _setState(VoiceState.processing);
+    await _speech.stop();
+    // Don't reset state to idle here — let the caller decide
+    return _currentText;
+  }
+
+  /// Cancel listening and discard results.
+  Future<void> cancel() async {
+    await _speech.stop();
+    _currentText = '';
+    _errorMessage = null;
+    _setState(VoiceState.idle);
+  }
+
+  void _onResult(SpeechRecognitionResult result) {
+    _currentText = result.recognizedWords;
+    notifyListeners();
+  }
+
+  void _onStatus(String status) {
+    if (status == 'notListening' || status == 'done') {
+      if (_state == VoiceState.listening) {
+        _setState(VoiceState.idle);
+      }
+    }
+  }
+
+  void _onError(dynamic error) {
+    _setState(VoiceState.error);
+    _errorMessage = 'Recognition error: ${error.errorMsg ?? 'unknown'}';
+    notifyListeners();
+  }
+
+  void _setState(VoiceState newState) {
+    if (_state != newState) {
+      _state = newState;
+      notifyListeners();
+    }
+  }
+
+  @override
   void dispose() {
-    _recorder.dispose();
+    _speech.cancel();
+    _speech.stop();
+    super.dispose();
   }
+
+  // Legacy compatibility methods
+  Future<void> startRecording() => startListening();
+  Future<String> stopAndTranscribe() => stopListening();
+  Future<void> cancelRecording() => cancel();
 }
+
+/// Riverpod provider for VoiceInputService (legacy compatibility).
+final voiceServiceProvider = Provider<VoiceInputService>((ref) {
+  return VoiceInputService();
+});

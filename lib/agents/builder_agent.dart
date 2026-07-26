@@ -12,7 +12,8 @@ class BuilderAgent {
     String extraContext,
   ) async {
     return await _groq.generateResponse(
-      prompt: 'User request: $userRequest\n\nPlan:\n$plan\n\nAnalysis:\n$analysis$extraContext',
+      prompt:
+          'User request: $userRequest\n\nPlan:\n$plan\n\nAnalysis:\n$analysis$extraContext',
       systemPrompt: '''You are the Builder Agent for the "Anything" AI system.
 Your job is to produce the final AUIL (Anything UI Language) schema.
 

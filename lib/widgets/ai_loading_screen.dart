@@ -127,7 +127,9 @@ class _AILoadingScreenState extends State<AILoadingScreen>
                 child: LinearProgressIndicator(
                   value: (_currentStep + 1) / _stages.length,
                   backgroundColor: Colors.white.withValues(alpha: 0.05),
-                  valueColor: const AlwaysStoppedAnimation<Color>(Colors.blueAccent),
+                  valueColor: const AlwaysStoppedAnimation<Color>(
+                    Colors.blueAccent,
+                  ),
                   minHeight: 4,
                 ),
               ),

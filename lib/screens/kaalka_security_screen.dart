@@ -7,7 +7,8 @@ class KaalkaSecurityScreen extends ConsumerStatefulWidget {
   const KaalkaSecurityScreen({super.key});
 
   @override
-  ConsumerState<KaalkaSecurityScreen> createState() => _KaalkaSecurityScreenState();
+  ConsumerState<KaalkaSecurityScreen> createState() =>
+      _KaalkaSecurityScreenState();
 }
 
 class _KaalkaSecurityScreenState extends ConsumerState<KaalkaSecurityScreen> {
@@ -26,7 +27,10 @@ class _KaalkaSecurityScreenState extends ConsumerState<KaalkaSecurityScreen> {
       useLiveTime: _useLiveTime,
     );
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Kaalka security settings saved.'), backgroundColor: Colors.blueAccent),
+      const SnackBar(
+        content: Text('Kaalka security settings saved.'),
+        backgroundColor: Colors.blueAccent,
+      ),
     );
   }
 
@@ -38,7 +42,10 @@ class _KaalkaSecurityScreenState extends ConsumerState<KaalkaSecurityScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFF0F172A),
       appBar: AppBar(
-        title: const Text('Kaalka Security', style: TextStyle(color: Colors.white)),
+        title: const Text(
+          'Kaalka Security',
+          style: TextStyle(color: Colors.white),
+        ),
         backgroundColor: Colors.transparent,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
@@ -48,11 +55,19 @@ class _KaalkaSecurityScreenState extends ConsumerState<KaalkaSecurityScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Kaalka Time-Key Security',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white)),
+            const Text(
+              'Kaalka Time-Key Security',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
             const SizedBox(height: 8),
-            const Text('Time-derived encryption keys',
-                style: TextStyle(fontSize: 16, color: Colors.white54)),
+            const Text(
+              'Time-derived encryption keys',
+              style: TextStyle(fontSize: 16, color: Colors.white54),
+            ),
             const SizedBox(height: 32),
 
             // Toggle cards
@@ -65,18 +80,28 @@ class _KaalkaSecurityScreenState extends ConsumerState<KaalkaSecurityScreen> {
               child: Column(
                 children: [
                   SwitchListTile(
-                    title: const Text('Enable time-key encryption', style: TextStyle(color: Colors.white)),
+                    title: const Text(
+                      'Enable time-key encryption',
+                      style: TextStyle(color: Colors.white),
+                    ),
                     value: _enableEncryption,
                     onChanged: (val) => setState(() => _enableEncryption = val),
                     activeThumbColor: Colors.blueAccent,
                   ),
                   const Divider(color: Colors.white24),
                   SwitchListTile(
-                    title: const Text('Use live system time', style: TextStyle(color: Colors.white)),
-                    subtitle: const Text('Seed = current time, continuously varying.',
-                        style: TextStyle(color: Colors.white54)),
+                    title: const Text(
+                      'Use live system time',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                    subtitle: const Text(
+                      'Seed = current time, continuously varying.',
+                      style: TextStyle(color: Colors.white54),
+                    ),
                     value: _useLiveTime,
-                    onChanged: _enableEncryption ? (val) => setState(() => _useLiveTime = val) : null,
+                    onChanged: _enableEncryption
+                        ? (val) => setState(() => _useLiveTime = val)
+                        : null,
                     activeThumbColor: Colors.blueAccent,
                   ),
                 ],
@@ -87,13 +112,21 @@ class _KaalkaSecurityScreenState extends ConsumerState<KaalkaSecurityScreen> {
             if (!_useLiveTime && _enableEncryption) ...[
               const SizedBox(height: 32),
               const Center(
-                child: Text('Key Seed Time',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+                child: Text(
+                  'Key Seed Time',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
               ),
               const SizedBox(height: 8),
               const Center(
-                child: Text('Drag clock hands to set the encryption key seed.',
-                    style: TextStyle(fontSize: 13, color: Colors.white38)),
+                child: Text(
+                  'Drag clock hands to set the encryption key seed.',
+                  style: TextStyle(fontSize: 13, color: Colors.white38),
+                ),
               ),
               const SizedBox(height: 24),
 
@@ -120,7 +153,10 @@ class _KaalkaSecurityScreenState extends ConsumerState<KaalkaSecurityScreen> {
               const SizedBox(height: 24),
               Center(
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 12,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.blueAccent.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(20),
@@ -128,7 +164,10 @@ class _KaalkaSecurityScreenState extends ConsumerState<KaalkaSecurityScreen> {
                   child: Text(
                     'Kaalka key seed: $timeStr',
                     style: const TextStyle(
-                        color: Colors.blueAccent, fontSize: 16, fontWeight: FontWeight.bold),
+                      color: Colors.blueAccent,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ),
@@ -142,10 +181,14 @@ class _KaalkaSecurityScreenState extends ConsumerState<KaalkaSecurityScreen> {
                 onPressed: _saveSettings,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blueAccent,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(25),
+                  ),
                 ),
-                child: const Text('Save Security Settings',
-                    style: TextStyle(fontSize: 16, color: Colors.white)),
+                child: const Text(
+                  'Save Security Settings',
+                  style: TextStyle(fontSize: 16, color: Colors.white),
+                ),
               ),
             ),
           ],

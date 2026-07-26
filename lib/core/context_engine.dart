@@ -13,7 +13,9 @@ class ContextEngine {
 
   Future<String> compileContext() async {
     // Check if personal context learning is enabled
-    final isEnabledStr = await _memoryManager.getPreference('personal_context_learning_enabled');
+    final isEnabledStr = await _memoryManager.getPreference(
+      'personal_context_learning_enabled',
+    );
     final isEnabled = isEnabledStr == 'true';
 
     if (!isEnabled) {

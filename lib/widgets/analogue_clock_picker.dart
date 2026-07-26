@@ -144,8 +144,14 @@ class _ClockPainter extends CustomPainter {
       final innerR = isHour ? radius * 0.82 : radius * 0.88;
       final outerR = radius * 0.92;
 
-      final p1 = Offset(center.dx + innerR * cos(angle), center.dy + innerR * sin(angle));
-      final p2 = Offset(center.dx + outerR * cos(angle), center.dy + outerR * sin(angle));
+      final p1 = Offset(
+        center.dx + innerR * cos(angle),
+        center.dy + innerR * sin(angle),
+      );
+      final p2 = Offset(
+        center.dx + outerR * cos(angle),
+        center.dy + outerR * sin(angle),
+      );
 
       final tickPaint = Paint()
         ..color = isHour ? Colors.white54 : Colors.white24
@@ -163,7 +169,11 @@ class _ClockPainter extends CustomPainter {
       );
       textPainter.text = TextSpan(
         text: '$i',
-        style: const TextStyle(color: Colors.white54, fontSize: 13, fontWeight: FontWeight.w500),
+        style: const TextStyle(
+          color: Colors.white54,
+          fontSize: 13,
+          fontWeight: FontWeight.w500,
+        ),
       );
       textPainter.layout();
       textPainter.paint(canvas, numPos);
@@ -171,25 +181,31 @@ class _ClockPainter extends CustomPainter {
 
     // Draw hour hand
     _drawHand(
-      canvas, center,
+      canvas,
+      center,
       (hours % 12 + minutes / 60) / 12 * 2 * pi - pi / 2,
-      radius * 0.4, 4,
+      radius * 0.4,
+      4,
       dragging == 'hour' ? Colors.blueAccent : Colors.white,
     );
 
     // Draw minute hand
     _drawHand(
-      canvas, center,
+      canvas,
+      center,
       (minutes / 60) * 2 * pi - pi / 2,
-      radius * 0.6, 3,
+      radius * 0.6,
+      3,
       dragging == 'minute' ? Colors.blueAccent : Colors.white70,
     );
 
     // Draw second hand
     _drawHand(
-      canvas, center,
+      canvas,
+      center,
       (seconds / 60) * 2 * pi - pi / 2,
-      radius * 0.75, 1.5,
+      radius * 0.75,
+      1.5,
       dragging == 'second' ? Colors.blueAccent : Colors.redAccent,
     );
 
@@ -198,7 +214,14 @@ class _ClockPainter extends CustomPainter {
     canvas.drawCircle(center, 5, dotPaint);
   }
 
-  void _drawHand(Canvas canvas, Offset center, double angle, double length, double width, Color color) {
+  void _drawHand(
+    Canvas canvas,
+    Offset center,
+    double angle,
+    double length,
+    double width,
+    Color color,
+  ) {
     final endpoint = Offset(
       center.dx + length * cos(angle),
       center.dy + length * sin(angle),

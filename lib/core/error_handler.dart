@@ -72,10 +72,7 @@ class ErrorHandler {
     );
   }
 
-  static Widget buildErrorWidget(
-    dynamic error, {
-    VoidCallback? onRetry,
-  }) {
+  static Widget buildErrorWidget(dynamic error, {VoidCallback? onRetry}) {
     final info = classify(error);
 
     return Center(

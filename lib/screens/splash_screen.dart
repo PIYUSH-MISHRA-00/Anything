@@ -13,7 +13,8 @@ class SplashScreen extends ConsumerStatefulWidget {
   ConsumerState<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends ConsumerState<SplashScreen> with SingleTickerProviderStateMixin {
+class _SplashScreenState extends ConsumerState<SplashScreen>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _animation;
 
@@ -24,10 +25,11 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with SingleTickerPr
       vsync: this,
       duration: const Duration(seconds: 2),
     )..repeat(reverse: true);
-    
-    _animation = Tween<double>(begin: 0.8, end: 1.2).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+
+    _animation = Tween<double>(
+      begin: 0.8,
+      end: 1.2,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
 
     _navigateAfterSplash();
   }
@@ -41,14 +43,16 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with SingleTickerPr
     // Check if onboarding has been completed
     try {
       final memoryManager = ref.read(memoryManagerProvider);
-      final onboardingCompleted = await memoryManager.getPreference('onboarding_completed');
+      final onboardingCompleted = await memoryManager.getPreference(
+        'onboarding_completed',
+      );
 
       if (!mounted) return;
 
       if (onboardingCompleted == 'true') {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const AppShell()),
-        );
+        Navigator.of(
+          context,
+        ).pushReplacement(MaterialPageRoute(builder: (_) => const AppShell()));
       } else {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (_) => const OnboardingScreen()),
@@ -95,7 +99,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with SingleTickerPr
                           color: Colors.blueAccent.withValues(alpha: 0.5),
                           blurRadius: 40 * _animation.value,
                           spreadRadius: 10 * _animation.value,
-                        )
+                        ),
                       ],
                     ),
                     child: const CustomHubLogo(size: 50),

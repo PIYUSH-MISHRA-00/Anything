@@ -28,7 +28,11 @@ class WorkspaceContainer extends StatelessWidget {
                   color: Colors.blueAccent.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Icon(Icons.dashboard, color: Colors.blueAccent, size: 18),
+                child: const Icon(
+                  Icons.dashboard,
+                  color: Colors.blueAccent,
+                  size: 18,
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -42,7 +46,11 @@ class WorkspaceContainer extends StatelessWidget {
                 ),
               ),
               IconButton(
-                icon: const Icon(Icons.fullscreen, color: Colors.white38, size: 20),
+                icon: const Icon(
+                  Icons.fullscreen,
+                  color: Colors.white38,
+                  size: 20,
+                ),
                 onPressed: () {},
                 tooltip: 'Expand',
               ),
@@ -50,9 +58,7 @@ class WorkspaceContainer extends StatelessWidget {
           ),
         ),
         // Content
-        Expanded(
-          child: GenerativeUIRenderer(rawAuilJson: auilJson),
-        ),
+        Expanded(child: GenerativeUIRenderer(rawAuilJson: auilJson)),
       ],
     );
   }

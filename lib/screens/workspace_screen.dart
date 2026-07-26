@@ -12,7 +12,8 @@ import '../core/error_handler.dart';
 import 'dart:convert';
 
 class WorkspaceScreen extends ConsumerStatefulWidget {
-  static final GlobalKey<WorkspaceScreenState> stateKey = GlobalKey<WorkspaceScreenState>();
+  static final GlobalKey<WorkspaceScreenState> stateKey =
+      GlobalKey<WorkspaceScreenState>();
   const WorkspaceScreen({super.key});
 
   @override
@@ -89,7 +90,10 @@ class WorkspaceScreenState extends ConsumerState<WorkspaceScreen>
         }
       } catch (_) {}
 
-      final toolResults = await toolRouter.executeTools(toolsToRun, intentJsonStr);
+      final toolResults = await toolRouter.executeTools(
+        toolsToRun,
+        intentJsonStr,
+      );
 
       final auilSchema = await reasoningEngine.evaluateAndGenerateAUIL(
         query,
@@ -132,8 +136,15 @@ class WorkspaceScreenState extends ConsumerState<WorkspaceScreen>
       key: WorkspaceScreen.stateKey,
       backgroundColor: const Color(0xFF0F172A),
       appBar: AppBar(
-        title: const Text('Anything',
-            style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold, letterSpacing: 1.0)),
+        title: const Text(
+          'Anything',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 1.0,
+          ),
+        ),
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: false,
@@ -148,20 +159,35 @@ class WorkspaceScreenState extends ConsumerState<WorkspaceScreen>
               decoration: BoxDecoration(
                 color: Colors.blueAccent.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.blueAccent.withValues(alpha: 0.3)),
+                border: Border.all(
+                  color: Colors.blueAccent.withValues(alpha: 0.3),
+                ),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.attach_file, color: Colors.blueAccent, size: 18),
+                  const Icon(
+                    Icons.attach_file,
+                    color: Colors.blueAccent,
+                    size: 18,
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: Text(_attachedFileName!,
-                        style: const TextStyle(color: Colors.white70, fontSize: 13),
-                        overflow: TextOverflow.ellipsis),
+                    child: Text(
+                      _attachedFileName!,
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 13,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                   GestureDetector(
                     onTap: _removeAttachment,
-                    child: const Icon(Icons.close, color: Colors.white38, size: 18),
+                    child: const Icon(
+                      Icons.close,
+                      color: Colors.white38,
+                      size: 18,
+                    ),
                   ),
                 ],
               ),
@@ -194,7 +220,8 @@ class WorkspaceScreenState extends ConsumerState<WorkspaceScreen>
 
   Widget _buildEmptyState() {
     // Truly dynamic randomization on every re-render of the empty state
-    final shuffled = List<Map<String, dynamic>>.from(_allSuggestions)..shuffle();
+    final shuffled = List<Map<String, dynamic>>.from(_allSuggestions)
+      ..shuffle();
     final suggestions = shuffled.take(6).toList();
 
     return Center(
@@ -207,7 +234,11 @@ class WorkspaceScreenState extends ConsumerState<WorkspaceScreen>
             const SizedBox(height: 32),
             const Text(
               'What do you want to do today?',
-              style: TextStyle(color: Colors.white70, fontSize: 18, fontWeight: FontWeight.w500),
+              style: TextStyle(
+                color: Colors.white70,
+                fontSize: 18,
+                fontWeight: FontWeight.w500,
+              ),
             ),
             const SizedBox(height: 8),
             const Text(
@@ -224,19 +255,33 @@ class WorkspaceScreenState extends ConsumerState<WorkspaceScreen>
                   onTap: () => _handleIntent(s['text'] as String),
                   borderRadius: BorderRadius.circular(16),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.05),
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.08),
+                      ),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(s['icon'] as IconData, color: Colors.blueAccent, size: 18),
+                        Icon(
+                          s['icon'] as IconData,
+                          color: Colors.blueAccent,
+                          size: 18,
+                        ),
                         const SizedBox(width: 8),
-                        Text(s['text'] as String,
-                            style: const TextStyle(color: Colors.white70, fontSize: 13)),
+                        Text(
+                          s['text'] as String,
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 13,
+                          ),
+                        ),
                       ],
                     ),
                   ),

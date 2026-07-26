@@ -33,10 +33,7 @@ class AppShellState extends State<AppShell> {
   Widget build(BuildContext context) {
     return Scaffold(
       key: AppShell.stateKey,
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _screens,
-      ),
+      body: IndexedStack(index: _currentIndex, children: _screens),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: const Color(0xFF0F172A),

@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Anything - Activity &amp; Versions</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-container-high": "#dce9ff",
+                      "on-tertiary-fixed": "#171c23",
+                      "surface-container-low": "#eff4ff",
+                      "error-container": "#ffdad6",
+                      "surface-container-highest": "#d3e4fe",
+                      "on-secondary-container": "#fffbff",
+                      "on-surface-variant": "#454652",
+                      "on-primary": "#ffffff",
+                      "on-tertiary-container": "#b6bbc5",
+                      "surface": "#f8f9ff",
+                      "surface-tint": "#4456b6",
+                      "primary": "#11278a",
+                      "inverse-on-surface": "#eaf1ff",
+                      "background": "#f8f9ff",
+                      "tertiary": "#2f343d",
+                      "secondary-fixed-dim": "#c0c1ff",
+                      "on-tertiary": "#ffffff",
+                      "tertiary-fixed": "#dee2ed",
+                      "on-secondary-fixed": "#07006c",
+                      "surface-container": "#e5eeff",
+                      "inverse-primary": "#bac3ff",
+                      "on-primary-container": "#aab6ff",
+                      "error": "#ba1a1a",
+                      "on-error-container": "#93000a",
+                      "on-surface": "#0b1c30",
+                      "surface-dim": "#cbdbf5",
+                      "primary-fixed": "#dee0ff",
+                      "on-error": "#ffffff",
+                      "on-primary-fixed": "#00105a",
+                      "on-tertiary-fixed-variant": "#424750",
+                      "tertiary-fixed-dim": "#c2c6d1",
+                      "surface-container-lowest": "#ffffff",
+                      "surface-bright": "#f8f9ff",
+                      "inverse-surface": "#213145",
+                      "primary-fixed-dim": "#bac3ff",
+                      "secondary-fixed": "#e1e0ff",
+                      "secondary-container": "#6063ee",
+                      "on-background": "#0b1c30",
+                      "tertiary-container": "#464b54",
+                      "primary-container": "#2e41a1",
+                      "surface-variant": "#d3e4fe",
+                      "on-primary-fixed-variant": "#2a3d9d",
+                      "outline-variant": "#c5c5d4",
+                      "on-secondary": "#ffffff",
+                      "on-secondary-fixed-variant": "#2f2ebe",
+                      "secondary": "#4648d4",
+                      "outline": "#757683"
+              },
+              "borderRadius": {
+                      "DEFAULT": "1rem",
+                      "lg": "2rem",
+                      "xl": "3rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "margin-mobile": "16px",
+                      "margin-desktop": "40px",
+                      "container-max": "1280px",
+                      "unit": "8px",
+                      "gutter": "24px"
+              },
+              "fontFamily": {
+                      "headline-md": [
+                              "Public Sans"
+                      ],
+                      "link-relationship": [
+                              "Public Sans"
+                      ],
+                      "display-lg": [
+                              "Public Sans"
+                      ],
+                      "display-lg-mobile": [
+                              "Public Sans"
+                      ],
+                      "label-sm": [
+                              "Public Sans"
+                      ],
+                      "body-md": [
+                              "Public Sans"
+                      ]
+              },
+              "fontSize": {
+                      "headline-md": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "link-relationship": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "display-lg": [
+                              "48px",
+                              {
+                                      "lineHeight": "56px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "display-lg-mobile": [
+                              "32px",
+                              {
+                                      "lineHeight": "40px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "label-sm": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-md": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+          .glass-panel {
+              background: rgba(255, 255, 255, 0.4);
+              backdrop-filter: blur(20px);
+              -webkit-backdrop-filter: blur(20px);
+              border: 1px solid rgba(0, 0, 0, 0.05);
+          }
+          .timeline-connector {
+              position: absolute;
+              left: 20px;
+              top: 40px;
+              bottom: -40px;
+              width: 1px;
+              background-color: #0b1c30;
+              opacity: 0.1;
+              z-index: 0;
+          }
+      </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background min-h-screen font-body-md pt-24 pb-32">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-surface/80 dark:bg-on-surface/80 backdrop-blur-xl border-b border-black/5 dark:border-white/5 shadow-sm">
+<div class="flex items-center justify-between px-margin-mobile md:px-margin-desktop h-16 w-full max-w-container-max mx-auto">
+<div class="flex items-center gap-4">
+<button class="text-primary dark:text-primary-fixed hover:bg-primary/5 transition-colors p-2 rounded-full scale-95 active:opacity-80 transition-all">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">blur_on</span>
+</button>
+<h1 class="font-display-lg-mobile text-display-lg-mobile md:font-display-lg md:text-display-lg tracking-tight text-primary dark:text-primary-fixed">Anything Continuity</h1>
+</div>
+<div class="flex items-center">
+<div class="w-10 h-10 rounded-full overflow-hidden border border-outline-variant shadow-sm">
+<img alt="User Profile" class="w-full h-full object-cover" data-alt="A small, circular avatar portrait of a modern professional against a clean, light studio background. Soft, diffused lighting highlights the face gently, embodying a calm, trustworthy digital persona." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB4Lt1wY-XHGGz6yaDrHsD4VHhWszWvD_gSXbmqrYaZlWvDDY6ixtUlGequihKGLGk_71b8yWWXOA4HqT4g6Q8IUT1ZAmev76QMJyvsp-dHq0aIUwKssPLOlRGAj1w2FRdgu8FH2IqwXFrYYuIqpKEsRBXjyuN9nXFk7E-rNQ8m8tV1Wnilt-CokggBkqtAuExUme67atwL0aO8gvlTNiO-vgZu8bo7vVHwFGjmDC4zI3RLS1ehhDJcxMOyGYAJ4qDkTlXJWHxlt4U"/>
+</div>
+</div>
+</div>
+</header>
+<main class="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop">
+<!-- Header Section -->
+<div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-6">
+<div>
+<h2 class="font-headline-md text-headline-md text-on-surface mb-2">Activity &amp; Versions</h2>
+<p class="text-on-surface-variant font-body-md text-body-md">A calm timeline of team progress.</p>
+</div>
+<div class="flex items-center gap-4 glass-panel px-4 py-2 rounded-full">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Compare</span>
+<label class="relative inline-flex items-center cursor-pointer">
+<input class="sr-only peer" type="checkbox" value=""/>
+<div class="w-11 h-6 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</label>
+</div>
+</div>
+<!-- Timeline Section -->
+<div class="relative max-w-3xl">
+<!-- Timeline Item 1 (Active/Recent) -->
+<div class="relative pl-12 pb-12">
+<div class="timeline-connector"></div>
+<!-- Node Marker -->
+<div class="absolute left-0 top-1 w-10 h-10 bg-primary-container text-on-primary-container rounded-full flex items-center justify-center z-10 shadow-[0px_4px_20px_rgba(46,65,161,0.15)] ring-4 ring-background">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">person</span>
+</div>
+<div class="glass-panel p-6 rounded-lg border-primary/20 shadow-sm relative overflow-hidden group">
+<!-- Subtle glow for active item -->
+<div class="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+<div class="relative z-10">
+<div class="flex justify-between items-start mb-4">
+<div>
+<h3 class="font-headline-md text-headline-md text-on-surface">Alex updated the research</h3>
+<p class="font-label-sm text-label-sm text-on-surface-variant mt-1">Today, 2:45 PM</p>
+</div>
+<button class="px-4 py-2 bg-surface-container hover:bg-surface-container-high text-primary rounded-full font-label-sm text-label-sm transition-colors flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px]">history</span> Restore
+                            </button>
+</div>
+<div class="bg-surface/50 rounded-DEFAULT p-4 border border-outline-variant/30">
+<p class="font-body-md text-body-md text-on-surface-variant">Added findings from the latest user interviews regarding the ambient intelligence feature set. 3 new insights generated.</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Timeline Item 2 -->
+<div class="relative pl-12 pb-12">
+<div class="timeline-connector"></div>
+<!-- Node Marker -->
+<div class="absolute left-0 top-1 w-10 h-10 bg-surface-container-high text-on-surface rounded-full flex items-center justify-center z-10 ring-4 ring-background">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 0;">grading</span>
+</div>
+<div class="glass-panel p-6 rounded-lg shadow-sm">
+<div class="flex justify-between items-start mb-4">
+<div>
+<h3 class="font-headline-md text-headline-md text-on-surface">Maria reviewed the application</h3>
+<p class="font-label-sm text-label-sm text-on-surface-variant mt-1">Yesterday, 11:20 AM</p>
+</div>
+<button class="px-4 py-2 bg-surface hover:bg-surface-container text-on-surface-variant rounded-full font-label-sm text-label-sm transition-colors border border-outline-variant/50 flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px]">visibility</span> View
+                        </button>
+</div>
+<div class="flex gap-2">
+<span class="px-3 py-1 bg-secondary-container/10 text-secondary font-label-sm text-label-sm rounded-full flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">check_circle</span> Approved
+                         </span>
+<span class="px-3 py-1 bg-surface-container text-on-surface-variant font-label-sm text-label-sm rounded-full flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">comment</span> 2 Notes
+                         </span>
+</div>
+</div>
+</div>
+<!-- Timeline Item 3 (AI Action) -->
+<div class="relative pl-12 pb-12">
+<!-- No connector for the last item -->
+<!-- Node Marker -->
+<div class="absolute left-0 top-1 w-10 h-10 bg-tertiary-container text-on-tertiary-container rounded-full flex items-center justify-center z-10 ring-4 ring-background">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">smart_toy</span>
+</div>
+<div class="glass-panel p-6 rounded-lg shadow-sm border-tertiary/10">
+<div class="flex justify-between items-start">
+<div>
+<h3 class="font-headline-md text-headline-md text-on-surface flex items-center gap-2">
+                                AI organized the notes
+                                <span class="material-symbols-outlined text-tertiary text-[18px]">auto_awesome</span>
+</h3>
+<p class="font-label-sm text-label-sm text-on-surface-variant mt-1">Oct 24, 9:00 AM</p>
+</div>
+</div>
+<div class="mt-4 grid grid-cols-2 gap-4">
+<div class="bg-surface/50 p-3 rounded-DEFAULT border border-outline-variant/30 flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center">
+<span class="material-symbols-outlined text-on-surface-variant text-[16px]">folder</span>
+</div>
+<div>
+<p class="font-link-relationship text-link-relationship text-on-surface">Design System</p>
+<p class="font-label-sm text-label-sm text-on-surface-variant">5 items moved</p>
+</div>
+</div>
+<div class="bg-surface/50 p-3 rounded-DEFAULT border border-outline-variant/30 flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center">
+<span class="material-symbols-outlined text-on-surface-variant text-[16px]">folder</span>
+</div>
+<div>
+<p class="font-link-relationship text-link-relationship text-on-surface">User Feedback</p>
+<p class="font-label-sm text-label-sm text-on-surface-variant">12 items moved</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full z-50 flex justify-around items-center p-2 pb-safe md:hidden hidden">
+<div class="fixed bottom-gutter left-1/2 -translate-x-1/2 w-[calc(100%-48px)] max-w-md rounded-full mb-4 bg-surface-container/60 dark:bg-on-tertiary-container/20 backdrop-blur-2xl border border-white/10 dark:border-black/10 shadow-xl flex justify-around items-center py-2 px-4">
+<a class="flex flex-col items-center justify-center text-on-surface-variant/70 hover:text-primary dark:hover:text-primary-fixed transition-colors" href="#">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 0;">phonelink_ring</span>
+<span class="font-label-sm text-label-sm">Handoff</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant/70 hover:text-primary dark:hover:text-primary-fixed transition-colors" href="#">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 0;">devices</span>
+<span class="font-label-sm text-label-sm">Devices</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant/70 hover:text-primary dark:hover:text-primary-fixed transition-colors" href="#">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 0;">verified_user</span>
+<span class="font-label-sm text-label-sm">Security</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-primary text-on-primary rounded-full w-12 h-12 shadow-md animate-pulse-slow" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">data_exploration</span>
+<span class="sr-only">Pipeline</span>
+</a>
+</div>
+</nav>
+</body></html>

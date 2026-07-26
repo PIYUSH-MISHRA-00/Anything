@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Memory Settings - Ambient Intelligence</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "outline-variant": "#c5c5d4",
+                        "surface-container-highest": "#d3e4fe",
+                        "background": "#f8f9ff",
+                        "surface-variant": "#d3e4fe",
+                        "surface-container-lowest": "#ffffff",
+                        "primary": "#11278a",
+                        "on-secondary-fixed-variant": "#2f2ebe",
+                        "surface": "#f8f9ff",
+                        "on-surface-variant": "#454652",
+                        "primary-container": "#2e41a1",
+                        "on-primary-fixed-variant": "#2a3d9d",
+                        "on-tertiary-fixed": "#171c23",
+                        "on-error": "#ffffff",
+                        "on-tertiary-container": "#b6bbc5",
+                        "outline": "#757683",
+                        "secondary-fixed-dim": "#c0c1ff",
+                        "secondary-fixed": "#e1e0ff",
+                        "surface-bright": "#f8f9ff",
+                        "on-tertiary": "#ffffff",
+                        "error": "#ba1a1a",
+                        "on-primary-fixed": "#00105a",
+                        "on-tertiary-fixed-variant": "#424750",
+                        "tertiary-fixed": "#dee2ed",
+                        "on-background": "#0b1c30",
+                        "on-surface": "#0b1c30",
+                        "inverse-on-surface": "#eaf1ff",
+                        "secondary": "#4648d4",
+                        "primary-fixed": "#dee0ff",
+                        "primary-fixed-dim": "#bac3ff",
+                        "error-container": "#ffdad6",
+                        "surface-dim": "#cbdbf5",
+                        "on-secondary": "#ffffff",
+                        "inverse-surface": "#213145",
+                        "surface-container": "#e5eeff",
+                        "on-error-container": "#93000a",
+                        "secondary-container": "#6063ee",
+                        "inverse-primary": "#bac3ff",
+                        "surface-container-low": "#eff4ff",
+                        "on-secondary-fixed": "#07006c",
+                        "surface-container-high": "#dce9ff",
+                        "on-secondary-container": "#fffbff",
+                        "tertiary": "#2f343d",
+                        "surface-tint": "#4456b6",
+                        "tertiary-fixed-dim": "#c2c6d1",
+                        "on-primary-container": "#aab6ff",
+                        "tertiary-container": "#464b54",
+                        "on-primary": "#ffffff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "1rem",
+                        "lg": "2rem",
+                        "xl": "3rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "margin-desktop": "40px",
+                        "container-max": "1280px",
+                        "margin-mobile": "16px",
+                        "gutter": "24px",
+                        "unit": "8px"
+                    },
+                    "fontFamily": {
+                        "label-sm": ["Public Sans"],
+                        "link-relationship": ["Public Sans"],
+                        "body-md": ["Public Sans"],
+                        "display-lg": ["Public Sans"],
+                        "display-lg-mobile": ["Public Sans"],
+                        "headline-md": ["Public Sans"]
+                    },
+                    "fontSize": {
+                        "label-sm": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "link-relationship": ["14px", { "lineHeight": "20px", "fontWeight": "500" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "display-lg-mobile": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            background-color: theme('colors.background');
+            color: theme('colors.on-background');
+            -webkit-font-smoothing: antialiased;
+        }
+        
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .memory-glow {
+            box-shadow: 0px 4px 20px rgba(46, 65, 161, 0.15);
+        }
+
+        /* Custom Toggle Switch */
+        .toggle-checkbox:checked {
+            right: 0;
+            border-color: theme('colors.primary');
+        }
+        .toggle-checkbox:checked + .toggle-label {
+            background-color: theme('colors.primary');
+        }
+        .toggle-checkbox {
+            right: 0;
+            z-index: 1;
+            border-color: #e2e8f0;
+            transition: all 0.3s;
+        }
+        .toggle-label {
+            width: 3rem;
+            height: 1.5rem;
+            background-color: theme('colors.surface-variant');
+            border-radius: 9999px;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .toggle-label:after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 1.25rem;
+            height: 1.25rem;
+            background-color: white;
+            border-radius: 50%;
+            transition: all 0.3s;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+        .toggle-checkbox:checked + .toggle-label:after {
+            transform: translateX(1.5rem);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="min-h-screen pt-20 pb-32 md:pb-20">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-surface/80 dark:bg-surface/80 backdrop-blur-xl flex items-center justify-between px-margin-mobile w-full h-16 border-b border-black/5 dark:border-white/5 no shadows">
+<div class="flex items-center gap-3">
+<button class="hover:opacity-80 transition-opacity Active: scale-95 transition-transform duration-200">
+<span class="material-symbols-outlined text-primary dark:text-primary-fixed-dim" data-icon="arrow_back">arrow_back</span>
+</button>
+<h1 class="font-headline-md text-headline-md font-bold tracking-tight text-primary dark:text-primary-fixed-dim">Memory Settings</h1>
+</div>
+<div class="flex items-center">
+<span class="material-symbols-outlined text-primary dark:text-primary-fixed-dim hover:opacity-80 transition-opacity" data-icon="settings_brightness">settings_brightness</span>
+</div>
+</header>
+<main class="max-w-3xl mx-auto px-margin-mobile md:px-margin-desktop py-8 space-y-8">
+<!-- Header Section -->
+<div class="space-y-4">
+<h2 class="font-display-lg-mobile md:font-display-lg text-on-background">System Memory</h2>
+<p class="font-body-md text-on-surface-variant max-w-2xl">
+                Configure how the intelligence adapts to your patterns. Changes here affect the core behavior of your ambient environment.
+            </p>
+</div>
+<!-- Continuous Learning Toggle -->
+<section class="glass-panel rounded-lg p-6 flex items-center justify-between memory-glow transition-all duration-300">
+<div class="space-y-1 pr-4">
+<h3 class="font-headline-md text-on-surface">Continuous Learning</h3>
+<p class="font-body-md text-on-surface-variant text-sm">
+                    Allow the system to passively observe and adapt to your daily routines, communication style, and workflow preferences.
+                </p>
+</div>
+<div class="relative inline-block w-12 mr-2 align-middle select-none">
+<input checked="" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer opacity-0" id="continuous-learning" name="toggle" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer" for="continuous-learning"></label>
+</div>
+</section>
+<!-- What is Remembered Bento Grid -->
+<section class="space-y-4">
+<h3 class="font-headline-md text-on-surface px-2">Memory Scope</h3>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<!-- Retained -->
+<div class="glass-panel rounded-lg p-6 space-y-4">
+<div class="flex items-center gap-2 text-primary">
+<span class="material-symbols-outlined" data-icon="memory" data-weight="fill">memory</span>
+<span class="font-label-sm uppercase">Retained Context</span>
+</div>
+<ul class="space-y-3 font-body-md text-on-surface-variant text-sm">
+<li class="flex items-start gap-2">
+<span class="material-symbols-outlined text-[18px] mt-0.5 text-primary-container" data-icon="work">work</span>
+<span><strong>Work Patterns:</strong> Frequent collaborators, active projects, and standard meeting schedules.</span>
+</li>
+<li class="flex items-start gap-2">
+<span class="material-symbols-outlined text-[18px] mt-0.5 text-primary-container" data-icon="tune">tune</span>
+<span><strong>Preferences:</strong> UI layouts, notification thresholds, and ambient lighting states.</span>
+</li>
+<li class="flex items-start gap-2">
+<span class="material-symbols-outlined text-[18px] mt-0.5 text-primary-container" data-icon="edit_document">edit_document</span>
+<span><strong>Communication Style:</strong> Tone, typical sign-offs, and formatting preferences in drafts.</span>
+</li>
+</ul>
+</div>
+<!-- Discarded -->
+<div class="glass-panel rounded-lg p-6 space-y-4 bg-surface-container-lowest/40">
+<div class="flex items-center gap-2 text-outline">
+<span class="material-symbols-outlined" data-icon="delete_sweep">delete_sweep</span>
+<span class="font-label-sm uppercase">Discarded Context</span>
+</div>
+<ul class="space-y-3 font-body-md text-on-surface-variant/70 text-sm">
+<li class="flex items-start gap-2">
+<span class="material-symbols-outlined text-[18px] mt-0.5" data-icon="error">error</span>
+<span><strong>Errors:</strong> Typos, deleted drafts, and abandoned queries.</span>
+</li>
+<li class="flex items-start gap-2">
+<span class="material-symbols-outlined text-[18px] mt-0.5" data-icon="block">block</span>
+<span><strong>Failed Attempts:</strong> Unsuccessful logins or rejected authentication requests.</span>
+</li>
+<li class="flex items-start gap-2">
+<span class="material-symbols-outlined text-[18px] mt-0.5" data-icon="timer">timer</span>
+<span><strong>Ephemeral Data:</strong> Clipboard history older than 1 hour and temporary session tokens.</span>
+</li>
+</ul>
+</div>
+</div>
+</section>
+<!-- Sensitive Context Exclusion -->
+<section class="glass-panel rounded-lg p-6 space-y-4">
+<div class="flex justify-between items-center">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary" data-icon="shield">shield</span>
+<h3 class="font-headline-md text-on-surface">Sensitive Context</h3>
+</div>
+<button class="bg-surface-container hover:bg-surface-container-high text-primary font-link-relationship px-4 py-1.5 rounded-full transition-colors flex items-center gap-1 text-sm">
+<span class="material-symbols-outlined text-[16px]" data-icon="add">add</span> Rule
+                </button>
+</div>
+<p class="font-body-md text-on-surface-variant text-sm pb-2">
+                Define specific domains, apps, or keywords that should never enter the system memory.
+            </p>
+<div class="space-y-2">
+<div class="flex items-center justify-between p-3 rounded-lg bg-surface border border-outline-variant/30">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-secondary-fixed flex items-center justify-center text-on-secondary-fixed">
+<span class="material-symbols-outlined text-[16px]" data-icon="account_balance">account_balance</span>
+</div>
+<span class="font-body-md text-sm">Banking &amp; Financial Domains</span>
+</div>
+<button class="text-outline hover:text-error transition-colors">
+<span class="material-symbols-outlined text-[20px]" data-icon="close">close</span>
+</button>
+</div>
+<div class="flex items-center justify-between p-3 rounded-lg bg-surface border border-outline-variant/30">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-tertiary-fixed flex items-center justify-center text-on-tertiary-fixed">
+<span class="material-symbols-outlined text-[16px]" data-icon="health_and_safety">health_and_safety</span>
+</div>
+<span class="font-body-md text-sm">Healthcare Portals (*.health.gov)</span>
+</div>
+<button class="text-outline hover:text-error transition-colors">
+<span class="material-symbols-outlined text-[20px]" data-icon="close">close</span>
+</button>
+</div>
+</div>
+</section>
+<!-- Danger Zone -->
+<section class="mt-12 pt-8 border-t border-outline-variant/20">
+<div class="glass-panel rounded-lg p-6 border-error/20 bg-error-container/10">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+<div class="space-y-1">
+<h3 class="font-headline-md text-error flex items-center gap-2 text-lg">
+<span class="material-symbols-outlined text-[20px]" data-icon="warning">warning</span>
+                            Forget this Workspace
+                        </h3>
+<p class="font-body-md text-on-surface-variant text-sm max-w-md">
+                            Permanently delete all localized memory, preferences, and context associated with this specific workspace environment. This cannot be undone.
+                        </p>
+</div>
+<button class="bg-error/10 hover:bg-error/20 text-error border border-error/30 font-link-relationship px-6 py-2.5 rounded-full transition-colors whitespace-nowrap self-start sm:self-center">
+                        Purge Memory
+                    </button>
+</div>
+</div>
+</section>
+</main>
+<!-- Suppressed Nav on Settings Page as per guidelines (Sub-page/Task-focused) -->
+<script>
+        // Simple micro-interaction for the toggle
+        const toggle = document.getElementById('continuous-learning');
+        const togglePanel = toggle.closest('.glass-panel');
+
+        toggle.addEventListener('change', (e) => {
+            if(e.target.checked) {
+                togglePanel.classList.add('memory-glow');
+            } else {
+                togglePanel.classList.remove('memory-glow');
+            }
+        });
+    </script>
+</body></html>

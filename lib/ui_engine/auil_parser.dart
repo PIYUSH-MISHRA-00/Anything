@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 import '../models/auil_schema_model.dart';
 
 class AUILParser {
@@ -18,8 +18,11 @@ class AUILParser {
       return AUILSchema(
         layout: 'dashboard',
         components: [
-          AUILComponent(type: 'text_block', content: 'Failed to parse AI response: $e')
-        ]
+          AUILComponent(
+            type: 'text_block',
+            content: 'Failed to parse AI response: $e',
+          ),
+        ],
       );
     }
   }

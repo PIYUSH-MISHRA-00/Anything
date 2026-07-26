@@ -13,7 +13,16 @@ class FileContextService {
   Future<({String name, String context})?> pickAndProcessFile() async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
-      allowedExtensions: ['txt', 'csv', 'md', 'json', 'pdf', 'png', 'jpg', 'jpeg'],
+      allowedExtensions: [
+        'txt',
+        'csv',
+        'md',
+        'json',
+        'pdf',
+        'png',
+        'jpg',
+        'jpeg',
+      ],
       withData: false,
       withReadStream: false,
     );
@@ -40,16 +49,14 @@ class FileContextService {
       case 'csv':
         final content = await file.readAsString();
         final label = extension == 'csv' ? 'CSV Dataset' : 'Text Document';
-        return (
-          name: fileName,
-          context: '[$label: $fileName]\n$content',
-        );
+        return (name: fileName, context: '[$label: $fileName]\n$content');
 
       case 'pdf':
         // PDF text extraction requires external packages; provide the file path context
         return (
           name: fileName,
-          context: '[PDF Document: $fileName] (PDF attached — summarize or analyze this document)',
+          context:
+              '[PDF Document: $fileName] (PDF attached — summarize or analyze this document)',
         );
 
       case 'png':
@@ -58,7 +65,8 @@ class FileContextService {
         // For images, we note the file for vision context
         return (
           name: fileName,
-          context: '[Image: $fileName] (Image attached — describe or analyze this image)',
+          context:
+              '[Image: $fileName] (Image attached — describe or analyze this image)',
         );
 
       default:

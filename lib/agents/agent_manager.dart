@@ -28,7 +28,10 @@ class AgentManager {
 
   /// Runs the full agent pipeline for a complex task.
   /// Returns the final AUIL schema JSON string.
-  Future<String> executeAgentPipeline(String userRequest, {String? fileContext}) async {
+  Future<String> executeAgentPipeline(
+    String userRequest, {
+    String? fileContext,
+  }) async {
     // Step 1: Planner decomposes the task
     final plan = await planner.createPlan(userRequest);
 
@@ -39,8 +42,15 @@ class AgentManager {
     final analysis = await analyst.analyze(userRequest, research);
 
     // Step 4: Builder produces final AUIL output
-    final fileSection = fileContext != null ? '\nAttached file context:\n$fileContext' : '';
-    final auil = await builder.buildOutput(userRequest, plan, analysis, fileSection);
+    final fileSection = fileContext != null
+        ? '\nAttached file context:\n$fileContext'
+        : '';
+    final auil = await builder.buildOutput(
+      userRequest,
+      plan,
+      analysis,
+      fileSection,
+    );
 
     return auil;
   }
@@ -48,9 +58,18 @@ class AgentManager {
   /// Determines if a request is complex enough to need the full agent pipeline.
   bool isComplexRequest(String input) {
     final complexPatterns = [
-      'research', 'analyze', 'create a report', 'pitch deck',
-      'compare', 'launch', 'plan', 'build a', 'design a',
-      'startup', 'strategy', 'workflow',
+      'research',
+      'analyze',
+      'create a report',
+      'pitch deck',
+      'compare',
+      'launch',
+      'plan',
+      'build a',
+      'design a',
+      'startup',
+      'strategy',
+      'workflow',
     ];
     final lower = input.toLowerCase();
     return complexPatterns.any((p) => lower.contains(p));

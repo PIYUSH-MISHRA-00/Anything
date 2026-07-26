@@ -29,24 +29,31 @@ class MemoryManager {
 
   Future<List<Map<String, dynamic>>> getConversations() async {
     final db = await _sqliteService.database;
-    final data = await db.query('conversation_memory', orderBy: 'timestamp ASC');
-    
+    final data = await db.query(
+      'conversation_memory',
+      orderBy: 'timestamp ASC',
+    );
+
     final result = <Map<String, dynamic>>[];
     for (var row in data) {
       result.add({
         'id': row['id'],
         'timestamp': row['timestamp'],
-        'role': await _encryptionManager.decryptData(row['encrypted_role'] as String),
-        'content': await _encryptionManager.decryptData(row['encrypted_content'] as String),
+        'role': await _encryptionManager.decryptData(
+          row['encrypted_role'] as String,
+        ),
+        'content': await _encryptionManager.decryptData(
+          row['encrypted_content'] as String,
+        ),
       });
     }
     return result;
   }
-  
+
   Future<void> savePreference(String key, String value) async {
     final db = await _sqliteService.database;
     final encryptedValue = await _encryptionManager.encryptData(value);
-    
+
     await db.insert('user_preferences', {
       'key': key,
       'encrypted_value': encryptedValue,
@@ -55,9 +62,15 @@ class MemoryManager {
 
   Future<String?> getPreference(String key) async {
     final db = await _sqliteService.database;
-    final result = await db.query('user_preferences', where: 'key = ?', whereArgs: [key]);
+    final result = await db.query(
+      'user_preferences',
+      where: 'key = ?',
+      whereArgs: [key],
+    );
     if (result.isEmpty) return null;
-    return await _encryptionManager.decryptData(result.first['encrypted_value'] as String);
+    return await _encryptionManager.decryptData(
+      result.first['encrypted_value'] as String,
+    );
   }
 
   Future<void> deleteConversation(int id) async {

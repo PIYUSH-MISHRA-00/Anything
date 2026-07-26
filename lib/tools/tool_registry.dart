@@ -42,7 +42,9 @@ class SearchTool extends BaseTool {
 
   @override
   Future<dynamic> execute(String contextPayload) async {
-    return {'results': ['Mock search result 1', 'Mock search result 2']};
+    return {
+      'results': ['Mock search result 1', 'Mock search result 2'],
+    };
   }
 }
 

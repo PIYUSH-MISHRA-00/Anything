@@ -9,7 +9,7 @@ class LayoutEngine {
         return DashboardLayout(components: schema.components);
       case 'list':
       default:
-        return ListLayout(components: schema.components); 
+        return ListLayout(components: schema.components);
     }
   }
 }
@@ -20,7 +20,7 @@ class DashboardLayout extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // A dashboard is often a grid; for simplicity we use a list view here 
+    // A dashboard is often a grid; for simplicity we use a list view here
     // but in a production app this would use a Wrap or GridView
     return ListView.builder(
       physics: const BouncingScrollPhysics(),

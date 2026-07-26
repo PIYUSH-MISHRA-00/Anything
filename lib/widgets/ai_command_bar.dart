@@ -124,7 +124,9 @@ class _AICommandBarState extends ConsumerState<AICommandBar>
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         color: const Color(0xFF1E293B),
-        border: Border(top: BorderSide(color: Colors.white.withValues(alpha: 0.08))),
+        border: Border(
+          top: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+        ),
       ),
       child: SafeArea(
         child: _isRecording ? _buildRecordingBar() : _buildInputBar(),
@@ -163,13 +165,21 @@ class _AICommandBarState extends ConsumerState<AICommandBar>
               const SizedBox(width: 12),
               const Text(
                 'Listening...',
-                style: TextStyle(color: Colors.white70, fontSize: 16, fontWeight: FontWeight.w500),
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ],
           ),
         ),
         IconButton(
-          icon: const Icon(Icons.check_circle, color: Colors.greenAccent, size: 32),
+          icon: const Icon(
+            Icons.check_circle,
+            color: Colors.greenAccent,
+            size: 32,
+          ),
           tooltip: 'Done',
           onPressed: _toggleRecording,
         ),
@@ -199,7 +209,10 @@ class _AICommandBarState extends ConsumerState<AICommandBar>
                 hintText: 'Ask Anything...',
                 hintStyle: TextStyle(color: Colors.white30),
                 border: InputBorder.none,
-                contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
               ),
               onSubmitted: (_) => _submit(),
             ),

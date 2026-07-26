@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Anything - Knowledge Evolution</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-family: 'Material Symbols Outlined';
+            font-weight: normal;
+            font-style: normal;
+            font-size: 24px;
+            line-height: 1;
+            letter-spacing: normal;
+            text-transform: none;
+            display: inline-block;
+            white-space: nowrap;
+            word-wrap: normal;
+            direction: ltr;
+            -webkit-font-feature-settings: 'liga';
+            -webkit-font-smoothing: antialiased;
+        }
+        
+        .pulse-ring {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 2px solid theme('colors.primary');
+            animation: pulse-ring-animation 3s infinite cubic-bezier(0.215, 0.61, 0.355, 1);
+            opacity: 0;
+            z-index: 0;
+        }
+
+        @keyframes pulse-ring-animation {
+            0% { transform: translate(-50%, -50%) scale(0.8); opacity: 0.8; }
+            80%, 100% { transform: translate(-50%, -50%) scale(2.5); opacity: 0; }
+        }
+
+        .timeline-line {
+            position: absolute;
+            left: 2rem;
+            top: 2rem;
+            bottom: 2rem;
+            width: 2px;
+            background: linear-gradient(to bottom, theme('colors.outline-variant') 0%, theme('colors.primary') 100%);
+            z-index: 0;
+        }
+    </style>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "secondary": "#4648d4",
+                    "inverse-primary": "#bac3ff",
+                    "tertiary": "#2f343d",
+                    "primary-container": "#2e41a1",
+                    "surface": "#f8f9ff",
+                    "on-tertiary-container": "#b6bbc5",
+                    "on-primary-container": "#aab6ff",
+                    "surface-container-high": "#dce9ff",
+                    "secondary-container": "#6063ee",
+                    "on-secondary": "#ffffff",
+                    "primary-fixed": "#dee0ff",
+                    "on-error-container": "#93000a",
+                    "tertiary-container": "#464b54",
+                    "tertiary-fixed": "#dee2ed",
+                    "on-primary": "#ffffff",
+                    "primary-fixed-dim": "#bac3ff",
+                    "tertiary-fixed-dim": "#c2c6d1",
+                    "on-primary-fixed-variant": "#2a3d9d",
+                    "inverse-surface": "#213145",
+                    "primary": "#11278a",
+                    "background": "#f8f9ff",
+                    "on-tertiary-fixed": "#171c23",
+                    "on-primary-fixed": "#00105a",
+                    "error-container": "#ffdad6",
+                    "surface-container-highest": "#d3e4fe",
+                    "surface-container-lowest": "#ffffff",
+                    "surface-tint": "#4456b6",
+                    "outline": "#757683",
+                    "surface-dim": "#cbdbf5",
+                    "inverse-on-surface": "#eaf1ff",
+                    "on-secondary-fixed-variant": "#2f2ebe",
+                    "surface-container": "#e5eeff",
+                    "surface-bright": "#f8f9ff",
+                    "on-tertiary-fixed-variant": "#424750",
+                    "on-surface": "#0b1c30",
+                    "on-surface-variant": "#454652",
+                    "outline-variant": "#c5c5d4",
+                    "on-secondary-fixed": "#07006c",
+                    "secondary-fixed-dim": "#c0c1ff",
+                    "on-tertiary": "#ffffff",
+                    "on-background": "#0b1c30",
+                    "surface-container-low": "#eff4ff",
+                    "secondary-fixed": "#e1e0ff",
+                    "on-secondary-container": "#fffbff",
+                    "error": "#ba1a1a",
+                    "surface-variant": "#d3e4fe",
+                    "on-error": "#ffffff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "1rem",
+                    "lg": "2rem",
+                    "xl": "3rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "margin-mobile": "16px",
+                    "container-max": "1280px",
+                    "margin-desktop": "40px",
+                    "unit": "8px",
+                    "gutter": "24px"
+            },
+            "fontFamily": {
+                    "headline-md": ["Public Sans"],
+                    "label-sm": ["Public Sans"],
+                    "body-md": ["Public Sans"],
+                    "display-lg-mobile": ["Public Sans"],
+                    "display-lg": ["Public Sans"],
+                    "link-relationship": ["Public Sans"]
+            },
+            "fontSize": {
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "label-sm": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "display-lg-mobile": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "link-relationship": ["14px", {"lineHeight": "20px", "fontWeight": "500"}]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background antialiased min-h-screen pb-32 pt-24 md:pt-32">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-40 bg-surface/80 dark:bg-surface-container/80 backdrop-blur-xl shadow-sm transition-all duration-500 ease-out">
+<div class="flex justify-between items-center px-gutter h-20 w-full max-w-[1440px] mx-auto">
+<div class="flex items-center gap-4 hover:scale-105 transition-transform duration-300">
+<span class="material-symbols-outlined text-primary dark:text-primary-fixed-dim" style="font-variation-settings: 'FILL' 0;">bubble_chart</span>
+<span class="font-headline-md text-headline-md tracking-tight text-primary dark:text-primary-fixed">Anything</span>
+</div>
+<!-- Desktop Nav (Semantic Intent Mapping) -->
+<nav class="hidden md:flex items-center gap-8">
+<a class="text-on-surface-variant font-body-md text-body-md hover:text-primary transition-colors" href="#">Workspace</a>
+<!-- Active semantic match -->
+<a class="text-primary font-medium font-body-md text-body-md" href="#">Knowledge</a>
+<a class="text-on-surface-variant font-body-md text-body-md hover:text-primary transition-colors" href="#">Settings</a>
+</nav>
+<div class="flex items-center hover:scale-105 transition-transform duration-300">
+<div class="w-10 h-10 rounded-full bg-surface-container-high overflow-hidden border border-outline-variant/30 flex items-center justify-center">
+<span class="material-symbols-outlined text-on-surface-variant">person</span>
+</div>
+</div>
+</div>
+</header>
+<main class="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop">
+<!-- Header Section -->
+<div class="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
+<div>
+<div class="flex items-center gap-2 mb-2">
+<span class="font-label-sm text-label-sm px-3 py-1 bg-primary-container/10 text-primary rounded-full">Concept Tracking</span>
+<div class="flex items-center gap-1 text-on-surface-variant">
+<span class="w-2 h-2 rounded-full bg-secondary"></span>
+<span class="font-label-sm text-label-sm">Living Node</span>
+</div>
+</div>
+<h1 class="font-display-lg-mobile text-display-lg-mobile md:font-display-lg md:text-display-lg text-on-surface">Payment Integration</h1>
+<p class="font-body-md text-body-md text-on-surface-variant mt-2 max-w-2xl">Visualizing the autonomic refinement of knowledge structures over time as new data sources are integrated and verified.</p>
+</div>
+<!-- Global Status Indicators -->
+<div class="flex flex-wrap gap-3">
+<div class="flex items-center gap-2 px-4 py-2 bg-surface-container/50 backdrop-blur-md rounded-full border border-outline-variant/20 shadow-[0_4px_12px_rgba(46,65,161,0.05)]">
+<span class="material-symbols-outlined text-[18px] text-outline">cloud_done</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Cached</span>
+</div>
+<div class="flex items-center gap-2 px-4 py-2 bg-surface-container/50 backdrop-blur-md rounded-full border border-outline-variant/20 shadow-[0_4px_12px_rgba(46,65,161,0.05)]">
+<span class="material-symbols-outlined text-[18px] text-secondary">sync</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Refreshed</span>
+</div>
+<div class="flex items-center gap-2 px-4 py-2 bg-surface-container/50 backdrop-blur-md rounded-full border border-outline-variant/20 shadow-[0_4px_12px_rgba(46,65,161,0.05)]">
+<span class="material-symbols-outlined text-[18px] text-primary">offline_pin</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Offline Available</span>
+</div>
+</div>
+</div>
+<!-- Evolution Timeline -->
+<div class="relative pl-8 md:pl-16">
+<div class="timeline-line"></div>
+<!-- v1: Extracted -->
+<div class="relative z-10 mb-16 opacity-70 transition-opacity hover:opacity-100 group">
+<div class="absolute -left-[3.25rem] md:-left-[5.25rem] w-6 h-6 rounded-full bg-surface-container-high border-2 border-outline-variant flex items-center justify-center mt-6 transition-colors group-hover:border-primary">
+<div class="w-2 h-2 rounded-full bg-outline-variant group-hover:bg-primary transition-colors"></div>
+</div>
+<div class="bg-surface/50 backdrop-blur-md rounded-2xl p-6 md:p-8 border border-outline-variant/10 shadow-[0_4px_24px_rgba(0,0,0,0.02)] grayscale group-hover:grayscale-0 transition-all duration-500">
+<div class="flex flex-col md:flex-row justify-between items-start gap-4 mb-4">
+<div>
+<div class="flex items-center gap-3 mb-1">
+<span class="font-headline-md text-headline-md text-on-surface-variant">v1.0</span>
+<span class="font-label-sm text-label-sm px-2 py-1 bg-surface-container text-on-surface-variant rounded-full">Initial Extraction</span>
+</div>
+<h3 class="font-body-md text-body-md text-on-surface font-semibold">Extracted from Docs</h3>
+</div>
+<span class="font-label-sm text-label-sm text-outline">Oct 12, 10:45 AM</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant mb-4">Base integration concepts mapped from Stripe API documentation. Primary entities identified.</p>
+<div class="flex flex-wrap gap-2">
+<span class="px-3 py-1 bg-surface rounded-full border border-outline-variant/20 font-link-relationship text-link-relationship flex items-center gap-1 text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px]">description</span>
+                            Stripe Docs v3
+                        </span>
+<span class="px-3 py-1 bg-surface rounded-full border border-outline-variant/20 font-link-relationship text-link-relationship flex items-center gap-1 text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px]">api</span>
+                            REST
+                        </span>
+</div>
+</div>
+</div>
+<!-- v2: Verified -->
+<div class="relative z-10 mb-16 opacity-85 transition-opacity hover:opacity-100 group">
+<div class="absolute -left-[3.25rem] md:-left-[5.25rem] w-6 h-6 rounded-full bg-surface-container-high border-2 border-secondary/50 flex items-center justify-center mt-6 transition-colors group-hover:border-secondary">
+<div class="w-2 h-2 rounded-full bg-secondary/50 group-hover:bg-secondary transition-colors"></div>
+</div>
+<div class="bg-surface/70 backdrop-blur-lg rounded-2xl p-6 md:p-8 border border-outline-variant/20 shadow-[0_8px_32px_rgba(70,72,212,0.05)] transition-all duration-500 hover:shadow-[0_8px_32px_rgba(70,72,212,0.1)]">
+<div class="flex flex-col md:flex-row justify-between items-start gap-4 mb-4">
+<div>
+<div class="flex items-center gap-3 mb-1">
+<span class="font-headline-md text-headline-md text-on-surface">v2.1</span>
+<span class="font-label-sm text-label-sm px-2 py-1 bg-secondary-container/10 text-secondary rounded-full">Structural Validation</span>
+</div>
+<h3 class="font-body-md text-body-md text-on-surface font-semibold">Verified against Git Repo</h3>
+</div>
+<span class="font-label-sm text-label-sm text-outline">Oct 14, 02:15 PM</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant mb-4">Implementation patterns verified against main backend repository. Deprecated endpoints flagged and removed from active memory.</p>
+<div class="flex flex-wrap gap-2">
+<span class="px-3 py-1 bg-surface rounded-full border border-secondary/20 font-link-relationship text-link-relationship flex items-center gap-1 text-secondary">
+<span class="material-symbols-outlined text-[16px]">account_tree</span>
+                            backend-core
+                        </span>
+<span class="px-3 py-1 bg-error-container/20 rounded-full border border-error/20 font-link-relationship text-link-relationship flex items-center gap-1 text-error">
+<span class="material-symbols-outlined text-[16px]">remove_circle_outline</span>
+                            Pruned /charge
+                        </span>
+</div>
+</div>
+</div>
+<!-- v3: Active Focus -->
+<div class="relative z-10 group">
+<div class="absolute -left-[3.25rem] md:-left-[5.25rem] w-6 h-6 rounded-full bg-primary border-2 border-primary flex items-center justify-center mt-6">
+<div class="pulse-ring"></div>
+<div class="pulse-ring" style="animation-delay: 1.5s;"></div>
+<div class="w-2 h-2 rounded-full bg-surface-container-lowest"></div>
+</div>
+<div class="bg-surface backdrop-blur-2xl rounded-2xl p-6 md:p-8 border-2 border-primary shadow-[0_8px_40px_rgba(46,65,161,0.15)] relative overflow-hidden">
+<!-- Subtle inner glow -->
+<div class="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent pointer-events-none"></div>
+<div class="flex flex-col md:flex-row justify-between items-start gap-4 mb-4 relative z-10">
+<div>
+<div class="flex items-center gap-3 mb-1">
+<span class="font-headline-md text-headline-md text-primary font-bold">v3.0</span>
+<span class="font-label-sm text-label-sm px-2 py-1 bg-primary text-on-primary rounded-full animate-pulse">Active State</span>
+</div>
+<h3 class="font-body-md text-body-md text-on-surface font-bold text-lg">Connected to Design System</h3>
+</div>
+<span class="font-label-sm text-label-sm text-primary">Just now</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface mb-6 relative z-10">Fully integrated knowledge node. UI components mapped to functional backend calls. Flow logic established for error handling states.</p>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4 relative z-10">
+<!-- Sub-node connections -->
+<div class="p-4 rounded-xl bg-surface-container border border-primary/10 flex items-start gap-3">
+<div class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-primary text-[20px]">palette</span>
+</div>
+<div>
+<h4 class="font-link-relationship text-link-relationship text-on-surface">Design Tokens Linked</h4>
+<p class="text-[12px] text-on-surface-variant mt-1">Payment forms inherit correct border radii and primary colors.</p>
+</div>
+</div>
+<div class="p-4 rounded-xl bg-surface-container border border-primary/10 flex items-start gap-3">
+<div class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-primary text-[20px]">alt_route</span>
+</div>
+<div>
+<h4 class="font-link-relationship text-link-relationship text-on-surface">Flow Logic Mapped</h4>
+<p class="text-[12px] text-on-surface-variant mt-1">Success/Failure splash screens injected into interaction tree.</p>
+</div>
+</div>
+</div>
+<div class="mt-6 flex gap-3 relative z-10">
+<button class="px-6 py-2 rounded-full bg-primary text-on-primary font-label-sm text-label-sm hover:bg-primary/90 transition-colors shadow-md">Explore Node</button>
+<button class="px-6 py-2 rounded-full bg-surface/50 border border-primary text-primary font-label-sm text-label-sm hover:bg-primary/5 transition-colors">View Graph Connections</button>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-container-padding pb-8 pt-4 bg-surface/90 dark:bg-surface-container-highest/90 backdrop-blur-2xl rounded-t-xl border-t border-outline-variant/10 shadow-[0_-4px_24px_rgba(17,39,138,0.05)]">
+<a class="flex flex-col items-center justify-center gap-1 text-on-surface-variant hover:bg-surface-variant/50 transition-colors rounded-lg p-2" href="#">
+<span class="material-symbols-outlined">home_max</span>
+<span class="font-label-sm text-label-sm">Home</span>
+</a>
+<!-- Active Semantic intent based on 'Workspace/Knowledge' context -->
+<a class="flex flex-col items-center justify-center gap-1 text-primary dark:text-primary-fixed-dim bg-primary-container/20 rounded-full px-6 py-2 scale-95 duration-200" href="#">
+<span class="material-symbols-outlined">grid_view</span>
+<span class="font-label-sm text-label-sm">Workspace</span>
+</a>
+<a class="flex flex-col items-center justify-center gap-1 text-on-surface-variant hover:bg-surface-variant/50 transition-colors rounded-lg p-2" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-sm text-label-sm">Settings</span>
+</a>
+</nav>
+</body></html>

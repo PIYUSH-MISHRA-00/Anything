@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Activity Timeline</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "outline-variant": "#c5c5d4",
+                      "surface-container-highest": "#d3e4fe",
+                      "background": "#f8f9ff",
+                      "surface-variant": "#d3e4fe",
+                      "surface-container-lowest": "#ffffff",
+                      "primary": "#11278a",
+                      "on-secondary-fixed-variant": "#2f2ebe",
+                      "surface": "#f8f9ff",
+                      "on-surface-variant": "#454652",
+                      "primary-container": "#2e41a1",
+                      "on-primary-fixed-variant": "#2a3d9d",
+                      "on-tertiary-fixed": "#171c23",
+                      "on-error": "#ffffff",
+                      "on-tertiary-container": "#b6bbc5",
+                      "outline": "#757683",
+                      "secondary-fixed-dim": "#c0c1ff",
+                      "secondary-fixed": "#e1e0ff",
+                      "surface-bright": "#f8f9ff",
+                      "on-tertiary": "#ffffff",
+                      "error": "#ba1a1a",
+                      "on-primary-fixed": "#00105a",
+                      "on-tertiary-fixed-variant": "#424750",
+                      "tertiary-fixed": "#dee2ed",
+                      "on-background": "#0b1c30",
+                      "on-surface": "#0b1c30",
+                      "inverse-on-surface": "#eaf1ff",
+                      "secondary": "#4648d4",
+                      "primary-fixed": "#dee0ff",
+                      "primary-fixed-dim": "#bac3ff",
+                      "error-container": "#ffdad6",
+                      "surface-dim": "#cbdbf5",
+                      "on-secondary": "#ffffff",
+                      "inverse-surface": "#213145",
+                      "surface-container": "#e5eeff",
+                      "on-error-container": "#93000a",
+                      "secondary-container": "#6063ee",
+                      "inverse-primary": "#bac3ff",
+                      "surface-container-low": "#eff4ff",
+                      "on-secondary-fixed": "#07006c",
+                      "surface-container-high": "#dce9ff",
+                      "on-secondary-container": "#fffbff",
+                      "tertiary": "#2f343d",
+                      "surface-tint": "#4456b6",
+                      "tertiary-fixed-dim": "#c2c6d1",
+                      "on-primary-container": "#aab6ff",
+                      "tertiary-container": "#464b54",
+                      "on-primary": "#ffffff"
+              },
+              "borderRadius": {
+                      "DEFAULT": "1rem",
+                      "lg": "2rem",
+                      "xl": "3rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "margin-desktop": "40px",
+                      "container-max": "1280px",
+                      "margin-mobile": "16px",
+                      "gutter": "24px",
+                      "unit": "8px"
+              },
+              "fontFamily": {
+                      "label-sm": [
+                              "Public Sans"
+                      ],
+                      "link-relationship": [
+                              "Public Sans"
+                      ],
+                      "body-md": [
+                              "Public Sans"
+                      ],
+                      "display-lg": [
+                              "Public Sans"
+                      ],
+                      "display-lg-mobile": [
+                              "Public Sans"
+                      ],
+                      "headline-md": [
+                              "Public Sans"
+                      ]
+              },
+              "fontSize": {
+                      "label-sm": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "link-relationship": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "body-md": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "display-lg": [
+                              "48px",
+                              {
+                                      "lineHeight": "56px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "display-lg-mobile": [
+                              "32px",
+                              {
+                                      "lineHeight": "40px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "headline-md": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "fontWeight": "600"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+<style>
+        body {
+            background-color: #f8f9ff;
+            color: #0b1c30;
+        }
+        .timeline-line {
+            width: 2px;
+            background: linear-gradient(to bottom, transparent, rgba(17, 39, 138, 0.2) 5%, rgba(17, 39, 138, 0.2) 95%, transparent);
+            position: absolute;
+            left: 23px; /* 16px padding + 24px icon / 2 + offset */
+            top: 0;
+            bottom: 0;
+            z-index: 0;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+        .active-glow {
+            box-shadow: 0px 4px 20px rgba(46, 65, 161, 0.15);
+            border-color: #11278a;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="antialiased min-h-screen font-body-md text-body-md pb-32">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-surface/80 dark:bg-surface/80 backdrop-blur-xl border-b border-black/5 dark:border-white/5 h-16 flex items-center justify-between px-margin-mobile md:px-margin-desktop">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-primary dark:text-primary-fixed-dim" data-icon="user_profile_memory_settings">account_circle</span>
+</div>
+<h1 class="font-headline-md text-headline-md font-bold tracking-tight text-primary dark:text-primary-fixed-dim absolute left-1/2 -translate-x-1/2">Anything</h1>
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-on-surface-variant hover:opacity-80 transition-opacity cursor-pointer" data-icon="settings_brightness">settings</span>
+</div>
+</header>
+<!-- Main Content -->
+<main class="pt-24 px-margin-mobile md:px-margin-desktop max-w-container-max mx-auto relative min-h-[707px]">
+<div class="mb-12">
+<h2 class="font-display-lg-mobile md:font-display-lg text-on-surface mb-2">Activity Stream</h2>
+<p class="font-body-md text-on-surface-variant max-w-2xl">A continuous record of your digital milestones, version history, and synced points in time.</p>
+</div>
+<div class="relative">
+<!-- Continuous Timeline Stroke -->
+<div class="timeline-line hidden md:block" style="left: 47px;"></div>
+<div class="timeline-line md:hidden"></div>
+<!-- Timeline Item 1: Active/Recent -->
+<div class="relative z-10 flex flex-col md:flex-row gap-6 mb-12 group">
+<div class="flex items-start md:w-[120px] shrink-0 pt-4 md:justify-end md:pr-8">
+<div class="hidden md:block font-label-sm text-label-sm text-on-surface-variant">Just now</div>
+</div>
+<div class="absolute left-[11px] md:left-[35px] top-4 w-[26px] h-[26px] rounded-full bg-surface-container-lowest border-2 border-primary flex items-center justify-center z-20">
+<div class="w-[10px] h-[10px] rounded-full bg-primary animate-pulse"></div>
+</div>
+<div class="glass-card active-glow rounded-lg p-6 ml-12 md:ml-0 flex-1 relative overflow-hidden">
+<div class="absolute top-0 right-0 p-4">
+<span class="inline-flex items-center gap-1 bg-surface-container-low text-primary px-3 py-1 rounded-full font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[14px]">cloud_done</span> Synced
+                        </span>
+</div>
+<div class="flex items-center gap-3 mb-2">
+<span class="material-symbols-outlined text-primary">rocket_launch</span>
+<h3 class="font-headline-md text-headline-md text-on-surface">Started Project Alpha</h3>
+</div>
+<p class="font-body-md text-on-surface-variant mb-4">Initial scaffolding generated and environment configured for the new ambient intelligence module.</p>
+<div class="bg-surface-container-low rounded-lg p-4 border border-outline-variant/30 flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-on-surface-variant">code</span>
+<span class="font-link-relationship text-link-relationship text-on-surface">v1.0.0-beta initialized</span>
+</div>
+<button class="bg-primary/10 hover:bg-primary/20 text-primary px-4 py-2 rounded-full font-label-sm text-label-sm transition-colors">View Details</button>
+</div>
+</div>
+</div>
+<!-- Timeline Item 2: Milestone -->
+<div class="relative z-10 flex flex-col md:flex-row gap-6 mb-12">
+<div class="flex items-start md:w-[120px] shrink-0 pt-4 md:justify-end md:pr-8">
+<div class="hidden md:block font-label-sm text-label-sm text-on-surface-variant">2 hours ago</div>
+</div>
+<div class="absolute left-[15px] md:left-[39px] top-5 w-[18px] h-[18px] rounded-full bg-surface-variant border-2 border-outline-variant flex items-center justify-center z-20">
+</div>
+<div class="glass-card rounded-lg p-6 ml-12 md:ml-0 flex-1 opacity-90 transition-opacity hover:opacity-100">
+<div class="flex items-center gap-3 mb-2">
+<span class="material-symbols-outlined text-secondary">palette</span>
+<h3 class="font-headline-md text-headline-md text-on-surface">Refined Brand Identity</h3>
+</div>
+<p class="font-body-md text-on-surface-variant mb-4">Updated typography scales and adjusted the primary color tokens to align with the new glassmorphism guidelines.</p>
+<div class="flex flex-wrap gap-2">
+<span class="inline-flex items-center gap-1 bg-surface-container-high text-on-surface-variant px-3 py-1 rounded-full font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[14px]">format_paint</span> Colors
+                        </span>
+<span class="inline-flex items-center gap-1 bg-surface-container-high text-on-surface-variant px-3 py-1 rounded-full font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[14px]">text_fields</span> Typography
+                        </span>
+</div>
+</div>
+</div>
+<!-- Timeline Item 3: Data Synthesis -->
+<div class="relative z-10 flex flex-col md:flex-row gap-6 mb-12">
+<div class="flex items-start md:w-[120px] shrink-0 pt-4 md:justify-end md:pr-8">
+<div class="hidden md:block font-label-sm text-label-sm text-on-surface-variant">Yesterday</div>
+</div>
+<div class="absolute left-[15px] md:left-[39px] top-5 w-[18px] h-[18px] rounded-full bg-surface-variant border-2 border-outline-variant flex items-center justify-center z-20">
+</div>
+<div class="glass-card rounded-lg p-6 ml-12 md:ml-0 flex-1 opacity-80 transition-opacity hover:opacity-100">
+<div class="absolute top-0 right-0 p-4">
+<span class="inline-flex items-center gap-1 bg-tertiary-fixed text-on-tertiary-fixed px-3 py-1 rounded-full font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[14px]">cloud_off</span> Offline Cache
+                        </span>
+</div>
+<div class="flex items-center gap-3 mb-2">
+<span class="material-symbols-outlined text-tertiary-container">bubble_chart</span>
+<h3 class="font-headline-md text-headline-md text-on-surface">Synthesized Market Data</h3>
+</div>
+<p class="font-body-md text-on-surface-variant mb-4">Compiled quarterly analytics and generated preliminary insights report across all active sectors.</p>
+<div class="grid grid-cols-2 gap-4 mt-4">
+<div class="bg-surface-container rounded p-3 text-center">
+<div class="font-label-sm text-label-sm text-on-surface-variant mb-1">Sources</div>
+<div class="font-headline-md text-headline-md text-primary">14</div>
+</div>
+<div class="bg-surface-container rounded p-3 text-center">
+<div class="font-label-sm text-label-sm text-on-surface-variant mb-1">Nodes Created</div>
+<div class="font-headline-md text-headline-md text-primary">2,401</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar (Mobile only per instructions for destination level) -->
+<nav class="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-md rounded-full bg-surface-container-lowest/70 dark:bg-tertiary/70 backdrop-blur-2xl border border-black/5 dark:border-white/5 shadow-lg z-50 flex justify-around items-center p-2 mx-auto">
+<a class="flex flex-col items-center justify-center text-on-surface-variant/70 dark:text-on-tertiary-container/70 px-4 py-1.5 hover:text-primary dark:hover:text-primary-fixed-dim" href="#">
+<span class="material-symbols-outlined" data-icon="home_app_fill">home</span>
+<span class="font-label-sm text-label-sm mt-1">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant/70 dark:text-on-tertiary-container/70 px-4 py-1.5 hover:text-primary dark:hover:text-primary-fixed-dim" href="#">
+<span class="material-symbols-outlined" data-icon="apps">apps</span>
+<span class="font-label-sm text-label-sm mt-1">My Apps</span>
+</a>
+<!-- Active state for Activity -->
+<a class="flex flex-col items-center justify-center bg-primary dark:bg-primary-container text-on-primary dark:text-on-primary-container rounded-full px-4 py-1.5 transition-all duration-300 scale-90" href="#">
+<span class="material-symbols-outlined" data-icon="insights">insights</span>
+<span class="font-label-sm text-label-sm mt-1">Activity</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant/70 dark:text-on-tertiary-container/70 px-4 py-1.5 hover:text-primary dark:hover:text-primary-fixed-dim" href="#">
+<span class="material-symbols-outlined" data-icon="grid_view">grid_view</span>
+<span class="font-label-sm text-label-sm mt-1">Workspace</span>
+</a>
+</nav>
+</body></html>

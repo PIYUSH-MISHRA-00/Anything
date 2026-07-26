@@ -10,7 +10,10 @@ class WorkspacesScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFF0F172A),
       appBar: AppBar(
-        title: const Text('Workspaces', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: const Text(
+          'Workspaces',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
         backgroundColor: Colors.transparent,
         elevation: 0,
         automaticallyImplyLeading: false,
@@ -18,11 +21,32 @@ class WorkspacesScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          const Text('Your saved workspaces', style: TextStyle(color: Colors.white54, fontSize: 15)),
+          const Text(
+            'Your saved workspaces',
+            style: TextStyle(color: Colors.white54, fontSize: 15),
+          ),
           const SizedBox(height: 20),
-          _buildWorkspaceCard(context, 'Startup Workspace', 'Business plan and market analysis', Icons.rocket_launch, Colors.blueAccent),
-          _buildWorkspaceCard(context, 'Coding Workspace', 'Code generation and debugging', Icons.code, Colors.cyanAccent),
-          _buildWorkspaceCard(context, 'Study Workspace', 'Notes and flashcards', Icons.school, Colors.purpleAccent),
+          _buildWorkspaceCard(
+            context,
+            'Startup Workspace',
+            'Business plan and market analysis',
+            Icons.rocket_launch,
+            Colors.blueAccent,
+          ),
+          _buildWorkspaceCard(
+            context,
+            'Coding Workspace',
+            'Code generation and debugging',
+            Icons.code,
+            Colors.cyanAccent,
+          ),
+          _buildWorkspaceCard(
+            context,
+            'Study Workspace',
+            'Notes and flashcards',
+            Icons.school,
+            Colors.purpleAccent,
+          ),
         ],
       ),
     );
@@ -30,10 +54,18 @@ class WorkspacesScreen extends StatelessWidget {
 
   void _openWorkspace(BuildContext context, String title) {
     AppShell.stateKey.currentState?.setIndex(0);
-    WorkspaceScreen.stateKey.currentState?.handleExternalQuery('Load my $title');
+    WorkspaceScreen.stateKey.currentState?.handleExternalQuery(
+      'Load my $title',
+    );
   }
 
-  Widget _buildWorkspaceCard(BuildContext context, String title, String subtitle, IconData icon, Color color) {
+  Widget _buildWorkspaceCard(
+    BuildContext context,
+    String title,
+    String subtitle,
+    IconData icon,
+    Color color,
+  ) {
     return InkWell(
       onTap: () => _openWorkspace(context, title),
       borderRadius: BorderRadius.circular(16),
@@ -60,13 +92,27 @@ class WorkspacesScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w500)),
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
                   const SizedBox(height: 4),
-                  Text(subtitle, style: const TextStyle(color: Colors.white38, fontSize: 13)),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(color: Colors.white38, fontSize: 13),
+                  ),
                 ],
               ),
             ),
-            const Icon(Icons.arrow_forward_ios, color: Colors.white24, size: 16),
+            const Icon(
+              Icons.arrow_forward_ios,
+              color: Colors.white24,
+              size: 16,
+            ),
           ],
         ),
       ),
