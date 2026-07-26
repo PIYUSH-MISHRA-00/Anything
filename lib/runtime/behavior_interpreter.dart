@@ -150,7 +150,26 @@ class BehaviorInterpreter {
     final stateId = node.config['stateId'] as String?;
     final operand = node.config['operand'];
 
-    if (operation == null || stateId == null) return;
+    // Aggregate operations use sourceStateId + fieldId → targetStateId
+    final sourceStateId = node.config['sourceStateId'] as String?;
+    final targetStateId = node.config['targetStateId'] as String?;
+    final fieldId = node.config['fieldId'] as String?;
+
+    if (operation == null) return;
+
+    // Handle aggregate operations
+    if (_isAggregateOperation(operation)) {
+      _executeAggregate(
+        operation,
+        sourceStateId,
+        fieldId,
+        targetStateId,
+        context,
+      );
+      return;
+    }
+
+    if (stateId == null) return;
 
     final currentValue = context.stateEngine.read(stateId);
     final numericCurrent = (currentValue is num)
@@ -181,6 +200,151 @@ class BehaviorInterpreter {
     }
 
     context.stateEngine.write(stateId, result);
+  }
+
+  bool _isAggregateOperation(String operation) {
+    return operation == 'sum' ||
+        operation == 'count' ||
+        operation == 'average' ||
+        operation == 'min' ||
+        operation == 'max' ||
+        operation == 'consecutiveDateCount';
+  }
+
+  void _executeAggregate(
+    String operation,
+    String? sourceStateId,
+    String? fieldId,
+    String? targetStateId,
+    BehaviorExecutionContext context,
+  ) {
+    if (sourceStateId == null || targetStateId == null) return;
+
+    final rawData = context.stateEngine.read(sourceStateId);
+    if (rawData is! List) return;
+
+    final records = rawData.cast<Map<String, dynamic>>();
+    dynamic result;
+
+    switch (operation) {
+      case 'count':
+        result = records.length;
+        break;
+      case 'sum':
+        if (fieldId == null) {
+          result = records.length;
+          break;
+        }
+        double total = 0;
+        for (final record in records) {
+          final value = record[fieldId];
+          if (value is num) {
+            total += value.toDouble();
+          } else if (value is String) {
+            total += double.tryParse(value) ?? 0;
+          }
+        }
+        result = total;
+        break;
+      case 'average':
+        if (fieldId == null || records.isEmpty) {
+          result = 0.0;
+          break;
+        }
+        double total = 0;
+        int count = 0;
+        for (final record in records) {
+          final value = record[fieldId];
+          if (value is num) {
+            total += value.toDouble();
+            count++;
+          } else if (value is String) {
+            final parsed = double.tryParse(value);
+            if (parsed != null) {
+              total += parsed;
+              count++;
+            }
+          }
+        }
+        result = count > 0 ? total / count : 0.0;
+        break;
+      case 'min':
+        if (fieldId == null || records.isEmpty) {
+          result = 0.0;
+          break;
+        }
+        double minVal = double.infinity;
+        for (final record in records) {
+          final value = record[fieldId];
+          if (value is num && value.toDouble() < minVal) {
+            minVal = value.toDouble();
+          } else if (value is String) {
+            final parsed = double.tryParse(value);
+            if (parsed != null && parsed < minVal) {
+              minVal = parsed;
+            }
+          }
+        }
+        result = minVal == double.infinity ? 0.0 : minVal;
+        break;
+      case 'max':
+        if (fieldId == null || records.isEmpty) {
+          result = 0.0;
+          break;
+        }
+        double maxVal = double.negativeInfinity;
+        for (final record in records) {
+          final value = record[fieldId];
+          if (value is num && value.toDouble() > maxVal) {
+            maxVal = value.toDouble();
+          } else if (value is String) {
+            final parsed = double.tryParse(value);
+            if (parsed != null && parsed > maxVal) {
+              maxVal = parsed;
+            }
+          }
+        }
+        result = maxVal == double.negativeInfinity ? 0.0 : maxVal;
+        break;
+      case 'consecutiveDateCount':
+        if (records.isEmpty) {
+          result = 0;
+          break;
+        }
+        // Count consecutive dates from today backwards
+        final dates =
+            records
+                .map(
+                  (r) =>
+                      r['date'] as String? ??
+                      r['completion_date'] as String? ??
+                      '',
+                )
+                .where((d) => d.isNotEmpty)
+                .toList()
+              ..sort((a, b) => b.compareTo(a)); // Most recent first
+
+        int streak = 0;
+        DateTime? expectedDate = DateTime.now();
+        for (final dateStr in dates) {
+          final date = DateTime.tryParse(dateStr);
+          if (date == null) continue;
+          final expected = expectedDate;
+          if (expected != null &&
+              date.year == expected.year &&
+              date.month == expected.month &&
+              date.day == expected.day) {
+            streak++;
+            expectedDate = expected.subtract(const Duration(days: 1));
+          } else {
+            break;
+          }
+        }
+        result = streak;
+        break;
+    }
+
+    context.stateEngine.write(targetStateId, result);
   }
 
   Future<void> _executeDataQuery(
