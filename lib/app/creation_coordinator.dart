@@ -16,6 +16,7 @@ import 'package:anything/creation/package_validator.dart';
 import 'package:anything/kernel/planning/execution_plan.dart';
 import 'package:anything/storage/sqlite_experience_repository.dart';
 import 'package:anything/storage/activity_repository.dart';
+import 'package:anything/synthesis/app_blueprint.dart';
 
 /// User-facing creation state.
 enum CreationState {
@@ -116,6 +117,7 @@ class ExperienceCreationCoordinator {
             intent: intent,
             specification: kernelOutcome.specification,
             plan: kernelOutcome.plan,
+            blueprint: kernelOutcome.blueprint,
           );
 
         case ExperienceSpecificationReady():
@@ -166,6 +168,7 @@ class ExperienceCreationCoordinator {
     required Intent intent,
     required ExperienceSpec specification,
     required ExecutionPlan plan,
+    AppBlueprint? blueprint,
   }) async {
     _state = CreationState.creating;
 
@@ -175,6 +178,7 @@ class ExperienceCreationCoordinator {
           intent: intent,
           specification: specification,
           plan: plan,
+          blueprint: blueprint,
           platformContext: const PlatformContext(
             platform: 'android',
             sdkVersion: 34,

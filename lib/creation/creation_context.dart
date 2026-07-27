@@ -6,6 +6,7 @@ import '../kernel/specification/experience_spec.dart';
 import '../kernel/planning/execution_plan.dart';
 import '../knowledge/knowledge_bundle.dart';
 import '../capabilities/registry/capability_descriptor.dart';
+import '../synthesis/app_blueprint.dart';
 
 /// Platform context for creation.
 class PlatformContext {
@@ -64,6 +65,7 @@ class CreationContext {
   final Intent intent;
   final ExperienceSpec specification;
   final ExecutionPlan plan;
+  final AppBlueprint? blueprint;
   final KnowledgeBundle? knowledgeBundle;
   final List<CapabilityDescriptor> availableCapabilities;
   final PlatformContext platformContext;
@@ -75,6 +77,7 @@ class CreationContext {
     required this.intent,
     required this.specification,
     required this.plan,
+    this.blueprint,
     this.knowledgeBundle,
     this.availableCapabilities = const [],
     required this.platformContext,

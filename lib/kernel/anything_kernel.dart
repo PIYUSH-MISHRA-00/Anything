@@ -218,6 +218,7 @@ class AnythingKernel {
       return ExecutionPlanReady(
         plan: plan,
         specification: spec,
+        blueprint: blueprint,
         message: 'Ready to create',
         timestamp: DateTime.now(),
       );

@@ -44,7 +44,6 @@ class WorkspaceScreenState extends ConsumerState<WorkspaceScreen>
     {'icon': Icons.auto_stories, 'text': 'Summarize my research'},
   ];
 
-  @override
   void handleExternalQuery(String query) {
     _handleIntent(query);
   }

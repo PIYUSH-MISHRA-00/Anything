@@ -1,7 +1,13 @@
-/// Generic Package Builder — converts AppBlueprint into ExperiencePackage.
+/// Generic Package Builder — test utility for direct AppBlueprint → ExperiencePackage conversion.
 ///
-/// This is the core synthesis engine that translates semantic blueprint
-/// structures into the trusted declarative ExperiencePackage format.
+/// This is NOT part of the production pipeline. The canonical production path is:
+///   AppBlueprint → BlueprintToSpecConverter → ExperienceSpec → CreationEngine → ExperiencePackage
+///
+/// This builder exists for testing purposes only. It provides a direct conversion
+/// path from AppBlueprint to ExperiencePackage without going through ExperienceSpec,
+/// which is useful for verifying blueprint content independently.
+///
+/// DO NOT use this in production code. Use CreationEngine instead.
 library;
 
 import 'dart:convert';

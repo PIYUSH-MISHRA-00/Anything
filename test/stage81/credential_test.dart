@@ -1,6 +1,5 @@
 /// Tests for Credential Vault.
 import 'package:flutter_test/flutter_test.dart';
-import 'package:anything/security/credential_vault.dart';
 
 /// In-memory fake secure storage for testing.
 class FakeSecureStorage {

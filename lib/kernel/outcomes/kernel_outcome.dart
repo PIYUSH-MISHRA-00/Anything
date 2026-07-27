@@ -4,6 +4,7 @@
 /// UI maps these to human-friendly messages.
 library;
 
+import '../../synthesis/app_blueprint.dart';
 import '../specification/experience_spec.dart';
 import '../planning/execution_plan.dart';
 import '../understanding/intent_understanding.dart';
@@ -46,10 +47,12 @@ class ExperienceSpecificationReady extends KernelOutcome {
 class ExecutionPlanReady extends KernelOutcome {
   final ExecutionPlan plan;
   final ExperienceSpec specification;
+  final AppBlueprint? blueprint;
 
   const ExecutionPlanReady({
     required this.plan,
     required this.specification,
+    this.blueprint,
     required super.message,
     required super.timestamp,
   });

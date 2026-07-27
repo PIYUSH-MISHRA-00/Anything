@@ -5,10 +5,7 @@ import 'package:anything/capabilities/builtin/file_capability.dart';
 import 'package:anything/capabilities/builtin/notification_capability.dart';
 import 'package:anything/capabilities/builtin/clock_capability.dart';
 import 'package:anything/capabilities/platform/capability_platform.dart';
-import 'package:anything/storage/migration_executor.dart';
-import 'package:anything/storage/migration.dart';
 import 'package:anything/storage/schema_storage_mapper.dart';
-import 'package:anything/creation/experience_package.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

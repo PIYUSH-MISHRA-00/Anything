@@ -1,6 +1,5 @@
 /// Tests for Experience Modification Engine.
 import 'package:flutter_test/flutter_test.dart';
-import 'package:anything/creation/experience_package.dart';
 import 'package:anything/creation/modification/experience_modification_spec.dart';
 import 'package:anything/creation/modification/modification_engine.dart';
 import 'package:anything/runtime/golden_paths/calculator_package.dart';

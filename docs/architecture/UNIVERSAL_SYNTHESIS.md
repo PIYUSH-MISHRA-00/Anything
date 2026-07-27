@@ -12,6 +12,8 @@ Stage 10/10.1/10.2 transforms Anything from a Calculator-specific creation syste
 
 **Stage 10.4 key change:** Knowledge accumulation defect fixed — loop now merges into `accumulated` variable preserving all rounds' knowledge. Required/optional separation: optional failures no longer escape as `ReasoningKnowledgeRequired`. Total knowledge budget enforced at orchestration boundary (50 resources, 16K chars, 20 requirements, 20 warnings). `KnowledgeBundle.mergedWith()` provides cross-round deduplication and merge semantics. Unused import removed from GenericPackageBuilder.
 
+**Stage 10.5 key change:** Architectural contradiction resolved. `AppBlueprint` now flows through `ExecutionPlanReady` → `CreationContext` → `CreationEngine`. CreationEngine builds rich package components from blueprint (entities with fields, views with sections, actions with CRUD operations, per-field state variables). GenericPackageBuilder marked non-production (test utility only). Single authoritative production path: CreationEngine.
+
 ## Architecture Diagram
 
 ```
