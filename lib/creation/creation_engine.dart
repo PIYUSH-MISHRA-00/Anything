@@ -153,6 +153,10 @@ class CreationEngine {
             .where((c) => c.isRequired)
             .map((c) => c.capabilityId)
             .toList(),
+        category: blueprint != null
+            ? _deriveStructuralCategory(blueprint)
+            : spec.category.name,
+        tags: blueprint != null ? blueprint.tags : const [],
       );
 
       // Build provenance
@@ -420,6 +424,17 @@ class CreationEngine {
     }
   }
 
+  /// Derive structural category from blueprint archetype.
+  ///
+  /// Uses archetype.name directly — no domain assumptions.
+  /// For multiple archetypes, uses the first archetype deterministically.
+  String _deriveStructuralCategory(AppBlueprint blueprint) {
+    for (final archetype in blueprint.archetypes) {
+      return archetype.name;
+    }
+    return 'generated';
+  }
+
   // ── Blueprint-based builders ──────────────────────────────────────────
 
   InterfaceDefinition _buildInterfaceFromBlueprint(AppBlueprint blueprint) {
@@ -430,8 +445,8 @@ class CreationEngine {
       // Add display elements for entity fields
       final entity = view.sourceEntityId != null
           ? blueprint.entities
-              .where((e) => e.id == view.sourceEntityId)
-              .firstOrNull
+                .where((e) => e.id == view.sourceEntityId)
+                .firstOrNull
           : null;
       if (entity != null) {
         for (final field in entity.fields) {
