@@ -2,9 +2,15 @@
 
 ## Overview
 
-Stage 10/10.1 transforms Anything from a Calculator-specific creation system into a general-purpose app synthesis engine. The architecture proves that a single pipeline can generate fundamentally different application structures from natural-language intent, with no domain-specific hardcoding.
+Stage 10/10.1/10.2 transforms Anything from a Calculator-specific creation system into a general-purpose app synthesis engine. The architecture proves that a single pipeline can generate fundamentally different application structures from natural-language intent, with no domain-specific hardcoding.
 
 **Stage 10.1 key change:** All domain-specific logic has been removed from the synthesis engine. Domain knowledge now lives in the `ApplicationReasoner` (deterministic or model-backed), not in templates or pattern code.
+
+**Stage 10.2 key change:** The Kernel/Coordinator boundary is fixed so the universal synthesis pipeline reaches production. `CompositeApplicationReasoner` orchestrates deterministic-first reasoning with model fallback. Model validation is strict (unknowns rejected). The full creation lifecycle — Intent → Kernel → Coordinator → Engine → Package → Persistence — is proven end-to-end.
+
+**Stage 10.3 key change:** Knowledge refinement loop added to Kernel. Reasoner now takes `ApplicationReasoningContext` carrying knowledge bundle, round count, and available capabilities. Deterministic reasoner tightened to collection-only patterns. Legacy `_buildFallbackPlan()` removed. Metadata category derived from archetypes. Blueprint tags flow to manifest. Prompt injection defense added to model reasoner.
+
+**Stage 10.4 key change:** Knowledge accumulation defect fixed — loop now merges into `accumulated` variable preserving all rounds' knowledge. Required/optional separation: optional failures no longer escape as `ReasoningKnowledgeRequired`. Total knowledge budget enforced at orchestration boundary (50 resources, 16K chars, 20 requirements, 20 warnings). `KnowledgeBundle.mergedWith()` provides cross-round deduplication and merge semantics. Unused import removed from GenericPackageBuilder.
 
 ## Architecture Diagram
 
@@ -89,11 +95,21 @@ High-level structural classification (enum, no domain knowledge):
 ### ApplicationReasoner (lib/synthesis/application_reasoner.dart)
 
 **Stage 10.1 (NEW):** Typed contract for semantic reasoning from natural language.
+**Stage 10.3:** Evolved to take `ApplicationReasoningContext` instead of raw `IntentUnderstanding`.
 
 Returns one of:
 - `ReasoningReady` — complete `SemanticApp` ready for synthesis
 - `ReasoningProviderRequired` — model needed for complex/novel intent
+- `ReasoningKnowledgeRequired` — external knowledge needed before reasoning
+- `ReasoningUnsupported` — domain cannot be synthesized
 - `ReasoningFailed` — unparseable intent
+
+`ApplicationReasoningContext` carries:
+- `understanding` — intent understanding from classification
+- `knowledge` — acquired `KnowledgeBundle?` (null on first round)
+- `availableCapabilities` — capability IDs available to the app
+- `round` — current refinement round (0-based)
+- `maxRounds` — maximum allowed refinement rounds
 
 `SemanticApp` contains:
 - `entities` — typed entities with fields, actions, computed values
@@ -101,21 +117,29 @@ Returns one of:
 - `tags` — open-world domain tags (e.g. `['plant_care', 'tracker']`)
 - `archetypes` — structural archetypes derived from semantic structure
 
+### CompositeApplicationReasoner (lib/synthesis/composite_reasoner.dart)
+
+**Stage 10.2 (NEW):** Orchestrates reasoning strategy selection for production use.
+
+Strategy chain:
+1. `DeterministicReasoner` — tried first (free, instant)
+2. `ModelApplicationReasoner` — fallback when deterministic returns `ProviderRequired`
+3. `ReasoningProviderRequired` — returned if no provider is configured
+
+Error messages are redacted: consumers see "Unable to create this type of app. Please try rephrasing." instead of raw exceptions.
+
 ### DeterministicReasoner (lib/synthesis/deterministic_reasoner.dart)
 
 **Stage 10.1 (NEW):** No-AI fallback for simple structural requests.
+**Stage 10.3 tightening:** Only handles collection patterns ("list of X", "collection of X"). All tracker, planner, dashboard, habit, expense patterns now escalate to model reasoning.
 
-Handles intents matching generic structural patterns:
-- Collection: "store X", "save X"
-- Tracker: "track X daily", "habit"
-- Planner: "plan X", "schedule X"
-- Dashboard: "summary of X", "overview of X"
-
-Returns `ReasoningProviderRequired` for complex/novel requests.
+Returns `ReasoningProviderRequired` for all non-collection requests. Returns `null` (no match) if entity extraction fails or input is too generic — no fallback defaults.
 
 ### ModelApplicationReasoner (lib/synthesis/model_reasoner.dart)
 
 **Stage 10.1 (NEW):** ModelProvider-backed reasoning for complex intents.
+**Stage 10.2:** Strict validation — unknown field types, action types, operations, view types, and section types are **rejected** with errors (no silent coercion to defaults). JSON extraction tries direct parse → fenced code block → regex. Error messages are redacted for consumers.
+**Stage 10.3:** Accepts `ApplicationReasoningContext`. Injects acquired knowledge into prompt with clear untrusted delimiter. Knowledge truncated to 4000 chars. Prompt injection patterns stripped (ignore previous instructions, execute this javascript, reveal secret, run this shell, you are now, forget all instructions, system:). Knowledge needs parsed from model response.
 
 - Sends structured prompt with strict JSON schema
 - Parses model output into `SemanticApp` with validation
@@ -185,15 +209,19 @@ Converts AppBlueprint into ExperiencePackage:
 1. User provides natural language intent
 2. IntentClassifier categorizes (create/modify/open)
 3. ModelUnderstandingService produces IntentUnderstanding
-4. ApplicationReasoner reasons about intent (deterministic or model-backed)
-5. Returns SemanticApp with entities, views, actions, tags
-6. SynthesisPlanner converts to AppBlueprint
-7. BlueprintValidator validates the blueprint
-8. BlueprintToSpecConverter converts to ExperienceSpec
-9. CreationEngine produces ExperiencePackage
-10. Package is validated and persisted
-11. BirthSequence plays
-12. AnythingRuntime opens the experience
+4. AnythingKernel.processIntent() invokes CompositeApplicationReasoner
+5. CompositeApplicationReasoner tries DeterministicReasoner, then ModelApplicationReasoner
+6. Returns SemanticApp with entities, views, actions, tags
+7. SynthesisPlanner converts to AppBlueprint
+8. BlueprintValidator validates the blueprint
+9. BlueprintToSpecConverter converts to ExperienceSpec
+10. Kernel returns ExecutionPlanReady with plan + spec
+11. ExperienceCreationCoordinator consumes ExecutionPlanReady
+12. CreationEngine produces ExperiencePackage
+13. Package is validated and persisted
+14. Activity is recorded
+15. BirthSequence plays
+16. AnythingRuntime opens the experience
 
 ### Modification Flow
 1. User requests change ("Add tags to notes")
@@ -256,8 +284,9 @@ Navigation is declarative (NavigationDefinition) and owned by Runtime.
 ## No AI Required
 
 For deterministic structural intents (collection, tracker, planner, dashboard):
-- `DeterministicReasoner` handles without model
-- All synthesis is deterministic
+- `CompositeApplicationReasoner` tries `DeterministicReasoner` first
+- All synthesis is deterministic for these patterns
 - Tests verify offline creation
+- Zero model invocations confirmed
 
-AI-assisted creation is used for complex/novel intents that require domain reasoning.
+AI-assisted creation is used for complex/novel intents that require domain reasoning. The `CompositeApplicationReasoner` falls back to `ModelApplicationReasoner` automatically.

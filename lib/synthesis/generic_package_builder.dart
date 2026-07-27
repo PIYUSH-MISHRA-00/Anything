@@ -161,8 +161,9 @@ class GenericPackageBuilder {
     for (final field in entity.fields) {
       if (field.id == '${entity.id}_id' ||
           field.id == '${entity.id}_created_at' ||
-          field.id == '${entity.id}_updated_at')
+          field.id == '${entity.id}_updated_at') {
         continue;
+      }
 
       nodes.add(_buildFormField(field, entity.id));
     }
@@ -636,9 +637,20 @@ class GenericPackageBuilder {
       storageMode: blueprint.entities.isNotEmpty
           ? StorageMode.localDatabase
           : StorageMode.ephemeral,
+      category: _deriveCategory(blueprint),
+      tags: blueprint.tags,
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
     );
+  }
+
+  static String _deriveCategory(AppBlueprint blueprint) {
+    // Structural categories derived from archetypes — no domain assumptions.
+    // Each archetype maps to its structural category name.
+    for (final archetype in blueprint.archetypes) {
+      return archetype.name;
+    }
+    return 'generated';
   }
 
   static PackageProvenance _buildProvenance(AppBlueprint blueprint) {

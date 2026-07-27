@@ -8,6 +8,7 @@ import 'dart:async';
 import 'package:anything/core/contracts/intent.dart';
 import 'package:anything/kernel/anything_kernel.dart';
 import 'package:anything/kernel/outcomes/kernel_outcome.dart';
+import 'package:anything/kernel/specification/experience_spec.dart';
 import 'package:anything/creation/creation_engine.dart';
 import 'package:anything/creation/creation_context.dart';
 import 'package:anything/creation/experience_package.dart';
@@ -110,13 +111,19 @@ class ExperienceCreationCoordinator {
             message: kernelOutcome.message,
           );
 
-        case ExperienceSpecificationReady():
-          return await _createExperience(intent, kernelOutcome);
-
         case ExecutionPlanReady():
+          return await _createExperience(
+            intent: intent,
+            specification: kernelOutcome.specification,
+            plan: kernelOutcome.plan,
+          );
+
+        case ExperienceSpecificationReady():
+          // Deprecated legacy path — should never be reached in production.
+          // All universal synthesis produces ExecutionPlanReady.
           return CreationFailed(
-            error: 'Unexpected plan without specification',
-            message: 'Something went wrong',
+            error: 'Deprecated creation path',
+            message: 'This creation path is no longer supported',
           );
 
         case ClarificationRequired():
@@ -155,23 +162,19 @@ class ExperienceCreationCoordinator {
     return createFromIntent(Intent.create(expression: expression));
   }
 
-  Future<CreationResult> _createExperience(
-    Intent intent,
-    ExperienceSpecificationReady specReady,
-  ) async {
+  Future<CreationResult> _createExperience({
+    required Intent intent,
+    required ExperienceSpec specification,
+    required ExecutionPlan plan,
+  }) async {
     _state = CreationState.creating;
 
     try {
       final creationResult = await _creationEngine.create(
         CreationContext(
           intent: intent,
-          specification: specReady.specification,
-          plan: ExecutionPlan(
-            id: 'plan-${DateTime.now().millisecondsSinceEpoch}',
-            specification: specReady.specification,
-            steps: const [],
-            createdAt: DateTime.now(),
-          ),
+          specification: specification,
+          plan: plan,
           platformContext: const PlatformContext(
             platform: 'android',
             sdkVersion: 34,
@@ -210,7 +213,7 @@ class ExperienceCreationCoordinator {
           id: package.manifest.experienceId,
           name: package.manifest.name,
           description: package.manifest.description,
-          category: 'utility',
+          category: package.manifest.category,
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
         ),

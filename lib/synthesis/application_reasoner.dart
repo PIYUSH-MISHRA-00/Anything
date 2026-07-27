@@ -7,6 +7,7 @@
 library;
 
 import '../kernel/understanding/intent_understanding.dart';
+import '../knowledge/knowledge_bundle.dart';
 import 'app_blueprint.dart';
 
 /// Result of application reasoning.
@@ -41,6 +42,14 @@ class ReasoningKnowledgeRequired extends AppReasoningResult {
   final List<SynthesisKnowledgeRequirement> requirements;
 }
 
+/// Reasoning determined the intent is unsupported or the domain is unclear
+/// even after knowledge acquisition.
+class ReasoningUnsupported extends AppReasoningResult {
+  const ReasoningUnsupported({required this.reason});
+
+  final String reason;
+}
+
 /// Reasoning failed.
 class ReasoningFailed extends AppReasoningResult {
   const ReasoningFailed({required this.error});
@@ -51,14 +60,59 @@ class ReasoningFailed extends AppReasoningResult {
 /// Knowledge requirement from the reasoning layer.
 class SynthesisKnowledgeRequirement {
   const SynthesisKnowledgeRequirement({
-    required this.objective,
-    required this.resourceType,
+    required this.id,
+    required this.purpose,
+    required this.query,
+    required this.required,
+    this.resourceType = 'domainKnowledge',
     this.queryHints = const [],
   });
 
-  final String objective;
+  /// Stable identifier for this requirement.
+  final String id;
+
+  /// Why this knowledge is needed.
+  final String purpose;
+
+  /// The query or intention for knowledge retrieval.
+  final String query;
+
+  /// Whether this knowledge is required (cannot proceed without) or optional.
+  final bool required;
+
+  /// Category hint: externalApi, protocol, dataFormat, algorithm,
+  /// integrationDocumentation, domainKnowledge, technicalReference.
   final String resourceType;
+
+  /// Additional query hints.
   final List<String> queryHints;
+}
+
+/// Context for application reasoning — carries structured information
+/// the reasoner needs beyond the raw intent understanding.
+class ApplicationReasoningContext {
+  const ApplicationReasoningContext({
+    required this.understanding,
+    this.knowledge,
+    this.availableCapabilities = const [],
+    this.round = 0,
+    this.maxRounds = 2,
+  });
+
+  /// The intent understanding from classification.
+  final IntentUnderstanding understanding;
+
+  /// Acquired knowledge bundle, if any.
+  final KnowledgeBundle? knowledge;
+
+  /// Capability IDs available to the application.
+  final List<String> availableCapabilities;
+
+  /// Current refinement round (0-based).
+  final int round;
+
+  /// Maximum allowed refinement rounds.
+  final int maxRounds;
 }
 
 /// Semantic application description — the output of application reasoning.
@@ -223,6 +277,6 @@ abstract class ApplicationReasoner {
   /// Reason about what application the user wants.
   ///
   /// Returns a typed result indicating success, clarification needed,
-  /// provider needed, knowledge needed, or failure.
-  Future<AppReasoningResult> reason(IntentUnderstanding understanding);
+  /// provider needed, knowledge needed, unsupported, or failure.
+  Future<AppReasoningResult> reason(ApplicationReasoningContext context);
 }

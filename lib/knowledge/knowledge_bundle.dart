@@ -31,6 +31,47 @@ class KnowledgeBundle {
   bool get isEmpty => resources.isEmpty;
   int get resourceCount => resources.length;
 
+  /// Merge another bundle into this one, deduplicating by resource ID.
+  ///
+  /// Resources from [other] are appended. Requirements satisfied and
+  /// unresolved are combined. Warnings are combined. Status is derived
+  /// from the merged state.
+  KnowledgeBundle mergedWith(KnowledgeBundle other) {
+    final seenIds = <String>{};
+    final mergedResources = <KnowledgeResource>[];
+    for (final r in resources) {
+      if (seenIds.add(r.id)) mergedResources.add(r);
+    }
+    for (final r in other.resources) {
+      if (seenIds.add(r.id)) mergedResources.add(r);
+    }
+    final mergedSatisfied = {
+      ...requirementsSatisfied,
+      ...other.requirementsSatisfied,
+    }.toList();
+    final mergedUnresolved = {
+      ...unresolvedRequirements,
+      ...other.unresolvedRequirements,
+    }.toList();
+    final mergedWarnings = [...warnings, ...other.warnings];
+    final status = mergedUnresolved.isEmpty
+        ? BundleStatus.ready
+        : (mergedResources.isEmpty
+            ? BundleStatus.failed
+            : BundleStatus.partial);
+    return KnowledgeBundle(
+      id: id,
+      status: status,
+      resources: mergedResources,
+      requirementsSatisfied: mergedSatisfied,
+      unresolvedRequirements: mergedUnresolved,
+      warnings: mergedWarnings,
+      generatedAt: generatedAt.isAfter(other.generatedAt)
+          ? generatedAt
+          : other.generatedAt,
+    );
+  }
+
   /// Get resources sorted by ranking.
   List<KnowledgeResource> get rankedResources {
     final sorted = List<KnowledgeResource>.from(resources);

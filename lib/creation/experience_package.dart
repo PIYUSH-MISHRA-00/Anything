@@ -147,6 +147,8 @@ class ExperienceManifest {
   final List<String> optionalCapabilities;
   final NetworkMode networkMode;
   final StorageMode storageMode;
+  final String category;
+  final List<String> tags;
 
   const ExperienceManifest({
     required this.experienceId,
@@ -161,6 +163,8 @@ class ExperienceManifest {
     this.optionalCapabilities = const [],
     this.networkMode = NetworkMode.none,
     this.storageMode = StorageMode.none,
+    this.category = 'utility',
+    this.tags = const [],
   });
 
   Map<String, dynamic> toJson() => {
@@ -176,6 +180,8 @@ class ExperienceManifest {
     'optionalCapabilities': optionalCapabilities,
     'networkMode': networkMode.name,
     'storageMode': storageMode.name,
+    'category': category,
+    'tags': tags,
   };
 
   factory ExperienceManifest.fromJson(Map<String, dynamic> json) {
@@ -202,6 +208,8 @@ class ExperienceManifest {
         (m) => m.name == json['storageMode'],
         orElse: () => StorageMode.none,
       ),
+      category: json['category'] as String? ?? 'utility',
+      tags: (json['tags'] as List?)?.cast<String>() ?? const [],
     );
   }
 }

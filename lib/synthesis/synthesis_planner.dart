@@ -36,37 +36,46 @@ class SynthesisPlanner {
   /// 2. Converts semantic information to AppBlueprint
   /// 3. Validates and normalizes the blueprint
   /// 4. Returns the result
-  Future<SynthesisResult> plan(IntentUnderstanding understanding) async {
-    final result = await _reasoner.reason(understanding);
+  Future<SynthesisResult> plan(
+    ApplicationReasoningContext context,
+  ) async {
+    final result = await _reasoner.reason(context);
 
     return switch (result) {
       ReasoningReady() => SynthesisResult(
-        blueprint: _convertToBlueprint(result.semanticApp),
+        blueprint: convertToBlueprint(result.semanticApp),
         notes: ['Reasoning completed by ${_reasoner.runtimeType}'],
       ),
       ReasoningClarificationRequired() => SynthesisResult(
-        blueprint: _createMinimalBlueprint(understanding),
+        blueprint: _createMinimalBlueprint(context.understanding),
         notes: ['Clarification needed: ${result.question}'],
       ),
       ReasoningProviderRequired() => SynthesisResult(
-        blueprint: _createMinimalBlueprint(understanding),
+        blueprint: _createMinimalBlueprint(context.understanding),
         notes: ['Provider required for complex reasoning'],
       ),
       ReasoningKnowledgeRequired() => SynthesisResult(
-        blueprint: _createMinimalBlueprint(understanding),
+        blueprint: _createMinimalBlueprint(context.understanding),
         notes: [
-          'External knowledge needed: ${result.requirements.map((r) => r.objective).join(", ")}',
+          'External knowledge needed: ${result.requirements.map((r) => r.purpose).join(", ")}',
         ],
       ),
       ReasoningFailed() => SynthesisResult(
-        blueprint: _createMinimalBlueprint(understanding),
+        blueprint: _createMinimalBlueprint(context.understanding),
         notes: ['Reasoning failed: ${result.error}'],
+      ),
+      ReasoningUnsupported() => SynthesisResult(
+        blueprint: _createMinimalBlueprint(context.understanding),
+        notes: ['Unsupported: ${result.reason}'],
       ),
     };
   }
 
   /// Convert a SemanticApp to an AppBlueprint.
-  AppBlueprint _convertToBlueprint(SemanticApp semantic) {
+  ///
+  /// This is the core conversion from semantic domain to technology-independent
+  /// blueprint. Used by the Kernel after reasoning completes.
+  AppBlueprint convertToBlueprint(SemanticApp semantic) {
     final entities = semantic.entities.map((se) {
       return BlueprintEntity(
         id: se.id,

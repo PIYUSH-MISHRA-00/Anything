@@ -6,12 +6,11 @@
 ///
 /// Its purpose is to handle requests where:
 /// - objective already contains explicit entities/fields/actions
-/// - simple collection request
-/// - simple counter
-/// - simple form/list
+/// - simple collection request where entity name is obvious from words
+///
+/// Everything else escalates to model reasoning.
 library;
 
-import '../kernel/understanding/intent_understanding.dart';
 import 'app_blueprint.dart';
 import 'application_reasoner.dart';
 
@@ -19,30 +18,16 @@ import 'application_reasoner.dart';
 ///
 /// Handles simple structural requests by extracting semantic information
 /// directly from the intent understanding. No AI required.
+///
+/// Principle: only handle requests whose semantics are obvious from
+/// the words themselves. When uncertain, escalate.
 class DeterministicReasoner implements ApplicationReasoner {
   const DeterministicReasoner();
 
   @override
-  Future<AppReasoningResult> reason(IntentUnderstanding understanding) async {
+  Future<AppReasoningResult> reason(ApplicationReasoningContext context) async {
+    final understanding = context.understanding;
     final objective = understanding.objective;
-
-    // Simple tracker patterns: "track X", "daily X", "X tracker"
-    final trackerResult = _tryTrackerReasoning(objective);
-    if (trackerResult != null) {
-      return ReasoningReady(semanticApp: trackerResult);
-    }
-
-    // Simple planner patterns: "plan X", "schedule X", "organize X"
-    final plannerResult = _tryPlannerReasoning(objective);
-    if (plannerResult != null) {
-      return ReasoningReady(semanticApp: plannerResult);
-    }
-
-    // Simple dashboard/aggregation: "total X", "summarize X"
-    final dashboardResult = _tryDashboardReasoning(objective);
-    if (dashboardResult != null) {
-      return ReasoningReady(semanticApp: dashboardResult);
-    }
 
     // Simple collection patterns: "make a list of X", "create a list of X"
     final collectionResult = _tryCollectionReasoning(objective);
@@ -54,21 +39,26 @@ class DeterministicReasoner implements ApplicationReasoner {
     return const ReasoningProviderRequired();
   }
 
+  /// Try to handle as a simple collection.
+  ///
+  /// Only succeeds when:
+  /// - "list of X" or "create a list of X" pattern is explicit
+  /// - Entity name is clearly extractable from the objective
+  /// - No ambiguous domain semantics
   SemanticApp? _tryCollectionReasoning(String objective) {
     final lower = objective.toLowerCase();
 
-    // Detect collection intent
-    if (!lower.contains('list') &&
-        !lower.contains('track') &&
-        !lower.contains('manage') &&
-        !lower.contains('organize') &&
-        !lower.contains('create')) {
+    // Must contain collection keywords
+    if (!lower.contains('list') && !lower.contains('collection')) {
       return null;
     }
 
-    // Extract the subject/entity from the objective
+    // Must have "of X" or similar explicit entity reference
     final entityName = _extractEntityName(objective);
     if (entityName == null) return null;
+
+    // Reject overly generic requests
+    if (_isTooGeneric(lower)) return null;
 
     final entityId = _toEntityId(entityName);
 
@@ -105,19 +95,19 @@ class DeterministicReasoner implements ApplicationReasoner {
 
     final actions = [
       SemanticAction(
-        id: 'create_${entityId}',
+        id: 'create_$entityId',
         name: 'Add $entityName',
         targetEntityId: entityId,
         actionType: BlueprintActionType.create,
       ),
       SemanticAction(
-        id: 'update_${entityId}',
+        id: 'update_$entityId',
         name: 'Update $entityName',
         targetEntityId: entityId,
         actionType: BlueprintActionType.update,
       ),
       SemanticAction(
-        id: 'delete_${entityId}',
+        id: 'delete_$entityId',
         name: 'Delete $entityName',
         targetEntityId: entityId,
         actionType: BlueprintActionType.delete,
@@ -160,458 +150,68 @@ class DeterministicReasoner implements ApplicationReasoner {
     );
   }
 
-  SemanticApp? _tryTrackerReasoning(String objective) {
-    final lower = objective.toLowerCase();
-
-    // Detect tracker intent
-    if (!lower.contains('track') &&
-        !lower.contains('daily') &&
-        !lower.contains('habit') &&
-        !lower.contains('streak')) {
-      return null;
+  /// Check if the objective is too generic for deterministic handling.
+  bool _isTooGeneric(String lower) {
+    const genericPhrases = [
+      'create an app',
+      'make me something',
+      'manage my',
+      'organize my',
+      'organize life',
+      'build something',
+      'i need an app',
+      'an application',
+      'a tool',
+      'something for',
+      'help me',
+    ];
+    for (final phrase in genericPhrases) {
+      if (lower.contains(phrase)) return true;
     }
-
-    final entityName = _extractEntityName(objective) ?? 'Trackable';
-    final entityId = _toEntityId(entityName);
-
-    final entity = SemanticEntity(
-      id: entityId,
-      name: entityName,
-      fields: [
-        SemanticField(
-          id: '${entityId}_name',
-          name: 'Name',
-          type: BlueprintFieldType.text,
-          required: true,
-        ),
-        SemanticField(
-          id: '${entityId}_created_at',
-          name: 'Created At',
-          type: BlueprintFieldType.dateTime,
-          required: true,
-        ),
-      ],
-      displayField: '${entityId}_name',
-    );
-
-    final completionEntity = SemanticEntity(
-      id: '${entityId}_completions',
-      name: '$entityName Completions',
-      fields: [
-        SemanticField(
-          id: 'completion_id',
-          name: 'ID',
-          type: BlueprintFieldType.text,
-          required: true,
-        ),
-        SemanticField(
-          id: 'trackable_id',
-          name: 'Trackable ID',
-          type: BlueprintFieldType.text,
-          required: true,
-        ),
-        SemanticField(
-          id: 'completion_date',
-          name: 'Date',
-          type: BlueprintFieldType.date,
-          required: true,
-        ),
-        SemanticField(
-          id: 'completed',
-          name: 'Completed',
-          type: BlueprintFieldType.boolean,
-          defaultValue: 'false',
-        ),
-        SemanticField(
-          id: 'completion_note',
-          name: 'Note',
-          type: BlueprintFieldType.text,
-        ),
-      ],
-    );
-
-    final derivedValues = [
-      SemanticDerivedValue(
-        id: 'today_completed',
-        name: 'Completed Today',
-        sourceEntityId: '${entityId}_completions',
-        operation: DerivedOperation.count,
-        description: 'Number of items completed today',
-      ),
-    ];
-
-    final actions = [
-      SemanticAction(
-        id: 'create_${entityId}',
-        name: 'Add $entityName',
-        targetEntityId: entityId,
-        actionType: BlueprintActionType.create,
-      ),
-      SemanticAction(
-        id: 'toggle_${entityId}',
-        name: 'Toggle $entityName',
-        targetEntityId: entityId,
-        actionType: BlueprintActionType.toggle,
-        derivedEffect: 'Toggle today completion',
-      ),
-      SemanticAction(
-        id: 'delete_${entityId}',
-        name: 'Delete $entityName',
-        targetEntityId: entityId,
-        actionType: BlueprintActionType.delete,
-      ),
-    ];
-
-    final todayView = SemanticView(
-      id: '${entityId}_today',
-      name: 'Today',
-      purpose: "Today's $entityName",
-      sourceEntityId: entityId,
-      viewType: BlueprintViewType.dashboard,
-      sections: [
-        SemanticViewSection(
-          id: 'today_list',
-          purpose: "Today's $entityName",
-          sourceEntityId: entityId,
-          sectionType: BlueprintSectionType.list,
-        ),
-        SemanticViewSection(
-          id: 'today_summary',
-          purpose: 'Completion summary',
-          sourceEntityId: entityId,
-          sectionType: BlueprintSectionType.summary,
-        ),
-      ],
-      isDefault: true,
-    );
-
-    final formView = SemanticView(
-      id: '${entityId}_form',
-      name: 'Add/Edit $entityName',
-      purpose: 'Create or edit $entityName',
-      sourceEntityId: entityId,
-      viewType: BlueprintViewType.form,
-    );
-
-    return SemanticApp(
-      name: _deriveName(objective),
-      purpose: objective,
-      entities: [entity, completionEntity],
-      actions: actions,
-      derivedValues: derivedValues,
-      views: [todayView, formView],
-      archetypes: ['tracker'],
-      tags: _extractTags(objective),
-    );
-  }
-
-  SemanticApp? _tryPlannerReasoning(String objective) {
-    final lower = objective.toLowerCase();
-
-    if (!_containsWord(lower, 'plan') &&
-        !_containsWord(lower, 'schedule') &&
-        !_containsWord(lower, 'task') &&
-        !_containsWord(lower, 'todo') &&
-        !_containsWord(lower, 'assignment')) {
-      return null;
-    }
-
-    final entityName = _extractEntityName(objective) ?? 'Task';
-    final entityId = _toEntityId(entityName);
-
-    final entity = SemanticEntity(
-      id: entityId,
-      name: entityName,
-      fields: [
-        SemanticField(
-          id: '${entityId}_title',
-          name: 'Title',
-          type: BlueprintFieldType.text,
-          required: true,
-        ),
-        SemanticField(
-          id: '${entityId}_description',
-          name: 'Description',
-          type: BlueprintFieldType.multilineText,
-        ),
-        SemanticField(
-          id: '${entityId}_due_date',
-          name: 'Due Date',
-          type: BlueprintFieldType.date,
-        ),
-        SemanticField(
-          id: '${entityId}_completed',
-          name: 'Completed',
-          type: BlueprintFieldType.boolean,
-          defaultValue: 'false',
-        ),
-        SemanticField(
-          id: '${entityId}_created_at',
-          name: 'Created At',
-          type: BlueprintFieldType.dateTime,
-          required: true,
-        ),
-      ],
-      displayField: '${entityId}_title',
-    );
-
-    final derivedValues = [
-      SemanticDerivedValue(
-        id: 'pending_count',
-        name: 'Pending Count',
-        sourceEntityId: entityId,
-        operation: DerivedOperation.count,
-        description: 'Number of pending tasks',
-      ),
-      SemanticDerivedValue(
-        id: 'completed_count',
-        name: 'Completed Count',
-        sourceEntityId: entityId,
-        operation: DerivedOperation.count,
-        description: 'Number of completed tasks',
-      ),
-    ];
-
-    final actions = [
-      SemanticAction(
-        id: 'create_${entityId}',
-        name: 'Add $entityName',
-        targetEntityId: entityId,
-        actionType: BlueprintActionType.create,
-      ),
-      SemanticAction(
-        id: 'complete_${entityId}',
-        name: 'Complete $entityName',
-        targetEntityId: entityId,
-        actionType: BlueprintActionType.setValue,
-        derivedEffect: 'Mark as completed',
-      ),
-      SemanticAction(
-        id: 'update_${entityId}',
-        name: 'Update $entityName',
-        targetEntityId: entityId,
-        actionType: BlueprintActionType.update,
-      ),
-      SemanticAction(
-        id: 'delete_${entityId}',
-        name: 'Delete $entityName',
-        targetEntityId: entityId,
-        actionType: BlueprintActionType.delete,
-      ),
-    ];
-
-    final listView = SemanticView(
-      id: '${entityId}_list',
-      name: '$entityName List',
-      purpose: 'View all $entityName',
-      sourceEntityId: entityId,
-      viewType: BlueprintViewType.list,
-      sections: [
-        SemanticViewSection(
-          id: 'upcoming_list',
-          purpose: 'Pending $entityName',
-          sourceEntityId: entityId,
-          filter: 'completed = false',
-          sectionType: BlueprintSectionType.list,
-        ),
-        SemanticViewSection(
-          id: 'upcoming_summary',
-          purpose: 'Summary',
-          sourceEntityId: entityId,
-          sectionType: BlueprintSectionType.summary,
-        ),
-      ],
-      isDefault: true,
-    );
-
-    final formView = SemanticView(
-      id: '${entityId}_form',
-      name: 'Add/Edit $entityName',
-      purpose: 'Create or edit $entityName',
-      sourceEntityId: entityId,
-      viewType: BlueprintViewType.form,
-    );
-
-    return SemanticApp(
-      name: _deriveName(objective),
-      purpose: objective,
-      entities: [entity],
-      actions: actions,
-      derivedValues: derivedValues,
-      views: [listView, formView],
-      archetypes: ['planner'],
-      tags: _extractTags(objective),
-    );
-  }
-
-  SemanticApp? _tryDashboardReasoning(String objective) {
-    final lower = objective.toLowerCase();
-
-    if (!lower.contains('total') &&
-        !lower.contains('summarize') &&
-        !lower.contains('summary') &&
-        !lower.contains('aggregate') &&
-        !lower.contains('budget')) {
-      return null;
-    }
-
-    final entityName = _extractEntityName(objective) ?? 'Record';
-    final entityId = _toEntityId(entityName);
-
-    final entity = SemanticEntity(
-      id: entityId,
-      name: entityName,
-      fields: [
-        SemanticField(
-          id: '${entityId}_name',
-          name: 'Name',
-          type: BlueprintFieldType.text,
-          required: true,
-        ),
-        SemanticField(
-          id: '${entityId}_amount',
-          name: 'Amount',
-          type: BlueprintFieldType.decimal,
-          required: true,
-          minimum: 0,
-        ),
-        SemanticField(
-          id: '${entityId}_date',
-          name: 'Date',
-          type: BlueprintFieldType.date,
-          required: true,
-        ),
-        SemanticField(
-          id: '${entityId}_created_at',
-          name: 'Created At',
-          type: BlueprintFieldType.dateTime,
-          required: true,
-        ),
-      ],
-      displayField: '${entityId}_name',
-    );
-
-    final derivedValues = [
-      SemanticDerivedValue(
-        id: 'total_${entityId}',
-        name: 'Total ${entityName}',
-        sourceEntityId: entityId,
-        operation: DerivedOperation.sum,
-        fieldId: '${entityId}_amount',
-        description: 'Sum of all ${entityName}',
-      ),
-      SemanticDerivedValue(
-        id: 'count_${entityId}',
-        name: 'Total Count',
-        sourceEntityId: entityId,
-        operation: DerivedOperation.count,
-        description: 'Total number of ${entityName}',
-      ),
-    ];
-
-    final actions = [
-      SemanticAction(
-        id: 'create_${entityId}',
-        name: 'Add $entityName',
-        targetEntityId: entityId,
-        actionType: BlueprintActionType.create,
-      ),
-      SemanticAction(
-        id: 'update_${entityId}',
-        name: 'Update $entityName',
-        targetEntityId: entityId,
-        actionType: BlueprintActionType.update,
-      ),
-      SemanticAction(
-        id: 'delete_${entityId}',
-        name: 'Delete $entityName',
-        targetEntityId: entityId,
-        actionType: BlueprintActionType.delete,
-      ),
-    ];
-
-    final dashboardView = SemanticView(
-      id: '${entityId}_overview',
-      name: '$entityName Overview',
-      purpose: '$entityName overview with totals',
-      sourceEntityId: entityId,
-      viewType: BlueprintViewType.dashboard,
-      sections: [
-        SemanticViewSection(
-          id: 'overview_total',
-          purpose: 'Total summary',
-          sourceEntityId: entityId,
-          sectionType: BlueprintSectionType.summary,
-        ),
-        SemanticViewSection(
-          id: 'overview_recent',
-          purpose: 'Recent $entityName',
-          sourceEntityId: entityId,
-          sectionType: BlueprintSectionType.list,
-          limit: 10,
-        ),
-      ],
-      isDefault: true,
-    );
-
-    final listView = SemanticView(
-      id: '${entityId}_list',
-      name: 'All $entityName',
-      purpose: 'All $entityName',
-      sourceEntityId: entityId,
-      viewType: BlueprintViewType.list,
-      sections: [
-        SemanticViewSection(
-          id: 'all_list',
-          purpose: 'All $entityName',
-          sourceEntityId: entityId,
-          sectionType: BlueprintSectionType.list,
-        ),
-      ],
-    );
-
-    final formView = SemanticView(
-      id: '${entityId}_form',
-      name: 'Add/Edit $entityName',
-      purpose: 'Add or edit $entityName',
-      sourceEntityId: entityId,
-      viewType: BlueprintViewType.form,
-    );
-
-    return SemanticApp(
-      name: _deriveName(objective),
-      purpose: objective,
-      entities: [entity],
-      actions: actions,
-      derivedValues: derivedValues,
-      views: [dashboardView, listView, formView],
-      archetypes: ['dashboard'],
-      tags: _extractTags(objective),
-    );
+    return false;
   }
 
   /// Extract entity name from the objective.
   ///
-  /// This is purely structural — it looks for nouns after verbs like
-  /// "list of", "track", "manage", "create", etc.
-  /// It does NOT contain domain-specific knowledge.
+  /// This is purely structural — it looks for nouns after "list of" or
+  /// "collection of". It does NOT contain domain-specific knowledge.
+  /// Returns null when extraction is uncertain.
   String? _extractEntityName(String objective) {
-    // Try to extract after common patterns
+    // Stop words that should not become entity names
+    const stopWords = {
+      'a',
+      'an',
+      'the',
+      'my',
+      'your',
+      'our',
+      'its',
+      'list',
+      'app',
+      'application',
+      'tool',
+      'thing',
+      'something',
+      'stuff',
+      'items',
+      'records',
+      'collection',
+    };
+
+    // Only extract from clear collection patterns
     final patterns = [
       RegExp(r'list of (\w+)', caseSensitive: false),
-      RegExp(r'track (?:my )?(\w+)', caseSensitive: false),
-      RegExp(r'manage (?:my )?(\w+)', caseSensitive: false),
-      RegExp(r'create (?:a )?(?:new )?(\w+)', caseSensitive: false),
-      RegExp(r'organize (?:my )?(\w+)', caseSensitive: false),
-      RegExp(r'(\w+) tracker', caseSensitive: false),
-      RegExp(r'(\w+) planner', caseSensitive: false),
+      RegExp(r'collection of (\w+)', caseSensitive: false),
+      RegExp(r'(\w+) list', caseSensitive: false),
+      RegExp(r'(\w+) collection', caseSensitive: false),
     ];
 
     for (final pattern in patterns) {
       final match = pattern.firstMatch(objective);
       if (match != null) {
         final name = match.group(1)!;
-        // Capitalize
+        final lower = name.toLowerCase();
+        if (stopWords.contains(lower)) continue;
         return name[0].toUpperCase() + name.substring(1);
       }
     }
@@ -640,18 +240,8 @@ class DeterministicReasoner implements ApplicationReasoner {
     final lower = objective.toLowerCase();
 
     // Structural tags (not domain-specific)
-    if (lower.contains('list')) tags.add('list');
-    if (lower.contains('track')) tags.add('tracker');
-    if (lower.contains('daily') || lower.contains('daily')) {
-      tags.add('daily');
-    }
-    if (lower.contains('plan') || lower.contains('schedule')) {
-      tags.add('planner');
-    }
-    if (lower.contains('total') || lower.contains('summarize')) {
-      tags.add('dashboard');
-    }
-    if (lower.contains('manage')) tags.add('management');
+    if (_containsWord(lower, 'list')) tags.add('list');
+    if (_containsWord(lower, 'collection')) tags.add('collection');
 
     return tags;
   }
