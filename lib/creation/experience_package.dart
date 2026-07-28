@@ -581,6 +581,9 @@ class DataFieldSchema {
   final String type;
   final bool required;
   final dynamic defaultValue;
+  final String? referenceEntityId;
+  final List<String> allowedValues;
+  final String? hint;
 
   const DataFieldSchema({
     required this.id,
@@ -588,6 +591,9 @@ class DataFieldSchema {
     required this.type,
     this.required = true,
     this.defaultValue,
+    this.referenceEntityId,
+    this.allowedValues = const [],
+    this.hint,
   });
 
   Map<String, dynamic> toJson() => {
@@ -596,6 +602,9 @@ class DataFieldSchema {
     'type': type,
     'required': required,
     'defaultValue': defaultValue,
+    if (referenceEntityId != null) 'referenceEntityId': referenceEntityId,
+    if (allowedValues.isNotEmpty) 'allowedValues': allowedValues,
+    if (hint != null) 'hint': hint,
   };
 
   factory DataFieldSchema.fromJson(Map<String, dynamic> json) {
@@ -605,6 +614,9 @@ class DataFieldSchema {
       type: json['type'] as String,
       required: json['required'] as bool? ?? true,
       defaultValue: json['defaultValue'],
+      referenceEntityId: json['referenceEntityId'] as String?,
+      allowedValues: (json['allowedValues'] as List?)?.cast<String>() ?? [],
+      hint: json['hint'] as String?,
     );
   }
 }

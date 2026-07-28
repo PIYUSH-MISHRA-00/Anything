@@ -441,56 +441,147 @@ class CreationEngine {
     final screens = <InterfaceScreen>[];
     for (final view in blueprint.views) {
       final nodes = <InterfaceNode>[];
-
-      // Add display elements for entity fields
       final entity = view.sourceEntityId != null
           ? blueprint.entities
                 .where((e) => e.id == view.sourceEntityId)
                 .firstOrNull
           : null;
-      if (entity != null) {
-        for (final field in entity.fields) {
-          if (field.type != BlueprintFieldType.reference) {
-            nodes.add(
-              InterfaceNode(
-                type: field.type == BlueprintFieldType.boolean
-                    ? 'switch'
-                    : 'input',
-                id: '${view.id}_${field.id}',
-                properties: {
-                  'label': field.name,
-                  'hint': 'Enter ${field.name.toLowerCase()}',
-                  if (field.type == BlueprintFieldType.integer ||
-                      field.type == BlueprintFieldType.decimal)
-                    'keyboardType': 'decimal',
-                  if (field.type == BlueprintFieldType.multilineText)
-                    'maxLines': 5,
-                },
-                stateBinding: '${entity.id}_${field.id}_input',
-              ),
-            );
+
+      switch (view.viewType) {
+        case BlueprintViewType.list:
+          nodes.add(InterfaceNode(
+            type: 'searchField',
+            id: '${view.id}_search',
+            properties: {
+              'hint': 'Search ${entity?.name ?? ''}...',
+              'entityId': view.sourceEntityId ?? '',
+            },
+          ));
+          nodes.add(InterfaceNode(
+            type: 'entityList',
+            id: '${view.id}_list',
+            properties: {
+              'entityId': view.sourceEntityId ?? '',
+              'titleField': _findDisplayField(entity),
+              'subtitleField': _findSecondaryField(entity),
+            },
+          ));
+          break;
+
+        case BlueprintViewType.form:
+          if (entity != null) {
+            final fieldDefs = <Map<String, dynamic>>[];
+            for (final field in entity.fields) {
+              fieldDefs.add({
+                'id': field.id,
+                'name': field.name,
+                'type': _mapBlueprintFieldType(field.type),
+                'required': field.required,
+                if (field.referenceEntityId != null)
+                  'referenceEntityId': field.referenceEntityId,
+                if (field.allowedValues.isNotEmpty)
+                  'allowedValues': field.allowedValues,
+                if (field.description.isNotEmpty) 'hint': field.description,
+              });
+            }
+            nodes.add(InterfaceNode(
+              type: 'entityForm',
+              id: '${view.id}_form',
+              properties: {
+                'entityId': view.sourceEntityId ?? '',
+                'mode': 'create',
+                'fields': fieldDefs,
+              },
+            ));
           }
-        }
+          break;
+
+        case BlueprintViewType.dashboard:
+          if (entity != null) {
+            final metrics = <Map<String, dynamic>>[];
+            metrics.add({'label': 'Total ${entity.name}', 'operation': 'count', 'entityId': entity.id});
+            for (final field in entity.fields) {
+              if (field.type == BlueprintFieldType.integer ||
+                  field.type == BlueprintFieldType.decimal) {
+                metrics.add({
+                  'label': '${field.name} (Sum)',
+                  'operation': 'sum',
+                  'entityId': entity.id,
+                  'fieldId': field.id,
+                });
+                metrics.add({
+                  'label': '${field.name} (Avg)',
+                  'operation': 'average',
+                  'entityId': entity.id,
+                  'fieldId': field.id,
+                });
+              }
+            }
+            nodes.add(InterfaceNode(
+              type: 'dashboardMetrics',
+              id: '${view.id}_dashboard',
+              properties: {
+                'title': view.name,
+                'metrics': metrics,
+              },
+            ));
+          }
+          break;
+
+        case BlueprintViewType.detail:
+          if (entity != null) {
+            nodes.add(InterfaceNode(
+              type: 'entityDetail',
+              id: '${view.id}_detail',
+              properties: {
+                'entityId': view.sourceEntityId ?? '',
+                'titleField': _findDisplayField(entity),
+              },
+            ));
+          }
+          break;
+
+        case BlueprintViewType.calendar:
+        case BlueprintViewType.settings:
+        case BlueprintViewType.empty:
+        case BlueprintViewType.summary:
+          if (entity != null) {
+            for (final field in entity.fields) {
+              if (field.type == BlueprintFieldType.reference &&
+                  field.referenceEntityId != null) {
+                nodes.add(InterfaceNode(
+                  type: 'referenceSelector',
+                  id: '${view.id}_${field.id}_ref',
+                  properties: {
+                    'entityId': field.referenceEntityId,
+                    'label': 'Select ${field.name}',
+                  },
+                ));
+              } else {
+                nodes.add(InterfaceNode(
+                  type: field.type == BlueprintFieldType.boolean
+                      ? 'switch'
+                      : 'input',
+                  id: '${view.id}_${field.id}',
+                  properties: {
+                    'label': field.name,
+                    'hint': 'Enter ${field.name.toLowerCase()}',
+                  },
+                  stateBinding: '${entity.id}_${field.id}_input',
+                ));
+              }
+            }
+          }
+          break;
       }
 
-      // Add action button if present
-      if (view.primaryActionId != null) {
-        final action = blueprint.actions
-            .where((a) => a.id == view.primaryActionId)
-            .firstOrNull;
-        if (action != null) {
-          nodes.add(
-            InterfaceNode(
-              type: 'button',
-              id: '${view.id}_action_button',
-              properties: {'text': action.name, 'icon': 'add'},
-              actionBinding: ActionBinding(
-                actionId: action.id,
-                parameters: {'entityId': action.targetEntityId},
-              ),
-            ),
-          );
-        }
+      // Add section header for each view
+      if (nodes.isNotEmpty) {
+        nodes.insert(0, InterfaceNode(
+          type: 'heading',
+          id: '${view.id}_title',
+          properties: {'content': view.name, 'level': 2},
+        ));
       }
 
       screens.add(
@@ -503,7 +594,23 @@ class CreationEngine {
       );
     }
 
-    // Add navigation if multiple views
+    if (screens.isEmpty) {
+      screens.add(
+        InterfaceScreen(
+          id: 'main',
+          title: blueprint.name,
+          appBarTitle: blueprint.name,
+          children: [
+            InterfaceNode(
+              type: 'text',
+              id: 'empty_text',
+              properties: {'content': 'No views defined'},
+            ),
+          ],
+        ),
+      );
+    }
+
     final navigation = blueprint.views.length > 1
         ? NavigationDefinition(
             type: 'bottomNavigation',
@@ -522,6 +629,28 @@ class CreationEngine {
         : null;
 
     return InterfaceDefinition(screens: screens, navigation: navigation);
+  }
+
+  String _findDisplayField(BlueprintEntity? entity) {
+    if (entity == null) return 'name';
+    for (final field in entity.fields) {
+      if (field.id == 'name' || field.id == 'title' || field.id == 'label') {
+        return field.id;
+      }
+    }
+    return entity.fields.isNotEmpty ? entity.fields.first.id : 'name';
+  }
+
+  String? _findSecondaryField(BlueprintEntity? entity) {
+    if (entity == null || entity.fields.length < 2) return null;
+    for (final field in entity.fields) {
+      if (field.id != _findDisplayField(entity) &&
+          (field.type == BlueprintFieldType.text ||
+           field.type == BlueprintFieldType.reference)) {
+        return field.id;
+      }
+    }
+    return entity.fields.length > 1 ? entity.fields[1].id : null;
   }
 
   BehaviorGraph _buildBehaviorFromBlueprint(AppBlueprint blueprint) {
@@ -704,6 +833,9 @@ class CreationEngine {
             type: _mapBlueprintFieldType(field.type),
             required: field.required,
             defaultValue: field.defaultValue,
+            referenceEntityId: field.referenceEntityId,
+            allowedValues: field.allowedValues,
+            hint: field.description.isNotEmpty ? field.description : null,
           );
         }).toList(),
       );
@@ -720,6 +852,18 @@ class CreationEngine {
         return 'decimal';
       case BlueprintFieldType.boolean:
         return 'boolean';
+      case BlueprintFieldType.reference:
+        return 'reference';
+      case BlueprintFieldType.category:
+        return 'enum';
+      case BlueprintFieldType.multilineText:
+        return 'multiline';
+      case BlueprintFieldType.date:
+        return 'date';
+      case BlueprintFieldType.dateTime:
+        return 'datetime';
+      case BlueprintFieldType.time:
+        return 'time';
       default:
         return 'string';
     }

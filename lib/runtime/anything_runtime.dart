@@ -9,10 +9,13 @@ import 'dart:async';
 import '../creation/experience_package.dart';
 import 'experience_session.dart';
 import 'experience_renderer.dart';
+import 'experience_router.dart';
 import 'behavior_interpreter.dart';
 import 'state_engine.dart';
 import 'data_runtime.dart';
 import 'service_resolver.dart';
+import 'runtime_context.dart';
+import 'query_controller.dart';
 
 /// Runtime status.
 enum RuntimeStatus { idle, loading, running, paused, error }
@@ -23,13 +26,21 @@ class AnythingRuntime {
   final ExperienceStateEngine _stateEngine;
   final ExperienceDataRuntime _dataRuntime;
   final ExperienceServiceResolver _serviceResolver;
+  final ExperienceRenderer _renderer;
 
   RuntimeStatus _status = RuntimeStatus.idle;
   ExperienceSession? _currentSession;
+  ExperienceRouter? _router;
+  RuntimeComponentContext? _runtimeContext;
+  final Map<String, ExperienceQueryController> _queryControllers = {};
 
   RuntimeStatus get status => _status;
   ExperienceSession? get currentSession => _currentSession;
   ExperienceStateEngine get stateEngine => _stateEngine;
+  ExperienceDataRuntime get dataRuntime => _dataRuntime;
+  ExperienceRenderer get renderer => _renderer;
+  ExperienceRouter? get router => _router;
+  RuntimeComponentContext? get runtimeContext => _runtimeContext;
 
   AnythingRuntime({
     ExperienceRenderer? renderer,
@@ -37,17 +48,17 @@ class AnythingRuntime {
     ExperienceStateEngine? stateEngine,
     ExperienceDataRuntime? dataRuntime,
     ExperienceServiceResolver? serviceResolver,
-  }) : _behaviorInterpreter = behaviorInterpreter ?? BehaviorInterpreter(),
-       _stateEngine = stateEngine ?? ExperienceStateEngine(),
-       _dataRuntime = dataRuntime ?? ExperienceDataRuntime(),
-       _serviceResolver = serviceResolver ?? ExperienceServiceResolver();
+  })  : _behaviorInterpreter = behaviorInterpreter ?? BehaviorInterpreter(),
+        _stateEngine = stateEngine ?? ExperienceStateEngine(),
+        _dataRuntime = dataRuntime ?? ExperienceDataRuntime(),
+        _serviceResolver = serviceResolver ?? ExperienceServiceResolver(),
+        _renderer = renderer ?? ExperienceRenderer();
 
   /// Open an ExperiencePackage and create a running session.
   Future<ExperienceSession> openExperience(ExperiencePackage package) async {
     _status = RuntimeStatus.loading;
 
     try {
-      // Validate package
       final validation = _validatePackage(package);
       if (!validation.isValid) {
         _status = RuntimeStatus.error;
@@ -57,18 +68,32 @@ class AnythingRuntime {
         );
       }
 
-      // Initialize state
       _stateEngine.initialize(package.state);
 
-      // Initialize data runtime if needed
       if (package.data != null) {
-        _dataRuntime.initialize(package.data!);
+        _dataRuntime.initialize(
+          package.data!,
+          experienceId: package.manifest.experienceId,
+        );
       }
 
-      // Resolve services
       _serviceResolver.resolve(package.services);
 
-      // Create session
+      // Build router from interface screens
+      final validScreenIds = package.interface.screens.map((s) => s.id).toSet();
+      _router?.dispose();
+      _router = ExperienceRouter(validScreenIds: validScreenIds);
+
+      // Create runtime context
+      _runtimeContext = RuntimeComponentContext(
+        stateEngine: _stateEngine,
+        dataRuntime: _dataRuntime,
+        router: _router!,
+        experienceId: package.manifest.experienceId,
+        onEvent: dispatchEvent,
+        dataSchema: package.data,
+      );
+
       _currentSession = ExperienceSession(
         id: 'session-${DateTime.now().millisecondsSinceEpoch}',
         experienceId: package.manifest.experienceId,
@@ -78,6 +103,16 @@ class AnythingRuntime {
         lastActiveAt: DateTime.now(),
       );
 
+      // Initialize query controllers for entities
+      if (package.data != null) {
+        for (final entity in package.data!.entities) {
+          _queryControllers[entity.id] = ExperienceQueryController(
+            entityId: entity.id,
+            dataRuntime: _dataRuntime,
+          );
+        }
+      }
+
       _status = RuntimeStatus.running;
       return _currentSession!;
     } catch (e) {
@@ -86,6 +121,18 @@ class AnythingRuntime {
         experienceId: package.manifest.experienceId,
         error: e.toString(),
       );
+    }
+  }
+
+  /// Get query controller for an entity.
+  ExperienceQueryController? getQueryController(String entityId) {
+    return _queryControllers[entityId];
+  }
+
+  /// Refresh all query controllers.
+  Future<void> refreshAll() async {
+    for (final controller in _queryControllers.values) {
+      await controller.refresh();
     }
   }
 
@@ -145,6 +192,13 @@ class AnythingRuntime {
       status: SessionStatus.closed,
       lastActiveAt: DateTime.now(),
     );
+    for (final controller in _queryControllers.values) {
+      controller.dispose();
+    }
+    _queryControllers.clear();
+    _router?.dispose();
+    _router = null;
+    _runtimeContext = null;
     _stateEngine.dispose();
     _dataRuntime.dispose();
     _currentSession = null;
@@ -155,17 +209,14 @@ class AnythingRuntime {
   PackageValidation _validatePackage(ExperiencePackage package) {
     final errors = <String>[];
 
-    // Check format version
     if (package.packageVersion > 1) {
       errors.add('Package version ${package.packageVersion} not supported');
     }
 
-    // Check manifest
     if (package.manifest.experienceId.isEmpty) {
       errors.add('Missing experience ID');
     }
 
-    // Check interface
     if (package.interface.screens.isEmpty) {
       errors.add('No screens defined');
     }

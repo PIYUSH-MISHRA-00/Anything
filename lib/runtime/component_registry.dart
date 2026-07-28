@@ -79,7 +79,10 @@ class RuntimeComponentRegistry {
       type: 'text',
       description: 'Text display',
       builder: (ctx, props, children) {
-        final content = props['content']?.toString() ?? '';
+        final stateValue = props['_stateValue'];
+        final content = (stateValue != null && stateValue.toString().isNotEmpty)
+            ? stateValue.toString()
+            : (props['content']?.toString() ?? '');
         return Text(
           content,
           style: TextStyle(
@@ -124,10 +127,11 @@ class RuntimeComponentRegistry {
         final isPrimary = props['primary'] == true;
         final isDanger = props['danger'] == true;
         final isCompact = props['compact'] == true;
+        final onPressed = props['_onPressed'] as VoidCallback?;
 
         if (isDanger) {
           return ElevatedButton(
-            onPressed: () {},
+            onPressed: onPressed ?? () {},
             style: ElevatedButton.styleFrom(
               backgroundColor: Theme.of(ctx).colorScheme.error,
               foregroundColor: Theme.of(ctx).colorScheme.onError,
@@ -139,7 +143,7 @@ class RuntimeComponentRegistry {
 
         if (isPrimary) {
           return ElevatedButton(
-            onPressed: () {},
+            onPressed: onPressed ?? () {},
             style: ElevatedButton.styleFrom(
               minimumSize: Size(0, isCompact ? 36 : 48),
             ),
@@ -147,9 +151,9 @@ class RuntimeComponentRegistry {
           );
         }
 
-        return OutlinedButton(
-          onPressed: () {},
-          style: OutlinedButton.styleFrom(
+        return ElevatedButton(
+          onPressed: onPressed ?? () {},
+          style: ElevatedButton.styleFrom(
             minimumSize: Size(0, isCompact ? 36 : 48),
           ),
           child: Text(label),

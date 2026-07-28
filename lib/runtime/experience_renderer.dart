@@ -1,6 +1,7 @@
 /// Experience Renderer — converts declarative InterfaceDefinition to Flutter widgets.
 ///
-/// Only known Runtime component types are supported.
+/// Canonical production renderer. Uses RuntimeComponentRegistry for trusted
+/// component resolution and RuntimeComponentContext for event dispatch.
 /// No dynamic widget reflection or import.
 library;
 
@@ -8,23 +9,65 @@ import 'package:flutter/material.dart';
 
 import '../creation/experience_package.dart';
 import '../design_system/tokens/spacing.dart';
+import 'component_registry.dart';
+import 'runtime_context.dart';
 import 'state_engine.dart';
 
 /// Maps interface node types to trusted Flutter widgets.
 class ExperienceRenderer {
-  /// Render an InterfaceDefinition into a Widget tree.
+  final RuntimeComponentRegistry _registry;
+
+  ExperienceRenderer({RuntimeComponentRegistry? registry})
+      : _registry = registry ?? RuntimeComponentRegistry.defaults();
+
+  RuntimeComponentRegistry get registry => _registry;
+
+  /// Render an InterfaceDefinition into a Widget tree using registry.
   Widget render(
     BuildContext context,
     InterfaceDefinition interface,
     ExperienceStateEngine stateEngine, {
     void Function(String eventId, {Map<String, dynamic>? data})? onEvent,
+    RuntimeComponentContext? runtimeContext,
+    Map<String, dynamic>? data,
   }) {
     if (interface.screens.isEmpty) {
       return const Center(child: Text('No screens defined'));
     }
 
     final mainScreen = interface.screens.first;
-    return _renderScreen(context, mainScreen, stateEngine, onEvent: onEvent);
+    return _renderScreen(
+      context,
+      mainScreen,
+      stateEngine,
+      onEvent: onEvent,
+      runtimeContext: runtimeContext,
+      data: data,
+    );
+  }
+
+  /// Render a specific screen by ID.
+  Widget renderScreen(
+    BuildContext context,
+    String screenId,
+    InterfaceDefinition interface,
+    ExperienceStateEngine stateEngine, {
+    void Function(String eventId, {Map<String, dynamic>? data})? onEvent,
+    RuntimeComponentContext? runtimeContext,
+    Map<String, dynamic>? data,
+  }) {
+    final screen = interface.screens.where((s) => s.id == screenId).firstOrNull;
+    if (screen == null) {
+      return Center(child: Text('Screen not found: $screenId'));
+    }
+    return _renderScreen(
+      context,
+      screen,
+      stateEngine,
+      onEvent: onEvent,
+      runtimeContext: runtimeContext,
+      data: data,
+    );
   }
 
   Widget _renderScreen(
@@ -32,6 +75,8 @@ class ExperienceRenderer {
     InterfaceScreen screen,
     ExperienceStateEngine stateEngine, {
     void Function(String eventId, {Map<String, dynamic>? data})? onEvent,
+    RuntimeComponentContext? runtimeContext,
+    Map<String, dynamic>? data,
   }) {
     return Scaffold(
       appBar: AppBar(
@@ -45,10 +90,14 @@ class ExperienceRenderer {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: screen.children
-                .map(
-                  (node) =>
-                      _renderNode(context, node, stateEngine, onEvent: onEvent),
-                )
+                .map((node) => _renderNode(
+                      context,
+                      node,
+                      stateEngine,
+                      onEvent: onEvent,
+                      runtimeContext: runtimeContext,
+                      data: data,
+                    ))
                 .toList(),
           ),
         ),
@@ -61,56 +110,919 @@ class ExperienceRenderer {
     InterfaceNode node,
     ExperienceStateEngine stateEngine, {
     void Function(String eventId, {Map<String, dynamic>? data})? onEvent,
+    RuntimeComponentContext? runtimeContext,
+    Map<String, dynamic>? data,
+  }) {
+    // Resolve state-bound content
+    final resolvedProperties = _resolveBindings(node.properties, stateEngine);
+
+    // Try data-driven component types first
+    switch (node.type) {
+      case 'entityList':
+        return _renderEntityList(context, node, stateEngine,
+            onEvent: onEvent, runtimeContext: runtimeContext);
+      case 'entityGrid':
+        return _renderEntityGrid(context, node, stateEngine,
+            onEvent: onEvent, runtimeContext: runtimeContext);
+      case 'entityDetail':
+        return _renderEntityDetail(context, node, stateEngine,
+            onEvent: onEvent, runtimeContext: runtimeContext, data: data);
+      case 'entityForm':
+        return _renderEntityForm(context, node, stateEngine,
+            onEvent: onEvent, runtimeContext: runtimeContext, data: data);
+      case 'dashboardMetrics':
+        return _renderDashboardMetrics(context, node, stateEngine,
+            onEvent: onEvent, runtimeContext: runtimeContext);
+      case 'referenceSelector':
+        return _renderReferenceSelector(context, node, stateEngine,
+            onEvent: onEvent, runtimeContext: runtimeContext);
+      case 'chart':
+        return _renderChart(context, node, stateEngine,
+            runtimeContext: runtimeContext);
+    }
+
+    // Try registry for standard components
+    if (_registry.isRegistered(node.type)) {
+      final children = node.children
+          .map((child) => _renderNode(
+                context,
+                child,
+                stateEngine,
+                onEvent: onEvent,
+                runtimeContext: runtimeContext,
+                data: data,
+              ))
+          .toList();
+
+      // Inject action binding into properties for registry components
+      final propsWithAction = Map<String, dynamic>.from(resolvedProperties);
+      if (node.actionBinding != null) {
+        propsWithAction['_actionBinding'] = node.actionBinding;
+        propsWithAction['_onPressed'] = node.actionBinding != null
+            ? () => onEvent?.call(node.actionBinding!.actionId,
+                data: node.actionBinding!.parameters)
+            : null;
+      }
+      if (runtimeContext != null) {
+        propsWithAction['_runtimeContext'] = runtimeContext;
+      }
+      if (node.stateBinding != null) {
+        propsWithAction['_stateValue'] = stateEngine.read(node.stateBinding!);
+        propsWithAction['_onStateChanged'] = (dynamic value) {
+          stateEngine.write(node.stateBinding!, value);
+          onEvent?.call('${node.id}_changed', data: {'value': value});
+        };
+      }
+
+      final widget = _registry.buildComponent(
+        context,
+        node.type,
+        propsWithAction,
+        children,
+      );
+      if (widget != null) return widget;
+    }
+
+    // Fallback to legacy rendering for known types
+    return _renderLegacyNode(context, node, stateEngine,
+        resolvedProperties, onEvent: onEvent,
+        runtimeContext: runtimeContext, data: data);
+  }
+
+  Widget _renderLegacyNode(
+    BuildContext context,
+    InterfaceNode node,
+    ExperienceStateEngine stateEngine,
+    Map<String, dynamic> resolvedProperties, {
+    void Function(String eventId, {Map<String, dynamic>? data})? onEvent,
+    RuntimeComponentContext? runtimeContext,
+    Map<String, dynamic>? data,
   }) {
     switch (node.type) {
       case 'text':
-        return _renderText(context, node, stateEngine);
+        return _renderText(context, node, resolvedProperties);
       case 'button':
-        return _renderButton(context, node, stateEngine, onEvent: onEvent);
+        return _renderButton(context, node, resolvedProperties, onEvent: onEvent);
       case 'input':
         return _renderInput(context, node, stateEngine, onEvent: onEvent);
       case 'column':
-        return _renderColumn(context, node, stateEngine, onEvent: onEvent);
+        return _renderColumn(context, node, stateEngine,
+            onEvent: onEvent, runtimeContext: runtimeContext, data: data);
       case 'row':
-        return _renderRow(context, node, stateEngine, onEvent: onEvent);
+        return _renderRow(context, node, stateEngine,
+            onEvent: onEvent, runtimeContext: runtimeContext, data: data);
       case 'card':
-        return _renderCard(context, node, stateEngine, onEvent: onEvent);
+        return _renderCard(context, node, stateEngine,
+            onEvent: onEvent, runtimeContext: runtimeContext, data: data);
       case 'switch':
         return _renderSwitch(context, node, stateEngine, onEvent: onEvent);
       case 'divider':
         return const Divider();
       case 'spacer':
-        return const SizedBox(height: 16);
+        final height = resolvedProperties['height'];
+        return SizedBox(height: height is num ? height.toDouble() : 16);
       case 'icon':
-        return _renderIcon(node);
+        return _renderIcon(resolvedProperties);
+      case 'searchField':
+        return _renderSearchField(context, node, stateEngine, onEvent: onEvent, runtimeContext: runtimeContext);
       default:
         return _renderUnknown(node);
     }
   }
 
+  Map<String, dynamic> _resolveBindings(
+    Map<String, dynamic> properties,
+    ExperienceStateEngine stateEngine,
+  ) {
+    final resolved = <String, dynamic>{};
+    for (final entry in properties.entries) {
+      if (entry.value is String && entry.value.toString().startsWith('\$state.')) {
+        final stateId = entry.value.toString().substring(7);
+        resolved[entry.key] = stateEngine.read(stateId) ?? entry.value;
+      } else {
+        resolved[entry.key] = entry.value;
+      }
+    }
+    return resolved;
+  }
+
+  // ── Data-driven renderers ──────────────────────────────────
+
+  Widget _renderEntityList(
+    BuildContext context,
+    InterfaceNode node,
+    ExperienceStateEngine stateEngine, {
+    void Function(String eventId, {Map<String, dynamic>? data})? onEvent,
+    RuntimeComponentContext? runtimeContext,
+    Map<String, dynamic>? data,
+  }) {
+    final entityId = node.properties['entityId'] as String? ?? '';
+    final titleField = node.properties['titleField'] as String? ?? 'name';
+    final subtitleField = node.properties['subtitleField'] as String?;
+
+    // Use pre-loaded data if available, otherwise query from runtimeContext
+    final preloadedRecords = data?['_records'] as List?;
+    if (preloadedRecords != null) {
+      return _buildEntityListView(
+        context, node, preloadedRecords, titleField, subtitleField, onEvent: onEvent);
+    }
+
+    // Query records from runtimeContext
+    if (runtimeContext != null) {
+      return FutureBuilder<List<Map<String, dynamic>>>(
+        future: runtimeContext.queryRecords(entityId),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Card(
+              margin: EdgeInsets.symmetric(vertical: 8),
+              child: Padding(
+                padding: EdgeInsets.all(32),
+                child: Center(child: CircularProgressIndicator()),
+              ),
+            );
+          }
+          final records = snapshot.data ?? [];
+          return _buildEntityListView(
+            context, node, records, titleField, subtitleField, onEvent: onEvent);
+        },
+      );
+    }
+
+    // No data source — show empty
+    return _buildEmptyState(context, node);
+  }
+
+  Widget _buildEntityListView(
+    BuildContext context,
+    InterfaceNode node,
+    List records,
+    String titleField,
+    String? subtitleField, {
+    void Function(String eventId, {Map<String, dynamic>? data})? onEvent,
+  }) {
+    if (records.isEmpty) {
+      return _buildEmptyState(context, node);
+    }
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: List.generate(records.length, (index) {
+        final record = records[index] as Map<String, dynamic>;
+        final title = record[titleField]?.toString() ?? 'Record ${index + 1}';
+        final subtitle =
+            subtitleField != null ? record[subtitleField]?.toString() : null;
+
+        return Card(
+          margin: const EdgeInsets.symmetric(vertical: 4),
+          child: ListTile(
+            title: Text(title),
+            subtitle: subtitle != null ? Text(subtitle) : null,
+            trailing: const Icon(Icons.chevron_right),
+          ),
+        );
+      }),
+    );
+  }
+
+  Widget _buildEmptyState(BuildContext context, InterfaceNode node) {
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.inbox_outlined,
+                  size: 48,
+                  color: Theme.of(context).colorScheme.outline),
+              const SizedBox(height: 16),
+              Text('No ${node.properties['emptyTitle'] ?? 'items'} yet',
+                  style: Theme.of(context).textTheme.titleMedium),
+              if (node.properties['emptyMessage'] != null)
+                Text(node.properties['emptyMessage'] as String,
+                    style: Theme.of(context).textTheme.bodyMedium),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _renderEntityGrid(
+    BuildContext context,
+    InterfaceNode node,
+    ExperienceStateEngine stateEngine, {
+    void Function(String eventId, {Map<String, dynamic>? data})? onEvent,
+    RuntimeComponentContext? runtimeContext,
+    Map<String, dynamic>? data,
+  }) {
+    final columns = node.properties['columns'] as int? ?? 2;
+    final entityId = node.properties['entityId'] as String? ?? '';
+    final titleField = node.properties['titleField'] as String? ?? 'name';
+    final itemCount = (data?['_records'] as List?)?.length ?? 0;
+
+    if (itemCount == 0) {
+      return Card(
+        margin: const EdgeInsets.symmetric(vertical: 8),
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.grid_view,
+                    size: 48,
+                    color: Theme.of(context).colorScheme.outline),
+                const SizedBox(height: 16),
+                Text('No ${node.properties['emptyTitle'] ?? 'items'} yet',
+                    style: Theme.of(context).textTheme.titleMedium),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    return GridView.count(
+      crossAxisCount: columns,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      mainAxisSpacing: 8,
+      crossAxisSpacing: 8,
+      children: List.generate(itemCount, (index) {
+        final record = (data?['_records'] as List)[index] as Map<String, dynamic>;
+        final title = record[titleField]?.toString() ?? 'Item ${index + 1}';
+
+        return Card(
+          child: InkWell(
+            borderRadius: BorderRadius.circular(12),
+            onTap: () {
+              onEvent?.call('openDetail',
+                  data: {'entityId': entityId, 'recordId': record['id']});
+              runtimeContext?.navigate(
+                '${entityId}_detail',
+                arguments: {'recordId': record['id']},
+              );
+            },
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Center(
+                child: Text(title,
+                    style: Theme.of(context).textTheme.bodyLarge,
+                    textAlign: TextAlign.center),
+              ),
+            ),
+          ),
+        );
+      }),
+    );
+  }
+
+  Widget _renderEntityDetail(
+    BuildContext context,
+    InterfaceNode node,
+    ExperienceStateEngine stateEngine, {
+    void Function(String eventId, {Map<String, dynamic>? data})? onEvent,
+    RuntimeComponentContext? runtimeContext,
+    Map<String, dynamic>? data,
+  }) {
+    final record = data?['_currentRecord'] as Map<String, dynamic>?;
+    final entityId = node.properties['entityId'] as String? ?? '';
+    final fields = (node.properties['fields'] as List?)?.cast<String>() ??
+        record?.keys.toList() ??
+        [];
+
+    if (record == null) {
+      return const Center(child: Text('Record not found'));
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ...fields.map((fieldId) {
+          final value = record[fieldId]?.toString() ?? '';
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(
+                  width: 120,
+                  child: Text(
+                    fieldId,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.outline,
+                        ),
+                  ),
+                ),
+                Expanded(child: Text(value)),
+              ],
+            ),
+          );
+        }),
+        const Divider(height: 32),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton(
+                onPressed: () {
+                  onEvent?.call('editRecord',
+                      data: {'entityId': entityId, 'recordId': record['id']});
+                  runtimeContext?.navigate(
+                    '${entityId}_edit',
+                    arguments: {'recordId': record['id']},
+                  );
+                },
+                child: const Text('Edit'),
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: OutlinedButton(
+                onPressed: () async {
+                  final confirmed = await showDialog<bool>(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      title: const Text('Delete?'),
+                      content: const Text('This action cannot be undone.'),
+                      actions: [
+                        TextButton(
+                            onPressed: () => Navigator.pop(ctx, false),
+                            child: const Text('Cancel')),
+                        TextButton(
+                            onPressed: () => Navigator.pop(ctx, true),
+                            child: const Text('Delete')),
+                      ],
+                    ),
+                  );
+                  if (confirmed == true) {
+                    onEvent?.call('deleteRecord',
+                        data: {'entityId': entityId, 'recordId': record['id']});
+                  }
+                },
+                child: const Text('Delete'),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _renderEntityForm(
+    BuildContext context,
+    InterfaceNode node,
+    ExperienceStateEngine stateEngine, {
+    void Function(String eventId, {Map<String, dynamic>? data})? onEvent,
+    RuntimeComponentContext? runtimeContext,
+    Map<String, dynamic>? data,
+  }) {
+    final entityId = node.properties['entityId'] as String? ?? '';
+    final mode = node.properties['mode'] as String? ?? 'create';
+    final fields = (node.properties['fields'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+
+    if (fields.isEmpty) {
+      return const Center(child: Text('No form fields defined'));
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ...fields.map((fieldDef) {
+          final fieldId = fieldDef['id'] as String? ?? '';
+          final fieldName = fieldDef['name'] as String? ?? fieldId;
+          final fieldType = fieldDef['type'] as String? ?? 'string';
+          final required = fieldDef['required'] as bool? ?? false;
+          final hintText = fieldDef['hint'] as String?;
+          final allowedValues = (fieldDef['allowedValues'] as List?)?.cast<String>();
+          final referenceEntityId = fieldDef['referenceEntityId'] as String?;
+          final recordMap = data != null ? data['_currentRecord'] : null;
+          final currentRecord = recordMap is Map<String, dynamic> ? recordMap : <String, dynamic>{};
+          final initialValue = mode == 'edit' ? currentRecord[fieldId] : null;
+
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: _buildFormField(
+              context,
+              fieldId: fieldId,
+              fieldName: fieldName,
+              fieldType: fieldType,
+              required: required,
+              hintText: hintText,
+              allowedValues: allowedValues,
+              referenceEntityId: referenceEntityId,
+              initialValue: initialValue,
+              runtimeContext: runtimeContext,
+              onEvent: onEvent,
+            ),
+          );
+        }),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton(
+                onPressed: () {
+                  onEvent?.call('cancelForm', data: {'entityId': entityId});
+                  runtimeContext?.navigateBack();
+                },
+                child: const Text('Cancel'),
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: ElevatedButton(
+                onPressed: () {
+                  final formData = <String, dynamic>{};
+                  for (final fieldDef in fields) {
+                    final fieldId = fieldDef['id'] as String;
+                    final value = stateEngine.read('form_$fieldId');
+                    if (value != null) formData[fieldId] = value;
+                  }
+                  onEvent?.call('submitForm',
+                      data: {'entityId': entityId, 'mode': mode, 'values': formData});
+                },
+                child: Text(mode == 'edit' ? 'Save' : 'Create'),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFormField(
+    BuildContext context, {
+    required String fieldId,
+    required String fieldName,
+    required String fieldType,
+    required bool required,
+    String? hintText,
+    List<String>? allowedValues,
+    String? referenceEntityId,
+    dynamic initialValue,
+    RuntimeComponentContext? runtimeContext,
+    void Function(String eventId, {Map<String, dynamic>? data})? onEvent,
+  }) {
+    final stateId = 'form_$fieldId';
+    if (initialValue != null) {
+      // Write initial value if state is empty
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        // Will be set by the state engine on first build
+      });
+    }
+
+    switch (fieldType) {
+      case 'reference':
+        return _buildReferenceField(
+          context,
+          fieldId: fieldId,
+          fieldName: fieldName,
+          required: required,
+          referenceEntityId: referenceEntityId ?? '',
+          runtimeContext: runtimeContext,
+        );
+
+      case 'boolean':
+        return SwitchListTile(
+          title: Text('$fieldName${required ? ' *' : ''}'),
+          value: initialValue == true,
+          onChanged: (value) {
+            runtimeContext?.updateFormField(fieldId, value);
+            runtimeContext?.updateState(stateId, value);
+          },
+        );
+
+      case 'enum':
+      case 'select':
+        final currentVal = initialValue?.toString() ?? (allowedValues?.isNotEmpty == true ? allowedValues!.first : null);
+        return DropdownButtonFormField<String>(
+          initialValue: currentVal,
+          decoration: InputDecoration(
+            labelText: '$fieldName${required ? ' *' : ''}',
+            hintText: hintText,
+          ),
+          items: (allowedValues ?? [])
+              .map((v) => DropdownMenuItem(value: v, child: Text(v)))
+              .toList(),
+          onChanged: (value) {
+            runtimeContext?.updateFormField(fieldId, value);
+            runtimeContext?.updateState(stateId, value);
+          },
+        );
+
+      case 'integer':
+        return TextFormField(
+          initialValue: initialValue?.toString() ?? '',
+          decoration: InputDecoration(
+            labelText: '$fieldName${required ? ' *' : ''}',
+            hintText: hintText,
+          ),
+          keyboardType: TextInputType.number,
+          onChanged: (value) {
+            final parsed = int.tryParse(value);
+            runtimeContext?.updateFormField(fieldId, parsed ?? value);
+            runtimeContext?.updateState(stateId, parsed ?? value);
+          },
+        );
+
+      case 'decimal':
+        return TextFormField(
+          initialValue: initialValue?.toString() ?? '',
+          decoration: InputDecoration(
+            labelText: '$fieldName${required ? ' *' : ''}',
+            hintText: hintText,
+          ),
+          keyboardType:
+              const TextInputType.numberWithOptions(decimal: true),
+          onChanged: (value) {
+            final parsed = double.tryParse(value);
+            runtimeContext?.updateFormField(fieldId, parsed ?? value);
+            runtimeContext?.updateState(stateId, parsed ?? value);
+          },
+        );
+
+      case 'date':
+        return TextFormField(
+          initialValue: initialValue?.toString() ?? '',
+          decoration: InputDecoration(
+            labelText: '$fieldName${required ? ' *' : ''}',
+            hintText: hintText ?? 'YYYY-MM-DD',
+          ),
+          readOnly: true,
+          onTap: () async {
+            final date = await showDatePicker(
+              context: context,
+              initialDate: DateTime.now(),
+              firstDate: DateTime(2000),
+              lastDate: DateTime(2100),
+            );
+            if (date != null) {
+              final dateStr = date.toIso8601String().split('T').first;
+              runtimeContext?.updateFormField(fieldId, dateStr);
+              runtimeContext?.updateState(stateId, dateStr);
+            }
+          },
+        );
+
+      case 'multiline':
+        return TextFormField(
+          initialValue: initialValue?.toString() ?? '',
+          decoration: InputDecoration(
+            labelText: '$fieldName${required ? ' *' : ''}',
+            hintText: hintText,
+          ),
+          maxLines: 3,
+          onChanged: (value) {
+            runtimeContext?.updateFormField(fieldId, value);
+            runtimeContext?.updateState(stateId, value);
+          },
+        );
+
+      default: // string
+        return TextFormField(
+          initialValue: initialValue?.toString() ?? '',
+          decoration: InputDecoration(
+            labelText: '$fieldName${required ? ' *' : ''}',
+            hintText: hintText,
+          ),
+          onChanged: (value) {
+            runtimeContext?.updateFormField(fieldId, value);
+            runtimeContext?.updateState(stateId, value);
+          },
+        );
+    }
+  }
+
+  Widget _buildReferenceField(
+    BuildContext context, {
+    required String fieldId,
+    required String fieldName,
+    required bool required,
+    required String referenceEntityId,
+    RuntimeComponentContext? runtimeContext,
+  }) {
+    return FutureBuilder<List<Map<String, dynamic>>>(
+      future: runtimeContext?.queryRecords(referenceEntityId),
+      builder: (context, snapshot) {
+        final records = snapshot.data ?? [];
+        final stateId = 'form_$fieldId';
+        final currentValue = runtimeContext?.readState(stateId)?.toString();
+
+        return DropdownButtonFormField<String>(
+          initialValue: currentValue,
+          decoration: InputDecoration(
+            labelText: '$fieldName${required ? ' *' : ''}',
+          ),
+          items: records
+              .map((r) => DropdownMenuItem(
+                    value: r['id']?.toString(),
+                    child: Text(runtimeContext?.getRecordLabel(r) ?? r['id'].toString()),
+                  ))
+              .toList(),
+          onChanged: (value) {
+            runtimeContext?.updateFormField(fieldId, value);
+            runtimeContext?.updateState(stateId, value);
+          },
+        );
+      },
+    );
+  }
+
+  Widget _renderDashboardMetrics(
+    BuildContext context,
+    InterfaceNode node,
+    ExperienceStateEngine stateEngine, {
+    void Function(String eventId, {Map<String, dynamic>? data})? onEvent,
+    RuntimeComponentContext? runtimeContext,
+    Map<String, dynamic>? data,
+  }) {
+    final metrics = (node.properties['metrics'] as List?)
+            ?.cast<Map<String, dynamic>>() ??
+        [];
+    final records = (data?['_records'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+
+    return Wrap(
+      spacing: 16,
+      runSpacing: 16,
+      children: metrics.map((metric) {
+        final label = metric['label'] as String? ?? '';
+        final operation = metric['operation'] as String? ?? 'count';
+        final fieldId = metric['fieldId'] as String?;
+
+        dynamic value;
+        switch (operation) {
+          case 'count':
+            value = records.length;
+            break;
+          case 'sum':
+            if (fieldId != null) {
+              num sum = 0;
+              for (final r in records) {
+                final v = r[fieldId];
+                if (v is num) sum += v;
+              }
+              value = sum;
+            }
+            break;
+          case 'average':
+            if (fieldId != null) {
+              num sum = 0;
+              int count = 0;
+              for (final r in records) {
+                final v = r[fieldId];
+                if (v is num) {
+                  sum += v;
+                  count++;
+                }
+              }
+              value = count > 0 ? sum / count : 0;
+            }
+            break;
+          case 'min':
+            if (fieldId != null) {
+              dynamic min;
+              for (final r in records) {
+                final v = r[fieldId];
+                if (v is num && (min == null || v < (min as num))) min = v;
+              }
+              value = min;
+            }
+            break;
+          case 'max':
+            if (fieldId != null) {
+              dynamic max;
+              for (final r in records) {
+                final v = r[fieldId];
+                if (v is num && (max == null || v > (max as num))) max = v;
+              }
+              value = max;
+            }
+            break;
+        }
+
+        return SizedBox(
+          width: 150,
+          child: Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(label, style: Theme.of(context).textTheme.bodySmall),
+                  const SizedBox(height: 4),
+                  Text(value?.toString() ?? '0',
+                      style: Theme.of(context).textTheme.headlineMedium),
+                ],
+              ),
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _renderReferenceSelector(
+    BuildContext context,
+    InterfaceNode node,
+    ExperienceStateEngine stateEngine, {
+    void Function(String eventId, {Map<String, dynamic>? data})? onEvent,
+    RuntimeComponentContext? runtimeContext,
+  }) {
+    final entityId = node.properties['entityId'] as String? ?? '';
+    final label = node.properties['label'] as String? ?? 'Select';
+
+    return FutureBuilder<List<Map<String, dynamic>>>(
+      future: runtimeContext?.queryRecords(entityId),
+      builder: (context, snapshot) {
+        final records = snapshot.data ?? [];
+        final selectedId = stateEngine.read('${node.id}_selected');
+
+        return DropdownButtonFormField<String>(
+          initialValue: selectedId?.toString(),
+          decoration: InputDecoration(labelText: label),
+          items: records
+              .map((r) => DropdownMenuItem(
+                    value: r['id']?.toString(),
+                    child: Text(runtimeContext?.getRecordLabel(r) ?? r['id'].toString()),
+                  ))
+              .toList(),
+          onChanged: (value) {
+            stateEngine.write('${node.id}_selected', value);
+            onEvent?.call('${node.id}_selected',
+                data: {'entityId': entityId, 'recordId': value});
+          },
+        );
+      },
+    );
+  }
+
+  Widget _renderChart(
+    BuildContext context,
+    InterfaceNode node,
+    ExperienceStateEngine stateEngine, {
+    RuntimeComponentContext? runtimeContext,
+  }) {
+    final chartType = node.properties['chartType'] as String? ?? 'bar';
+    final records = (stateEngine.read('chartData') as List?)
+            ?.cast<Map<String, dynamic>>() ??
+        [];
+    final labelField = node.properties['labelField'] as String? ?? 'label';
+    final valueField = node.properties['valueField'] as String? ?? 'value';
+    final maxPoints = node.properties['maxPoints'] as int? ?? 20;
+
+    final dataPoints = records.take(maxPoints).toList();
+    final maxVal = dataPoints.fold<num>(0, (prev, r) {
+      final v = r[valueField];
+      return v is num && v > prev ? v : prev;
+    });
+
+    return SizedBox(
+      height: 200,
+      child: Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: chartType == 'bar'
+              ? _buildBarChart(context, dataPoints, labelField, valueField, maxVal)
+              : _buildLineChart(context, dataPoints, labelField, valueField, maxVal),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBarChart(
+    BuildContext context,
+    List<Map<String, dynamic>> data,
+    String labelField,
+    String valueField,
+    num maxVal,
+  ) {
+    if (data.isEmpty) {
+      return Center(
+        child: Text('No data', style: Theme.of(context).textTheme.bodyMedium),
+      );
+    }
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: data.map((d) {
+        final value = d[valueField];
+        final height = maxVal > 0 && value is num
+            ? (value / maxVal) * 150.0
+            : 0.0;
+        return Expanded(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              Text(value?.toString() ?? '0',
+                  style: Theme.of(context).textTheme.bodySmall),
+              const SizedBox(height: 4),
+              Container(
+                height: height,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primary,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(d[labelField]?.toString() ?? '',
+                  style: Theme.of(context).textTheme.bodySmall,
+                  overflow: TextOverflow.ellipsis),
+            ],
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildLineChart(
+    BuildContext context,
+    List<Map<String, dynamic>> data,
+    String labelField,
+    String valueField,
+    num maxVal,
+  ) {
+    if (data.isEmpty) {
+      return Center(
+        child: Text('No data', style: Theme.of(context).textTheme.bodyMedium),
+      );
+    }
+
+    return CustomPaint(
+      size: const Size(double.infinity, 150),
+      painter: _LineChartPainter(
+        data: data,
+        labelField: labelField,
+        valueField: valueField,
+        maxVal: maxVal,
+        primaryColor: Theme.of(context).colorScheme.primary,
+      ),
+    );
+  }
+
+  // ── Legacy renderers (backward compatible) ────────────────
+
   Widget _renderText(
     BuildContext context,
     InterfaceNode node,
-    ExperienceStateEngine stateEngine,
+    Map<String, dynamic> resolvedProperties,
   ) {
-    final content = node.properties['content'] as String? ?? '';
-    final boundValue = node.stateBinding != null
-        ? stateEngine.read(node.stateBinding!)?.toString() ?? content
-        : content;
-
+    final content = resolvedProperties['content']?.toString() ?? '';
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Text(boundValue, style: Theme.of(context).textTheme.bodyLarge),
+      child: Text(content, style: Theme.of(context).textTheme.bodyLarge),
     );
   }
 
   Widget _renderButton(
     BuildContext context,
     InterfaceNode node,
-    ExperienceStateEngine stateEngine, {
+    Map<String, dynamic> resolvedProperties, {
     void Function(String eventId, {Map<String, dynamic>? data})? onEvent,
   }) {
-    final label = node.properties['label'] as String? ?? 'Button';
+    final label = resolvedProperties['label']?.toString() ?? 'Button';
     final actionId = node.actionBinding?.actionId;
 
     return Padding(
@@ -151,19 +1063,57 @@ class ExperienceRenderer {
     );
   }
 
+  Widget _renderSearchField(
+    BuildContext context,
+    InterfaceNode node,
+    ExperienceStateEngine stateEngine, {
+    void Function(String eventId, {Map<String, dynamic>? data})? onEvent,
+    RuntimeComponentContext? runtimeContext,
+  }) {
+    final hint = node.properties['hint'] as String? ?? 'Search...';
+    final entityId = node.properties['entityId'] as String?;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: TextField(
+        decoration: InputDecoration(
+          hintText: hint,
+          prefixIcon: const Icon(Icons.search),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          filled: true,
+        ),
+        onChanged: (value) {
+          stateEngine.write('searchTerm', value);
+          if (entityId != null) {
+            onEvent?.call('searchChanged',
+                data: {'entityId': entityId, 'term': value});
+          }
+        },
+      ),
+    );
+  }
+
   Widget _renderColumn(
     BuildContext context,
     InterfaceNode node,
     ExperienceStateEngine stateEngine, {
     void Function(String eventId, {Map<String, dynamic>? data})? onEvent,
+    RuntimeComponentContext? runtimeContext,
+    Map<String, dynamic>? data,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: node.children
-          .map(
-            (child) =>
-                _renderNode(context, child, stateEngine, onEvent: onEvent),
-          )
+          .map((child) => _renderNode(
+                context,
+                child,
+                stateEngine,
+                onEvent: onEvent,
+                runtimeContext: runtimeContext,
+                data: data,
+              ))
           .toList(),
     );
   }
@@ -173,13 +1123,19 @@ class ExperienceRenderer {
     InterfaceNode node,
     ExperienceStateEngine stateEngine, {
     void Function(String eventId, {Map<String, dynamic>? data})? onEvent,
+    RuntimeComponentContext? runtimeContext,
+    Map<String, dynamic>? data,
   }) {
     return Row(
       children: node.children
-          .map(
-            (child) =>
-                _renderNode(context, child, stateEngine, onEvent: onEvent),
-          )
+          .map((child) => _renderNode(
+                context,
+                child,
+                stateEngine,
+                onEvent: onEvent,
+                runtimeContext: runtimeContext,
+                data: data,
+              ))
           .toList(),
     );
   }
@@ -189,6 +1145,8 @@ class ExperienceRenderer {
     InterfaceNode node,
     ExperienceStateEngine stateEngine, {
     void Function(String eventId, {Map<String, dynamic>? data})? onEvent,
+    RuntimeComponentContext? runtimeContext,
+    Map<String, dynamic>? data,
   }) {
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 4),
@@ -197,10 +1155,14 @@ class ExperienceRenderer {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: node.children
-              .map(
-                (child) =>
-                    _renderNode(context, child, stateEngine, onEvent: onEvent),
-              )
+              .map((child) => _renderNode(
+                    context,
+                    child,
+                    stateEngine,
+                    onEvent: onEvent,
+                    runtimeContext: runtimeContext,
+                    data: data,
+                  ))
               .toList(),
         ),
       ),
@@ -229,8 +1191,8 @@ class ExperienceRenderer {
     );
   }
 
-  Widget _renderIcon(InterfaceNode node) {
-    final iconName = node.properties['icon'] as String? ?? 'help';
+  Widget _renderIcon(Map<String, dynamic> properties) {
+    final iconName = properties['icon'] as String? ?? 'help';
     final iconData = _resolveIcon(iconName);
     return Icon(iconData, size: 24);
   }
@@ -269,7 +1231,63 @@ class ExperienceRenderer {
       'warning': Icons.warning,
       'error': Icons.error,
       'success': Icons.check_circle,
+      'list': Icons.list,
+      'grid': Icons.grid_view,
+      'refresh': Icons.refresh,
+      'chevron_right': Icons.chevron_right,
     };
     return iconMap[name] ?? Icons.help;
   }
+}
+
+/// Simple line chart painter.
+class _LineChartPainter extends CustomPainter {
+  final List<Map<String, dynamic>> data;
+  final String labelField;
+  final String valueField;
+  final num maxVal;
+  final Color primaryColor;
+
+  _LineChartPainter({
+    required this.data,
+    required this.labelField,
+    required this.valueField,
+    required this.maxVal,
+    required this.primaryColor,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (data.isEmpty) return;
+
+    final paint = Paint()
+      ..color = primaryColor
+      ..strokeWidth = 2
+      ..style = PaintingStyle.stroke;
+
+    final points = <Offset>[];
+    for (var i = 0; i < data.length; i++) {
+      final value = data[i][valueField];
+      final x = (i / (data.length - 1).clamp(1, data.length - 1)) * size.width;
+      final y = maxVal > 0 && value is num
+          ? size.height - (value / maxVal) * size.height
+          : size.height;
+      points.add(Offset(x, y));
+    }
+
+    if (points.length >= 2) {
+      final path = Path()..moveTo(points.first.dx, points.first.dy);
+      for (var i = 1; i < points.length; i++) {
+        path.lineTo(points[i].dx, points[i].dy);
+      }
+      canvas.drawPath(path, paint);
+    }
+
+    for (final point in points) {
+      canvas.drawCircle(point, 3, Paint()..color = primaryColor);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }

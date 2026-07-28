@@ -9,6 +9,7 @@ import '../storage/activity_repository.dart';
 import '../security/protection_service.dart';
 import 'anything_runtime.dart';
 import 'experience_renderer.dart';
+import 'experience_router.dart';
 
 /// Hosts a running Experience inside Anything.
 class ExperienceHostScreen extends StatefulWidget {
@@ -37,6 +38,11 @@ class _ExperienceHostScreenState extends State<ExperienceHostScreen> {
   late ExperiencePackage _currentPackage;
   bool _isLoading = true;
   bool _hasError = false;
+  ExperienceRouter? _router;
+  int _currentTabIndex = 0;
+
+  List<NavigationItem> get _navigationItems =>
+      _currentPackage.interface.navigation?.items ?? [];
 
   @override
   void initState() {
@@ -53,7 +59,12 @@ class _ExperienceHostScreenState extends State<ExperienceHostScreen> {
   Future<void> _loadExperience() async {
     try {
       await _runtime.openExperience(_currentPackage);
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _router = _runtime.router;
+        });
+      }
     } catch (e) {
       if (mounted) {
         setState(() {
@@ -146,6 +157,9 @@ class _ExperienceHostScreenState extends State<ExperienceHostScreen> {
       _runtime.closeSession();
       await _runtime.openExperience(_currentPackage);
       if (mounted) {
+        setState(() {
+          _router = _runtime.router;
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('App updated to version ${result.newVersion}'),
@@ -293,6 +307,14 @@ class _ExperienceHostScreenState extends State<ExperienceHostScreen> {
     }
   }
 
+  String _getScreenIdForTab(int index) {
+    if (index < _navigationItems.length) {
+      return _navigationItems[index].screenId;
+    }
+    final screens = _currentPackage.interface.screens;
+    return screens.isNotEmpty ? screens.first.id : 'main';
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -344,6 +366,11 @@ class _ExperienceHostScreenState extends State<ExperienceHostScreen> {
     }
 
     final renderer = ExperienceRenderer();
+    final screens = _currentPackage.interface.screens;
+    final screenId = _router?.currentScreenId ??
+        (screens.isNotEmpty ? screens.first.id : 'main');
+    final runtimeContext = _runtime.runtimeContext;
+
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.experienceName ?? 'Experience'),
@@ -371,13 +398,56 @@ class _ExperienceHostScreenState extends State<ExperienceHostScreen> {
           ),
         ],
       ),
-      body: renderer.render(
+      body: renderer.renderScreen(
         context,
+        screenId,
         _currentPackage.interface,
         _runtime.stateEngine,
         onEvent: (eventId, {data}) =>
             _runtime.dispatchEvent(eventId, data: data),
+        runtimeContext: runtimeContext,
       ),
+      bottomNavigationBar: _navigationItems.isNotEmpty
+          ? NavigationBar(
+              selectedIndex: _currentTabIndex,
+              onDestinationSelected: (index) {
+                setState(() => _currentTabIndex = index);
+                final targetScreenId = _getScreenIdForTab(index);
+                _router?.navigate(NavigationRequest(
+                  action: NavigationAction.switchTab,
+                  targetScreenId: targetScreenId,
+                ));
+              },
+              destinations: _navigationItems
+                  .take(5)
+                  .map(
+                    (item) => NavigationDestination(
+                      icon: Icon(_iconFromString(item.icon)),
+                      label: item.label,
+                    ),
+                  )
+                  .toList(),
+            )
+          : null,
     );
+  }
+
+  IconData _iconFromString(String iconName) {
+    switch (iconName) {
+      case 'list':
+        return Icons.list;
+      case 'dashboard':
+        return Icons.dashboard;
+      case 'add':
+        return Icons.add;
+      case 'settings':
+        return Icons.settings;
+      case 'search':
+        return Icons.search;
+      case 'chart':
+        return Icons.bar_chart;
+      default:
+        return Icons.tab;
+    }
   }
 }
