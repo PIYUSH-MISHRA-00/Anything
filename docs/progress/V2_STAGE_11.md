@@ -1,12 +1,12 @@
 # Stage 11 — Universal Experience Runtime
 
-## Status: IN PROGRESS
+## Status: COMPLETE
 
 ## Summary
 
 Stage 11 delivers the runtime infrastructure for universal Experience rendering. Built on Stage 10's synthesis layer, this stage provides the components needed to render any Experience as a real application — data querying, form management, navigation, trusted component registry, and widget-level rendering through ExperienceRenderer.
 
-## What Was Built This Session
+## What Was Built
 
 ### New Runtime Components (lib/runtime/)
 
@@ -15,15 +15,27 @@ Stage 11 delivers the runtime infrastructure for universal Experience rendering.
 | `data_query.dart` | Typed filter/sort/search/pagination engine with security budgets | 325 |
 | `form_controller.dart` | Form state management: validation, dirty state, field definitions, reset | 216 |
 | `experience_router.dart` | In-experience navigation with screen ID validation | 160 |
-| `component_registry.dart` | 25+ trusted component types mapped to Flutter widgets | 601 |
+| `component_registry.dart` | 25+ trusted component types mapped to Flutter widgets | 606 |
+| `experience_renderer.dart` | Data-driven views, multi-screen, form fields, chart, registry-backed | ~1300 |
+| `runtime_context.dart` | RuntimeComponentContext: bounded dispatch, CRUD, delete safety, navigation | ~300 |
+| `query_controller.dart` | ExperienceQueryController: reactive search/filter/sort/pagination | ~200 |
+| `experience_host_screen.dart` | Navigation shell: router integration, bottom tabs, RuntimeContext binding | ~300 |
 
-### Bug Fixes
+### Creation Pipeline Enhancement
 
-| File | Fix |
-|------|-----|
-| `data_query.dart:222` | Fixed `_inferSearchFields` — was using `records.entries.first.value.keys` (invalid on List), now uses `records.first.keys` |
-| `component_registry.dart:72` | Added private constructor `RuntimeComponentRegistry._()` — factory was calling nonexistent default constructor |
-| `form_controller.dart:80` | Fixed infinite recursion: `_notifyChanged` → `isValid` → `validate()` → `_notifyChanged`. Now `isValid` is pure getter, initial validation runs via `_validateSilent()` |
+| File | Enhancement |
+|------|-------------|
+| `creation_engine.dart` | Data-driven InterfaceDefinition from BlueprintViewType; action wiring (create→Add button, create→Save button, delete→Delete button); reference field propagation |
+| `experience_package.dart` | DataFieldSchema gains `referenceEntityId`, `allowedValues`, `hint` |
+
+### Production Integration
+
+| File | Integration |
+|------|-------------|
+| `experience_renderer.dart` | FutureBuilder for runtime context queries; entityList queries from runtimeContext.queryRecords(); form fields use ExperienceFormController; actionBinding wired to _onPressed |
+| `anything_runtime.dart` | Creates router from interface; initializes per-entity query controllers; exposes router/runtimeContext; proper cleanup |
+| `component_registry.dart` | Button uses `_onPressed` + ElevatedButton; iconButton uses `_onPressed`; switch reads `_stateValue` and writes `_onStateChanged` |
+| `experience_host_screen.dart` | Router integration; NavigationBar with bottom tabs; RuntimeContext binding; screen switching |
 
 ### Tests (test/stage11/)
 
@@ -73,16 +85,38 @@ Stage 11 delivers the runtime infrastructure for universal Experience rendering.
 - StateEngine: stream updates, read/write, initialize defaults
 - Golden Path rendering: People Tracker list/form, Equipment Lending dashboard, Reading Collection, deeply nested layout
 
-## Current Test Counts
+## Closure Audit
 
-- **Stage 11 new:** 70/70 passing
-- **Stage 10:** 188/188 passing
-- **Total project:** ~350+ passing
-- **Analyzer (lib/runtime/):** 0 issues
+### Final Test Count
+- **Total:** 445/445 passing, 0 failures
+- **Analyzer:** 0 errors (only pre-existing infos/warnings)
+- **Stage 11 new:** 70+ tests all passing
+- **Regression:** All prior stages (81-84, 94, 10) pass
 
-## Remaining Work
+### Domain Hardcoding Audit
+- **Zero** app-specific production screens/classes in `lib/`
+- **Zero** domain templates in production code
+- **Zero** domain-specific component types
+- Only doc comment examples in `app_archetype.dart` and `app_blueprint.dart`
 
-- Phase 3e-3f: Enhance ExperienceRenderer with component registry integration, data-driven views
-- Phase 4-6: Create ExperienceHostScreen navigation shell, multi-screen integration
-- Phase 7: Documentation (V2_STAGE_11.md, UNIVERSAL_EXPERIENCE_RUNTIME.md)
-- Phase 8: Full test suite pass, git commit/push
+### WebWeaveX Boundary
+- Only `lib/knowledge/webweavex_adapter.dart` imports `package:webweavex`
+- Version: v3.0.0 (correct)
+- No runtime modules import WebWeaveX
+
+### Action Wiring
+- BlueprintAction → ActionBinding → InterfaceNode.actionBinding
+- List views: create action → "Add" button
+- Form views: create action → "Save" button
+- Detail views: delete action → "Delete" button (danger)
+- All actions dispatched via RuntimeComponentContext.dispatch()
+
+### Security Model
+- ComponentRegistry: maxDepth=20, maxChildren=50, maxTotal=500
+- DataQuery: maxResults=10000, maxFilters=20, maxSorts=10
+- FormController: validation enforced before submit
+- Router: screen IDs validated against interface definition
+
+## Commits
+- `dd53908` — Phase 3 infrastructure (data_query, form_controller, experience_router, component_registry)
+- `076b57c` — Production integration (experience_renderer rewrite, runtime_context, query_controller, anything_runtime, experience_host_screen, creation_engine enhancements)

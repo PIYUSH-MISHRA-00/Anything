@@ -167,9 +167,10 @@ class RuntimeComponentRegistry {
       description: 'Icon-only action button',
       builder: (ctx, props, children) {
         final icon = _parseIcon(props['icon']);
+        final onPressed = props['_onPressed'] as VoidCallback?;
         return IconButton(
           icon: Icon(icon),
-          onPressed: () {},
+          onPressed: onPressed ?? () {},
         );
       },
     ));
@@ -326,10 +327,15 @@ class RuntimeComponentRegistry {
       description: 'Boolean toggle',
       builder: (ctx, props, children) {
         final label = props['label']?.toString() ?? '';
+        final stateValue = props['_stateValue'];
+        final onStateChanged = props['_onStateChanged'] as Function(dynamic)?;
+        final boolValue = stateValue == true;
         return SwitchListTile(
           title: Text(label),
-          value: false,
-          onChanged: (_) {},
+          value: boolValue,
+          onChanged: onStateChanged != null
+              ? (value) => onStateChanged(value)
+              : (_) {},
         );
       },
     ));

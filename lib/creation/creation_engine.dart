@@ -466,6 +466,27 @@ class CreationEngine {
               'subtitleField': _findSecondaryField(entity),
             },
           ));
+          if (entity != null) {
+            final createAction = blueprint.actions
+                .where((a) =>
+                    a.actionType == BlueprintActionType.create &&
+                    a.targetEntityId == entity.id)
+                .firstOrNull;
+            if (createAction != null) {
+              nodes.add(InterfaceNode(
+                type: 'button',
+                id: '${view.id}_add_button',
+                properties: {
+                  'label': 'Add ${entity.name}',
+                  'primary': true,
+                },
+                actionBinding: ActionBinding(
+                  actionId: createAction.id,
+                  parameters: {'entityId': entity.id},
+                ),
+              ));
+            }
+          }
           break;
 
         case BlueprintViewType.form:
@@ -493,6 +514,25 @@ class CreationEngine {
                 'fields': fieldDefs,
               },
             ));
+            final createAction = blueprint.actions
+                .where((a) =>
+                    a.actionType == BlueprintActionType.create &&
+                    a.targetEntityId == entity.id)
+                .firstOrNull;
+            if (createAction != null) {
+              nodes.add(InterfaceNode(
+                type: 'button',
+                id: '${view.id}_submit_button',
+                properties: {
+                  'label': 'Save',
+                  'primary': true,
+                },
+                actionBinding: ActionBinding(
+                  actionId: createAction.id,
+                  parameters: {'entityId': entity.id},
+                ),
+              ));
+            }
           }
           break;
 
@@ -538,6 +578,25 @@ class CreationEngine {
                 'titleField': _findDisplayField(entity),
               },
             ));
+            final deleteAction = blueprint.actions
+                .where((a) =>
+                    a.actionType == BlueprintActionType.delete &&
+                    a.targetEntityId == entity.id)
+                .firstOrNull;
+            if (deleteAction != null) {
+              nodes.add(InterfaceNode(
+                type: 'button',
+                id: '${view.id}_delete_button',
+                properties: {
+                  'label': 'Delete',
+                  'danger': true,
+                },
+                actionBinding: ActionBinding(
+                  actionId: deleteAction.id,
+                  parameters: {'entityId': entity.id},
+                ),
+              ));
+            }
           }
           break;
 
