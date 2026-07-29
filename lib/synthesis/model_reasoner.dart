@@ -366,7 +366,7 @@ class ModelApplicationReasoner implements ApplicationReasoner {
       case 'text':
         return BlueprintFieldType.text;
       case 'multiline':
-      case 'multilineText':
+      case 'multilinetext':
         return BlueprintFieldType.multilineText;
       case 'integer':
       case 'int':
