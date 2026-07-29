@@ -43,7 +43,9 @@ Stage 11 delivers the runtime infrastructure for universal Experience rendering.
 |------|-------|----------|
 | `stage11_core_test.dart` | 48 | DataQuery (18), FormController (9), Router (9), ComponentRegistry (4), Golden Path logic (3), Security (6) |
 | `stage11_widget_runtime_test.dart` | 22 | ExperienceRenderer (13), StateEngine (4), Golden Path rendering (5) |
-| **Total** | **70** | **All passing** |
+| `stage11_end_to_end_certification_test.dart` | 18 | Full lifecycle (People Tracker, Equipment Lending, Fossil Catalog, OrbitMetrics), Form, Cross-Experience Isolation, Reactivity, Synthesis Preservation, Widget Interaction |
+| `stage11_security_certification_test.dart` | 25 | Component budgets, unknown/forbidden components, trusted types, navigation escape, query limits, malicious queries, form/package validation, behavior budget, registry |
+| **Total** | **113** | **All passing** |
 
 ### Test Breakdown
 
@@ -88,9 +90,9 @@ Stage 11 delivers the runtime infrastructure for universal Experience rendering.
 ## Closure Audit
 
 ### Final Test Count
-- **Total:** 445/445 passing, 0 failures
+- **Total:** 488/488 passing, 0 failures
 - **Analyzer:** 0 errors (only pre-existing infos/warnings)
-- **Stage 11 new:** 70+ tests all passing
+- **Stage 11 new:** 113 tests all passing
 - **Regression:** All prior stages (81-84, 94, 10) pass
 
 ### Domain Hardcoding Audit
@@ -113,10 +115,12 @@ Stage 11 delivers the runtime infrastructure for universal Experience rendering.
 
 ### Security Model
 - ComponentRegistry: maxDepth=20, maxChildren=50, maxTotal=500
-- DataQuery: maxResults=10000, maxFilters=20, maxSorts=10
+- DataQuery: maxResults=1000, maxFilters=20, maxSorts=5
 - FormController: validation enforced before submit
 - Router: screen IDs validated against interface definition
 
 ## Commits
+- `dbc52b8` — Stage 11.1: End-to-end certification (18 lifecycle + 25 security tests) + production bug fix (multilineText case label)
+- `be581da` — Stage 11 closure: fix critical gaps, wire actions, architecture docs
+- `076b57c` — Stage 11: Production integration (experience_renderer rewrite, runtime_context, query_controller, anything_runtime, experience_host_screen, creation_engine enhancements)
 - `dd53908` — Phase 3 infrastructure (data_query, form_controller, experience_router, component_registry)
-- `076b57c` — Production integration (experience_renderer rewrite, runtime_context, query_controller, anything_runtime, experience_host_screen, creation_engine enhancements)
