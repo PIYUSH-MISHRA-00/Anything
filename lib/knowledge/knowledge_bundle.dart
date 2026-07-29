@@ -57,8 +57,8 @@ class KnowledgeBundle {
     final status = mergedUnresolved.isEmpty
         ? BundleStatus.ready
         : (mergedResources.isEmpty
-            ? BundleStatus.failed
-            : BundleStatus.partial);
+              ? BundleStatus.failed
+              : BundleStatus.partial);
     return KnowledgeBundle(
       id: id,
       status: status,

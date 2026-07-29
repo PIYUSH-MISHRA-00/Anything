@@ -30,10 +30,7 @@ class RuntimeAction {
   final RuntimeActionType type;
   final Map<String, dynamic> parameters;
 
-  const RuntimeAction({
-    required this.type,
-    this.parameters = const {},
-  });
+  const RuntimeAction({required this.type, this.parameters = const {}});
 }
 
 /// Result of a runtime action.
@@ -77,16 +74,17 @@ class RuntimeComponentContext {
     required this.dataRuntime,
     required this.router,
     required this.experienceId,
-    required void Function(String eventId, {Map<String, dynamic>? data}) onEvent,
+    required void Function(String eventId, {Map<String, dynamic>? data})
+    onEvent,
     ExperienceFormController? currentForm,
     String? currentEntityId,
     String? currentRecordId,
     DataSchema? dataSchema,
-  })  : _onEvent = onEvent,
-        _currentForm = currentForm,
-        _currentEntityId = currentEntityId,
-        _currentRecordId = currentRecordId,
-        _dataSchema = dataSchema;
+  }) : _onEvent = onEvent,
+       _currentForm = currentForm,
+       _currentEntityId = currentEntityId,
+       _currentRecordId = currentRecordId,
+       _dataSchema = dataSchema;
 
   ExperienceFormController? get currentForm => _currentForm;
   String? get currentEntityId => _currentEntityId;
@@ -94,17 +92,22 @@ class RuntimeComponentContext {
   DataSchema? get dataSchema => _dataSchema;
 
   /// Dispatch an action through the behavior interpreter.
-  Future<void> dispatchAction(String actionId, {Map<String, dynamic>? data}) async {
+  Future<void> dispatchAction(
+    String actionId, {
+    Map<String, dynamic>? data,
+  }) async {
     _onEvent(actionId, data: data);
   }
 
   /// Navigate to a screen.
   void navigate(String screenId, {Map<String, dynamic>? arguments}) {
-    router.navigate(NavigationRequest(
-      action: NavigationAction.push,
-      targetScreenId: screenId,
-      arguments: arguments,
-    ));
+    router.navigate(
+      NavigationRequest(
+        action: NavigationAction.push,
+        targetScreenId: screenId,
+        arguments: arguments,
+      ),
+    );
   }
 
   /// Navigate back.
@@ -114,15 +117,19 @@ class RuntimeComponentContext {
 
   /// Navigate to root.
   void navigateToRoot() {
-    router.navigate(const NavigationRequest(action: NavigationAction.popToRoot));
+    router.navigate(
+      const NavigationRequest(action: NavigationAction.popToRoot),
+    );
   }
 
   /// Switch to a tab.
   void switchTab(String screenId) {
-    router.navigate(NavigationRequest(
-      action: NavigationAction.switchTab,
-      targetScreenId: screenId,
-    ));
+    router.navigate(
+      NavigationRequest(
+        action: NavigationAction.switchTab,
+        targetScreenId: screenId,
+      ),
+    );
   }
 
   /// Toggle a boolean state value.
@@ -174,7 +181,11 @@ class RuntimeComponentContext {
   }
 
   /// Update a record.
-  Future<void> updateRecord(String entity, String id, Map<String, dynamic> updates) async {
+  Future<void> updateRecord(
+    String entity,
+    String id,
+    Map<String, dynamic> updates,
+  ) async {
     await dataRuntime.update(entity, id, updates);
   }
 
@@ -231,9 +242,9 @@ class RuntimeComponentContext {
   String getRecordLabel(Map<String, dynamic> record, {String? entityId}) {
     final entity = entityId != null ? getEntitySchema(entityId) : null;
     if (entity != null) {
-      final displayField = entity.fields.where(
-        (f) => f.id == 'name' || f.id == 'title' || f.id == 'label',
-      ).firstOrNull;
+      final displayField = entity.fields
+          .where((f) => f.id == 'name' || f.id == 'title' || f.id == 'label')
+          .firstOrNull;
       if (displayField != null && record[displayField.id] != null) {
         return record[displayField.id].toString();
       }
@@ -245,7 +256,10 @@ class RuntimeComponentContext {
   }
 
   /// Create a child context with form binding.
-  RuntimeComponentContext withForm(ExperienceFormController form, String entityId) {
+  RuntimeComponentContext withForm(
+    ExperienceFormController form,
+    String entityId,
+  ) {
     return RuntimeComponentContext(
       stateEngine: stateEngine,
       dataRuntime: dataRuntime,

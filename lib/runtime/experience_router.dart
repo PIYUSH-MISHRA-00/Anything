@@ -91,18 +91,20 @@ class ExperienceRouter {
       _history.isNotEmpty ? _history.last.screenId : null;
 
   ExperienceRouter({required Set<String> validScreenIds})
-      : _validScreenIds = validScreenIds;
+    : _validScreenIds = validScreenIds;
 
   /// Navigate according to the request.
   NavigationEvent navigate(NavigationRequest request) {
     // Validate target screen exists
     if (request.targetScreenId != null &&
         !_validScreenIds.contains(request.targetScreenId)) {
-      return _emitEvent(NavigationEvent(
-        action: NavigationAction.pop,
-        routeId: _generateId(),
-        timestamp: DateTime.now(),
-      ));
+      return _emitEvent(
+        NavigationEvent(
+          action: NavigationAction.pop,
+          routeId: _generateId(),
+          timestamp: DateTime.now(),
+        ),
+      );
     }
 
     switch (request.action) {
@@ -136,24 +138,28 @@ class ExperienceRouter {
       timestamp: DateTime.now(),
     );
     _history.add(entry);
-    return _emitEvent(NavigationEvent(
-      action: NavigationAction.push,
-      screenId: entry.screenId,
-      arguments: entry.arguments,
-      routeId: _generateId(),
-      timestamp: DateTime.now(),
-    ));
+    return _emitEvent(
+      NavigationEvent(
+        action: NavigationAction.push,
+        screenId: entry.screenId,
+        arguments: entry.arguments,
+        routeId: _generateId(),
+        timestamp: DateTime.now(),
+      ),
+    );
   }
 
   NavigationEvent _pop() {
     if (_history.length <= 1) return _popToRoot();
     _history.removeLast();
-    return _emitEvent(NavigationEvent(
-      action: NavigationAction.pop,
-      screenId: currentScreenId,
-      routeId: _generateId(),
-      timestamp: DateTime.now(),
-    ));
+    return _emitEvent(
+      NavigationEvent(
+        action: NavigationAction.pop,
+        screenId: currentScreenId,
+        routeId: _generateId(),
+        timestamp: DateTime.now(),
+      ),
+    );
   }
 
   NavigationEvent _replace(NavigationRequest request) {
@@ -172,12 +178,14 @@ class ExperienceRouter {
       _history.clear();
       _history.add(root);
     }
-    return _emitEvent(NavigationEvent(
-      action: NavigationAction.popToRoot,
-      screenId: currentScreenId,
-      routeId: _generateId(),
-      timestamp: DateTime.now(),
-    ));
+    return _emitEvent(
+      NavigationEvent(
+        action: NavigationAction.popToRoot,
+        screenId: currentScreenId,
+        routeId: _generateId(),
+        timestamp: DateTime.now(),
+      ),
+    );
   }
 
   NavigationEvent _switchTab(NavigationRequest request) {
@@ -189,13 +197,15 @@ class ExperienceRouter {
         _currentTabIndex = idx;
       }
     }
-    return _emitEvent(NavigationEvent(
-      action: NavigationAction.switchTab,
-      screenId: request.targetScreenId,
-      arguments: request.arguments,
-      routeId: _generateId(),
-      timestamp: DateTime.now(),
-    ));
+    return _emitEvent(
+      NavigationEvent(
+        action: NavigationAction.switchTab,
+        screenId: request.targetScreenId,
+        arguments: request.arguments,
+        routeId: _generateId(),
+        timestamp: DateTime.now(),
+      ),
+    );
   }
 
   NavigationEvent _emitEvent(NavigationEvent event) {

@@ -208,7 +208,9 @@ class DataQuery {
     // Apply offset + limit
     final start = offset ?? 0;
     if (start > 0 && start >= result.length) return [];
-    final end = limit != null ? min(start + limit!, result.length) : result.length;
+    final end = limit != null
+        ? min(start + limit!, result.length)
+        : result.length;
     result = result.sublist(start, end);
 
     return result;

@@ -583,6 +583,10 @@ class DataFieldSchema {
   final dynamic defaultValue;
   final String? referenceEntityId;
   final List<String> allowedValues;
+  final int? minLength;
+  final int? maxLength;
+  final num? minimum;
+  final num? maximum;
   final String? hint;
 
   const DataFieldSchema({
@@ -593,6 +597,10 @@ class DataFieldSchema {
     this.defaultValue,
     this.referenceEntityId,
     this.allowedValues = const [],
+    this.minLength,
+    this.maxLength,
+    this.minimum,
+    this.maximum,
     this.hint,
   });
 
@@ -604,6 +612,10 @@ class DataFieldSchema {
     'defaultValue': defaultValue,
     if (referenceEntityId != null) 'referenceEntityId': referenceEntityId,
     if (allowedValues.isNotEmpty) 'allowedValues': allowedValues,
+    if (minLength != null) 'minLength': minLength,
+    if (maxLength != null) 'maxLength': maxLength,
+    if (minimum != null) 'minimum': minimum,
+    if (maximum != null) 'maximum': maximum,
     if (hint != null) 'hint': hint,
   };
 
@@ -616,6 +628,10 @@ class DataFieldSchema {
       defaultValue: json['defaultValue'],
       referenceEntityId: json['referenceEntityId'] as String?,
       allowedValues: (json['allowedValues'] as List?)?.cast<String>() ?? [],
+      minLength: json['minLength'] as int?,
+      maxLength: json['maxLength'] as int?,
+      minimum: json['minimum'] as num?,
+      maximum: json['maximum'] as num?,
       hint: json['hint'] as String?,
     );
   }

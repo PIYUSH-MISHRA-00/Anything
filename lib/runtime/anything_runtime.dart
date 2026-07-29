@@ -48,11 +48,11 @@ class AnythingRuntime {
     ExperienceStateEngine? stateEngine,
     ExperienceDataRuntime? dataRuntime,
     ExperienceServiceResolver? serviceResolver,
-  })  : _behaviorInterpreter = behaviorInterpreter ?? BehaviorInterpreter(),
-        _stateEngine = stateEngine ?? ExperienceStateEngine(),
-        _dataRuntime = dataRuntime ?? ExperienceDataRuntime(),
-        _serviceResolver = serviceResolver ?? ExperienceServiceResolver(),
-        _renderer = renderer ?? ExperienceRenderer();
+  }) : _behaviorInterpreter = behaviorInterpreter ?? BehaviorInterpreter(),
+       _stateEngine = stateEngine ?? ExperienceStateEngine(),
+       _dataRuntime = dataRuntime ?? ExperienceDataRuntime(),
+       _serviceResolver = serviceResolver ?? ExperienceServiceResolver(),
+       _renderer = renderer ?? ExperienceRenderer();
 
   /// Open an ExperiencePackage and create a running session.
   Future<ExperienceSession> openExperience(ExperiencePackage package) async {

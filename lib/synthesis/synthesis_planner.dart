@@ -36,9 +36,7 @@ class SynthesisPlanner {
   /// 2. Converts semantic information to AppBlueprint
   /// 3. Validates and normalizes the blueprint
   /// 4. Returns the result
-  Future<SynthesisResult> plan(
-    ApplicationReasoningContext context,
-  ) async {
+  Future<SynthesisResult> plan(ApplicationReasoningContext context) async {
     final result = await _reasoner.reason(context);
 
     return switch (result) {
@@ -148,6 +146,8 @@ class SynthesisPlanner {
       defaultValue: sf.defaultValue,
       minimum: sf.minimum,
       maximum: sf.maximum,
+      minLength: sf.minLength,
+      maxLength: sf.maxLength,
       allowedValues: sf.allowedValues,
       referenceEntityId: sf.referenceEntityId,
       description: sf.description,

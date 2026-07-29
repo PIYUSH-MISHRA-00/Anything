@@ -243,9 +243,7 @@ class AnythingKernel {
     IntentUnderstanding understanding,
   ) async {
     KnowledgeBundle? knowledgeBundle;
-    final capabilityIds = _capabilityRegistry.all
-        .map((c) => c.id)
-        .toList();
+    final capabilityIds = _capabilityRegistry.all.map((c) => c.id).toList();
 
     for (var round = 0; round <= _maxKnowledgeRounds; round++) {
       final context = ApplicationReasoningContext(
@@ -278,13 +276,9 @@ class AnythingKernel {
           // Do NOT return ReasoningKnowledgeRequired to the creation pipeline.
           // Fail gracefully — the reasoner cannot produce a valid app without
           // deciding how to handle the absence of optional knowledge.
-          return const ReasoningFailed(
-            error: _knowledgeLoopLimitMessage,
-          );
+          return const ReasoningFailed(error: _knowledgeLoopLimitMessage);
         }
-        return const ReasoningFailed(
-          error: _knowledgeLoopLimitMessage,
-        );
+        return const ReasoningFailed(error: _knowledgeLoopLimitMessage);
       }
 
       // Separate required and optional requirements
@@ -313,14 +307,10 @@ class AnythingKernel {
           // Required knowledge failed — do not fabricate
           if (requiredBundle.status == BundleStatus.failed ||
               requiredBundle.isEmpty) {
-            return const ReasoningFailed(
-              error: _knowledgeFailureMessage,
-            );
+            return const ReasoningFailed(error: _knowledgeFailureMessage);
           }
         } catch (e) {
-          return const ReasoningFailed(
-            error: _knowledgeFailureMessage,
-          );
+          return const ReasoningFailed(error: _knowledgeFailureMessage);
         }
       }
 
@@ -363,9 +353,7 @@ class AnythingKernel {
     }
 
     // Should not reach here, but safety fallback
-    return const ReasoningFailed(
-      error: _knowledgeLoopLimitMessage,
-    );
+    return const ReasoningFailed(error: _knowledgeLoopLimitMessage);
   }
 
   /// Enforce trusted budget limits on accumulated knowledge.

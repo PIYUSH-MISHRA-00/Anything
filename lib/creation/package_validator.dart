@@ -1,9 +1,10 @@
 /// Experience Package Validator.
 ///
-/// Validates structure, references, limits, and integrity.
+/// Validates structure, references, limits, component tree budgets, and integrity.
 library;
 
 import 'experience_package.dart';
+import '../runtime/component_registry.dart';
 
 /// Validation result.
 class PackageValidationResult {
@@ -48,6 +49,12 @@ class ExperiencePackageValidator {
       warnings.add('Package has no screens');
     }
 
+    // Validate component tree budgets for each screen
+    for (final screen in package.interface.screens) {
+      final treeErrors = ComponentTreeValidator.validateScreen(screen);
+      errors.addAll(treeErrors);
+    }
+
     // Validate behavior
     if (package.behavior.nodes.isEmpty) {
       warnings.add('Package has no behavior nodes');
@@ -89,6 +96,66 @@ class ExperiencePackageValidator {
       errors: errors,
       warnings: warnings,
     );
+  }
+}
+
+/// Validates InterfaceNode trees against trusted component budget limits.
+///
+/// Depth semantics: root node is depth 0.
+/// Maximum legal depth = RuntimeComponentRegistry.maxDepth (20).
+/// A tree with root at depth 0 and deepest leaf at depth 20 is valid.
+/// A tree with a node at depth 21 is invalid.
+class ComponentTreeValidator {
+  /// Validate a screen's node tree against budget limits.
+  static List<String> validateScreen(InterfaceScreen screen) {
+    final errors = <String>[];
+    int totalNodes = 0;
+
+    for (final child in screen.children) {
+      _validateNode(child, 0, errors, () => totalNodes++);
+    }
+
+    if (totalNodes > RuntimeComponentRegistry.maxTotalComponents) {
+      errors.add(
+        'ui_component_count_exceeded: screen "${screen.id}" has $totalNodes components '
+        '(max ${RuntimeComponentRegistry.maxTotalComponents})',
+      );
+    }
+
+    return errors;
+  }
+
+  static void _validateNode(
+    InterfaceNode node,
+    int depth,
+    List<String> errors,
+    void Function() countNode,
+  ) {
+    countNode();
+
+    // Depth check: root is depth 0, max allowed is maxDepth
+    if (depth > RuntimeComponentRegistry.maxDepth) {
+      errors.add(
+        'ui_depth_exceeded: node "${node.id}" at depth $depth '
+        '(max ${RuntimeComponentRegistry.maxDepth})',
+      );
+      // Still count children for total but don't recurse further to avoid
+      // exponential error spam
+      return;
+    }
+
+    // Children count check
+    if (node.children.length > RuntimeComponentRegistry.maxChildrenPerNode) {
+      errors.add(
+        'ui_children_exceeded: node "${node.id}" has ${node.children.length} children '
+        '(max ${RuntimeComponentRegistry.maxChildrenPerNode})',
+      );
+    }
+
+    // Recurse into children
+    for (final child in node.children) {
+      _validateNode(child, depth + 1, errors, countNode);
+    }
   }
 }
 

@@ -2,6 +2,9 @@
 ///
 /// Adversarial enforcement tests proving runtime security budgets,
 /// component restrictions, query limits, and isolation guarantees.
+///
+/// Component tree budget enforcement tests are in stage11_proof_closure_test.dart.
+/// Form validation enforcement tests are in stage11_proof_closure_test.dart.
 library;
 
 import 'package:flutter/material.dart';
@@ -10,6 +13,7 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:anything/creation/experience_package.dart';
+import 'package:anything/creation/package_validator.dart';
 import 'package:anything/runtime/anything_runtime.dart';
 import 'package:anything/runtime/experience_session.dart';
 import 'package:anything/runtime/data_runtime.dart';
@@ -34,75 +38,81 @@ void main() {
   // COMPONENT BUDGET ENFORCEMENT
   // ═════════════════════════════════════════════════════════════════════
   group('Component Budget Enforcement', () {
-    test('Depth 21 is rejected/bounded (trusted max is 20)', () {
-      // Build a tree 21 levels deep
-      InterfaceNode? deepest;
-      for (int i = 20; i >= 0; i--) {
-        deepest = InterfaceNode(
+    test('Depth 21 fails validation via ComponentTreeValidator', () {
+      InterfaceNode leaf = InterfaceNode(
+        id: 'd21',
+        type: 'text',
+        properties: {'text': 'x'},
+      );
+      for (var i = 20; i >= 0; i--) {
+        leaf = InterfaceNode(
+          id: 'd$i',
           type: 'column',
-          id: 'level_$i',
           properties: {},
-          children: i < 20 ? [deepest!] : [],
+          children: [leaf],
         );
       }
-
-      // The production renderer handles depth via the registry
-      // which does not enforce depth at build time, but the
-      // ExperiencePackageValidator and CreationContext security policy
-      // enforce maxUiNodes. Verify constants exist.
-      expect(RuntimeComponentRegistry.maxDepth, 20);
-
-      // Verify the budget constant prevents arbitrary deep trees
-      expect(RuntimeComponentRegistry.maxDepth, lessThan(21));
+      final screen = InterfaceScreen(
+        id: 'test',
+        title: 'Test',
+        children: [leaf],
+      );
+      final errors = ComponentTreeValidator.validateScreen(screen);
+      expect(errors, isNotEmpty);
+      expect(errors.any((e) => e.contains('ui_depth_exceeded')), isTrue);
     });
 
-    test('51 children on single node is bounded (trusted max is 50)', () {
-      expect(RuntimeComponentRegistry.maxChildrenPerNode, 50);
-
-      // Build a node with 51 children
+    test('51 children fails validation via ComponentTreeValidator', () {
       final children = List.generate(
         51,
-        (i) => InterfaceNode(
-          type: 'text',
-          id: 'child_$i',
-          properties: {'content': 'Item $i'},
-        ),
+        (i) =>
+            InterfaceNode(id: 'c_$i', type: 'text', properties: {'text': '$i'}),
       );
-
-      final node = InterfaceNode(
+      final root = InterfaceNode(
+        id: 'root',
         type: 'column',
-        id: 'overloaded',
         properties: {},
         children: children,
       );
-
-      // The registry max is 50; 51 children exceeds the budget
-      expect(children.length, greaterThan(RuntimeComponentRegistry.maxChildrenPerNode));
+      final screen = InterfaceScreen(
+        id: 'test',
+        title: 'Test',
+        children: [root],
+      );
+      final errors = ComponentTreeValidator.validateScreen(screen);
+      expect(errors, isNotEmpty);
+      expect(errors.any((e) => e.contains('ui_children_exceeded')), isTrue);
     });
 
-    test('501 total nodes is bounded (trusted max is 500)', () {
-      expect(RuntimeComponentRegistry.maxTotalComponents, 500);
-
-      final nodes = List.generate(
-        501,
-        (i) => InterfaceNode(
-          type: 'text',
-          id: 'node_$i',
-          properties: {'content': 'Node $i'},
-        ),
+    test('501 total nodes fails validation via ComponentTreeValidator', () {
+      final children = List.generate(
+        500,
+        (i) =>
+            InterfaceNode(id: 'c_$i', type: 'text', properties: {'text': '$i'}),
       );
-
-      expect(nodes.length, greaterThan(RuntimeComponentRegistry.maxTotalComponents));
+      final root = InterfaceNode(
+        id: 'root',
+        type: 'column',
+        properties: {},
+        children: children,
+      );
+      final screen = InterfaceScreen(
+        id: 'test',
+        title: 'Test',
+        children: [root],
+      );
+      final errors = ComponentTreeValidator.validateScreen(screen);
+      expect(errors, isNotEmpty);
+      expect(
+        errors.any((e) => e.contains('ui_component_count_exceeded')),
+        isTrue,
+      );
     });
 
     test('Budget constants cannot be overridden by package semantics', () {
-      // The budget constants are static const on the registry class
-      // They are not configurable from ExperiencePackage
       expect(RuntimeComponentRegistry.maxDepth, 20);
       expect(RuntimeComponentRegistry.maxChildrenPerNode, 50);
       expect(RuntimeComponentRegistry.maxTotalComponents, 500);
-
-      // These are compile-time constants — cannot be modified at runtime
     });
   });
 
@@ -110,7 +120,9 @@ void main() {
   // UNKNOWN COMPONENT
   // ═════════════════════════════════════════════════════════════════════
   group('Unknown Component', () {
-    testWidgets('Unknown component type renders safely (no crash)', (tester) async {
+    testWidgets('Unknown component type renders safely (no crash)', (
+      tester,
+    ) async {
       final renderer = ExperienceRenderer();
       final stateEngine = ExperienceStateEngine();
 
@@ -141,11 +153,8 @@ void main() {
           MaterialApp(
             home: Scaffold(
               body: Builder(
-                builder: (context) => renderer.render(
-                  context,
-                  interface,
-                  stateEngine,
-                ),
+                builder: (context) =>
+                    renderer.render(context, interface, stateEngine),
               ),
             ),
           ),
@@ -245,10 +254,12 @@ void main() {
       expect(router.currentScreenId, isNull);
 
       // Attempt to navigate to nonexistent screen
-      router.navigate(NavigationRequest(
-        action: NavigationAction.push,
-        targetScreenId: '../../settings',
-      ));
+      router.navigate(
+        NavigationRequest(
+          action: NavigationAction.push,
+          targetScreenId: '../../settings',
+        ),
+      );
 
       // Should still have no screen (invalid target rejected)
       expect(router.currentScreenId, isNull);
@@ -260,10 +271,12 @@ void main() {
       final validScreenIds = {'home', 'list'};
       final router = ExperienceRouter(validScreenIds: validScreenIds);
 
-      router.navigate(NavigationRequest(
-        action: NavigationAction.push,
-        targetScreenId: 'hostRoot',
-      ));
+      router.navigate(
+        NavigationRequest(
+          action: NavigationAction.push,
+          targetScreenId: 'hostRoot',
+        ),
+      );
 
       expect(router.currentScreenId, isNull);
 
@@ -275,17 +288,21 @@ void main() {
       final router = ExperienceRouter(validScreenIds: validScreenIds);
 
       // Valid navigation
-      router.navigate(NavigationRequest(
-        action: NavigationAction.push,
-        targetScreenId: 'screen_a',
-      ));
+      router.navigate(
+        NavigationRequest(
+          action: NavigationAction.push,
+          targetScreenId: 'screen_a',
+        ),
+      );
       expect(router.currentScreenId, 'screen_a');
 
       // Invalid navigation should be rejected
-      router.navigate(NavigationRequest(
-        action: NavigationAction.push,
-        targetScreenId: 'nonexistent',
-      ));
+      router.navigate(
+        NavigationRequest(
+          action: NavigationAction.push,
+          targetScreenId: 'nonexistent',
+        ),
+      );
       expect(router.currentScreenId, 'screen_a');
 
       router.dispose();
@@ -332,10 +349,7 @@ void main() {
         ),
       );
 
-      expect(
-        () => eng.query(query, []),
-        throwsA(isA<DataQueryException>()),
-      );
+      expect(() => eng.query(query, []), throwsA(isA<DataQueryException>()));
     });
 
     test('DataQuery max sorts enforced', () {
@@ -344,14 +358,12 @@ void main() {
         entityId: 'test',
         sorts: List.generate(
           10,
-          (i) => SortSpec(fieldId: 'field_$i', direction: SortDirection.ascending),
+          (i) =>
+              SortSpec(fieldId: 'field_$i', direction: SortDirection.ascending),
         ),
       );
 
-      expect(
-        () => eng.query(query, []),
-        throwsA(isA<DataQueryException>()),
-      );
+      expect(() => eng.query(query, []), throwsA(isA<DataQueryException>()));
     });
 
     test('Large data (1000 records) search/filter/sort without crash', () {
@@ -392,7 +404,9 @@ void main() {
       // Sort
       final sortQuery = DataQuery(
         entityId: 'test',
-        sorts: [const SortSpec(fieldId: 'value', direction: SortDirection.descending)],
+        sorts: [
+          const SortSpec(fieldId: 'value', direction: SortDirection.descending),
+        ],
       );
       final sortResult = eng.query(sortQuery, records);
       expect(sortResult.length, 1000);
@@ -408,15 +422,15 @@ void main() {
       final pipeline = _buildTestPipeline();
       final dr = ExperienceDataRuntime();
       dr.initialize(
-        DataSchema(entities: [
-          const DataEntitySchema(
-            id: 'person',
-            name: 'Person',
-            fields: [
-              DataFieldSchema(id: 'name', name: 'Name', type: 'text'),
-            ],
-          ),
-        ]),
+        DataSchema(
+          entities: [
+            const DataEntitySchema(
+              id: 'person',
+              name: 'Person',
+              fields: [DataFieldSchema(id: 'name', name: 'Name', type: 'text')],
+            ),
+          ],
+        ),
         experienceId: 'injection_test',
       );
 
@@ -450,15 +464,15 @@ void main() {
     test('Malicious entity identifier does not crash DataRuntime', () async {
       final dr = ExperienceDataRuntime();
       dr.initialize(
-        DataSchema(entities: [
-          const DataEntitySchema(
-            id: 'person',
-            name: 'Person',
-            fields: [
-              DataFieldSchema(id: 'name', name: 'Name', type: 'text'),
-            ],
-          ),
-        ]),
+        DataSchema(
+          entities: [
+            const DataEntitySchema(
+              id: 'person',
+              name: 'Person',
+              fields: [DataFieldSchema(id: 'name', name: 'Name', type: 'text')],
+            ),
+          ],
+        ),
         experienceId: 'injection_test2',
       );
 
@@ -474,7 +488,7 @@ void main() {
   // FORM REFERENCE VALIDATION
   // ═════════════════════════════════════════════════════════════════════
   group('Form Validation', () {
-    test('Invalid enum/select value is accepted (no runtime enum validation)', () {
+    test('Invalid enum/select value fails validation via validate()', () {
       final form = ExperienceFormController(
         entityId: 'loan',
         mode: FormMode.create,
@@ -488,11 +502,31 @@ void main() {
         ],
       );
 
-      // FormController stores allowedValues as metadata but does not
-      // enforce enum constraints at the controller level.
-      // Enum validation is a UI concern (dropdown selection).
       form.setValue('status', 'malicious_value');
-      expect(form.isValid, isTrue);
+      final isValid = form.validate();
+      expect(isValid, isFalse);
+      expect(form.getFieldError('status'), isNotNull);
+
+      form.dispose();
+    });
+
+    test('Valid enum/select value passes validation', () {
+      final form = ExperienceFormController(
+        entityId: 'loan',
+        mode: FormMode.create,
+        fieldDefinitions: [
+          const FormFieldDefinition(
+            id: 'status',
+            name: 'Status',
+            type: 'enum',
+            allowedValues: ['active', 'returned', 'overdue'],
+          ),
+        ],
+      );
+
+      form.setValue('status', 'active');
+      final isValid = form.validate();
+      expect(isValid, isTrue);
 
       form.dispose();
     });
@@ -528,7 +562,7 @@ void main() {
       form.dispose();
     });
 
-    test('MinLength validation (metadata only, not enforced by controller)', () {
+    test('MinLength validation enforced by controller', () {
       final form = ExperienceFormController(
         entityId: 'person',
         mode: FormMode.create,
@@ -543,13 +577,14 @@ void main() {
         ],
       );
 
-      // FormController stores minLength as metadata but does not enforce it
-      // MinLength is a UI-level concern enforced by input components
       form.setValue('name', 'Ab');
-      expect(form.isValid, isTrue);
+      final isValid = form.validate();
+      expect(isValid, isFalse);
+      expect(form.getFieldError('name'), contains('at least 3'));
 
       form.setValue('name', 'Alice');
-      expect(form.isValid, isTrue);
+      final isValid2 = form.validate();
+      expect(isValid2, isTrue);
 
       form.dispose();
     });

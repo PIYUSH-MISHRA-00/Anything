@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import '../creation/experience_package.dart';
 import '../design_system/tokens/spacing.dart';
 import 'component_registry.dart';
+import 'form_controller.dart';
 import 'runtime_context.dart';
 import 'state_engine.dart';
 
@@ -18,7 +19,7 @@ class ExperienceRenderer {
   final RuntimeComponentRegistry _registry;
 
   ExperienceRenderer({RuntimeComponentRegistry? registry})
-      : _registry = registry ?? RuntimeComponentRegistry.defaults();
+    : _registry = registry ?? RuntimeComponentRegistry.defaults();
 
   RuntimeComponentRegistry get registry => _registry;
 
@@ -90,14 +91,16 @@ class ExperienceRenderer {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: screen.children
-                .map((node) => _renderNode(
-                      context,
-                      node,
-                      stateEngine,
-                      onEvent: onEvent,
-                      runtimeContext: runtimeContext,
-                      data: data,
-                    ))
+                .map(
+                  (node) => _renderNode(
+                    context,
+                    node,
+                    stateEngine,
+                    onEvent: onEvent,
+                    runtimeContext: runtimeContext,
+                    data: data,
+                  ),
+                )
                 .toList(),
           ),
         ),
@@ -119,39 +122,77 @@ class ExperienceRenderer {
     // Try data-driven component types first
     switch (node.type) {
       case 'entityList':
-        return _renderEntityList(context, node, stateEngine,
-            onEvent: onEvent, runtimeContext: runtimeContext);
+        return _renderEntityList(
+          context,
+          node,
+          stateEngine,
+          onEvent: onEvent,
+          runtimeContext: runtimeContext,
+        );
       case 'entityGrid':
-        return _renderEntityGrid(context, node, stateEngine,
-            onEvent: onEvent, runtimeContext: runtimeContext);
+        return _renderEntityGrid(
+          context,
+          node,
+          stateEngine,
+          onEvent: onEvent,
+          runtimeContext: runtimeContext,
+        );
       case 'entityDetail':
-        return _renderEntityDetail(context, node, stateEngine,
-            onEvent: onEvent, runtimeContext: runtimeContext, data: data);
+        return _renderEntityDetail(
+          context,
+          node,
+          stateEngine,
+          onEvent: onEvent,
+          runtimeContext: runtimeContext,
+          data: data,
+        );
       case 'entityForm':
-        return _renderEntityForm(context, node, stateEngine,
-            onEvent: onEvent, runtimeContext: runtimeContext, data: data);
+        return _renderEntityForm(
+          context,
+          node,
+          stateEngine,
+          onEvent: onEvent,
+          runtimeContext: runtimeContext,
+          data: data,
+        );
       case 'dashboardMetrics':
-        return _renderDashboardMetrics(context, node, stateEngine,
-            onEvent: onEvent, runtimeContext: runtimeContext);
+        return _renderDashboardMetrics(
+          context,
+          node,
+          stateEngine,
+          onEvent: onEvent,
+          runtimeContext: runtimeContext,
+        );
       case 'referenceSelector':
-        return _renderReferenceSelector(context, node, stateEngine,
-            onEvent: onEvent, runtimeContext: runtimeContext);
+        return _renderReferenceSelector(
+          context,
+          node,
+          stateEngine,
+          onEvent: onEvent,
+          runtimeContext: runtimeContext,
+        );
       case 'chart':
-        return _renderChart(context, node, stateEngine,
-            runtimeContext: runtimeContext);
+        return _renderChart(
+          context,
+          node,
+          stateEngine,
+          runtimeContext: runtimeContext,
+        );
     }
 
     // Try registry for standard components
     if (_registry.isRegistered(node.type)) {
       final children = node.children
-          .map((child) => _renderNode(
-                context,
-                child,
-                stateEngine,
-                onEvent: onEvent,
-                runtimeContext: runtimeContext,
-                data: data,
-              ))
+          .map(
+            (child) => _renderNode(
+              context,
+              child,
+              stateEngine,
+              onEvent: onEvent,
+              runtimeContext: runtimeContext,
+              data: data,
+            ),
+          )
           .toList();
 
       // Inject action binding into properties for registry components
@@ -159,8 +200,10 @@ class ExperienceRenderer {
       if (node.actionBinding != null) {
         propsWithAction['_actionBinding'] = node.actionBinding;
         propsWithAction['_onPressed'] = node.actionBinding != null
-            ? () => onEvent?.call(node.actionBinding!.actionId,
-                data: node.actionBinding!.parameters)
+            ? () => onEvent?.call(
+                node.actionBinding!.actionId,
+                data: node.actionBinding!.parameters,
+              )
             : null;
       }
       if (runtimeContext != null) {
@@ -184,9 +227,15 @@ class ExperienceRenderer {
     }
 
     // Fallback to legacy rendering for known types
-    return _renderLegacyNode(context, node, stateEngine,
-        resolvedProperties, onEvent: onEvent,
-        runtimeContext: runtimeContext, data: data);
+    return _renderLegacyNode(
+      context,
+      node,
+      stateEngine,
+      resolvedProperties,
+      onEvent: onEvent,
+      runtimeContext: runtimeContext,
+      data: data,
+    );
   }
 
   Widget _renderLegacyNode(
@@ -202,18 +251,41 @@ class ExperienceRenderer {
       case 'text':
         return _renderText(context, node, resolvedProperties);
       case 'button':
-        return _renderButton(context, node, resolvedProperties, onEvent: onEvent);
+        return _renderButton(
+          context,
+          node,
+          resolvedProperties,
+          onEvent: onEvent,
+        );
       case 'input':
         return _renderInput(context, node, stateEngine, onEvent: onEvent);
       case 'column':
-        return _renderColumn(context, node, stateEngine,
-            onEvent: onEvent, runtimeContext: runtimeContext, data: data);
+        return _renderColumn(
+          context,
+          node,
+          stateEngine,
+          onEvent: onEvent,
+          runtimeContext: runtimeContext,
+          data: data,
+        );
       case 'row':
-        return _renderRow(context, node, stateEngine,
-            onEvent: onEvent, runtimeContext: runtimeContext, data: data);
+        return _renderRow(
+          context,
+          node,
+          stateEngine,
+          onEvent: onEvent,
+          runtimeContext: runtimeContext,
+          data: data,
+        );
       case 'card':
-        return _renderCard(context, node, stateEngine,
-            onEvent: onEvent, runtimeContext: runtimeContext, data: data);
+        return _renderCard(
+          context,
+          node,
+          stateEngine,
+          onEvent: onEvent,
+          runtimeContext: runtimeContext,
+          data: data,
+        );
       case 'switch':
         return _renderSwitch(context, node, stateEngine, onEvent: onEvent);
       case 'divider':
@@ -224,7 +296,13 @@ class ExperienceRenderer {
       case 'icon':
         return _renderIcon(resolvedProperties);
       case 'searchField':
-        return _renderSearchField(context, node, stateEngine, onEvent: onEvent, runtimeContext: runtimeContext);
+        return _renderSearchField(
+          context,
+          node,
+          stateEngine,
+          onEvent: onEvent,
+          runtimeContext: runtimeContext,
+        );
       default:
         return _renderUnknown(node);
     }
@@ -236,7 +314,8 @@ class ExperienceRenderer {
   ) {
     final resolved = <String, dynamic>{};
     for (final entry in properties.entries) {
-      if (entry.value is String && entry.value.toString().startsWith('\$state.')) {
+      if (entry.value is String &&
+          entry.value.toString().startsWith('\$state.')) {
         final stateId = entry.value.toString().substring(7);
         resolved[entry.key] = stateEngine.read(stateId) ?? entry.value;
       } else {
@@ -264,7 +343,13 @@ class ExperienceRenderer {
     final preloadedRecords = data?['_records'] as List?;
     if (preloadedRecords != null) {
       return _buildEntityListView(
-        context, node, preloadedRecords, titleField, subtitleField, onEvent: onEvent);
+        context,
+        node,
+        preloadedRecords,
+        titleField,
+        subtitleField,
+        onEvent: onEvent,
+      );
     }
 
     // Query records from runtimeContext
@@ -283,7 +368,13 @@ class ExperienceRenderer {
           }
           final records = snapshot.data ?? [];
           return _buildEntityListView(
-            context, node, records, titleField, subtitleField, onEvent: onEvent);
+            context,
+            node,
+            records,
+            titleField,
+            subtitleField,
+            onEvent: onEvent,
+          );
         },
       );
     }
@@ -309,8 +400,9 @@ class ExperienceRenderer {
       children: List.generate(records.length, (index) {
         final record = records[index] as Map<String, dynamic>;
         final title = record[titleField]?.toString() ?? 'Record ${index + 1}';
-        final subtitle =
-            subtitleField != null ? record[subtitleField]?.toString() : null;
+        final subtitle = subtitleField != null
+            ? record[subtitleField]?.toString()
+            : null;
 
         return Card(
           margin: const EdgeInsets.symmetric(vertical: 4),
@@ -333,15 +425,21 @@ class ExperienceRenderer {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.inbox_outlined,
-                  size: 48,
-                  color: Theme.of(context).colorScheme.outline),
+              Icon(
+                Icons.inbox_outlined,
+                size: 48,
+                color: Theme.of(context).colorScheme.outline,
+              ),
               const SizedBox(height: 16),
-              Text('No ${node.properties['emptyTitle'] ?? 'items'} yet',
-                  style: Theme.of(context).textTheme.titleMedium),
+              Text(
+                'No ${node.properties['emptyTitle'] ?? 'items'} yet',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
               if (node.properties['emptyMessage'] != null)
-                Text(node.properties['emptyMessage'] as String,
-                    style: Theme.of(context).textTheme.bodyMedium),
+                Text(
+                  node.properties['emptyMessage'] as String,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
             ],
           ),
         ),
@@ -371,12 +469,16 @@ class ExperienceRenderer {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.grid_view,
-                    size: 48,
-                    color: Theme.of(context).colorScheme.outline),
+                Icon(
+                  Icons.grid_view,
+                  size: 48,
+                  color: Theme.of(context).colorScheme.outline,
+                ),
                 const SizedBox(height: 16),
-                Text('No ${node.properties['emptyTitle'] ?? 'items'} yet',
-                    style: Theme.of(context).textTheme.titleMedium),
+                Text(
+                  'No ${node.properties['emptyTitle'] ?? 'items'} yet',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
               ],
             ),
           ),
@@ -391,15 +493,18 @@ class ExperienceRenderer {
       mainAxisSpacing: 8,
       crossAxisSpacing: 8,
       children: List.generate(itemCount, (index) {
-        final record = (data?['_records'] as List)[index] as Map<String, dynamic>;
+        final record =
+            (data?['_records'] as List)[index] as Map<String, dynamic>;
         final title = record[titleField]?.toString() ?? 'Item ${index + 1}';
 
         return Card(
           child: InkWell(
             borderRadius: BorderRadius.circular(12),
             onTap: () {
-              onEvent?.call('openDetail',
-                  data: {'entityId': entityId, 'recordId': record['id']});
+              onEvent?.call(
+                'openDetail',
+                data: {'entityId': entityId, 'recordId': record['id']},
+              );
               runtimeContext?.navigate(
                 '${entityId}_detail',
                 arguments: {'recordId': record['id']},
@@ -408,9 +513,11 @@ class ExperienceRenderer {
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Center(
-                child: Text(title,
-                    style: Theme.of(context).textTheme.bodyLarge,
-                    textAlign: TextAlign.center),
+                child: Text(
+                  title,
+                  style: Theme.of(context).textTheme.bodyLarge,
+                  textAlign: TextAlign.center,
+                ),
               ),
             ),
           ),
@@ -429,7 +536,8 @@ class ExperienceRenderer {
   }) {
     final record = data?['_currentRecord'] as Map<String, dynamic>?;
     final entityId = node.properties['entityId'] as String? ?? '';
-    final fields = (node.properties['fields'] as List?)?.cast<String>() ??
+    final fields =
+        (node.properties['fields'] as List?)?.cast<String>() ??
         record?.keys.toList() ??
         [];
 
@@ -452,8 +560,8 @@ class ExperienceRenderer {
                   child: Text(
                     fieldId,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.outline,
-                        ),
+                      color: Theme.of(context).colorScheme.outline,
+                    ),
                   ),
                 ),
                 Expanded(child: Text(value)),
@@ -467,8 +575,10 @@ class ExperienceRenderer {
             Expanded(
               child: OutlinedButton(
                 onPressed: () {
-                  onEvent?.call('editRecord',
-                      data: {'entityId': entityId, 'recordId': record['id']});
+                  onEvent?.call(
+                    'editRecord',
+                    data: {'entityId': entityId, 'recordId': record['id']},
+                  );
                   runtimeContext?.navigate(
                     '${entityId}_edit',
                     arguments: {'recordId': record['id']},
@@ -488,17 +598,21 @@ class ExperienceRenderer {
                       content: const Text('This action cannot be undone.'),
                       actions: [
                         TextButton(
-                            onPressed: () => Navigator.pop(ctx, false),
-                            child: const Text('Cancel')),
+                          onPressed: () => Navigator.pop(ctx, false),
+                          child: const Text('Cancel'),
+                        ),
                         TextButton(
-                            onPressed: () => Navigator.pop(ctx, true),
-                            child: const Text('Delete')),
+                          onPressed: () => Navigator.pop(ctx, true),
+                          child: const Text('Delete'),
+                        ),
                       ],
                     ),
                   );
                   if (confirmed == true) {
-                    onEvent?.call('deleteRecord',
-                        data: {'entityId': entityId, 'recordId': record['id']});
+                    onEvent?.call(
+                      'deleteRecord',
+                      data: {'entityId': entityId, 'recordId': record['id']},
+                    );
                   }
                 },
                 child: const Text('Delete'),
@@ -520,79 +634,50 @@ class ExperienceRenderer {
   }) {
     final entityId = node.properties['entityId'] as String? ?? '';
     final mode = node.properties['mode'] as String? ?? 'create';
-    final fields = (node.properties['fields'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+    final fields =
+        (node.properties['fields'] as List?)?.cast<Map<String, dynamic>>() ??
+        [];
 
     if (fields.isEmpty) {
       return const Center(child: Text('No form fields defined'));
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        ...fields.map((fieldDef) {
-          final fieldId = fieldDef['id'] as String? ?? '';
-          final fieldName = fieldDef['name'] as String? ?? fieldId;
-          final fieldType = fieldDef['type'] as String? ?? 'string';
-          final required = fieldDef['required'] as bool? ?? false;
-          final hintText = fieldDef['hint'] as String?;
-          final allowedValues = (fieldDef['allowedValues'] as List?)?.cast<String>();
-          final referenceEntityId = fieldDef['referenceEntityId'] as String?;
-          final recordMap = data != null ? data['_currentRecord'] : null;
-          final currentRecord = recordMap is Map<String, dynamic> ? recordMap : <String, dynamic>{};
-          final initialValue = mode == 'edit' ? currentRecord[fieldId] : null;
+    final fieldDefinitions = fields
+        .map(
+          (f) => FormFieldDefinition(
+            id: f['id'] as String? ?? '',
+            name: f['name'] as String? ?? f['id'] as String? ?? '',
+            type: f['type'] as String? ?? 'string',
+            required: f['required'] as bool? ?? false,
+            minLength: f['minLength'] as int?,
+            maxLength: f['maxLength'] as int?,
+            minimum: f['minimum'] as num?,
+            maximum: f['maximum'] as num?,
+            allowedValues: (f['allowedValues'] as List?)?.cast<String>(),
+            referenceEntityId: f['referenceEntityId'] as String?,
+            hint: f['hint'] as String?,
+          ),
+        )
+        .toList();
 
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 16),
-            child: _buildFormField(
-              context,
-              fieldId: fieldId,
-              fieldName: fieldName,
-              fieldType: fieldType,
-              required: required,
-              hintText: hintText,
-              allowedValues: allowedValues,
-              referenceEntityId: referenceEntityId,
-              initialValue: initialValue,
-              runtimeContext: runtimeContext,
-              onEvent: onEvent,
-            ),
-          );
-        }),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: OutlinedButton(
-                onPressed: () {
-                  onEvent?.call('cancelForm', data: {'entityId': entityId});
-                  runtimeContext?.navigateBack();
-                },
-                child: const Text('Cancel'),
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: ElevatedButton(
-                onPressed: () {
-                  final formData = <String, dynamic>{};
-                  for (final fieldDef in fields) {
-                    final fieldId = fieldDef['id'] as String;
-                    final value = stateEngine.read('form_$fieldId');
-                    if (value != null) formData[fieldId] = value;
-                  }
-                  onEvent?.call('submitForm',
-                      data: {'entityId': entityId, 'mode': mode, 'values': formData});
-                },
-                child: Text(mode == 'edit' ? 'Save' : 'Create'),
-              ),
-            ),
-          ],
-        ),
-      ],
+    final recordMap = data != null ? data['_currentRecord'] : null;
+    final currentRecord = recordMap is Map<String, dynamic>
+        ? recordMap
+        : <String, dynamic>{};
+
+    return _EntityFormWidget(
+      entityId: entityId,
+      mode: mode,
+      fields: fields,
+      fieldDefinitions: fieldDefinitions,
+      currentRecord: currentRecord,
+      stateEngine: stateEngine,
+      onEvent: onEvent,
+      runtimeContext: runtimeContext,
     );
   }
 
-  Widget _buildFormField(
+  static Widget _buildFormField(
     BuildContext context, {
     required String fieldId,
     required String fieldName,
@@ -636,7 +721,9 @@ class ExperienceRenderer {
 
       case 'enum':
       case 'select':
-        final currentVal = initialValue?.toString() ?? (allowedValues?.isNotEmpty == true ? allowedValues!.first : null);
+        final currentVal =
+            initialValue?.toString() ??
+            (allowedValues?.isNotEmpty == true ? allowedValues!.first : null);
         return DropdownButtonFormField<String>(
           initialValue: currentVal,
           decoration: InputDecoration(
@@ -674,8 +761,7 @@ class ExperienceRenderer {
             labelText: '$fieldName${required ? ' *' : ''}',
             hintText: hintText,
           ),
-          keyboardType:
-              const TextInputType.numberWithOptions(decimal: true),
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
           onChanged: (value) {
             final parsed = double.tryParse(value);
             runtimeContext?.updateFormField(fieldId, parsed ?? value);
@@ -735,7 +821,7 @@ class ExperienceRenderer {
     }
   }
 
-  Widget _buildReferenceField(
+  static Widget _buildReferenceField(
     BuildContext context, {
     required String fieldId,
     required String fieldName,
@@ -756,10 +842,14 @@ class ExperienceRenderer {
             labelText: '$fieldName${required ? ' *' : ''}',
           ),
           items: records
-              .map((r) => DropdownMenuItem(
-                    value: r['id']?.toString(),
-                    child: Text(runtimeContext?.getRecordLabel(r) ?? r['id'].toString()),
-                  ))
+              .map(
+                (r) => DropdownMenuItem(
+                  value: r['id']?.toString(),
+                  child: Text(
+                    runtimeContext?.getRecordLabel(r) ?? r['id'].toString(),
+                  ),
+                ),
+              )
               .toList(),
           onChanged: (value) {
             runtimeContext?.updateFormField(fieldId, value);
@@ -778,10 +868,11 @@ class ExperienceRenderer {
     RuntimeComponentContext? runtimeContext,
     Map<String, dynamic>? data,
   }) {
-    final metrics = (node.properties['metrics'] as List?)
-            ?.cast<Map<String, dynamic>>() ??
+    final metrics =
+        (node.properties['metrics'] as List?)?.cast<Map<String, dynamic>>() ??
         [];
-    final records = (data?['_records'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+    final records =
+        (data?['_records'] as List?)?.cast<Map<String, dynamic>>() ?? [];
 
     return Wrap(
       spacing: 16,
@@ -853,8 +944,10 @@ class ExperienceRenderer {
                 children: [
                   Text(label, style: Theme.of(context).textTheme.bodySmall),
                   const SizedBox(height: 4),
-                  Text(value?.toString() ?? '0',
-                      style: Theme.of(context).textTheme.headlineMedium),
+                  Text(
+                    value?.toString() ?? '0',
+                    style: Theme.of(context).textTheme.headlineMedium,
+                  ),
                 ],
               ),
             ),
@@ -884,15 +977,21 @@ class ExperienceRenderer {
           initialValue: selectedId?.toString(),
           decoration: InputDecoration(labelText: label),
           items: records
-              .map((r) => DropdownMenuItem(
-                    value: r['id']?.toString(),
-                    child: Text(runtimeContext?.getRecordLabel(r) ?? r['id'].toString()),
-                  ))
+              .map(
+                (r) => DropdownMenuItem(
+                  value: r['id']?.toString(),
+                  child: Text(
+                    runtimeContext?.getRecordLabel(r) ?? r['id'].toString(),
+                  ),
+                ),
+              )
               .toList(),
           onChanged: (value) {
             stateEngine.write('${node.id}_selected', value);
-            onEvent?.call('${node.id}_selected',
-                data: {'entityId': entityId, 'recordId': value});
+            onEvent?.call(
+              '${node.id}_selected',
+              data: {'entityId': entityId, 'recordId': value},
+            );
           },
         );
       },
@@ -906,7 +1005,8 @@ class ExperienceRenderer {
     RuntimeComponentContext? runtimeContext,
   }) {
     final chartType = node.properties['chartType'] as String? ?? 'bar';
-    final records = (stateEngine.read('chartData') as List?)
+    final records =
+        (stateEngine.read('chartData') as List?)
             ?.cast<Map<String, dynamic>>() ??
         [];
     final labelField = node.properties['labelField'] as String? ?? 'label';
@@ -925,8 +1025,20 @@ class ExperienceRenderer {
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: chartType == 'bar'
-              ? _buildBarChart(context, dataPoints, labelField, valueField, maxVal)
-              : _buildLineChart(context, dataPoints, labelField, valueField, maxVal),
+              ? _buildBarChart(
+                  context,
+                  dataPoints,
+                  labelField,
+                  valueField,
+                  maxVal,
+                )
+              : _buildLineChart(
+                  context,
+                  dataPoints,
+                  labelField,
+                  valueField,
+                  maxVal,
+                ),
         ),
       ),
     );
@@ -956,8 +1068,10 @@ class ExperienceRenderer {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              Text(value?.toString() ?? '0',
-                  style: Theme.of(context).textTheme.bodySmall),
+              Text(
+                value?.toString() ?? '0',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
               const SizedBox(height: 4),
               Container(
                 height: height,
@@ -967,9 +1081,11 @@ class ExperienceRenderer {
                 ),
               ),
               const SizedBox(height: 4),
-              Text(d[labelField]?.toString() ?? '',
-                  style: Theme.of(context).textTheme.bodySmall,
-                  overflow: TextOverflow.ellipsis),
+              Text(
+                d[labelField]?.toString() ?? '',
+                style: Theme.of(context).textTheme.bodySmall,
+                overflow: TextOverflow.ellipsis,
+              ),
             ],
           ),
         );
@@ -1079,16 +1195,16 @@ class ExperienceRenderer {
         decoration: InputDecoration(
           hintText: hint,
           prefixIcon: const Icon(Icons.search),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(24),
-          ),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(24)),
           filled: true,
         ),
         onChanged: (value) {
           stateEngine.write('searchTerm', value);
           if (entityId != null) {
-            onEvent?.call('searchChanged',
-                data: {'entityId': entityId, 'term': value});
+            onEvent?.call(
+              'searchChanged',
+              data: {'entityId': entityId, 'term': value},
+            );
           }
         },
       ),
@@ -1106,14 +1222,16 @@ class ExperienceRenderer {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: node.children
-          .map((child) => _renderNode(
-                context,
-                child,
-                stateEngine,
-                onEvent: onEvent,
-                runtimeContext: runtimeContext,
-                data: data,
-              ))
+          .map(
+            (child) => _renderNode(
+              context,
+              child,
+              stateEngine,
+              onEvent: onEvent,
+              runtimeContext: runtimeContext,
+              data: data,
+            ),
+          )
           .toList(),
     );
   }
@@ -1128,14 +1246,16 @@ class ExperienceRenderer {
   }) {
     return Row(
       children: node.children
-          .map((child) => _renderNode(
-                context,
-                child,
-                stateEngine,
-                onEvent: onEvent,
-                runtimeContext: runtimeContext,
-                data: data,
-              ))
+          .map(
+            (child) => _renderNode(
+              context,
+              child,
+              stateEngine,
+              onEvent: onEvent,
+              runtimeContext: runtimeContext,
+              data: data,
+            ),
+          )
           .toList(),
     );
   }
@@ -1155,14 +1275,16 @@ class ExperienceRenderer {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: node.children
-              .map((child) => _renderNode(
-                    context,
-                    child,
-                    stateEngine,
-                    onEvent: onEvent,
-                    runtimeContext: runtimeContext,
-                    data: data,
-                  ))
+              .map(
+                (child) => _renderNode(
+                  context,
+                  child,
+                  stateEngine,
+                  onEvent: onEvent,
+                  runtimeContext: runtimeContext,
+                  data: data,
+                ),
+              )
               .toList(),
         ),
       ),
@@ -1290,4 +1412,162 @@ class _LineChartPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+}
+
+/// StatefulWidget for entity forms with validation.
+class _EntityFormWidget extends StatefulWidget {
+  final String entityId;
+  final String mode;
+  final List<Map<String, dynamic>> fields;
+  final List<FormFieldDefinition> fieldDefinitions;
+  final Map<String, dynamic> currentRecord;
+  final ExperienceStateEngine stateEngine;
+  final void Function(String eventId, {Map<String, dynamic>? data})? onEvent;
+  final RuntimeComponentContext? runtimeContext;
+
+  const _EntityFormWidget({
+    required this.entityId,
+    required this.mode,
+    required this.fields,
+    required this.fieldDefinitions,
+    required this.currentRecord,
+    required this.stateEngine,
+    this.onEvent,
+    this.runtimeContext,
+  });
+
+  @override
+  State<_EntityFormWidget> createState() => _EntityFormWidgetState();
+}
+
+class _EntityFormWidgetState extends State<_EntityFormWidget> {
+  late final ExperienceFormController _formController;
+  Map<String, String> _errors = {};
+
+  @override
+  void initState() {
+    super.initState();
+    final initialValues = <String, dynamic>{};
+    if (widget.mode == 'edit') {
+      for (final f in widget.fields) {
+        final fieldId = f['id'] as String;
+        initialValues[fieldId] = widget.currentRecord[fieldId];
+      }
+    }
+    _formController = ExperienceFormController(
+      entityId: widget.entityId,
+      mode: widget.mode == 'edit' ? FormMode.edit : FormMode.create,
+      initialValues: initialValues,
+      fieldDefinitions: widget.fieldDefinitions,
+    );
+  }
+
+  @override
+  void dispose() {
+    _formController.dispose();
+    super.dispose();
+  }
+
+  void _validateAndSubmit() {
+    final isValid = _formController.validate();
+    final errors = <String, String>{};
+    for (final f in widget.fieldDefinitions) {
+      final err = _formController.getFieldError(f.id);
+      if (err != null) errors[f.id] = err;
+    }
+    setState(() => _errors = errors);
+    if (!isValid) return;
+
+    final formData = <String, dynamic>{};
+    for (final f in widget.fields) {
+      final fieldId = f['id'] as String;
+      final value = _formController.getValue(fieldId);
+      if (value != null) formData[fieldId] = value;
+    }
+    widget.onEvent?.call(
+      'submitForm',
+      data: {
+        'entityId': widget.entityId,
+        'mode': widget.mode,
+        'values': formData,
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ...widget.fields.map((fieldDef) {
+          final fieldId = fieldDef['id'] as String? ?? '';
+          final fieldName = fieldDef['name'] as String? ?? fieldId;
+          final fieldType = fieldDef['type'] as String? ?? 'string';
+          final required = fieldDef['required'] as bool? ?? false;
+          final hintText = fieldDef['hint'] as String?;
+          final allowedValues = (fieldDef['allowedValues'] as List?)
+              ?.cast<String>();
+          final referenceEntityId = fieldDef['referenceEntityId'] as String?;
+          final initialValue = widget.mode == 'edit'
+              ? widget.currentRecord[fieldId]
+              : null;
+          final error = _errors[fieldId];
+
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ExperienceRenderer._buildFormField(
+                  context,
+                  fieldId: fieldId,
+                  fieldName: fieldName,
+                  fieldType: fieldType,
+                  required: required,
+                  hintText: hintText,
+                  allowedValues: allowedValues,
+                  referenceEntityId: referenceEntityId,
+                  initialValue: initialValue,
+                  runtimeContext: widget.runtimeContext,
+                  onEvent: widget.onEvent,
+                ),
+                if (error != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      error,
+                      style: const TextStyle(color: Colors.red, fontSize: 12),
+                    ),
+                  ),
+              ],
+            ),
+          );
+        }),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton(
+                onPressed: () {
+                  widget.onEvent?.call(
+                    'cancelForm',
+                    data: {'entityId': widget.entityId},
+                  );
+                  widget.runtimeContext?.navigateBack();
+                },
+                child: const Text('Cancel'),
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: ElevatedButton(
+                onPressed: _validateAndSubmit,
+                child: Text(widget.mode == 'edit' ? 'Save' : 'Create'),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
 }

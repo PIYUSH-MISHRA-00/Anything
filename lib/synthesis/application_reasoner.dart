@@ -174,6 +174,8 @@ class SemanticField {
     this.defaultValue,
     this.minimum,
     this.maximum,
+    this.minLength,
+    this.maxLength,
     this.allowedValues = const [],
     this.referenceEntityId,
     this.description = '',
@@ -186,6 +188,8 @@ class SemanticField {
   final String? defaultValue;
   final num? minimum;
   final num? maximum;
+  final int? minLength;
+  final int? maxLength;
   final List<String> allowedValues;
   final String? referenceEntityId;
   final String description;

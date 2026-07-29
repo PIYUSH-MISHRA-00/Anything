@@ -449,42 +449,47 @@ class CreationEngine {
 
       switch (view.viewType) {
         case BlueprintViewType.list:
-          nodes.add(InterfaceNode(
-            type: 'searchField',
-            id: '${view.id}_search',
-            properties: {
-              'hint': 'Search ${entity?.name ?? ''}...',
-              'entityId': view.sourceEntityId ?? '',
-            },
-          ));
-          nodes.add(InterfaceNode(
-            type: 'entityList',
-            id: '${view.id}_list',
-            properties: {
-              'entityId': view.sourceEntityId ?? '',
-              'titleField': _findDisplayField(entity),
-              'subtitleField': _findSecondaryField(entity),
-            },
-          ));
+          nodes.add(
+            InterfaceNode(
+              type: 'searchField',
+              id: '${view.id}_search',
+              properties: {
+                'hint': 'Search ${entity?.name ?? ''}...',
+                'entityId': view.sourceEntityId ?? '',
+              },
+            ),
+          );
+          nodes.add(
+            InterfaceNode(
+              type: 'entityList',
+              id: '${view.id}_list',
+              properties: {
+                'entityId': view.sourceEntityId ?? '',
+                'titleField': _findDisplayField(entity),
+                'subtitleField': _findSecondaryField(entity),
+              },
+            ),
+          );
           if (entity != null) {
             final createAction = blueprint.actions
-                .where((a) =>
-                    a.actionType == BlueprintActionType.create &&
-                    a.targetEntityId == entity.id)
+                .where(
+                  (a) =>
+                      a.actionType == BlueprintActionType.create &&
+                      a.targetEntityId == entity.id,
+                )
                 .firstOrNull;
             if (createAction != null) {
-              nodes.add(InterfaceNode(
-                type: 'button',
-                id: '${view.id}_add_button',
-                properties: {
-                  'label': 'Add ${entity.name}',
-                  'primary': true,
-                },
-                actionBinding: ActionBinding(
-                  actionId: createAction.id,
-                  parameters: {'entityId': entity.id},
+              nodes.add(
+                InterfaceNode(
+                  type: 'button',
+                  id: '${view.id}_add_button',
+                  properties: {'label': 'Add ${entity.name}', 'primary': true},
+                  actionBinding: ActionBinding(
+                    actionId: createAction.id,
+                    parameters: {'entityId': entity.id},
+                  ),
                 ),
-              ));
+              );
             }
           }
           break;
@@ -502,36 +507,43 @@ class CreationEngine {
                   'referenceEntityId': field.referenceEntityId,
                 if (field.allowedValues.isNotEmpty)
                   'allowedValues': field.allowedValues,
+                if (field.minLength != null) 'minLength': field.minLength,
+                if (field.maxLength != null) 'maxLength': field.maxLength,
+                if (field.minimum != null) 'minimum': field.minimum,
+                if (field.maximum != null) 'maximum': field.maximum,
                 if (field.description.isNotEmpty) 'hint': field.description,
               });
             }
-            nodes.add(InterfaceNode(
-              type: 'entityForm',
-              id: '${view.id}_form',
-              properties: {
-                'entityId': view.sourceEntityId ?? '',
-                'mode': 'create',
-                'fields': fieldDefs,
-              },
-            ));
+            nodes.add(
+              InterfaceNode(
+                type: 'entityForm',
+                id: '${view.id}_form',
+                properties: {
+                  'entityId': view.sourceEntityId ?? '',
+                  'mode': 'create',
+                  'fields': fieldDefs,
+                },
+              ),
+            );
             final createAction = blueprint.actions
-                .where((a) =>
-                    a.actionType == BlueprintActionType.create &&
-                    a.targetEntityId == entity.id)
+                .where(
+                  (a) =>
+                      a.actionType == BlueprintActionType.create &&
+                      a.targetEntityId == entity.id,
+                )
                 .firstOrNull;
             if (createAction != null) {
-              nodes.add(InterfaceNode(
-                type: 'button',
-                id: '${view.id}_submit_button',
-                properties: {
-                  'label': 'Save',
-                  'primary': true,
-                },
-                actionBinding: ActionBinding(
-                  actionId: createAction.id,
-                  parameters: {'entityId': entity.id},
+              nodes.add(
+                InterfaceNode(
+                  type: 'button',
+                  id: '${view.id}_submit_button',
+                  properties: {'label': 'Save', 'primary': true},
+                  actionBinding: ActionBinding(
+                    actionId: createAction.id,
+                    parameters: {'entityId': entity.id},
+                  ),
                 ),
-              ));
+              );
             }
           }
           break;
@@ -539,7 +551,11 @@ class CreationEngine {
         case BlueprintViewType.dashboard:
           if (entity != null) {
             final metrics = <Map<String, dynamic>>[];
-            metrics.add({'label': 'Total ${entity.name}', 'operation': 'count', 'entityId': entity.id});
+            metrics.add({
+              'label': 'Total ${entity.name}',
+              'operation': 'count',
+              'entityId': entity.id,
+            });
             for (final field in entity.fields) {
               if (field.type == BlueprintFieldType.integer ||
                   field.type == BlueprintFieldType.decimal) {
@@ -557,45 +573,47 @@ class CreationEngine {
                 });
               }
             }
-            nodes.add(InterfaceNode(
-              type: 'dashboardMetrics',
-              id: '${view.id}_dashboard',
-              properties: {
-                'title': view.name,
-                'metrics': metrics,
-              },
-            ));
+            nodes.add(
+              InterfaceNode(
+                type: 'dashboardMetrics',
+                id: '${view.id}_dashboard',
+                properties: {'title': view.name, 'metrics': metrics},
+              ),
+            );
           }
           break;
 
         case BlueprintViewType.detail:
           if (entity != null) {
-            nodes.add(InterfaceNode(
-              type: 'entityDetail',
-              id: '${view.id}_detail',
-              properties: {
-                'entityId': view.sourceEntityId ?? '',
-                'titleField': _findDisplayField(entity),
-              },
-            ));
+            nodes.add(
+              InterfaceNode(
+                type: 'entityDetail',
+                id: '${view.id}_detail',
+                properties: {
+                  'entityId': view.sourceEntityId ?? '',
+                  'titleField': _findDisplayField(entity),
+                },
+              ),
+            );
             final deleteAction = blueprint.actions
-                .where((a) =>
-                    a.actionType == BlueprintActionType.delete &&
-                    a.targetEntityId == entity.id)
+                .where(
+                  (a) =>
+                      a.actionType == BlueprintActionType.delete &&
+                      a.targetEntityId == entity.id,
+                )
                 .firstOrNull;
             if (deleteAction != null) {
-              nodes.add(InterfaceNode(
-                type: 'button',
-                id: '${view.id}_delete_button',
-                properties: {
-                  'label': 'Delete',
-                  'danger': true,
-                },
-                actionBinding: ActionBinding(
-                  actionId: deleteAction.id,
-                  parameters: {'entityId': entity.id},
+              nodes.add(
+                InterfaceNode(
+                  type: 'button',
+                  id: '${view.id}_delete_button',
+                  properties: {'label': 'Delete', 'danger': true},
+                  actionBinding: ActionBinding(
+                    actionId: deleteAction.id,
+                    parameters: {'entityId': entity.id},
+                  ),
                 ),
-              ));
+              );
             }
           }
           break;
@@ -608,26 +626,30 @@ class CreationEngine {
             for (final field in entity.fields) {
               if (field.type == BlueprintFieldType.reference &&
                   field.referenceEntityId != null) {
-                nodes.add(InterfaceNode(
-                  type: 'referenceSelector',
-                  id: '${view.id}_${field.id}_ref',
-                  properties: {
-                    'entityId': field.referenceEntityId,
-                    'label': 'Select ${field.name}',
-                  },
-                ));
+                nodes.add(
+                  InterfaceNode(
+                    type: 'referenceSelector',
+                    id: '${view.id}_${field.id}_ref',
+                    properties: {
+                      'entityId': field.referenceEntityId,
+                      'label': 'Select ${field.name}',
+                    },
+                  ),
+                );
               } else {
-                nodes.add(InterfaceNode(
-                  type: field.type == BlueprintFieldType.boolean
-                      ? 'switch'
-                      : 'input',
-                  id: '${view.id}_${field.id}',
-                  properties: {
-                    'label': field.name,
-                    'hint': 'Enter ${field.name.toLowerCase()}',
-                  },
-                  stateBinding: '${entity.id}_${field.id}_input',
-                ));
+                nodes.add(
+                  InterfaceNode(
+                    type: field.type == BlueprintFieldType.boolean
+                        ? 'switch'
+                        : 'input',
+                    id: '${view.id}_${field.id}',
+                    properties: {
+                      'label': field.name,
+                      'hint': 'Enter ${field.name.toLowerCase()}',
+                    },
+                    stateBinding: '${entity.id}_${field.id}_input',
+                  ),
+                );
               }
             }
           }
@@ -636,11 +658,14 @@ class CreationEngine {
 
       // Add section header for each view
       if (nodes.isNotEmpty) {
-        nodes.insert(0, InterfaceNode(
-          type: 'heading',
-          id: '${view.id}_title',
-          properties: {'content': view.name, 'level': 2},
-        ));
+        nodes.insert(
+          0,
+          InterfaceNode(
+            type: 'heading',
+            id: '${view.id}_title',
+            properties: {'content': view.name, 'level': 2},
+          ),
+        );
       }
 
       screens.add(
@@ -705,7 +730,7 @@ class CreationEngine {
     for (final field in entity.fields) {
       if (field.id != _findDisplayField(entity) &&
           (field.type == BlueprintFieldType.text ||
-           field.type == BlueprintFieldType.reference)) {
+              field.type == BlueprintFieldType.reference)) {
         return field.id;
       }
     }

@@ -39,8 +39,20 @@ void main() {
       records = [
         {'id': '1', 'name': 'Alice', 'age': 30, 'active': true, 'city': 'NYC'},
         {'id': '2', 'name': 'Bob', 'age': 25, 'active': true, 'city': 'LA'},
-        {'id': '3', 'name': 'Charlie', 'age': 35, 'active': false, 'city': 'NYC'},
-        {'id': '4', 'name': 'Diana', 'age': 28, 'active': true, 'city': 'Chicago'},
+        {
+          'id': '3',
+          'name': 'Charlie',
+          'age': 35,
+          'active': false,
+          'city': 'NYC',
+        },
+        {
+          'id': '4',
+          'name': 'Diana',
+          'age': 28,
+          'active': true,
+          'city': 'Chicago',
+        },
         {'id': '5', 'name': 'Eve', 'age': 32, 'active': false, 'city': 'LA'},
       ];
     });
@@ -48,7 +60,13 @@ void main() {
     test('Filter: equals', () {
       final query = DataQuery(
         entityId: 'person',
-        filters: [FilterCondition(fieldId: 'city', operator: FilterOperator.equals, value: 'NYC')],
+        filters: [
+          FilterCondition(
+            fieldId: 'city',
+            operator: FilterOperator.equals,
+            value: 'NYC',
+          ),
+        ],
       );
       final result = engine.query(query, records);
       expect(result.length, 2);
@@ -58,7 +76,13 @@ void main() {
     test('Filter: greaterThan', () {
       final query = DataQuery(
         entityId: 'person',
-        filters: [FilterCondition(fieldId: 'age', operator: FilterOperator.greaterThan, value: 30)],
+        filters: [
+          FilterCondition(
+            fieldId: 'age',
+            operator: FilterOperator.greaterThan,
+            value: 30,
+          ),
+        ],
       );
       final result = engine.query(query, records);
       expect(result.length, 2);
@@ -68,7 +92,13 @@ void main() {
     test('Filter: contains', () {
       final query = DataQuery(
         entityId: 'person',
-        filters: [FilterCondition(fieldId: 'name', operator: FilterOperator.contains, value: 'li')],
+        filters: [
+          FilterCondition(
+            fieldId: 'name',
+            operator: FilterOperator.contains,
+            value: 'li',
+          ),
+        ],
       );
       final result = engine.query(query, records);
       expect(result.length, 2);
@@ -79,7 +109,9 @@ void main() {
     test('Filter: isTrue', () {
       final query = DataQuery(
         entityId: 'person',
-        filters: [FilterCondition(fieldId: 'active', operator: FilterOperator.isTrue)],
+        filters: [
+          FilterCondition(fieldId: 'active', operator: FilterOperator.isTrue),
+        ],
       );
       final result = engine.query(query, records);
       expect(result.length, 3);
@@ -131,7 +163,9 @@ void main() {
     test('Combined filter + sort + search', () {
       final query = DataQuery(
         entityId: 'person',
-        filters: [FilterCondition(fieldId: 'active', operator: FilterOperator.isTrue)],
+        filters: [
+          FilterCondition(fieldId: 'active', operator: FilterOperator.isTrue),
+        ],
         sorts: [SortSpec(fieldId: 'name')],
         search: 'a',
       );
@@ -168,7 +202,13 @@ void main() {
     test('Empty result', () {
       final query = DataQuery(
         entityId: 'person',
-        filters: [FilterCondition(fieldId: 'age', operator: FilterOperator.greaterThan, value: 100)],
+        filters: [
+          FilterCondition(
+            fieldId: 'age',
+            operator: FilterOperator.greaterThan,
+            value: 100,
+          ),
+        ],
       );
       final result = engine.query(query, records);
       expect(result, isEmpty);
@@ -205,7 +245,12 @@ void main() {
         entityId: 'person',
         mode: FormMode.create,
         fieldDefinitions: [
-          const FormFieldDefinition(id: 'name', name: 'Name', type: 'text', required: true),
+          const FormFieldDefinition(
+            id: 'name',
+            name: 'Name',
+            type: 'text',
+            required: true,
+          ),
           const FormFieldDefinition(id: 'email', name: 'Email', type: 'text'),
         ],
       );
@@ -220,7 +265,12 @@ void main() {
         mode: FormMode.edit,
         initialValues: {'name': 'Alice', 'email': 'alice@example.com'},
         fieldDefinitions: [
-          const FormFieldDefinition(id: 'name', name: 'Name', type: 'text', required: true),
+          const FormFieldDefinition(
+            id: 'name',
+            name: 'Name',
+            type: 'text',
+            required: true,
+          ),
           const FormFieldDefinition(id: 'email', name: 'Email', type: 'text'),
         ],
       );
@@ -235,7 +285,12 @@ void main() {
         mode: FormMode.edit,
         initialValues: {'name': 'Alice'},
         fieldDefinitions: [
-          const FormFieldDefinition(id: 'name', name: 'Name', type: 'text', required: true),
+          const FormFieldDefinition(
+            id: 'name',
+            name: 'Name',
+            type: 'text',
+            required: true,
+          ),
         ],
       );
       expect(controller.isDirty, isFalse);
@@ -247,7 +302,12 @@ void main() {
       final controller = ExperienceFormController(
         entityId: 'person',
         fieldDefinitions: [
-          const FormFieldDefinition(id: 'name', name: 'Name', type: 'text', required: true),
+          const FormFieldDefinition(
+            id: 'name',
+            name: 'Name',
+            type: 'text',
+            required: true,
+          ),
         ],
       );
       expect(controller.validate(), isFalse);
@@ -258,7 +318,12 @@ void main() {
       final controller = ExperienceFormController(
         entityId: 'person',
         fieldDefinitions: [
-          const FormFieldDefinition(id: 'name', name: 'Name', type: 'text', minLength: 3),
+          const FormFieldDefinition(
+            id: 'name',
+            name: 'Name',
+            type: 'text',
+            minLength: 3,
+          ),
         ],
       );
       controller.setValue('name', 'AB');
@@ -316,7 +381,12 @@ void main() {
       final controller = ExperienceFormController(
         entityId: 'person',
         fieldDefinitions: [
-          const FormFieldDefinition(id: 'name', name: 'Name', type: 'text', required: true),
+          const FormFieldDefinition(
+            id: 'name',
+            name: 'Name',
+            type: 'text',
+            required: true,
+          ),
         ],
       );
       final states = <FormState>[];
@@ -343,93 +413,115 @@ void main() {
     });
 
     test('Push navigates to screen', () {
-      final event = router.navigate(const NavigationRequest(
-        action: NavigationAction.push,
-        targetScreenId: 'list',
-      ));
+      final event = router.navigate(
+        const NavigationRequest(
+          action: NavigationAction.push,
+          targetScreenId: 'list',
+        ),
+      );
       expect(event.action, NavigationAction.push);
       expect(event.screenId, 'list');
       expect(router.currentScreenId, 'list');
     });
 
     test('Pop returns to previous screen', () {
-      router.navigate(const NavigationRequest(
-        action: NavigationAction.push,
-        targetScreenId: 'list',
-      ));
-      router.navigate(const NavigationRequest(
-        action: NavigationAction.push,
-        targetScreenId: 'detail',
-      ));
+      router.navigate(
+        const NavigationRequest(
+          action: NavigationAction.push,
+          targetScreenId: 'list',
+        ),
+      );
+      router.navigate(
+        const NavigationRequest(
+          action: NavigationAction.push,
+          targetScreenId: 'detail',
+        ),
+      );
       expect(router.currentScreenId, 'detail');
 
-      router.navigate(const NavigationRequest(
-        action: NavigationAction.pop,
-      ));
+      router.navigate(const NavigationRequest(action: NavigationAction.pop));
       expect(router.currentScreenId, 'list');
     });
 
     test('Invalid screen ID is rejected', () {
-      final event = router.navigate(const NavigationRequest(
-        action: NavigationAction.push,
-        targetScreenId: 'nonexistent',
-      ));
+      final event = router.navigate(
+        const NavigationRequest(
+          action: NavigationAction.push,
+          targetScreenId: 'nonexistent',
+        ),
+      );
       // Should not push to invalid screen
       expect(router.history, isEmpty);
     });
 
     test('Pop to root', () {
-      router.navigate(const NavigationRequest(
-        action: NavigationAction.push,
-        targetScreenId: 'list',
-      ));
-      router.navigate(const NavigationRequest(
-        action: NavigationAction.push,
-        targetScreenId: 'detail',
-      ));
-      router.navigate(const NavigationRequest(
-        action: NavigationAction.push,
-        targetScreenId: 'edit',
-      ));
+      router.navigate(
+        const NavigationRequest(
+          action: NavigationAction.push,
+          targetScreenId: 'list',
+        ),
+      );
+      router.navigate(
+        const NavigationRequest(
+          action: NavigationAction.push,
+          targetScreenId: 'detail',
+        ),
+      );
+      router.navigate(
+        const NavigationRequest(
+          action: NavigationAction.push,
+          targetScreenId: 'edit',
+        ),
+      );
 
-      router.navigate(const NavigationRequest(
-        action: NavigationAction.popToRoot,
-      ));
+      router.navigate(
+        const NavigationRequest(action: NavigationAction.popToRoot),
+      );
       expect(router.history.length, 1);
       expect(router.currentScreenId, 'list');
     });
 
     test('Replace current screen', () {
-      router.navigate(const NavigationRequest(
-        action: NavigationAction.push,
-        targetScreenId: 'list',
-      ));
-      router.navigate(const NavigationRequest(
-        action: NavigationAction.replace,
-        targetScreenId: 'detail',
-      ));
+      router.navigate(
+        const NavigationRequest(
+          action: NavigationAction.push,
+          targetScreenId: 'list',
+        ),
+      );
+      router.navigate(
+        const NavigationRequest(
+          action: NavigationAction.replace,
+          targetScreenId: 'detail',
+        ),
+      );
       expect(router.history.length, 1);
       expect(router.currentScreenId, 'detail');
     });
 
     test('Switch tab', () {
-      final event = router.navigate(const NavigationRequest(
-        action: NavigationAction.switchTab,
-        targetScreenId: 'detail',
-      ));
+      final event = router.navigate(
+        const NavigationRequest(
+          action: NavigationAction.switchTab,
+          targetScreenId: 'detail',
+        ),
+      );
       expect(event.action, NavigationAction.switchTab);
       expect(router.currentTabIndex, 1);
     });
 
     test('Navigation history tracking', () {
-      router.navigate(const NavigationRequest(
-        action: NavigationAction.push,
-        targetScreenId: 'list',
-      ));
-      router.navigate(const NavigationRequest(
-        action: NavigationAction.push,
-        targetScreenId: 'detail',
-      ));
+      router.navigate(
+        const NavigationRequest(
+          action: NavigationAction.push,
+          targetScreenId: 'list',
+        ),
+      );
+      router.navigate(
+        const NavigationRequest(
+          action: NavigationAction.push,
+          targetScreenId: 'detail',
+        ),
+      );
       expect(router.history.length, 2);
     });
 
@@ -442,10 +534,12 @@ void main() {
       final events = <NavigationEvent>[];
       router.events.listen(events.add);
 
-      router.navigate(const NavigationRequest(
-        action: NavigationAction.push,
-        targetScreenId: 'list',
-      ));
+      router.navigate(
+        const NavigationRequest(
+          action: NavigationAction.push,
+          targetScreenId: 'list',
+        ),
+      );
       await Future.delayed(Duration.zero);
 
       expect(events, isNotEmpty);
@@ -511,8 +605,20 @@ void main() {
       final people = <Map<String, dynamic>>[];
 
       // Create
-      people.add({'id': 'p1', 'name': 'Alice', 'email': 'alice@test.com', 'notes': 'Met at conference', 'active': true});
-      people.add({'id': 'p2', 'name': 'Bob', 'email': 'bob@test.com', 'notes': 'Colleague', 'active': true});
+      people.add({
+        'id': 'p1',
+        'name': 'Alice',
+        'email': 'alice@test.com',
+        'notes': 'Met at conference',
+        'active': true,
+      });
+      people.add({
+        'id': 'p2',
+        'name': 'Bob',
+        'email': 'bob@test.com',
+        'notes': 'Colleague',
+        'active': true,
+      });
 
       // Query all
       final allQuery = DataQuery(entityId: 'person');
@@ -537,7 +643,9 @@ void main() {
       // Filter active
       final filterQuery = DataQuery(
         entityId: 'person',
-        filters: [FilterCondition(fieldId: 'active', operator: FilterOperator.isTrue)],
+        filters: [
+          FilterCondition(fieldId: 'active', operator: FilterOperator.isTrue),
+        ],
       );
       final active = queryEngine.query(filterQuery, people);
       expect(active.length, 2);
@@ -592,27 +700,39 @@ void main() {
       // Query active loans
       final activeLoans = DataQuery(
         entityId: 'loan',
-        filters: [FilterCondition(fieldId: 'returned', operator: FilterOperator.isFalse)],
+        filters: [
+          FilterCondition(
+            fieldId: 'returned',
+            operator: FilterOperator.isFalse,
+          ),
+        ],
       );
       final active = queryEngine.query(activeLoans, loans);
       expect(active.length, 1);
       expect(active.first['personId'], 'p1');
 
       // Resolve reference: person name
-      final person = people.firstWhere((p) => p['id'] == active.first['personId']);
+      final person = people.firstWhere(
+        (p) => p['id'] == active.first['personId'],
+      );
       expect(person['name'], 'Alice');
 
       // Resolve reference: equipment name
-      final equip = equipment.firstWhere((e) => e['id'] == active.first['equipmentId']);
+      final equip = equipment.firstWhere(
+        (e) => e['id'] == active.first['equipmentId'],
+      );
       expect(equip['name'], 'Camera');
 
       // Delete safety: cannot delete Alice while loan references her
-      final hasActiveLoan = loans.any((l) => l['personId'] == 'p1' && l['returned'] == false);
+      final hasActiveLoan = loans.any(
+        (l) => l['personId'] == 'p1' && l['returned'] == false,
+      );
       expect(hasActiveLoan, isTrue);
 
       // Delete Alice should be blocked
       expect(() {
-        if (hasActiveLoan) throw Exception('Cannot delete: referenced by active loan');
+        if (hasActiveLoan)
+          throw Exception('Cannot delete: referenced by active loan');
       }, throwsException);
     });
   });
@@ -641,10 +761,7 @@ void main() {
 
     test('DataQuery: max sorts enforced', () {
       expect(DataQuery.maxSorts, 5);
-      final sorts = List.generate(
-        6,
-        (i) => SortSpec(fieldId: 'f$i'),
-      );
+      final sorts = List.generate(6, (i) => SortSpec(fieldId: 'f$i'));
       final query = DataQuery(entityId: 'test', sorts: sorts);
       final errors = query.validate();
       expect(errors, isNotEmpty);
@@ -660,7 +777,12 @@ void main() {
       final controller = ExperienceFormController(
         entityId: 'test',
         fieldDefinitions: [
-          const FormFieldDefinition(id: 'name', name: 'Name', type: 'text', required: true),
+          const FormFieldDefinition(
+            id: 'name',
+            name: 'Name',
+            type: 'text',
+            required: true,
+          ),
         ],
       );
       // Empty form should be invalid
@@ -672,10 +794,12 @@ void main() {
 
     test('Router: unknown screen IDs rejected', () {
       final router = ExperienceRouter(validScreenIds: {'list', 'detail'});
-      final event = router.navigate(const NavigationRequest(
-        action: NavigationAction.push,
-        targetScreenId: 'malicious_screen',
-      ));
+      final event = router.navigate(
+        const NavigationRequest(
+          action: NavigationAction.push,
+          targetScreenId: 'malicious_screen',
+        ),
+      );
       // Should not navigate to unknown screen
       expect(router.history, isEmpty);
     });

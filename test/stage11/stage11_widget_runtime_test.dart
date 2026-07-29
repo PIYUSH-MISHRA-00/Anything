@@ -61,30 +61,40 @@ void main() {
     }
 
     testWidgets('Renders text node', (tester) async {
-      final interface = InterfaceDefinition(screens: [
-        _screen('Test', children: [
-          _node('t1', 'text', properties: {'content': 'Hello World'}),
-        ]),
-      ]);
+      final interface = InterfaceDefinition(
+        screens: [
+          _screen(
+            'Test',
+            children: [
+              _node('t1', 'text', properties: {'content': 'Hello World'}),
+            ],
+          ),
+        ],
+      );
 
-      await tester.pumpWidget(_wrap(
-        (ctx) => renderer.render(ctx, interface, stateEngine),
-      ));
+      await tester.pumpWidget(
+        _wrap((ctx) => renderer.render(ctx, interface, stateEngine)),
+      );
       await tester.pumpAndSettle();
 
       expect(find.text('Hello World'), findsOneWidget);
     });
 
     testWidgets('Renders button with label', (tester) async {
-      final interface = InterfaceDefinition(screens: [
-        _screen('Test', children: [
-          _node('b1', 'button', properties: {'label': 'Press Me'}),
-        ]),
-      ]);
+      final interface = InterfaceDefinition(
+        screens: [
+          _screen(
+            'Test',
+            children: [
+              _node('b1', 'button', properties: {'label': 'Press Me'}),
+            ],
+          ),
+        ],
+      );
 
-      await tester.pumpWidget(_wrap(
-        (ctx) => renderer.render(ctx, interface, stateEngine),
-      ));
+      await tester.pumpWidget(
+        _wrap((ctx) => renderer.render(ctx, interface, stateEngine)),
+      );
       await tester.pumpAndSettle();
 
       expect(find.text('Press Me'), findsOneWidget);
@@ -92,34 +102,48 @@ void main() {
     });
 
     testWidgets('Renders input with hint', (tester) async {
-      final interface = InterfaceDefinition(screens: [
-        _screen('Test', children: [
-          _node('i1', 'input', properties: {'hint': 'Enter name'}),
-        ]),
-      ]);
+      final interface = InterfaceDefinition(
+        screens: [
+          _screen(
+            'Test',
+            children: [
+              _node('i1', 'input', properties: {'hint': 'Enter name'}),
+            ],
+          ),
+        ],
+      );
 
-      await tester.pumpWidget(_wrap(
-        (ctx) => renderer.render(ctx, interface, stateEngine),
-      ));
+      await tester.pumpWidget(
+        _wrap((ctx) => renderer.render(ctx, interface, stateEngine)),
+      );
       await tester.pumpAndSettle();
 
       expect(find.byType(TextField), findsOneWidget);
     });
 
     testWidgets('Renders column with children', (tester) async {
-      final interface = InterfaceDefinition(screens: [
-        _screen('Test', children: [
-          _node('col', 'column', children: [
-            _node('t1', 'text', properties: {'content': 'Line 1'}),
-            _node('t2', 'text', properties: {'content': 'Line 2'}),
-            _node('t3', 'text', properties: {'content': 'Line 3'}),
-          ]),
-        ]),
-      ]);
+      final interface = InterfaceDefinition(
+        screens: [
+          _screen(
+            'Test',
+            children: [
+              _node(
+                'col',
+                'column',
+                children: [
+                  _node('t1', 'text', properties: {'content': 'Line 1'}),
+                  _node('t2', 'text', properties: {'content': 'Line 2'}),
+                  _node('t3', 'text', properties: {'content': 'Line 3'}),
+                ],
+              ),
+            ],
+          ),
+        ],
+      );
 
-      await tester.pumpWidget(_wrap(
-        (ctx) => renderer.render(ctx, interface, stateEngine),
-      ));
+      await tester.pumpWidget(
+        _wrap((ctx) => renderer.render(ctx, interface, stateEngine)),
+      );
       await tester.pumpAndSettle();
 
       expect(find.text('Line 1'), findsOneWidget);
@@ -129,17 +153,26 @@ void main() {
     });
 
     testWidgets('Renders card with children', (tester) async {
-      final interface = InterfaceDefinition(screens: [
-        _screen('Test', children: [
-          _node('card', 'card', children: [
-            _node('t1', 'text', properties: {'content': 'Card Title'}),
-          ]),
-        ]),
-      ]);
+      final interface = InterfaceDefinition(
+        screens: [
+          _screen(
+            'Test',
+            children: [
+              _node(
+                'card',
+                'card',
+                children: [
+                  _node('t1', 'text', properties: {'content': 'Card Title'}),
+                ],
+              ),
+            ],
+          ),
+        ],
+      );
 
-      await tester.pumpWidget(_wrap(
-        (ctx) => renderer.render(ctx, interface, stateEngine),
-      ));
+      await tester.pumpWidget(
+        _wrap((ctx) => renderer.render(ctx, interface, stateEngine)),
+      );
       await tester.pumpAndSettle();
 
       expect(find.byType(Card), findsOneWidget);
@@ -147,16 +180,18 @@ void main() {
     });
 
     testWidgets('Renders divider and spacer', (tester) async {
-      final interface = InterfaceDefinition(screens: [
-        _screen('Test', children: [
-          _node('d1', 'divider'),
-          _node('s1', 'spacer'),
-        ]),
-      ]);
+      final interface = InterfaceDefinition(
+        screens: [
+          _screen(
+            'Test',
+            children: [_node('d1', 'divider'), _node('s1', 'spacer')],
+          ),
+        ],
+      );
 
-      await tester.pumpWidget(_wrap(
-        (ctx) => renderer.render(ctx, interface, stateEngine),
-      ));
+      await tester.pumpWidget(
+        _wrap((ctx) => renderer.render(ctx, interface, stateEngine)),
+      );
       await tester.pumpAndSettle();
 
       expect(find.byType(Divider), findsOneWidget);
@@ -164,19 +199,26 @@ void main() {
     });
 
     testWidgets('Renders switch with state binding', (tester) async {
-      stateEngine.initialize(const StateSchema(variables: [
-        StateVariable(id: 'darkMode', type: 'boolean', defaultValue: false),
-      ]));
+      stateEngine.initialize(
+        const StateSchema(
+          variables: [
+            StateVariable(id: 'darkMode', type: 'boolean', defaultValue: false),
+          ],
+        ),
+      );
 
-      final interface = InterfaceDefinition(screens: [
-        _screen('Test', children: [
-          _node('sw1', 'switch', stateBinding: 'darkMode'),
-        ]),
-      ]);
+      final interface = InterfaceDefinition(
+        screens: [
+          _screen(
+            'Test',
+            children: [_node('sw1', 'switch', stateBinding: 'darkMode')],
+          ),
+        ],
+      );
 
-      await tester.pumpWidget(_wrap(
-        (ctx) => renderer.render(ctx, interface, stateEngine),
-      ));
+      await tester.pumpWidget(
+        _wrap((ctx) => renderer.render(ctx, interface, stateEngine)),
+      );
       await tester.pumpAndSettle();
 
       final switchWidget = tester.widget<Switch>(find.byType(Switch));
@@ -184,19 +226,30 @@ void main() {
     });
 
     testWidgets('State binding reads initial value', (tester) async {
-      stateEngine.initialize(const StateSchema(variables: [
-        StateVariable(id: 'greeting', type: 'string', defaultValue: 'Hello'),
-      ]));
+      stateEngine.initialize(
+        const StateSchema(
+          variables: [
+            StateVariable(
+              id: 'greeting',
+              type: 'string',
+              defaultValue: 'Hello',
+            ),
+          ],
+        ),
+      );
 
-      final interface = InterfaceDefinition(screens: [
-        _screen('Test', children: [
-          _node('t1', 'text', stateBinding: 'greeting'),
-        ]),
-      ]);
+      final interface = InterfaceDefinition(
+        screens: [
+          _screen(
+            'Test',
+            children: [_node('t1', 'text', stateBinding: 'greeting')],
+          ),
+        ],
+      );
 
-      await tester.pumpWidget(_wrap(
-        (ctx) => renderer.render(ctx, interface, stateEngine),
-      ));
+      await tester.pumpWidget(
+        _wrap((ctx) => renderer.render(ctx, interface, stateEngine)),
+      );
       await tester.pumpAndSettle();
 
       expect(find.text('Hello'), findsOneWidget);
@@ -206,15 +259,20 @@ void main() {
     });
 
     testWidgets('Renders unknown type safely', (tester) async {
-      final interface = InterfaceDefinition(screens: [
-        _screen('Test', children: [
-          _node('u1', 'customWidget', properties: {'value': 'test'}),
-        ]),
-      ]);
+      final interface = InterfaceDefinition(
+        screens: [
+          _screen(
+            'Test',
+            children: [
+              _node('u1', 'customWidget', properties: {'value': 'test'}),
+            ],
+          ),
+        ],
+      );
 
-      await tester.pumpWidget(_wrap(
-        (ctx) => renderer.render(ctx, interface, stateEngine),
-      ));
+      await tester.pumpWidget(
+        _wrap((ctx) => renderer.render(ctx, interface, stateEngine)),
+      );
       await tester.pumpAndSettle();
 
       expect(find.textContaining('Unsupported: customWidget'), findsOneWidget);
@@ -222,25 +280,32 @@ void main() {
 
     testWidgets('Button tap fires onEvent', (tester) async {
       String? firedEvent;
-      final interface = InterfaceDefinition(screens: [
-        _screen('Test', children: [
-          InterfaceNode(
-            id: 'btn',
-            type: 'button',
-            properties: {'label': 'Submit'},
-            actionBinding: const ActionBinding(actionId: 'submit_pressed'),
+      final interface = InterfaceDefinition(
+        screens: [
+          _screen(
+            'Test',
+            children: [
+              InterfaceNode(
+                id: 'btn',
+                type: 'button',
+                properties: {'label': 'Submit'},
+                actionBinding: const ActionBinding(actionId: 'submit_pressed'),
+              ),
+            ],
           ),
-        ]),
-      ]);
+        ],
+      );
 
-      await tester.pumpWidget(_wrap(
-        (ctx) => renderer.render(
-          ctx,
-          interface,
-          stateEngine,
-          onEvent: (eventId, {data}) => firedEvent = eventId,
+      await tester.pumpWidget(
+        _wrap(
+          (ctx) => renderer.render(
+            ctx,
+            interface,
+            stateEngine,
+            onEvent: (eventId, {data}) => firedEvent = eventId,
+          ),
         ),
-      ));
+      );
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('Submit'));
@@ -248,15 +313,20 @@ void main() {
     });
 
     testWidgets('Renders app bar with screen title', (tester) async {
-      final interface = InterfaceDefinition(screens: [
-        _screen('My Experience', children: [
-          _node('t1', 'text', properties: {'content': 'Content'}),
-        ]),
-      ]);
+      final interface = InterfaceDefinition(
+        screens: [
+          _screen(
+            'My Experience',
+            children: [
+              _node('t1', 'text', properties: {'content': 'Content'}),
+            ],
+          ),
+        ],
+      );
 
-      await tester.pumpWidget(_wrap(
-        (ctx) => renderer.render(ctx, interface, stateEngine),
-      ));
+      await tester.pumpWidget(
+        _wrap((ctx) => renderer.render(ctx, interface, stateEngine)),
+      );
       await tester.pumpAndSettle();
 
       expect(find.text('My Experience'), findsOneWidget);
@@ -265,27 +335,36 @@ void main() {
     testWidgets('Empty screens shows placeholder', (tester) async {
       final interface = InterfaceDefinition(screens: []);
 
-      await tester.pumpWidget(_wrap(
-        (ctx) => renderer.render(ctx, interface, stateEngine),
-      ));
+      await tester.pumpWidget(
+        _wrap((ctx) => renderer.render(ctx, interface, stateEngine)),
+      );
       await tester.pumpAndSettle();
 
       expect(find.text('No screens defined'), findsOneWidget);
     });
 
     testWidgets('Row renders horizontally', (tester) async {
-      final interface = InterfaceDefinition(screens: [
-        _screen('Test', children: [
-          _node('row', 'row', children: [
-            _node('t1', 'text', properties: {'content': 'Left'}),
-            _node('t2', 'text', properties: {'content': 'Right'}),
-          ]),
-        ]),
-      ]);
+      final interface = InterfaceDefinition(
+        screens: [
+          _screen(
+            'Test',
+            children: [
+              _node(
+                'row',
+                'row',
+                children: [
+                  _node('t1', 'text', properties: {'content': 'Left'}),
+                  _node('t2', 'text', properties: {'content': 'Right'}),
+                ],
+              ),
+            ],
+          ),
+        ],
+      );
 
-      await tester.pumpWidget(_wrap(
-        (ctx) => renderer.render(ctx, interface, stateEngine),
-      ));
+      await tester.pumpWidget(
+        _wrap((ctx) => renderer.render(ctx, interface, stateEngine)),
+      );
       await tester.pumpAndSettle();
 
       expect(find.text('Left'), findsOneWidget);
@@ -305,9 +384,11 @@ void main() {
     });
 
     test('Write triggers stream update', () async {
-      stateEngine.initialize(const StateSchema(variables: [
-        StateVariable(id: 'counter', type: 'integer'),
-      ]));
+      stateEngine.initialize(
+        const StateSchema(
+          variables: [StateVariable(id: 'counter', type: 'integer')],
+        ),
+      );
 
       final values = <dynamic>[];
       stateEngine.watch('counter').listen(values.add);
@@ -322,9 +403,11 @@ void main() {
     });
 
     test('Read returns current value', () {
-      stateEngine.initialize(const StateSchema(variables: [
-        StateVariable(id: 'key', type: 'string'),
-      ]));
+      stateEngine.initialize(
+        const StateSchema(
+          variables: [StateVariable(id: 'key', type: 'string')],
+        ),
+      );
       stateEngine.write('key', 'value');
       expect(stateEngine.read('key'), 'value');
     });
@@ -334,9 +417,13 @@ void main() {
     });
 
     test('Initialize sets defaults', () {
-      stateEngine.initialize(const StateSchema(variables: [
-        StateVariable(id: 'x', type: 'integer', defaultValue: 42),
-      ]));
+      stateEngine.initialize(
+        const StateSchema(
+          variables: [
+            StateVariable(id: 'x', type: 'integer', defaultValue: 42),
+          ],
+        ),
+      );
       expect(stateEngine.read('x'), 42);
     });
   });
@@ -358,66 +445,68 @@ void main() {
     }
 
     testWidgets('People Tracker: list screen renders', (tester) async {
-      final interface = InterfaceDefinition(screens: [
-        InterfaceScreen(
-          id: 'list',
-          title: 'People',
-          children: [
-            InterfaceNode(
-              id: 'header',
-              type: 'text',
-              properties: {'content': 'People Tracker'},
-            ),
-            InterfaceNode(
-              id: 'add_btn',
-              type: 'button',
-              properties: {'label': 'Add Person'},
-            ),
-            InterfaceNode(
-              id: 'list_col',
-              type: 'column',
-              children: [
-                InterfaceNode(
-                  id: 'person_1',
-                  type: 'card',
-                  children: [
-                    InterfaceNode(
-                      id: 'name_1',
-                      type: 'text',
-                      properties: {'content': 'Alice'},
-                    ),
-                    InterfaceNode(
-                      id: 'email_1',
-                      type: 'text',
-                      properties: {'content': 'alice@test.com'},
-                    ),
-                  ],
-                ),
-                InterfaceNode(
-                  id: 'person_2',
-                  type: 'card',
-                  children: [
-                    InterfaceNode(
-                      id: 'name_2',
-                      type: 'text',
-                      properties: {'content': 'Bob'},
-                    ),
-                    InterfaceNode(
-                      id: 'email_2',
-                      type: 'text',
-                      properties: {'content': 'bob@test.com'},
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ],
-        ),
-      ]);
+      final interface = InterfaceDefinition(
+        screens: [
+          InterfaceScreen(
+            id: 'list',
+            title: 'People',
+            children: [
+              InterfaceNode(
+                id: 'header',
+                type: 'text',
+                properties: {'content': 'People Tracker'},
+              ),
+              InterfaceNode(
+                id: 'add_btn',
+                type: 'button',
+                properties: {'label': 'Add Person'},
+              ),
+              InterfaceNode(
+                id: 'list_col',
+                type: 'column',
+                children: [
+                  InterfaceNode(
+                    id: 'person_1',
+                    type: 'card',
+                    children: [
+                      InterfaceNode(
+                        id: 'name_1',
+                        type: 'text',
+                        properties: {'content': 'Alice'},
+                      ),
+                      InterfaceNode(
+                        id: 'email_1',
+                        type: 'text',
+                        properties: {'content': 'alice@test.com'},
+                      ),
+                    ],
+                  ),
+                  InterfaceNode(
+                    id: 'person_2',
+                    type: 'card',
+                    children: [
+                      InterfaceNode(
+                        id: 'name_2',
+                        type: 'text',
+                        properties: {'content': 'Bob'},
+                      ),
+                      InterfaceNode(
+                        id: 'email_2',
+                        type: 'text',
+                        properties: {'content': 'bob@test.com'},
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
+      );
 
-      await tester.pumpWidget(_wrap(
-        (ctx) => renderer.render(ctx, interface, stateEngine),
-      ));
+      await tester.pumpWidget(
+        _wrap((ctx) => renderer.render(ctx, interface, stateEngine)),
+      );
       await tester.pumpAndSettle();
 
       expect(find.text('People Tracker'), findsOneWidget);
@@ -428,43 +517,45 @@ void main() {
     });
 
     testWidgets('People Tracker: form screen renders', (tester) async {
-      final interface = InterfaceDefinition(screens: [
-        InterfaceScreen(
-          id: 'form',
-          title: 'Add Person',
-          children: [
-            InterfaceNode(
-              id: 'name_input',
-              type: 'input',
-              properties: {'hint': 'Name'},
-            ),
-            InterfaceNode(
-              id: 'email_input',
-              type: 'input',
-              properties: {'hint': 'Email'},
-            ),
-            InterfaceNode(
-              id: 'notes_input',
-              type: 'input',
-              properties: {'hint': 'Notes'},
-            ),
-            InterfaceNode(
-              id: 'save_btn',
-              type: 'button',
-              properties: {'label': 'Save'},
-            ),
-            InterfaceNode(
-              id: 'cancel_btn',
-              type: 'button',
-              properties: {'label': 'Cancel'},
-            ),
-          ],
-        ),
-      ]);
+      final interface = InterfaceDefinition(
+        screens: [
+          InterfaceScreen(
+            id: 'form',
+            title: 'Add Person',
+            children: [
+              InterfaceNode(
+                id: 'name_input',
+                type: 'input',
+                properties: {'hint': 'Name'},
+              ),
+              InterfaceNode(
+                id: 'email_input',
+                type: 'input',
+                properties: {'hint': 'Email'},
+              ),
+              InterfaceNode(
+                id: 'notes_input',
+                type: 'input',
+                properties: {'hint': 'Notes'},
+              ),
+              InterfaceNode(
+                id: 'save_btn',
+                type: 'button',
+                properties: {'label': 'Save'},
+              ),
+              InterfaceNode(
+                id: 'cancel_btn',
+                type: 'button',
+                properties: {'label': 'Cancel'},
+              ),
+            ],
+          ),
+        ],
+      );
 
-      await tester.pumpWidget(_wrap(
-        (ctx) => renderer.render(ctx, interface, stateEngine),
-      ));
+      await tester.pumpWidget(
+        _wrap((ctx) => renderer.render(ctx, interface, stateEngine)),
+      );
       await tester.pumpAndSettle();
 
       expect(find.byType(TextField), findsNWidgets(3));
@@ -473,78 +564,80 @@ void main() {
     });
 
     testWidgets('Equipment Lending: dashboard renders', (tester) async {
-      final interface = InterfaceDefinition(screens: [
-        InterfaceScreen(
-          id: 'dashboard',
-          title: 'Equipment Lending',
-          children: [
-            InterfaceNode(
-              id: 'stats_row',
-              type: 'row',
-              children: [
-                InterfaceNode(
-                  id: 'stat_total',
-                  type: 'card',
-                  children: [
-                    InterfaceNode(
-                      id: 'label_total',
-                      type: 'text',
-                      properties: {'content': 'Total Equipment'},
-                    ),
-                    InterfaceNode(
-                      id: 'value_total',
-                      type: 'text',
-                      properties: {'content': '12'},
-                    ),
-                  ],
-                ),
-                InterfaceNode(
-                  id: 'stat_active',
-                  type: 'card',
-                  children: [
-                    InterfaceNode(
-                      id: 'label_active',
-                      type: 'text',
-                      properties: {'content': 'Active Loans'},
-                    ),
-                    InterfaceNode(
-                      id: 'value_active',
-                      type: 'text',
-                      properties: {'content': '5'},
-                    ),
-                  ],
-                ),
-                InterfaceNode(
-                  id: 'stat_available',
-                  type: 'card',
-                  children: [
-                    InterfaceNode(
-                      id: 'label_available',
-                      type: 'text',
-                      properties: {'content': 'Available'},
-                    ),
-                    InterfaceNode(
-                      id: 'value_available',
-                      type: 'text',
-                      properties: {'content': '7'},
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            InterfaceNode(id: 'divider1', type: 'divider'),
-            InterfaceNode(
-              id: 'loans_header',
-              type: 'text',
-              properties: {'content': 'Recent Loans'},
-            ),
-          ],
-        ),
-      ]);
+      final interface = InterfaceDefinition(
+        screens: [
+          InterfaceScreen(
+            id: 'dashboard',
+            title: 'Equipment Lending',
+            children: [
+              InterfaceNode(
+                id: 'stats_row',
+                type: 'row',
+                children: [
+                  InterfaceNode(
+                    id: 'stat_total',
+                    type: 'card',
+                    children: [
+                      InterfaceNode(
+                        id: 'label_total',
+                        type: 'text',
+                        properties: {'content': 'Total Equipment'},
+                      ),
+                      InterfaceNode(
+                        id: 'value_total',
+                        type: 'text',
+                        properties: {'content': '12'},
+                      ),
+                    ],
+                  ),
+                  InterfaceNode(
+                    id: 'stat_active',
+                    type: 'card',
+                    children: [
+                      InterfaceNode(
+                        id: 'label_active',
+                        type: 'text',
+                        properties: {'content': 'Active Loans'},
+                      ),
+                      InterfaceNode(
+                        id: 'value_active',
+                        type: 'text',
+                        properties: {'content': '5'},
+                      ),
+                    ],
+                  ),
+                  InterfaceNode(
+                    id: 'stat_available',
+                    type: 'card',
+                    children: [
+                      InterfaceNode(
+                        id: 'label_available',
+                        type: 'text',
+                        properties: {'content': 'Available'},
+                      ),
+                      InterfaceNode(
+                        id: 'value_available',
+                        type: 'text',
+                        properties: {'content': '7'},
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              InterfaceNode(id: 'divider1', type: 'divider'),
+              InterfaceNode(
+                id: 'loans_header',
+                type: 'text',
+                properties: {'content': 'Recent Loans'},
+              ),
+            ],
+          ),
+        ],
+      );
 
-      await tester.pumpWidget(_wrap(
-        (ctx) => renderer.render(ctx, interface, stateEngine),
-      ));
+      await tester.pumpWidget(
+        _wrap((ctx) => renderer.render(ctx, interface, stateEngine)),
+      );
       await tester.pumpAndSettle();
 
       expect(find.byType(Card), findsNWidgets(3));
@@ -555,61 +648,63 @@ void main() {
     });
 
     testWidgets('Novel Domain: reading collection renders', (tester) async {
-      final interface = InterfaceDefinition(screens: [
-        InterfaceScreen(
-          id: 'tracker',
-          title: 'Reading Collection',
-          children: [
-            InterfaceNode(
-              id: 'search',
-              type: 'input',
-              properties: {'hint': 'Search books...'},
-            ),
-            InterfaceNode(
-              id: 'filter_row',
-              type: 'row',
-              children: [
-                InterfaceNode(
-                  id: 'filter_btn',
-                  type: 'button',
-                  properties: {'label': 'Filter'},
-                ),
-                InterfaceNode(
-                  id: 'sort_btn',
-                  type: 'button',
-                  properties: {'label': 'Sort'},
-                ),
-              ],
-            ),
-            InterfaceNode(
-              id: 'books_list',
-              type: 'column',
-              children: [
-                InterfaceNode(
-                  id: 'book_1',
-                  type: 'card',
-                  children: [
-                    InterfaceNode(
-                      id: 'title_1',
-                      type: 'text',
-                      properties: {'content': 'The Great Gatsby'},
-                    ),
-                    InterfaceNode(
-                      id: 'author_1',
-                      type: 'text',
-                      properties: {'content': 'F. Scott Fitzgerald'},
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ],
-        ),
-      ]);
+      final interface = InterfaceDefinition(
+        screens: [
+          InterfaceScreen(
+            id: 'tracker',
+            title: 'Reading Collection',
+            children: [
+              InterfaceNode(
+                id: 'search',
+                type: 'input',
+                properties: {'hint': 'Search books...'},
+              ),
+              InterfaceNode(
+                id: 'filter_row',
+                type: 'row',
+                children: [
+                  InterfaceNode(
+                    id: 'filter_btn',
+                    type: 'button',
+                    properties: {'label': 'Filter'},
+                  ),
+                  InterfaceNode(
+                    id: 'sort_btn',
+                    type: 'button',
+                    properties: {'label': 'Sort'},
+                  ),
+                ],
+              ),
+              InterfaceNode(
+                id: 'books_list',
+                type: 'column',
+                children: [
+                  InterfaceNode(
+                    id: 'book_1',
+                    type: 'card',
+                    children: [
+                      InterfaceNode(
+                        id: 'title_1',
+                        type: 'text',
+                        properties: {'content': 'The Great Gatsby'},
+                      ),
+                      InterfaceNode(
+                        id: 'author_1',
+                        type: 'text',
+                        properties: {'content': 'F. Scott Fitzgerald'},
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
+      );
 
-      await tester.pumpWidget(_wrap(
-        (ctx) => renderer.render(ctx, interface, stateEngine),
-      ));
+      await tester.pumpWidget(
+        _wrap((ctx) => renderer.render(ctx, interface, stateEngine)),
+      );
       await tester.pumpAndSettle();
 
       expect(find.text('Reading Collection'), findsOneWidget);
@@ -621,52 +716,54 @@ void main() {
     });
 
     testWidgets('Deeply nested layout renders', (tester) async {
-      final interface = InterfaceDefinition(screens: [
-        InterfaceScreen(
-          id: 'nested',
-          title: 'Nested',
-          children: [
-            InterfaceNode(
-              id: 'outer_col',
-              type: 'column',
-              children: [
-                InterfaceNode(
-                  id: 'inner_row',
-                  type: 'row',
-                  children: [
-                    InterfaceNode(
-                      id: 'card1',
-                      type: 'card',
-                      children: [
-                        InterfaceNode(
-                          id: 'text1',
-                          type: 'text',
-                          properties: {'content': 'A'},
-                        ),
-                      ],
-                    ),
-                    InterfaceNode(
-                      id: 'card2',
-                      type: 'card',
-                      children: [
-                        InterfaceNode(
-                          id: 'text2',
-                          type: 'text',
-                          properties: {'content': 'B'},
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ],
-        ),
-      ]);
+      final interface = InterfaceDefinition(
+        screens: [
+          InterfaceScreen(
+            id: 'nested',
+            title: 'Nested',
+            children: [
+              InterfaceNode(
+                id: 'outer_col',
+                type: 'column',
+                children: [
+                  InterfaceNode(
+                    id: 'inner_row',
+                    type: 'row',
+                    children: [
+                      InterfaceNode(
+                        id: 'card1',
+                        type: 'card',
+                        children: [
+                          InterfaceNode(
+                            id: 'text1',
+                            type: 'text',
+                            properties: {'content': 'A'},
+                          ),
+                        ],
+                      ),
+                      InterfaceNode(
+                        id: 'card2',
+                        type: 'card',
+                        children: [
+                          InterfaceNode(
+                            id: 'text2',
+                            type: 'text',
+                            properties: {'content': 'B'},
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
+      );
 
-      await tester.pumpWidget(_wrap(
-        (ctx) => renderer.render(ctx, interface, stateEngine),
-      ));
+      await tester.pumpWidget(
+        _wrap((ctx) => renderer.render(ctx, interface, stateEngine)),
+      );
       await tester.pumpAndSettle();
 
       expect(find.text('A'), findsOneWidget);

@@ -155,7 +155,10 @@ class _PeopleTrackerModelProvider implements ModelProvider {
     return ModelResponse(
       text: _responseText,
       usage: const ModelUsage(
-          promptTokens: 10, completionTokens: 20, totalTokens: 30),
+        promptTokens: 10,
+        completionTokens: 20,
+        totalTokens: 30,
+      ),
     );
   }
 
@@ -269,7 +272,10 @@ class _EquipmentLendingModelProvider implements ModelProvider {
     return ModelResponse(
       text: _responseText,
       usage: const ModelUsage(
-          promptTokens: 10, completionTokens: 20, totalTokens: 30),
+        promptTokens: 10,
+        completionTokens: 20,
+        totalTokens: 30,
+      ),
     );
   }
 
@@ -359,7 +365,10 @@ class _FossilCatalogModelProvider implements ModelProvider {
     return ModelResponse(
       text: _responseText,
       usage: const ModelUsage(
-          promptTokens: 10, completionTokens: 20, totalTokens: 30),
+        promptTokens: 10,
+        completionTokens: 20,
+        totalTokens: 30,
+      ),
     );
   }
 
@@ -443,7 +452,10 @@ class _OrbitMetricsModelProvider implements ModelProvider {
     return ModelResponse(
       text: _responseText,
       usage: const ModelUsage(
-          promptTokens: 10, completionTokens: 20, totalTokens: 30),
+        promptTokens: 10,
+        completionTokens: 20,
+        totalTokens: 30,
+      ),
     );
   }
 
@@ -566,80 +578,89 @@ void main() {
       await pipeline.close();
     });
 
-    test('Full lifecycle: intent → synthesis → creation → persistence → opening', () async {
-      // 1. Create through intent
-      final result = await pipeline.creationCoordinator
-          .createFromExpression('Make me an app to keep track of people I meet.');
+    test(
+      'Full lifecycle: intent → synthesis → creation → persistence → opening',
+      () async {
+        // 1. Create through intent
+        final result = await pipeline.creationCoordinator.createFromExpression(
+          'Make me an app to keep track of people I meet.',
+        );
 
-      expect(result, isA<CreationCreated>());
-      final created = result as CreationCreated;
-      final experienceId = created.experienceId;
-      final pkg = created.package;
+        expect(result, isA<CreationCreated>());
+        final created = result as CreationCreated;
+        final experienceId = created.experienceId;
+        final pkg = created.package;
 
-      // 2. Assert generated package has generic semantics
-      expect(pkg.manifest.name, isNotEmpty);
-      expect(pkg.interface.screens, isNotEmpty);
-      expect(pkg.manifest.experienceId, isNotEmpty);
+        // 2. Assert generated package has generic semantics
+        expect(pkg.manifest.name, isNotEmpty);
+        expect(pkg.interface.screens, isNotEmpty);
+        expect(pkg.manifest.experienceId, isNotEmpty);
 
-      // Assert package has entity schema for Person
-      expect(pkg.data, isNotNull);
-      expect(pkg.data!.entities, isNotEmpty);
-      final personEntity = pkg.data!.entities.firstWhere(
-        (e) => e.name.toLowerCase() == 'person',
-        orElse: () => pkg.data!.entities.first,
-      );
-      expect(personEntity.fields, isNotEmpty);
+        // Assert package has entity schema for Person
+        expect(pkg.data, isNotNull);
+        expect(pkg.data!.entities, isNotEmpty);
+        final personEntity = pkg.data!.entities.firstWhere(
+          (e) => e.name.toLowerCase() == 'person',
+          orElse: () => pkg.data!.entities.first,
+        );
+        expect(personEntity.fields, isNotEmpty);
 
-      // Assert views exist
-      final screenTypes = pkg.interface.screens.map((s) => s.id).toList();
-      expect(screenTypes, isNotEmpty);
+        // Assert views exist
+        final screenTypes = pkg.interface.screens.map((s) => s.id).toList();
+        expect(screenTypes, isNotEmpty);
 
-      // Assert actions exist
-      expect(pkg.behavior.nodes, isNotEmpty);
+        // Assert actions exist
+        expect(pkg.behavior.nodes, isNotEmpty);
 
-      // 3. Validate with production validator
-      final validation = validator.ExperiencePackageValidator.validate(pkg);
-      expect(validation.isValid, isTrue);
+        // 3. Validate with production validator
+        final validation = validator.ExperiencePackageValidator.validate(pkg);
+        expect(validation.isValid, isTrue);
 
-      // 4. Persist and verify
-      final persistedPkg = await pipeline.repository.getPackage(experienceId);
-      expect(persistedPkg, isNotNull);
-      expect(persistedPkg!.manifest.experienceId, experienceId);
+        // 4. Persist and verify
+        final persistedPkg = await pipeline.repository.getPackage(experienceId);
+        expect(persistedPkg, isNotNull);
+        expect(persistedPkg!.manifest.experienceId, experienceId);
 
-      // 5. Open through trusted coordinator
-      final openResult = await pipeline.openingCoordinator.openExperience(experienceId);
-      expect(openResult, isA<OpenReady>());
-      final opened = openResult as OpenReady;
-      expect(opened.experienceId, experienceId);
-      expect(opened.package.manifest.experienceId, experienceId);
+        // 5. Open through trusted coordinator
+        final openResult = await pipeline.openingCoordinator.openExperience(
+          experienceId,
+        );
+        expect(openResult, isA<OpenReady>());
+        final opened = openResult as OpenReady;
+        expect(opened.experienceId, experienceId);
+        expect(opened.package.manifest.experienceId, experienceId);
 
-      // 6. Open through Runtime
-      final runtime = AnythingRuntime();
-      final session = await runtime.openExperience(opened.package);
-      expect(session.status, SessionStatus.running);
-      expect(session.experienceId, experienceId);
+        // 6. Open through Runtime
+        final runtime = AnythingRuntime();
+        final session = await runtime.openExperience(opened.package);
+        expect(session.status, SessionStatus.running);
+        expect(session.experienceId, experienceId);
 
-      runtime.closeSession();
-    });
+        runtime.closeSession();
+      },
+    );
 
     test('People Tracker — exact birth identity', () async {
-      final result = await pipeline.creationCoordinator
-          .createFromExpression('Make me an app to keep track of people I meet.');
+      final result = await pipeline.creationCoordinator.createFromExpression(
+        'Make me an app to keep track of people I meet.',
+      );
 
       expect(result, isA<CreationCreated>());
       final created = result as CreationCreated;
       final experienceId = created.experienceId;
 
       // Verify the opened experience ID matches the created ID exactly
-      final openResult =
-          await pipeline.openingCoordinator.openExperience(experienceId);
+      final openResult = await pipeline.openingCoordinator.openExperience(
+        experienceId,
+      );
       expect(openResult, isA<OpenReady>());
       expect((openResult as OpenReady).experienceId, experienceId);
     });
 
     test('People Tracker — CRUD through runtime data layer', () async {
-      final result = await pipeline.creationCoordinator
-          .createFromExpression('Make me an app to keep track of people I meet.');
+      final result = await pipeline.creationCoordinator.createFromExpression(
+        'Make me an app to keep track of people I meet.',
+      );
       final created = result as CreationCreated;
       final pkg = created.package;
 
@@ -647,7 +668,10 @@ void main() {
       await runtime.openExperience(pkg);
 
       final dataRuntime = ExperienceDataRuntime();
-      dataRuntime.initialize(pkg.data!, experienceId: pkg.manifest.experienceId);
+      dataRuntime.initialize(
+        pkg.data!,
+        experienceId: pkg.manifest.experienceId,
+      );
 
       // CREATE Alice
       await dataRuntime.insert('person', {
@@ -667,7 +691,9 @@ void main() {
       expect(allPeople.length, greaterThanOrEqualTo(1));
 
       // UPDATE Alice
-      await dataRuntime.update('person', 'alice-001', {'notes': 'Updated notes'});
+      await dataRuntime.update('person', 'alice-001', {
+        'notes': 'Updated notes',
+      });
       final updatedAlice = await dataRuntime.readById('person', 'alice-001');
       expect(updatedAlice!['notes'], 'Updated notes');
 
@@ -681,8 +707,9 @@ void main() {
     });
 
     test('People Tracker — persistence restart survival', () async {
-      final result = await pipeline.creationCoordinator
-          .createFromExpression('Make me an app to keep track of people I meet.');
+      final result = await pipeline.creationCoordinator.createFromExpression(
+        'Make me an app to keep track of people I meet.',
+      );
       final created = result as CreationCreated;
       final pkg = created.package;
       final experienceId = pkg.manifest.experienceId;
@@ -703,8 +730,9 @@ void main() {
       await dr1.dispose();
 
       // Re-open from persistence through trusted coordinator
-      final openResult =
-          await pipeline.openingCoordinator.openExperience(experienceId);
+      final openResult = await pipeline.openingCoordinator.openExperience(
+        experienceId,
+      );
       expect(openResult, isA<OpenReady>());
 
       // Second session: verify data survives
@@ -722,7 +750,9 @@ void main() {
       runtime2.closeSession();
     });
 
-    testWidgets('People Tracker — rendering with runtime context', (tester) async {
+    testWidgets('People Tracker — rendering with runtime context', (
+      tester,
+    ) async {
       final renderer = ExperienceRenderer();
       final stateEngine = ExperienceStateEngine();
       stateEngine.initialize(const StateSchema());
@@ -765,11 +795,8 @@ void main() {
         MaterialApp(
           home: Scaffold(
             body: Builder(
-              builder: (context) => renderer.render(
-                context,
-                interface,
-                stateEngine,
-              ),
+              builder: (context) =>
+                  renderer.render(context, interface, stateEngine),
             ),
           ),
         ),
@@ -943,8 +970,9 @@ void main() {
       expect(pkg.data!.entities, isNotEmpty);
 
       // Persist and reopen
-      final openResult =
-          await pipeline.openingCoordinator.openExperience(experienceId);
+      final openResult = await pipeline.openingCoordinator.openExperience(
+        experienceId,
+      );
       expect(openResult, isA<OpenReady>());
 
       // Runtime CRUD
@@ -1081,11 +1109,8 @@ void main() {
         MaterialApp(
           home: Scaffold(
             body: Builder(
-              builder: (context) => renderer.render(
-                context,
-                interface,
-                stateEngine,
-              ),
+              builder: (context) =>
+                  renderer.render(context, interface, stateEngine),
             ),
           ),
         ),
@@ -1165,8 +1190,9 @@ void main() {
         _PeopleTrackerModelProvider(),
         dbName: 'iso_a_${DateTime.now().microsecondsSinceEpoch}.db',
       );
-      final resultA = await pipelineA.creationCoordinator
-          .createFromExpression('Make me an app to keep track of people I meet.');
+      final resultA = await pipelineA.creationCoordinator.createFromExpression(
+        'Make me an app to keep track of people I meet.',
+      );
       final pkgA = (resultA as CreationCreated).package;
 
       // Create Experience B
@@ -1174,8 +1200,9 @@ void main() {
         _FossilCatalogModelProvider(),
         dbName: 'iso_b_${DateTime.now().microsecondsSinceEpoch}.db',
       );
-      final resultB = await pipelineB.creationCoordinator
-          .createFromExpression('Make me an app to catalog fossils.');
+      final resultB = await pipelineB.creationCoordinator.createFromExpression(
+        'Make me an app to catalog fossils.',
+      );
       final pkgB = (resultB as CreationCreated).package;
 
       // Initialize data runtimes with different experience IDs
@@ -1185,14 +1212,8 @@ void main() {
       drB.initialize(pkgB.data!, experienceId: pkgB.manifest.experienceId);
 
       // Seed distinct data
-      await drA.insert('person', {
-        'id': 'p-alice',
-        'name': 'Alice',
-      });
-      await drB.insert('fossil', {
-        'id': 'f-trilo',
-        'name': 'Trilobite',
-      });
+      await drA.insert('person', {'id': 'p-alice', 'name': 'Alice'});
+      await drB.insert('fossil', {'id': 'f-trilo', 'name': 'Trilobite'});
 
       // Verify data exists in each runtime
       final aPeople = await drA.query('person');
@@ -1216,9 +1237,11 @@ void main() {
   group('Reactivity', () {
     test('StateEngine write triggers stream update', () async {
       final stateEngine = ExperienceStateEngine();
-      stateEngine.initialize(StateSchema(variables: [
-        const StateVariable(id: 'test_key', type: 'string'),
-      ]));
+      stateEngine.initialize(
+        StateSchema(
+          variables: [const StateVariable(id: 'test_key', type: 'string')],
+        ),
+      );
 
       final values = <dynamic>[];
       stateEngine.watch('test_key').listen((v) => values.add(v));
@@ -1241,8 +1264,9 @@ void main() {
         _PeopleTrackerModelProvider(),
         dbName: 'react_${DateTime.now().microsecondsSinceEpoch}.db',
       );
-      final result = await pipeline.creationCoordinator
-          .createFromExpression('Make me an app to keep track of people I meet.');
+      final result = await pipeline.creationCoordinator.createFromExpression(
+        'Make me an app to keep track of people I meet.',
+      );
       final pkg = (result as CreationCreated).package;
 
       final runtime = AnythingRuntime();
@@ -1254,10 +1278,7 @@ void main() {
       await dr.insert('person', {'id': 'p1', 'name': 'Alice'});
 
       // QueryController
-      final qc = ExperienceQueryController(
-        entityId: 'person',
-        dataRuntime: dr,
-      );
+      final qc = ExperienceQueryController(entityId: 'person', dataRuntime: dr);
 
       await qc.refresh();
       final initialCount = qc.results.length;
@@ -1279,48 +1300,53 @@ void main() {
   // SYNTHESIS INFORMATION PRESERVATION
   // ═════════════════════════════════════════════════════════════════════
   group('Synthesis Information Preservation', () {
-    test('Rich model result preserves all semantics through full pipeline', () async {
-      final pipeline = _buildPipeline(
-        _EquipmentLendingModelProvider(),
-        dbName: 'synth_${DateTime.now().microsecondsSinceEpoch}.db',
-      );
-      final result = await pipeline.creationCoordinator.createFromExpression(
-        'Make me an app to manage equipment I lend to people.',
-      );
+    test(
+      'Rich model result preserves all semantics through full pipeline',
+      () async {
+        final pipeline = _buildPipeline(
+          _EquipmentLendingModelProvider(),
+          dbName: 'synth_${DateTime.now().microsecondsSinceEpoch}.db',
+        );
+        final result = await pipeline.creationCoordinator.createFromExpression(
+          'Make me an app to manage equipment I lend to people.',
+        );
 
-      expect(result, isA<CreationCreated>());
-      final pkg = (result as CreationCreated).package;
+        expect(result, isA<CreationCreated>());
+        final pkg = (result as CreationCreated).package;
 
-      // Verify entities preserved
-      expect(pkg.data!.entities.length, greaterThanOrEqualTo(2));
-      final entityNames = pkg.data!.entities.map((e) => e.name).toList();
-      expect(entityNames, contains('Person'));
+        // Verify entities preserved
+        expect(pkg.data!.entities.length, greaterThanOrEqualTo(2));
+        final entityNames = pkg.data!.entities.map((e) => e.name).toList();
+        expect(entityNames, contains('Person'));
 
-      // Verify reference fields preserved
-      final hasRef = pkg.data!.entities.any(
-        (e) => e.fields.any((f) => f.type == 'reference'),
-      );
-      expect(hasRef, isTrue);
+        // Verify reference fields preserved
+        final hasRef = pkg.data!.entities.any(
+          (e) => e.fields.any((f) => f.type == 'reference'),
+        );
+        expect(hasRef, isTrue);
 
-      // Verify views exist
-      expect(pkg.interface.screens.length, greaterThanOrEqualTo(2));
+        // Verify views exist
+        expect(pkg.interface.screens.length, greaterThanOrEqualTo(2));
 
-      // Verify actions exist
-      expect(pkg.behavior.nodes, isNotEmpty);
+        // Verify actions exist
+        expect(pkg.behavior.nodes, isNotEmpty);
 
-      // Validate entire package
-      final validation = validator.ExperiencePackageValidator.validate(pkg);
-      expect(validation.isValid, isTrue);
+        // Validate entire package
+        final validation = validator.ExperiencePackageValidator.validate(pkg);
+        expect(validation.isValid, isTrue);
 
-      await pipeline.close();
-    });
+        await pipeline.close();
+      },
+    );
   });
 
   // ═════════════════════════════════════════════════════════════════════
   // ACTUAL WIDGET ACTIONS
   // ═════════════════════════════════════════════════════════════════════
   group('Widget Interaction', () {
-    testWidgets('Button tap fires action through ExperienceRenderer', (tester) async {
+    testWidgets('Button tap fires action through ExperienceRenderer', (
+      tester,
+    ) async {
       final renderer = ExperienceRenderer();
       final stateEngine = ExperienceStateEngine();
 
@@ -1371,7 +1397,9 @@ void main() {
       stateEngine.dispose();
     });
 
-    testWidgets('Switch state binding writes through StateEngine', (tester) async {
+    testWidgets('Switch state binding writes through StateEngine', (
+      tester,
+    ) async {
       final renderer = ExperienceRenderer();
       final stateEngine = ExperienceStateEngine();
       stateEngine.initialize(const StateSchema());
@@ -1397,11 +1425,8 @@ void main() {
         MaterialApp(
           home: Scaffold(
             body: Builder(
-              builder: (context) => renderer.render(
-                context,
-                interface,
-                stateEngine,
-              ),
+              builder: (context) =>
+                  renderer.render(context, interface, stateEngine),
             ),
           ),
         ),

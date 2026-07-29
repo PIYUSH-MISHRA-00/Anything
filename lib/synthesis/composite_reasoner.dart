@@ -30,9 +30,7 @@ class CompositeApplicationReasoner implements ApplicationReasoner {
        _providerRegistry = providerRegistry;
 
   @override
-  Future<AppReasoningResult> reason(
-    ApplicationReasoningContext context,
-  ) async {
+  Future<AppReasoningResult> reason(ApplicationReasoningContext context) async {
     // Step 1: Try deterministic reasoning
     final deterministicResult = await _deterministic.reason(context);
 

@@ -367,7 +367,8 @@ class _ExperienceHostScreenState extends State<ExperienceHostScreen> {
 
     final renderer = ExperienceRenderer();
     final screens = _currentPackage.interface.screens;
-    final screenId = _router?.currentScreenId ??
+    final screenId =
+        _router?.currentScreenId ??
         (screens.isNotEmpty ? screens.first.id : 'main');
     final runtimeContext = _runtime.runtimeContext;
 
@@ -413,10 +414,12 @@ class _ExperienceHostScreenState extends State<ExperienceHostScreen> {
               onDestinationSelected: (index) {
                 setState(() => _currentTabIndex = index);
                 final targetScreenId = _getScreenIdForTab(index);
-                _router?.navigate(NavigationRequest(
-                  action: NavigationAction.switchTab,
-                  targetScreenId: targetScreenId,
-                ));
+                _router?.navigate(
+                  NavigationRequest(
+                    action: NavigationAction.switchTab,
+                    targetScreenId: targetScreenId,
+                  ),
+                );
               },
               destinations: _navigationItems
                   .take(5)

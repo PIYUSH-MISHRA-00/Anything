@@ -41,10 +41,10 @@ class ExperienceFormController {
     this.mode = FormMode.create,
     Map<String, dynamic>? initialValues,
     List<FormFieldDefinition>? fieldDefinitions,
-  })  : _initialValues = Map<String, dynamic>.from(initialValues ?? {}),
-        _currentValues = Map<String, dynamic>.from(initialValues ?? {}),
-        _fieldErrors = {},
-        _fieldDefinitions = fieldDefinitions ?? [] {
+  }) : _initialValues = Map<String, dynamic>.from(initialValues ?? {}),
+       _currentValues = Map<String, dynamic>.from(initialValues ?? {}),
+       _fieldErrors = {},
+       _fieldDefinitions = fieldDefinitions ?? [] {
     _validateSilent();
   }
 
@@ -110,6 +110,7 @@ class ExperienceFormController {
     _notifyChanged();
     return valid;
   }
+
   /// Validate a single field.
   String? _validateField(FormFieldDefinition field, dynamic value) {
     if (field.required && (value == null || value.toString().isEmpty)) {
@@ -168,12 +169,14 @@ class ExperienceFormController {
 
   void _notifyChanged() {
     if (!_stateController.isClosed) {
-      _stateController.add(FormState(
-        isDirty: isDirty,
-        isValid: isValid,
-        values: Map<String, dynamic>.from(_currentValues),
-        errors: Map<String, String>.from(_fieldErrors),
-      ));
+      _stateController.add(
+        FormState(
+          isDirty: isDirty,
+          isValid: isValid,
+          values: Map<String, dynamic>.from(_currentValues),
+          errors: Map<String, String>.from(_fieldErrors),
+        ),
+      );
     }
   }
 

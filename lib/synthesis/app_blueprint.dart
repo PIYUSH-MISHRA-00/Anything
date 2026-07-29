@@ -194,6 +194,7 @@ class BlueprintField {
     this.defaultValue,
     this.minimum,
     this.maximum,
+    this.minLength,
     this.maxLength,
     this.allowedValues = const [],
     this.description = '',
@@ -207,6 +208,7 @@ class BlueprintField {
   final String? defaultValue;
   final num? minimum;
   final num? maximum;
+  final int? minLength;
   final int? maxLength;
   final List<String> allowedValues;
   final String description;
@@ -220,6 +222,7 @@ class BlueprintField {
     if (defaultValue != null) 'defaultValue': defaultValue,
     if (minimum != null) 'minimum': minimum,
     if (maximum != null) 'maximum': maximum,
+    if (minLength != null) 'minLength': minLength,
     if (maxLength != null) 'maxLength': maxLength,
     if (allowedValues.isNotEmpty) 'allowedValues': allowedValues,
     'description': description,
@@ -235,6 +238,7 @@ class BlueprintField {
       defaultValue: json['defaultValue'] as String?,
       minimum: json['minimum'] as num?,
       maximum: json['maximum'] as num?,
+      minLength: json['minLength'] as int?,
       maxLength: json['maxLength'] as int?,
       allowedValues: (json['allowedValues'] as List?)?.cast<String>() ?? [],
       description: json['description'] as String? ?? '',

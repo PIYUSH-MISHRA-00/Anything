@@ -41,9 +41,9 @@ class ExperienceQueryController {
     required this.entityId,
     required ExperienceDataRuntime dataRuntime,
     DataQuery? initialQuery,
-  })  : _dataRuntime = dataRuntime,
-        _queryEngine = DataQueryEngine(),
-        _currentQuery = initialQuery ?? DataQuery(entityId: entityId);
+  }) : _dataRuntime = dataRuntime,
+       _queryEngine = DataQueryEngine(),
+       _currentQuery = initialQuery ?? DataQuery(entityId: entityId);
 
   /// Refresh query results.
   Future<void> refresh() async {
@@ -174,12 +174,14 @@ class ExperienceQueryController {
 
   void _notifyState() {
     if (!_stateController.isClosed) {
-      _stateController.add(QueryState(
-        status: _status,
-        results: _results,
-        errorMessage: _errorMessage,
-        count: _results.length,
-      ));
+      _stateController.add(
+        QueryState(
+          status: _status,
+          results: _results,
+          errorMessage: _errorMessage,
+          count: _results.length,
+        ),
+      );
     }
   }
 
