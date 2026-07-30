@@ -1,0 +1,101 @@
+# Anything v2.0.0 — Completion Roadmap
+
+Built from the gaps documented in `docs/audit/V2_CURRENT_STATE_AUDIT.md`, `V2_VISION_GAP_MATRIX.md`, `V2_TEST_EVIDENCE_MATRIX.md`, `V2_SECURITY_AUDIT.md`, `V2_DESIGN_PARITY.md`, and `V2_RELEASE_READINESS.md` — not from historical stage numbering. Six milestones, ending at v2.0.0 Release Candidate.
+
+---
+
+## M1 — Stage 11 Truthful Closure (S/M)
+
+**Objective:** One real, passing, end-to-end certification test proving: user expression → `IntentComposer` → production creation pipeline → generated `ExperiencePackage` → package validation → Experience persistence → trusted opening → production `ExperienceHostScreen` → real SQLite → generated Add/Save/Edit/Search/Delete through the actual generated UI → Runtime+Database close → fresh trusted reopen of the same SQLite file → fresh Runtime → fresh production host → edited record survives → deleted record stays absent. No cached/in-memory write path, no direct `DataRuntime` bypass for the restart proof, no test-only host, no optional assertions on required behavior.
+
+**Why it exists:** this is the one concrete, high-confidence gap blocking every downstream claim about the product working. The production DI plumbing needed already exists (verified this audit) — `AnythingRuntime(dataRuntime: ...)`, `ExperienceDataRuntime(database: ...)`, `ExperienceDatabase(customPath: ...)`, and `ExperienceHostScreen(runtime: ...)` with correct ownership semantics. What's missing is a test that actually uses that plumbing honestly through `tester.runAsync()` for the real async SQLite calls triggered by widget interaction, instead of caching writes or bypassing the UI.
+
+**Dependencies:** none blocking — can start immediately.
+
+**Production changes:** likely none required (the DI surface is already correct); if the shader/environment issue turns out to be reproducible outside this specific machine, consider setting an explicit `splashFactory` (e.g. `InkRipple.splashFactory`) in `lib/design_system/theme/anything_theme.dart` for robustness, independent of whether it's the actual root cause here.
+
+**Tests:** one new test file (or a rewritten `stage11_5`) using `tester.runAsync()` to wrap every real-SQLite-triggering interaction; retire or clearly relabel `stage11_real_generated_app_test.dart` (drop the 16 optional assertions or make them mandatory) and fix `stage11_user_path_certification_test.dart` Group J to go through the UI instead of calling `DataRuntime.insert` directly. Add one dedicated novel-domain synthesis test (a domain with zero footprint in `lib/`, e.g. "community garden plot tracker") as a clean, standalone artifact proving open-world synthesis, separate from the restart certification.
+
+**Security considerations:** none — this is a test-truthfulness fix, not a boundary change.
+
+**Design requirements:** none.
+
+**Acceptance gate:** the new certification test passes in a clean environment (confirm the shader issue isn't masking it); `docs/progress/V2_STAGE_11.md` updated with a dated, execution-verified test count; no remaining "certification" test in `test/stage11/` contains a false claim about what it proves.
+
+---
+
+## M2 — Security & Runtime Coverage Closure (M)
+
+**Objective:** Close every UNKNOWN in `V2_SECURITY_AUDIT.md`: behavior-graph cycle safety under a malicious/malformed graph, component-tree budget enforcement (verify it's the production validator under test, not a reimplementation), query-controller budgets/pagination/allowed-fields, per-capability audit for Clock/Notifications/AI/Knowledge/File (registration, ownership, budget, permission model), HTTP capability gaps (10.0.0.0/8 coverage, redirect re-validation, size/timeout enforcement), migration system audit (stable IDs, transactional, malicious-identifier defense), modification engine audit (data preservation, versioning, rollback), relationship referential-integrity-on-delete behavior, secure-storage usage pattern for API keys.
+
+**Why it exists:** these aren't known holes, but "unknown" is not an acceptable state to ship on for a security boundary that generated, LLM-produced applications run inside of.
+
+**Dependencies:** none blocking; can run in parallel with M1.
+
+**Production changes:** fix whatever the audit finds; expect this to be mostly verification with a handful of small hardening fixes, not a redesign (per repo evidence, the boundary architecture is already sound).
+
+**Tests:** one regression test per confirmed gap; a dedicated malicious-behavior-graph test (cycle, oversized graph) if not already covered.
+
+**Acceptance gate:** every row in `V2_SECURITY_AUDIT.md` and the security-related rows of `V2_VISION_GAP_MATRIX.md` reads VERIFIED, not UNKNOWN.
+
+---
+
+## M3 — Design Parity & Accessibility Pass (M)
+
+**Objective:** Establish a definitive mapping of which ~10-15 Stitch screens (of the ~85 in `design/stitch/product_foundation/`) are canonical for v2.0.0 scope, then do a real screen-by-screen comparison against the four live screens (Home, My Apps, Activity, Preferences) plus creation/birth flow, Experience host, and empty/error states. Follow with an accessibility pass (semantic labels, touch targets, text scaling, contrast, reduced motion) and confirm tablet/responsive behavior. Resolve the ink-sparkle/theme question from M1 as part of this (does the design call for Material sparkle ripple or not).
+
+**Why it exists:** the vision brief is explicit that design is a product requirement, not decoration, and this was the one area this audit could not verify at all due to the research-agent cutoff.
+
+**Dependencies:** benefits from M1's theme decision but isn't blocked by it.
+
+**Production changes:** UI/theme adjustments as gaps are found; move search filtering into the query layer if scale testing during this pass shows it's needed (currently client-side over the full result set).
+
+**Design requirements:** the mapping doc itself (extend `docs/design/STITCH_IMPLEMENTATION_MAP.md`).
+
+**Acceptance gate:** a completed, evidence-based `V2_DESIGN_PARITY.md` with no UNKNOWN rows for the in-scope screens; accessibility checklist passes on the four live screens.
+
+---
+
+## M4 — Knowledge & Modification Depth (M)
+
+**Objective:** Verify and, where needed, harden: (a) WebWeaveX-retrieved content is treated as untrusted data in the synthesis/reasoning prompt pipeline, never as instructions that can alter trust decisions (Part LIX's prompt-injection concern); (b) the modification engine's full path (scoped modification intent → reasoning → candidate package → validation → migration → activation → rollback) preserves data and correctly versions, with a real test exercising it end-to-end through production coordinators, not hand-authored packages; (c) model-output robustness (schema validation, malformed/hallucinated component or capability types, oversized output) is handled as untrusted input throughout.
+
+**Why it exists:** these are the two "AI is doing the generating, and the internet is feeding it knowledge" trust boundaries the vision brief calls out explicitly (Parts LVI, LVIII, LIX) and that weren't independently re-verified this audit.
+
+**Dependencies:** benefits from M1 (shares certification-test patterns) and M2 (shares security-audit methodology).
+
+**Production changes:** expected — this is the most likely milestone to surface a real gap requiring new code, since modification/knowledge-trust wasn't confirmed working at all in this pass, only confirmed to architecturally exist.
+
+**Acceptance gate:** one production-path modification test proving data preservation across a real NL-driven modification; documented, verified answer to "is retrieved knowledge ever treated as authority" with evidence either way.
+
+---
+
+## M5 — Android / Play Store Readiness (S/M)
+
+**Objective:** Verify and close: application ID, versionName/versionCode, min/target/compile SDK, declared permissions match actual capability usage, network security config, signing configuration (verify configured without exposing secrets), adaptive icon, `flutter build apk --debug` and (where a signing environment is available) release build both succeed.
+
+**Why it exists:** not independently checked at all in this audit pass; unknown is not the same as ready.
+
+**Dependencies:** none blocking.
+
+**Acceptance gate:** debug build succeeds; readiness checklist in `docs/release/PLAY_STORE_READINESS.md` updated with verified (not aspirational) status.
+
+---
+
+## M6 — OSS & Release Engineering (M)
+
+**Objective:** Add `LICENSE` (pick and confirm a license — user decision, not a default to assume), `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `SECURITY.md`, `CHANGELOG.md`, `.github/workflows` (at minimum: format check, analyze, test on push/PR), issue and PR templates. Rewrite `README.md` to describe the actual v2 architecture (kernel/synthesis/creation/runtime, BYOK providers, Kaalka/WebWeaveX roles) instead of the stale v1 Groq/AUIL description. Remove the dead `lib/screens/*` (12 files) and `lib/tools/*` v1 code identified in this audit so a new contributor doesn't mistake it for live code. Verify `docs/oss/THIRD_PARTY_NOTICES.md` is current against the actual dependency list.
+
+**Why it exists:** zero OSS scaffolding exists today; this is expected at this stage of development but is real, non-trivial work standing between the current repo and a public release.
+
+**Dependencies:** should come after M1-M5 substantively land, since the README and CI gates should describe/enforce a codebase that's actually in the state being claimed.
+
+**Acceptance gate:** a first-time contributor can clone, read CONTRIBUTING.md, run the documented setup steps, and open a PR that passes CI, without needing any context from this audit.
+
+---
+
+## v2.0.0 Release Candidate
+
+**Objective:** All of M1-M6 acceptance gates met; `flutter analyze` clean; full `flutter test` suite passes (not just the subsets exercised in this audit); `flutter build apk --debug` succeeds and release build succeeds where a signing environment is available; no UNKNOWN rows remain in `V2_VISION_GAP_MATRIX.md` for anything in v2.0.0 scope; `docs/progress/V2_STAGE_11.md` and other stage docs reflect actual, dated, execution-verified state; CI is green on the release branch.
+
+**Acceptance gate:** this document's own checklist, re-run and all green, immediately before tagging.
