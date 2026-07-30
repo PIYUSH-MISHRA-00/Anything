@@ -6,21 +6,14 @@ library;
 import '../understanding/intent_understanding.dart';
 
 /// Resolves whether an existing Experience matches a user expression.
+///
+/// Holds no built-in domain knowledge: it only matches experiences that
+/// have been explicitly registered (e.g. from ExperienceRepository), so
+/// open-world synthesis is never short-circuited by a hardcoded domain.
 class ExperienceResolver {
-  // In Stage 4, this uses a simple in-memory fixture.
-  // Future: use ExperienceRepository for real persistence.
-
-  /// Known experience fixtures for testing.
   final Map<String, _ExperienceEntry> _fixtures = {};
 
-  ExperienceResolver() {
-    // Seed with a test fixture
-    _fixtures['calculator'] = _ExperienceEntry(
-      id: 'exp-calculator-001',
-      name: 'Calculator',
-      keywords: ['calculator', 'calc', 'math', 'arithmetic'],
-    );
-  }
+  ExperienceResolver();
 
   /// Register an experience for resolution.
   void registerExperience(String id, String name, List<String> keywords) {
