@@ -1,15 +1,17 @@
 # Anything v2.0.0 — Current State Audit
 
-**Date:** 2026-07-30
+**Date:** 2026-07-30, updated 2026-07-31 (M1 — Stage 11 Truthful Closure)
 **Method:** Direct repository inspection (git, source, tests) plus targeted parallel research agents. Several parallel research agents were terminated mid-task by an account-level session rate limit before delivering complete reports; where that happened, findings below were reconstructed by direct inspection instead and the doc says so explicitly. This document reports only what was directly observed in source/tests/execution, not what documentation claims.
 
 ## 1. Executive Summary
 
 The v2 architecture is real and substantially implemented, not a facade: intent → kernel → synthesis → CreationEngine → ExperiencePackage → AnythingRuntime → generated UI → SQLite is a genuine, generically-implemented pipeline with no arbitrary code execution, a real Kaalka protection boundary (18/18 Stage 9.4 tests pass against real Kaalka), a single clean WebWeaveX import site, and solid HTTP/SSRF defenses. `flutter analyze` is clean (0 errors). Working-tree (uncommitted) changes to the runtime/creation layer are legitimate, well-targeted production fixes (correct DI ownership semantics in `ExperienceHostScreen`, generic event-to-behavior-node resolution, edit-screen generation, search wiring) — not test-cheating.
 
-However, **Stage 11's "final certification" claim is not true.** The newest certification test (`stage11_5_production_certification_test.dart`, untracked) explicitly fakes its write path with an in-memory cache while its own docstring claims real SQLite writes, and it fails when actually executed. Other Stage 11 "certification" files bypass the production host/UI for the restart proof, or use test-only host/runtime reimplementations with optional assertions. A separate, independent, real architectural defect was also found and fixed during this audit: `ExperienceResolver` (wired live into `AnythingKernel`) hardcoded a `'calculator'` keyword match that could hijack any user expression containing "calc"/"math"/"arithmetic" — a direct violation of the no-domain-branching principle, and a dangling reference since nothing ever populated real entries.
+**M1 update (2026-07-31): Stage 11's restart certification gap identified below is now closed.** `test/stage11/stage11_final_production_certification_test.dart` is a new, real, passing, production-path certification proving the full vertical slice — real synthesis (novel domain, only the LLM faked), real generated UI, real SQLite, and a genuine Runtime/Database destroy-and-recreate restart — with no cache, no test-side host, and no optional assertions. Getting there required four additional production fixes (§7), all generic, none domain-specific: a test-environment SQLite factory switch, a router validation bug that silently no-op'd every "pop back to list" action, a missing router history seed that broke pop-to-root semantics on first navigation, and a missing widget key that permanently discarded async-loaded record data in edit forms. The two prior false/weak "certification" test files were deleted; a third file's misleading restart claim was relabeled to its true (narrower) scope. Full details: `docs/progress/V2_STAGE_11.md` ("M1 — Stage 11 Truthful Closure" section) and `docs/audit/V2_TEST_EVIDENCE_MATRIX.md`.
 
-**Verdict: ARCHITECTURE HEALTHY — CRITICAL PRODUCT GAPS REMAIN.** The foundation (security boundary, persistence, DI, generic renderer/behavior wiring) is sound. What's missing is not architecture but a *truthful, passing* end-to-end certification, plus release-readiness scaffolding (no LICENSE, no CI, stale README, Android signing unverified).
+A separate, independent, real architectural defect was also found and fixed in the original pass: `ExperienceResolver` (wired live into `AnythingKernel`) hardcoded a `'calculator'` keyword match that could hijack any user expression containing "calc"/"math"/"arithmetic" — a direct violation of the no-domain-branching principle, and a dangling reference since nothing ever populated real entries.
+
+**Verdict: ARCHITECTURE HEALTHY — CRITICAL PRODUCT GAPS REMAIN, Stage 11 now truthfully closed.** The foundation (security boundary, persistence, DI, generic renderer/behavior wiring) is sound and now has a real, passing, end-to-end certification behind it. What remains is release-readiness scaffolding (no LICENSE, no CI, stale README, Android signing unverified) and the still-open security/design coverage gaps tracked in the Vision Gap Matrix (M2-M6) — none of which block M1's closure.
 
 ## 2. Git State
 
@@ -73,9 +75,22 @@ All of the above are **generic** — no per-entity or per-domain code paths; ent
 - `AnythingRuntime.closeSession()` is now correctly `async` and awaits `_dataRuntime.dispose()`, which awaits `_database.close()` — a real, ordered SQLite close, not fire-and-forget.
 - **Nobody in the current test suite exercises this real DI path end-to-end through the actual generated UI for a restart proof** — see §7.
 
-## 7. Stage 11 Certification — NOT TRUTHFULLY COMPLETE
+## 7. Stage 11 Certification — CLOSED (M1, 2026-07-31)
 
-Directly verified (source read + actual `flutter test` execution, not just static review):
+**Update:** the gap documented in this section (as found on 2026-07-30) is now closed. `test/stage11/stage11_final_production_certification_test.dart` (new) is a real, passing PRODUCTION-PATH CERTIFICATION: novel domain (community garden plots, zero footprint in `lib/`, verified by an in-test scan) synthesized through the real Kernel/reasoner/CreationEngine pipeline with only the `ModelProvider` faked; every mutation driven by a real widget tap on real generated UI; real SQLite via `databaseFactoryFfiNoIsolate`; a genuine Runtime A / Database A close, fresh trusted reopen, fresh Database B at the same file path, fresh Runtime B, fresh `ExperienceHostScreen` B; surviving edited record and absent deleted record asserted through generated UI first, SQLite as secondary evidence. `flutter test test/stage11` now reports **200/200 pass, 0 failures** (was 194/199 pass, 5 fail on 2026-07-30).
+
+Four additional production fixes were required to make this possible, all generic (none domain-specific), found by debugging the new test against real production code rather than by inspection alone:
+
+1. **Test environment only** — `databaseFactoryFfiNoIsolate` instead of `databaseFactoryFfi` in test setup. `sqflite_common_ffi`'s isolate-based worker cannot complete its message round trip inside `testWidgets`'s FakeAsync zone, even wrapped in `tester.runAsync()` (reproduced directly: `TimeoutException` stuck in `dart:isolate _RawReceivePort._handleMessage`). NoIsolate mode is still real SQLite (real FFI calls to libsqlite3), just without the deadlocking worker isolate. Not a production code change.
+2. **`lib/runtime/experience_router.dart`** (production fix) — `ExperienceRouter.navigate()` rejected `NavigationAction.pop` requests because the host passed `targetScreenId: ''` (empty string) and the validation only special-cased `null`, not empty string. Every generated-UI "pop back to list" action (after save, after delete) was silently failing this check and no-op'ing. This is a real, generic navigation defect — fixed by treating empty and null the same for actions that don't require a target screen.
+3. **`lib/runtime/experience_host_screen.dart`** (production fix) — added `_seedDefaultScreen()`. The default/tab screen was shown implicitly via an empty router history rather than being pushed onto it, so the first user-initiated push left history at length 1, and `ExperienceRouter._pop()`'s length-≤1 "already at root" fallback then kept that same pushed screen instead of returning to the default. Fixed by explicitly pushing the default screen once, consistent with `ExperienceRouter`'s own existing (and correct) "pop to root" contract.
+4. **`lib/runtime/experience_renderer.dart`** (production fix) — `_EntityFormWidget` had no `Key` distinguishing "record not yet loaded" from "record loaded." Edit-mode record loading is asynchronous; the form's first build (before the real record arrives) permanently seeded its `ExperienceFormController` and each field's uncontrolled `TextFormField.initialValue` with empty values, and neither re-initializes on a later rebuild without a key change — so any edit form for any generated entity would silently discard the user's typed edit for a field whose original value hadn't loaded yet. Fixed by keying the widget on `${entityId}_${mode}_${currentRecord['id'] ?? 'new'}`.
+
+`stage11_5_production_certification_test.dart` and `stage11_real_generated_app_test.dart` (both described below as the source of the false/weak claims) have been **deleted** — fully superseded. `stage11_user_path_certification_test.dart`'s Group J was relabeled from "Restart preserves data" to "Data runtime persistence (SQLite-level unit test, not a full-lifecycle restart certification)" to accurately scope what it actually tests.
+
+The findings below are preserved as the historical record of what was wrong and why (per audit instructions: do not erase history, do not pretend earlier tests were stronger than they were).
+
+Directly verified on 2026-07-30 (source read + actual `flutter test` execution, not just static review):
 
 - **`test/stage11/stage11_5_production_certification_test.dart`** (untracked, self-labeled "Stage 11.6 — Final certification... Writes still go through real ExperienceDatabase"): **False.** `_CachedDataRuntime.insert/update/delete` (lines ~250-279) write only to an in-memory `Map`, with the code comment "real DB writes deferred to avoid FFI hangs in testWidgets." Running this file directly (`flutter test test/stage11/stage11_5_production_certification_test.dart`) **fails**: `CRUD: create Alice -> detail -> edit -> create Bob -> search -> delete` throws, first hitting an environment-level shader exception (see below) and then failing `expect(... 'Edit' ...)` because the async record load hadn't resolved before the assertion ran — a real fragility in the test's pump sequencing, not a missing feature (the Edit button code itself is present and correct in `experience_renderer.dart`).
 - **`test/stage11/stage11_user_path_certification_test.dart`**: has good, real, individually-scoped production-path widget tests for tap-wiring, form submit, search, CRUD — but its restart proof (`group('J. Restart preserves data')`, a plain `test()`, not `testWidgets()`) calls `dataRuntime1.insert(...)` **directly**, bypassing `IntentComposer` → coordinators → `ExperienceHostScreen` → generated UI entirely. This is exactly the Part X-described defect ("restart proof queried fresh DataRuntime directly instead of reopening through trusted opening + production host + generated UI") and it is still present.
@@ -113,26 +128,51 @@ Directly verified: **no** `LICENSE`, **no** `CONTRIBUTING.md`, **no** `CODE_OF_C
 
 ## 12. Changes Made This Run
 
+Original audit pass (2026-07-30):
+
 | File | Change | Reason | Test |
 |---|---|---|---|
-| `lib/kernel/resolution/experience_resolver.dart` | Removed hardcoded `'calculator'` fixture seed from constructor | Live domain-branch violation + dangling-reference bug in the production kernel path (§8) | Verified no test depends on the old id (grep); kernel/creation/stage10 suites re-run to confirm no regression (see §22) |
+| `lib/kernel/resolution/experience_resolver.dart` | Removed hardcoded `'calculator'` fixture seed from constructor | Live domain-branch violation + dangling-reference bug in the production kernel path (§8) | Verified no test depends on the old id (grep); regression suites re-run to confirm no effect |
 
-No Stage 11 test files were modified or weakened in this pass — the certification gap is documented as the concrete next-milestone target (roadmap §M1) rather than papered over.
+M1 — Stage 11 Truthful Closure (2026-07-31):
+
+| File | Change | Reason | Test |
+|---|---|---|---|
+| `test/stage11/stage11_final_production_certification_test.dart` (new) | Authoritative production-path restart certification | Close the Stage 11 gap documented in §7 | Itself: 5/5 pass |
+| `lib/runtime/experience_router.dart` | Treat empty-string `targetScreenId` same as `null` in navigation validation | `NavigationAction.pop` requests were being silently rejected (§7.2) | Full `test/stage11` suite: 200/200 pass |
+| `lib/runtime/experience_host_screen.dart` | Added `_seedDefaultScreen()` | Router history needed an explicit root entry for pop/popToRoot semantics to work (§7.3) | Full `test/stage11` suite: 200/200 pass |
+| `lib/runtime/experience_renderer.dart` | Added a data-dependent `Key` to `_EntityFormWidget` | Edit forms permanently discarded async-loaded record data without it (§7.4) | Full `test/stage11` suite: 200/200 pass |
+| `test/stage11/stage11_5_production_certification_test.dart` | Deleted | Fully superseded, actively misleading (false docstring claim, fails when run) | N/A |
+| `test/stage11/stage11_real_generated_app_test.dart` | Deleted | Fully superseded (test-only host, 16 optional assertions) | N/A |
+| `test/stage11/stage11_user_path_certification_test.dart` | Relabeled Group J's name/description only (no logic change) | Its restart claim was overbroad for what it actually tests | Full `test/stage11` suite: 200/200 pass |
+
+No Stage 11 test's required-feature assertions were weakened in either pass — the M1 fixes are all production code or new/deleted/relabeled tests, never a loosened assertion on an existing passing test.
 
 ## 13. Baseline Validation Results
 
+Original pass (2026-07-30):
 - `flutter pub get`: clean.
-- `dart format --set-exit-if-changed lib test`: 11 files need formatting (4 inside the already-modified working-tree set, 7 pre-existing in `test/stage10` and one new stage11 file) — cosmetic only, not run as a fix in this pass to avoid unrelated diff noise on files this audit didn't otherwise touch.
-- `flutter analyze`: **0 errors**, 70 issues, all `info`/`warning` (deprecated `withOpacity`, unused test locals/imports, style lints). No production-blocking issues.
+- `dart format --set-exit-if-changed lib test`: 11 files need formatting (cosmetic only, not fixed to avoid unrelated diff noise).
+- `flutter analyze`: **0 errors**, 70 issues, all `info`/`warning`.
 - `flutter test test/stage94`: **18/18 pass** (real Kaalka).
-- `flutter test test/stage11`: **194/199 pass**, 5 fail — see §7 for root causes (1 real test-fragility bug in a fake-cache cert test, 4 environment shader issue).
-- Full `flutter test` suite and `flutter build apk --debug` were not completed in this pass (time/session constraints) — see Remaining Limitations in the final report.
+- `flutter test test/stage11`: **194/199 pass**, 5 fail — see §7 for root causes.
+- Full `flutter test` suite and `flutter build apk --debug` not completed (time/session constraints).
+
+M1 pass (2026-07-31), after the Stage 11 fixes in §7/§12:
+- `flutter analyze`: **0 errors**, 66 issues (27 warnings, 39 infos) — all pre-existing style/lint items in test files plus a handful of `info`-level deprecation notices in `lib/`; none are new production-code issues introduced by this pass. No production-blocking issues.
+- `flutter test test/stage94`: **18/18 pass** (real Kaalka, no regression).
+- `flutter test test/stage11`: **200/200 pass, 0 failures** (was 194/199 pass, 5 fail) — includes the new authoritative certification file; the two false/weak certification files no longer exist.
+- `flutter test` (full suite, no exclusions): **575/575 pass, 0 failures**, in ~30s. This is the first fully-verified, complete, execution-confirmed full-suite baseline for this repository during this audit program.
+- `flutter build apk --debug`: see §19/Play Store section — attempted separately; record the actual result there rather than duplicating it here.
 
 ## 14. Known Defects (this audit)
 
 1. **[FIXED]** `ExperienceResolver` hardcoded calculator domain branch + dangling reference (§8, §12).
-2. **[OPEN, HIGH]** No truthful Stage 11 restart certification exists (§7) — this is the concrete Stage 11 closure target.
-3. **[OPEN, MEDIUM]** Local test environment cannot reliably run Material-ripple widget-tap tests (`ink_sparkle.frag`/Vulkan backend mismatch) — blocks clean CI signal on affected tests until resolved (try `flutter precache --force` in a clean environment, or set an explicit non-sparkle `splashFactory` in the app theme).
+2. **[FIXED, M1 2026-07-31]** No truthful Stage 11 restart certification existed (§7) — closed; see §7 and §12 for the four production fixes and the new authoritative test.
+2b. **[FIXED, M1 2026-07-31]** `ExperienceRouter.navigate()` silently rejected `pop`/`popToRoot`-family requests carrying `targetScreenId: ''` instead of `null` (§7.2) — every generated-UI "return to list" action was a no-op.
+2c. **[FIXED, M1 2026-07-31]** Router history had no explicit entry for the default/tab screen, breaking `_pop()`'s length-≤1 "return to root" fallback on the very first navigation away from it (§7.3).
+2d. **[FIXED, M1 2026-07-31]** `_EntityFormWidget` (generated edit forms) had no key distinguishing "record not yet loaded" from "record loaded," permanently discarding the user's edits to any field whose real value hadn't finished loading before the widget's first build (§7.4) — a real, general-purpose data-loss bug, not test-specific.
+3. **[OPEN, MEDIUM → likely resolved, unconfirmed root cause]** Local test environment previously could not reliably run Material-ripple widget-tap tests (`ink_sparkle.frag`/Vulkan backend mismatch, first observed 2026-07-30). This did **not** reproduce during the M1 full `test/stage11` run (200/200 pass) after switching to `databaseFactoryFfiNoIsolate`. The two changes are not obviously causally related, so this is reported as "did not reproduce," not "fixed" — if it resurfaces, the original analysis and remediation options (`flutter precache --force` in a clean environment, or an explicit non-sparkle `splashFactory`) still apply.
 4. **[OPEN, LOW]** `.mimocode/` untracked and not gitignored.
 5. **[OPEN, LOW]** `lib/tools/` (ToolRegistry/CalculatorTool) is dead v1 code, not wired into v2 kernel/capabilities — candidate for removal.
 5b. **[OPEN, LOW]** `lib/screens/*` (12 files: app_shell, workspace(s), templates, memory_dashboard, ai_settings, groq_settings, groq_webview, kaalka_security, onboarding, personal_context, skills_marketplace, splash) is dead v1 code, unreachable from the live `lib/app/app_shell.dart` (verified by import-graph tracing) — includes Groq-hardcoded screens contradicting the BYOK vision. Candidate for removal; likely explains why the README is stale.

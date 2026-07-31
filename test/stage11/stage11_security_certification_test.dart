@@ -624,7 +624,7 @@ void main() {
       expect(session.status, SessionStatus.failed);
       expect(session.error, contains('Missing experience ID'));
 
-      runtime.closeSession();
+      await runtime.closeSession();
     });
 
     test('No screens defined is rejected', () async {
@@ -655,7 +655,7 @@ void main() {
       expect(session.status, SessionStatus.failed);
       expect(session.error, contains('No screens defined'));
 
-      runtime.closeSession();
+      await runtime.closeSession();
     });
   });
 

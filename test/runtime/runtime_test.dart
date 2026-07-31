@@ -38,7 +38,7 @@ void main() {
       expect(runtime.getState('currentValue'), equals(0.0));
       expect(runtime.getState('storedValue'), equals(0.0));
 
-      runtime.closeSession();
+      await runtime.closeSession();
     });
 
     test('Calculator 7 × 8 = 56', () async {
@@ -64,7 +64,7 @@ void main() {
       calc.onEqualsPressed();
       expect(calc.display, equals('56'));
 
-      runtime.closeSession();
+      await runtime.closeSession();
     });
 
     test('Calculator 9 ÷ 3 = 3', () async {
@@ -80,7 +80,7 @@ void main() {
       calc.onEqualsPressed();
 
       expect(calc.display, equals('3'));
-      runtime.closeSession();
+      await runtime.closeSession();
     });
 
     test('Calculator clear resets state', () async {
@@ -97,7 +97,7 @@ void main() {
 
       expect(calc.display, equals('0'));
       expect(calc.expression, equals(''));
-      runtime.closeSession();
+      await runtime.closeSession();
     });
 
     test('Calculator division by zero', () async {
@@ -113,7 +113,7 @@ void main() {
       calc.onEqualsPressed();
 
       expect(calc.display, equals('Error'));
-      runtime.closeSession();
+      await runtime.closeSession();
     });
 
     test('close session cleans up', () async {
@@ -121,7 +121,7 @@ void main() {
       final package = createCalculatorPackage();
       await runtime.openExperience(package);
 
-      runtime.closeSession();
+      await runtime.closeSession();
       expect(runtime.status, equals(RuntimeStatus.idle));
       expect(runtime.currentSession, isNull);
     });

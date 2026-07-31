@@ -4,7 +4,25 @@ Built from the gaps documented in `docs/audit/V2_CURRENT_STATE_AUDIT.md`, `V2_VI
 
 ---
 
-## M1 — Stage 11 Truthful Closure (S/M)
+## M1 — Stage 11 Truthful Closure (S/M) — ✅ COMPLETE (2026-07-31)
+
+**Closure evidence:** `test/stage11/stage11_final_production_certification_test.dart`
+(new, 5/5 pass) proves the full slice named in the objective below, for a
+real novel domain (community garden plots — zero footprint in `lib/`,
+verified by an automated in-test scan), with only the `ModelProvider`
+faked. Full `test/stage11` suite: 200/200 pass, 0 failures (was 194/199,
+5 fail). Full repo `flutter test` (no exclusions): 575/575 pass. Getting
+there required 3 production fixes beyond the expected "none required" —
+see `docs/progress/V2_STAGE_11.md` ("M1 — Stage 11 Truthful Closure") and
+`docs/audit/V2_CURRENT_STATE_AUDIT.md` §7 for the full account: a router
+validation bug (empty-string `targetScreenId` silently rejected pop
+actions), a missing router-history seed (broke pop-to-root on first
+navigation), and a missing widget key (edit forms discarded async-loaded
+record data). `stage11_5_production_certification_test.dart` and
+`stage11_real_generated_app_test.dart` were deleted (superseded, actively
+misleading); `stage11_user_path_certification_test.dart` Group J was
+relabeled to its true, narrower scope. All acceptance-gate items below are
+met.
 
 **Objective:** One real, passing, end-to-end certification test proving: user expression → `IntentComposer` → production creation pipeline → generated `ExperiencePackage` → package validation → Experience persistence → trusted opening → production `ExperienceHostScreen` → real SQLite → generated Add/Save/Edit/Search/Delete through the actual generated UI → Runtime+Database close → fresh trusted reopen of the same SQLite file → fresh Runtime → fresh production host → edited record survives → deleted record stays absent. No cached/in-memory write path, no direct `DataRuntime` bypass for the restart proof, no test-only host, no optional assertions on required behavior.
 
@@ -24,7 +42,12 @@ Built from the gaps documented in `docs/audit/V2_CURRENT_STATE_AUDIT.md`, `V2_VI
 
 ---
 
-## M2 — Security & Runtime Coverage Closure (M)
+## M2 — Security & Runtime Coverage Closure (M) — NEXT (not started)
+
+M1 is complete. Per the standing priority rule, M2 is now the approved next
+milestone — **not started in this session**; it awaits explicit sign-off
+before implementation begins, consistent with "execute only the next
+justified milestone" and the M1 handoff's explicit stop condition.
 
 **Objective:** Close every UNKNOWN in `V2_SECURITY_AUDIT.md`: behavior-graph cycle safety under a malicious/malformed graph, component-tree budget enforcement (verify it's the production validator under test, not a reimplementation), query-controller budgets/pagination/allowed-fields, per-capability audit for Clock/Notifications/AI/Knowledge/File (registration, ownership, budget, permission model), HTTP capability gaps (10.0.0.0/8 coverage, redirect re-validation, size/timeout enforcement), migration system audit (stable IDs, transactional, malicious-identifier defense), modification engine audit (data preservation, versioning, rollback), relationship referential-integrity-on-delete behavior, secure-storage usage pattern for API keys.
 

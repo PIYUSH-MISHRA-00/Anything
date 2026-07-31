@@ -153,7 +153,8 @@ class AnythingRuntime {
     await _behaviorInterpreter.execute(
       _currentSession!.package.behavior,
       eventId,
-      context,
+      context: context,
+      data: data,
     );
   }
 
@@ -187,7 +188,7 @@ class AnythingRuntime {
   }
 
   /// Close the current session.
-  void closeSession() {
+  Future<void> closeSession() async {
     _currentSession = _currentSession?.copyWith(
       status: SessionStatus.closed,
       lastActiveAt: DateTime.now(),
@@ -200,7 +201,7 @@ class AnythingRuntime {
     _router = null;
     _runtimeContext = null;
     _stateEngine.dispose();
-    _dataRuntime.dispose();
+    await _dataRuntime.dispose();
     _currentSession = null;
     _status = RuntimeStatus.idle;
   }

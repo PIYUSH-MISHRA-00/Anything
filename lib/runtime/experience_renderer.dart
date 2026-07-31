@@ -128,6 +128,7 @@ class ExperienceRenderer {
           stateEngine,
           onEvent: onEvent,
           runtimeContext: runtimeContext,
+          data: data,
         );
       case 'entityGrid':
         return _renderEntityGrid(
@@ -136,6 +137,7 @@ class ExperienceRenderer {
           stateEngine,
           onEvent: onEvent,
           runtimeContext: runtimeContext,
+          data: data,
         );
       case 'entityDetail':
         return _renderEntityDetail(
@@ -162,6 +164,7 @@ class ExperienceRenderer {
           stateEngine,
           onEvent: onEvent,
           runtimeContext: runtimeContext,
+          data: data,
         );
       case 'referenceSelector':
         return _renderReferenceSelector(
@@ -205,6 +208,9 @@ class ExperienceRenderer {
                 data: node.actionBinding!.parameters,
               )
             : null;
+      }
+      if (onEvent != null) {
+        propsWithAction['_onEvent'] = onEvent;
       }
       if (runtimeContext != null) {
         propsWithAction['_runtimeContext'] = runtimeContext;
@@ -349,31 +355,48 @@ class ExperienceRenderer {
         titleField,
         subtitleField,
         onEvent: onEvent,
+        runtimeContext: runtimeContext,
       );
     }
 
     // Query records from runtimeContext
     if (runtimeContext != null) {
-      return FutureBuilder<List<Map<String, dynamic>>>(
-        future: runtimeContext.queryRecords(entityId),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Card(
-              margin: EdgeInsets.symmetric(vertical: 8),
-              child: Padding(
-                padding: EdgeInsets.all(32),
-                child: Center(child: CircularProgressIndicator()),
-              ),
-            );
-          }
-          final records = snapshot.data ?? [];
-          return _buildEntityListView(
-            context,
-            node,
-            records,
-            titleField,
-            subtitleField,
-            onEvent: onEvent,
+      return StreamBuilder<dynamic>(
+        stream: stateEngine.watch('searchTerm'),
+        builder: (context, searchTermSnapshot) {
+          final searchTerm = (searchTermSnapshot.data as String?) ?? '';
+          return FutureBuilder<List<Map<String, dynamic>>>(
+            future: runtimeContext.queryRecords(entityId),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Card(
+                  margin: EdgeInsets.symmetric(vertical: 8),
+                  child: Padding(
+                    padding: EdgeInsets.all(32),
+                    child: Center(child: CircularProgressIndicator()),
+                  ),
+                );
+              }
+              var records = snapshot.data ?? [];
+              // Filter by search term if present
+              if (searchTerm.isNotEmpty) {
+                final lowerSearch = searchTerm.toLowerCase();
+                records = records.where((r) {
+                  return r.values.any(
+                    (v) => v.toString().toLowerCase().contains(lowerSearch),
+                  );
+                }).toList();
+              }
+              return _buildEntityListView(
+                context,
+                node,
+                records,
+                titleField,
+                subtitleField,
+                onEvent: onEvent,
+                runtimeContext: runtimeContext,
+              );
+            },
           );
         },
       );
@@ -390,10 +413,13 @@ class ExperienceRenderer {
     String titleField,
     String? subtitleField, {
     void Function(String eventId, {Map<String, dynamic>? data})? onEvent,
+    RuntimeComponentContext? runtimeContext,
   }) {
     if (records.isEmpty) {
       return _buildEmptyState(context, node);
     }
+
+    final entityId = node.properties['entityId'] as String? ?? '';
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -410,6 +436,16 @@ class ExperienceRenderer {
             title: Text(title),
             subtitle: subtitle != null ? Text(subtitle) : null,
             trailing: const Icon(Icons.chevron_right),
+            onTap: () {
+              onEvent?.call(
+                'openDetail',
+                data: {'entityId': entityId, 'recordId': record['id']},
+              );
+              runtimeContext?.navigate(
+                '${entityId}_detail',
+                arguments: {'recordId': record['id']},
+              );
+            },
           ),
         );
       }),
@@ -665,7 +701,18 @@ class ExperienceRenderer {
         ? recordMap
         : <String, dynamic>{};
 
+    // Edit-mode forms load their record asynchronously; the FIRST build
+    // happens before that record arrives (currentRecord == {}). Without a
+    // key that changes once the record loads, Flutter reuses the same
+    // State object across that transition and _EntityFormWidgetState's
+    // initState() -- which seeds the form controller's initial values,
+    // and each field's uncontrolled TextFormField.initialValue -- never
+    // reruns, permanently baking in empty values even after the correct
+    // record arrives. Keying on the loaded record's id (or "new" while
+    // unloaded/creating) forces a fresh State, and fresh initState(),
+    // exactly once the real data is available.
     return _EntityFormWidget(
+      key: ValueKey('${entityId}_${mode}_${currentRecord['id'] ?? 'new'}'),
       entityId: entityId,
       mode: mode,
       fields: fields,
@@ -1426,6 +1473,7 @@ class _EntityFormWidget extends StatefulWidget {
   final RuntimeComponentContext? runtimeContext;
 
   const _EntityFormWidget({
+    super.key,
     required this.entityId,
     required this.mode,
     required this.fields,
@@ -1442,6 +1490,7 @@ class _EntityFormWidget extends StatefulWidget {
 
 class _EntityFormWidgetState extends State<_EntityFormWidget> {
   late final ExperienceFormController _formController;
+  late final RuntimeComponentContext? _formBoundContext;
   Map<String, String> _errors = {};
 
   @override
@@ -1460,6 +1509,9 @@ class _EntityFormWidgetState extends State<_EntityFormWidget> {
       initialValues: initialValues,
       fieldDefinitions: widget.fieldDefinitions,
     );
+    _formBoundContext = widget.runtimeContext != null
+        ? widget.runtimeContext!.withForm(_formController, widget.entityId)
+        : null;
   }
 
   @override
@@ -1490,6 +1542,8 @@ class _EntityFormWidgetState extends State<_EntityFormWidget> {
         'entityId': widget.entityId,
         'mode': widget.mode,
         'values': formData,
+        if (widget.mode == 'edit' && widget.currentRecord.isNotEmpty)
+          'recordId': widget.currentRecord['id'],
       },
     );
   }
@@ -1528,7 +1582,7 @@ class _EntityFormWidgetState extends State<_EntityFormWidget> {
                   allowedValues: allowedValues,
                   referenceEntityId: referenceEntityId,
                   initialValue: initialValue,
-                  runtimeContext: widget.runtimeContext,
+                  runtimeContext: _formBoundContext,
                   onEvent: widget.onEvent,
                 ),
                 if (error != null)

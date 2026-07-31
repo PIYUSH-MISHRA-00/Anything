@@ -11,8 +11,16 @@ import '../storage/experience_database.dart';
 class ExperienceDataRuntime {
   ExperienceDatabase? _database;
 
+  /// Creates an ExperienceDataRuntime.
+  /// If [database] is provided, uses that pre-created database instance.
+  /// This allows tests to inject a database created outside testWidgets
+  /// where FFI initialization works.
+  ExperienceDataRuntime({ExperienceDatabase? database}) : _database = database;
+
   /// Initialize with a DataSchema and Experience ID.
+  /// If a database was provided in the constructor, this is a no-op.
   void initialize(DataSchema schema, {String? experienceId}) {
+    if (_database != null) return; // Already have a database
     if (experienceId != null) {
       _database = ExperienceDatabase(experienceId);
     }

@@ -525,26 +525,9 @@ class CreationEngine {
                 },
               ),
             );
-            final createAction = blueprint.actions
-                .where(
-                  (a) =>
-                      a.actionType == BlueprintActionType.create &&
-                      a.targetEntityId == entity.id,
-                )
-                .firstOrNull;
-            if (createAction != null) {
-              nodes.add(
-                InterfaceNode(
-                  type: 'button',
-                  id: '${view.id}_submit_button',
-                  properties: {'label': 'Save', 'primary': true},
-                  actionBinding: ActionBinding(
-                    actionId: createAction.id,
-                    parameters: {'entityId': entity.id},
-                  ),
-                ),
-              );
-            }
+            // Note: entityForm already has its own submit button
+            // (Create/Save). A standalone button here would fire the raw
+            // action ID and bypass the form's validation + data collection.
           }
           break;
 
@@ -676,6 +659,49 @@ class CreationEngine {
           children: nodes,
         ),
       );
+
+      // For form views, also generate an edit screen so the detail view's
+      // Edit button has a target to navigate to.
+      if (view.viewType == BlueprintViewType.form && entity != null) {
+        final editNodes = <InterfaceNode>[];
+        final fieldDefs = <Map<String, dynamic>>[];
+        for (final field in entity.fields) {
+          fieldDefs.add({
+            'id': field.id,
+            'name': field.name,
+            'type': _mapBlueprintFieldType(field.type),
+            'required': field.required,
+            if (field.referenceEntityId != null)
+              'referenceEntityId': field.referenceEntityId,
+            if (field.allowedValues.isNotEmpty)
+              'allowedValues': field.allowedValues,
+            if (field.minLength != null) 'minLength': field.minLength,
+            if (field.maxLength != null) 'maxLength': field.maxLength,
+            if (field.minimum != null) 'minimum': field.minimum,
+            if (field.maximum != null) 'maximum': field.maximum,
+            if (field.description.isNotEmpty) 'hint': field.description,
+          });
+        }
+        editNodes.add(
+          InterfaceNode(
+            type: 'entityForm',
+            id: '${entity.id}_edit_form',
+            properties: {
+              'entityId': entity.id,
+              'mode': 'edit',
+              'fields': fieldDefs,
+            },
+          ),
+        );
+        screens.add(
+          InterfaceScreen(
+            id: '${entity.id}_edit',
+            title: 'Edit ${entity.name}',
+            appBarTitle: 'Edit ${entity.name}',
+            children: editNodes,
+          ),
+        );
+      }
     }
 
     if (screens.isEmpty) {
@@ -839,6 +865,16 @@ class CreationEngine {
 
   StateSchema _buildStateFromBlueprint(AppBlueprint blueprint) {
     final variables = <StateVariable>[];
+
+    // Add global search term state variable
+    variables.add(
+      const StateVariable(
+        id: 'searchTerm',
+        type: 'string',
+        defaultValue: '',
+        persistence: 'session',
+      ),
+    );
 
     // Add per-field input state variables
     for (final entity in blueprint.entities) {

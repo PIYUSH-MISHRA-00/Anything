@@ -12,8 +12,12 @@ import 'package:path/path.dart' as p;
 class ExperienceDatabase {
   Database? _database;
   final String _experienceId;
+  final String? _customPath;
 
-  ExperienceDatabase(this._experienceId);
+  /// Creates an ExperienceDatabase.
+  /// If [customPath] is provided, uses that path instead of the default.
+  ExperienceDatabase(this._experienceId, {String? customPath})
+      : _customPath = customPath;
 
   /// Get or initialize the database.
   Future<Database> get database async {
@@ -23,8 +27,8 @@ class ExperienceDatabase {
   }
 
   Future<Database> _initDatabase() async {
-    final dbPath = await getDatabasesPath();
-    final path = p.join(dbPath, 'experience_$_experienceId.db');
+    final path = _customPath ??
+        p.join(await getDatabasesPath(), 'experience_$_experienceId.db');
     return await openDatabase(path, version: 1, onCreate: _createTables);
   }
 

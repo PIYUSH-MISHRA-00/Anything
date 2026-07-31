@@ -375,6 +375,10 @@ class RuntimeComponentRegistry {
         description: 'Search input with icon',
         builder: (ctx, props, children) {
           final hint = props['hint']?.toString() ?? 'Search...';
+          final entityId = props['entityId']?.toString();
+          final onEvent = props['_onEvent']
+              as void Function(String, {Map<String, dynamic>? data})?;
+          final onStateChanged = props['_onStateChanged'] as void Function(dynamic)?;
           return TextField(
             decoration: InputDecoration(
               hintText: hint,
@@ -384,6 +388,15 @@ class RuntimeComponentRegistry {
               ),
               filled: true,
             ),
+            onChanged: (value) {
+              onStateChanged?.call(value);
+              if (entityId != null) {
+                onEvent?.call(
+                  'searchChanged',
+                  data: {'entityId': entityId, 'term': value},
+                );
+              }
+            },
           );
         },
       ),

@@ -636,7 +636,7 @@ void main() {
         expect(session.status, SessionStatus.running);
         expect(session.experienceId, experienceId);
 
-        runtime.closeSession();
+        await runtime.closeSession();
       },
     );
 
@@ -703,7 +703,7 @@ void main() {
       expect(deletedAlice, isNull);
 
       await dataRuntime.dispose();
-      runtime.closeSession();
+      await runtime.closeSession();
     });
 
     test('People Tracker — persistence restart survival', () async {
@@ -726,7 +726,7 @@ void main() {
         'notes': 'First session notes',
       });
 
-      runtime1.closeSession();
+      await runtime1.closeSession();
       await dr1.dispose();
 
       // Re-open from persistence through trusted coordinator
@@ -747,7 +747,7 @@ void main() {
       expect(alice['notes'], 'First session notes');
 
       await dr2.dispose();
-      runtime2.closeSession();
+      await runtime2.closeSession();
     });
 
     testWidgets('People Tracker — rendering with runtime context', (
@@ -888,7 +888,7 @@ void main() {
       expect(loans.length, greaterThanOrEqualTo(1));
 
       await dr.dispose();
-      runtime.closeSession();
+      await runtime.closeSession();
     });
 
     test('Delete restriction: cannot delete referenced entity', () async {
@@ -930,7 +930,7 @@ void main() {
       expect(alice, isNull);
 
       await dr.dispose();
-      runtime.closeSession();
+      await runtime.closeSession();
     });
   });
 
@@ -994,7 +994,7 @@ void main() {
       expect(fossils.first['name'], 'Trilobite');
 
       await dr.dispose();
-      runtime.closeSession();
+      await runtime.closeSession();
     });
   });
 
@@ -1063,7 +1063,7 @@ void main() {
       expect(sum, closeTo(60.8, 0.1));
 
       await dr.dispose();
-      runtime.closeSession();
+      await runtime.closeSession();
     });
 
     testWidgets('OrbitMetrics — rendering with metrics', (tester) async {
@@ -1291,7 +1291,7 @@ void main() {
 
       qc.dispose();
       await dr.dispose();
-      runtime.closeSession();
+      await runtime.closeSession();
       await pipeline.close();
     });
   });

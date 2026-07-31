@@ -95,9 +95,14 @@ class ExperienceRouter {
 
   /// Navigate according to the request.
   NavigationEvent navigate(NavigationRequest request) {
-    // Validate target screen exists
-    if (request.targetScreenId != null &&
-        !_validScreenIds.contains(request.targetScreenId)) {
+    // Validate target screen exists. Actions like pop/popToRoot don't
+    // require a target screen; treat a null OR empty targetScreenId as
+    // "no target" so callers that pass '' instead of omitting the
+    // parameter don't have the request silently rejected.
+    final target = request.targetScreenId;
+    if (target != null &&
+        target.isNotEmpty &&
+        !_validScreenIds.contains(target)) {
       return _emitEvent(
         NavigationEvent(
           action: NavigationAction.pop,

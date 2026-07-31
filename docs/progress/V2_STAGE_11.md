@@ -170,3 +170,128 @@ Stage 11 delivers the runtime infrastructure for universal Experience rendering.
 - **Full suite**: 540/540 (was 488)
 - **Analyzer**: 0 errors, 0 warnings
 - **Kaalka Stage 9.4**: 18/18 ALL PASS
+
+## M1 — Stage 11 Truthful Closure (2026-07-31)
+
+**Status as of this section: Stage 11's restart certification is now truthfully
+closed.** The claims above (Stage 11.2, "Final Proof Closure") were **not**
+truthful for the one thing they most needed to prove: that a generated
+Experience's data survives a real Runtime/Database destroy-and-recreate
+cycle, driven through actual generated UI, backed by real SQLite. This
+section documents what was actually wrong, why, and what closed it —
+without erasing or prettifying the history above.
+
+### What the Master Repository Audit found (2026-07-30)
+
+An independent audit (`docs/audit/V2_CURRENT_STATE_AUDIT.md`) inspected the
+working tree — which at that point additionally contained three uncommitted
+Stage 11 test files beyond the 119 counted above — and found:
+
+- `stage11_5_production_certification_test.dart` (self-labeled "Stage 11.6
+  — Final certification") claimed in its own docstring that "writes still
+  go through real ExperienceDatabase," while its `_CachedDataRuntime` class
+  wrote every UI-driven mutation to an in-memory `Map`, with a code comment
+  admitting "real DB writes deferred to avoid FFI hangs in testWidgets."
+  The test **also failed when actually run**.
+- `stage11_real_generated_app_test.dart` used `_InMemoryDataRuntime` and a
+  `_TestExperienceHost`/`_TestExperienceHostState` pair — test-side
+  reimplementations of production behavior, not the real
+  `ExperienceHostScreen` — plus 16 conditional assertions
+  (`if (find...evaluate().isNotEmpty)`) guarding checks that should have
+  been mandatory.
+- `stage11_user_path_certification_test.dart`'s restart group (then titled
+  "J. Restart preserves data") called `ExperienceDataRuntime.insert()`
+  directly to manufacture the "before restart" state, bypassing
+  `IntentComposer`, the creation/opening coordinators, and all generated
+  UI — the exact defect pattern this doc's own "Stage 11.2 Final Proof
+  Closure" section (above) claimed to have corrected.
+
+None of the 119 tests counted in the table above attempted a full,
+UI-driven, real-SQLite restart in the first place — that gap simply hadn't
+been closed yet, despite the "Final Proof Closure" and "COMPLETE" framing
+at the top of this document. This is exactly the kind of gap the audit's
+methodology (`docs/audit/V2_TEST_EVIDENCE_MATRIX.md`) exists to catch: a
+docstring's claim is not evidence: only an execution trace is.
+
+### Why real SQLite kept getting faked in `testWidgets`
+
+The recurring root cause across all three of the above: `testWidgets` runs
+inside Flutter's FakeAsync test zone, and `sqflite_common_ffi`'s
+isolate-based worker (`databaseFactoryFfi`) cannot complete its
+cross-isolate message round trip inside that zone — even wrapped in
+`tester.runAsync()`, it hung indefinitely (`TimeoutException` stuck in
+`dart:isolate _RawReceivePort._handleMessage`, confirmed by direct
+reproduction during M1). Prior attempts worked around this by faking the
+data layer instead of fixing the actual cause.
+
+### The M1 fix (production + test)
+
+1. **`databaseFactoryFfiNoIsolate`** instead of `databaseFactoryFfi` in
+   test setup — still real SQLite (real file I/O via the FFI bindings to
+   libsqlite3), just without the worker-isolate message round trip that
+   was deadlocking under FakeAsync. This alone made real-database
+   `testWidgets` runs tractable for the first time.
+2. **`lib/runtime/experience_router.dart`** — `ExperienceRouter.navigate()`
+   rejected `NavigationAction.pop` requests carrying `targetScreenId: ''`
+   (empty string, not null), because its validation only special-cased
+   `null`. Every generated-UI "pop back to the list" action (after
+   save, after delete) was silently failing this check and no-op'ing.
+   Fixed by treating an empty `targetScreenId` the same as `null` for
+   actions that don't need a target.
+3. **`lib/runtime/experience_host_screen.dart`** — added
+   `_seedDefaultScreen()`, called once the router is available. Without
+   an explicit history entry for the default/tab screen, the very first
+   user-initiated push (e.g. tapping "Add") left router history at length
+   1, and `ExperienceRouter._pop()`'s length-≤1 "already at root"
+   fallback then kept that same pushed screen instead of returning to the
+   default — a real, generic navigation defect, not test-specific.
+4. **`lib/runtime/experience_renderer.dart`** — `_EntityFormWidget` (used
+   for both create and edit forms) had no `Key` distinguishing its
+   "record not yet loaded" state from its "record loaded" state. Since
+   edit-mode record loading is asynchronous, the form's *first* build
+   (before the real record arrives) permanently seeded its
+   `ExperienceFormController` and each field's uncontrolled
+   `TextFormField.initialValue` with empty values — and neither
+   re-initializes on a later rebuild without a key change. Fixed by
+   keying the widget on `${entityId}_${mode}_${currentRecord['id'] ??
+   'new'}`, so the transition from unloaded to loaded record forces a
+   fresh `State` with correct initial values. This was a real,
+   general-purpose bug: any edit form for any generated entity would have
+   silently discarded the user's edit of the field that happened to load
+   before they finished typing, in exactly this way.
+5. **`test/stage11/stage11_final_production_certification_test.dart`**
+   (new, authoritative) — proves the full vertical slice for real, using
+   a novel domain (community garden plots — zero footprint anywhere in
+   `lib/`, verified by an automated scan inside the test itself) synthesized
+   through the real `AnythingKernel` → `CompositeApplicationReasoner` →
+   `CreationEngine` pipeline with only the external `ModelProvider` faked.
+   Every mutation (create, edit, second create, search, delete) is driven
+   by a real widget tap on real generated UI, backed by real SQLite via
+   `databaseFactoryFfiNoIsolate`. The restart boundary closes Runtime A
+   and Database A for real, performs a fresh trusted reopen through a new
+   `ExperienceOpeningCoordinator`, opens a fresh `ExperienceDatabase` at
+   the *same* file path, a fresh `ExperienceDataRuntime`, a fresh
+   `AnythingRuntime`, and mounts a fresh production `ExperienceHostScreen`
+   — and the surviving edited record (and the absence of the deleted one)
+   is asserted through generated UI first, with a real-SQLite query as
+   secondary evidence. No cache, no test-side host, no hand-built
+   package, no optional assertions on required behavior.
+6. `stage11_5_production_certification_test.dart` and
+   `stage11_real_generated_app_test.dart` were **deleted** — fully
+   superseded by the new authoritative test, and actively misleading if
+   left in place. `stage11_user_path_certification_test.dart`'s Group J
+   was relabeled from "Restart preserves data" to "Data runtime
+   persistence (SQLite-level unit test, not a full-lifecycle restart
+   certification)" — it remains useful low-level coverage of
+   `ExperienceDataRuntime` itself, but must not be cited as lifecycle
+   proof; that role now belongs solely to the new authoritative test.
+
+### Current, execution-verified Stage 11 status
+
+See `docs/audit/V2_TEST_EVIDENCE_MATRIX.md` for the full, dated test
+classification. `test/stage11/stage11_final_production_certification_test.dart`
+is PRODUCTION-PATH CERTIFICATION and passes (5/5 tests, real SQLite, real
+production coordinators, no simulation). Full `test/stage11` suite results
+are recorded in `docs/audit/V2_CURRENT_STATE_AUDIT.md` alongside the exact
+run date, superseding the "488/488" and "540/540" counts above, which are
+historical and should not be treated as the current baseline.

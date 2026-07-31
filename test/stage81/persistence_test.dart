@@ -45,7 +45,7 @@ void main() {
       expect(habits1.length, equals(2));
 
       // Close everything
-      runtime1.closeSession();
+      await runtime1.closeSession();
       await dataRuntime1.dispose();
 
       // Second Runtime session (simulates app restart)
@@ -65,7 +65,7 @@ void main() {
       expect(habits2[1]['name'], equals('Read'));
 
       // Cleanup
-      runtime2.closeSession();
+      await runtime2.closeSession();
       await dataRuntime2.dispose();
     });
 
@@ -241,7 +241,7 @@ void main() {
 
       expect(runtime.getState('display'), equals('56.0'));
 
-      runtime.closeSession();
+      await runtime.closeSession();
     });
   });
 }

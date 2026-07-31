@@ -1,6 +1,7 @@
 /// Experience Host Screen — loads and displays a running Experience.
 library;
 
+import 'dart:async' show unawaited;
 import 'package:flutter/material.dart';
 
 import '../app/experience_modification_coordinator.dart';
@@ -18,12 +19,19 @@ class ExperienceHostScreen extends StatefulWidget {
   final String? experienceId;
   final ExperienceProtectionService? protectionService;
 
+  /// Optional pre-created runtime for dependency injection.
+  /// When provided, the screen will NOT create its own runtime and will use
+  /// this one instead. This allows tests to inject a runtime backed by real
+  /// SQLite (created outside the testWidgets context where FFI works).
+  final AnythingRuntime? runtime;
+
   const ExperienceHostScreen({
     super.key,
     required this.package,
     this.experienceName,
     this.experienceId,
     this.protectionService,
+    this.runtime,
   });
 
   @override
@@ -40,6 +48,10 @@ class _ExperienceHostScreenState extends State<ExperienceHostScreen> {
   bool _hasError = false;
   ExperienceRouter? _router;
   int _currentTabIndex = 0;
+  Map<String, dynamic>? _editRecordData;
+  String? _editScreenId;
+  Map<String, dynamic>? _detailRecordData;
+  String? _detailScreenId;
 
   List<NavigationItem> get _navigationItems =>
       _currentPackage.interface.navigation?.items ?? [];
@@ -47,7 +59,7 @@ class _ExperienceHostScreenState extends State<ExperienceHostScreen> {
   @override
   void initState() {
     super.initState();
-    _runtime = AnythingRuntime();
+    _runtime = widget.runtime ?? AnythingRuntime();
     _modificationCoordinator = ExperienceModificationCoordinator();
     _activity = ActivityRepository();
     _protectionService =
@@ -58,12 +70,16 @@ class _ExperienceHostScreenState extends State<ExperienceHostScreen> {
 
   Future<void> _loadExperience() async {
     try {
-      await _runtime.openExperience(_currentPackage);
+      // Skip opening if the runtime is already running (pre-opened via DI)
+      if (_runtime.status != RuntimeStatus.running) {
+        await _runtime.openExperience(_currentPackage);
+      }
       if (mounted) {
         setState(() {
           _isLoading = false;
           _router = _runtime.router;
         });
+        _seedDefaultScreen();
       }
     } catch (e) {
       if (mounted) {
@@ -75,9 +91,44 @@ class _ExperienceHostScreenState extends State<ExperienceHostScreen> {
     }
   }
 
+  /// Seeds the router with an explicit entry for the default/tab screen.
+  ///
+  /// The renderer derives the currently-shown screen as
+  /// `_router.currentScreenId ?? _getScreenIdForTab(...)` -- the default
+  /// screen is shown implicitly, via an EMPTY router history, rather than
+  /// being pushed onto it. That leaves the first user-initiated push (e.g.
+  /// tapping "Add") at history length 1, and ExperienceRouter._pop()'s
+  /// length<=1 "already at root" fallback then keeps that SAME pushed
+  /// screen instead of returning to the default one. Explicitly pushing
+  /// the default screen once, up front, keeps history length consistent
+  /// with the router's pop/popToRoot contract (verified by
+  /// ExperienceRouter's own "Pop to root" test, which already assumes the
+  /// root screen is an explicit history entry).
+  void _seedDefaultScreen() {
+    final router = _router;
+    if (router == null || router.history.isNotEmpty) return;
+    final defaultScreenId = _navigationItems.isNotEmpty
+        ? _getScreenIdForTab(0)
+        : (_currentPackage.interface.screens.isNotEmpty
+              ? _currentPackage.interface.screens.first.id
+              : null);
+    if (defaultScreenId != null) {
+      router.navigate(
+        NavigationRequest(
+          action: NavigationAction.push,
+          targetScreenId: defaultScreenId,
+        ),
+      );
+    }
+  }
+
   @override
   void dispose() {
-    _runtime.closeSession();
+    // Only close runtime if WE created it (not injected).
+    // When runtime is injected via DI, the caller owns its lifecycle.
+    if (widget.runtime == null) {
+      unawaited(_runtime.closeSession());
+    }
     super.dispose();
   }
 
@@ -154,12 +205,13 @@ class _ExperienceHostScreenState extends State<ExperienceHostScreen> {
       setState(() {
         _currentPackage = result.newPackage;
       });
-      _runtime.closeSession();
+      await _runtime.closeSession();
       await _runtime.openExperience(_currentPackage);
       if (mounted) {
         setState(() {
           _router = _runtime.router;
         });
+        _seedDefaultScreen();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('App updated to version ${result.newVersion}'),
@@ -307,6 +359,27 @@ class _ExperienceHostScreenState extends State<ExperienceHostScreen> {
     }
   }
 
+  /// Finds the form screen for a create action event.
+  ///
+  /// When the user taps an "Add" button on a list screen, we should navigate
+  /// to the entity's form screen rather than dispatching the action event
+  /// (which would try to create with no data).
+  String? _findFormScreenForAction(String eventId) {
+    // Check if any screen has a form matching the entity from the event
+    final screens = _currentPackage.interface.screens;
+    for (final screen in screens) {
+      // Match form screens: screen ID ends with '_form'
+      if (screen.id.endsWith('_form')) {
+        final entityId = screen.id.replaceAll('_form', '');
+        // Match: action ID contains the entity ID (e.g., 'add_person' → 'person')
+        if (eventId.contains(entityId)) {
+          return screen.id;
+        }
+      }
+    }
+    return null;
+  }
+
   String _getScreenIdForTab(int index) {
     if (index < _navigationItems.length) {
       return _navigationItems[index].screenId;
@@ -367,10 +440,71 @@ class _ExperienceHostScreenState extends State<ExperienceHostScreen> {
 
     final renderer = ExperienceRenderer();
     final screens = _currentPackage.interface.screens;
+    // Prefer the router's screen ID (which tracks push/pop navigation).
+    // Fall back to tab-based selection when there's no router history.
+    final routerScreenId = _router?.currentScreenId;
+    final tabScreenId = _navigationItems.isNotEmpty
+        ? _getScreenIdForTab(_currentTabIndex)
+        : null;
     final screenId =
-        _router?.currentScreenId ??
+        routerScreenId ??
+        tabScreenId ??
         (screens.isNotEmpty ? screens.first.id : 'main');
     final runtimeContext = _runtime.runtimeContext;
+
+    // If navigating to an edit screen, load the record data for the form
+    Map<String, dynamic>? renderData;
+    if (screenId.endsWith('_edit') && runtimeContext != null) {
+      if (_editScreenId != screenId) {
+        _editScreenId = screenId;
+        _editRecordData = null;
+        final currentEntry = _router?.history.isNotEmpty == true
+            ? _router!.history.last
+            : null;
+        final recordId = currentEntry?.arguments?['recordId'] as String?;
+        if (recordId != null) {
+          final entityId = screenId.replaceAll('_edit', '');
+          runtimeContext.readRecord(entityId, recordId).then((record) {
+            if (mounted) {
+              setState(() {
+                _editRecordData = record;
+              });
+            }
+          });
+        }
+      }
+      renderData = _editRecordData != null
+          ? {'_currentRecord': _editRecordData}
+          : null;
+    } else if (screenId.endsWith('_detail') && runtimeContext != null) {
+      // Load record data for detail screens so entity list renders correctly
+      if (_detailScreenId != screenId) {
+        _detailScreenId = screenId;
+        _detailRecordData = null;
+        final currentEntry = _router?.history.isNotEmpty == true
+            ? _router!.history.last
+            : null;
+        final recordId = currentEntry?.arguments?['recordId'] as String?;
+        if (recordId != null) {
+          final entityId = screenId.replaceAll('_detail', '');
+          runtimeContext.readRecord(entityId, recordId).then((record) {
+            if (mounted) {
+              setState(() {
+                _detailRecordData = record;
+              });
+            }
+          });
+        }
+      }
+      renderData = _detailRecordData != null
+          ? {'_currentRecord': _detailRecordData}
+          : null;
+    } else {
+      _editScreenId = null;
+      _editRecordData = null;
+      _detailScreenId = null;
+      _detailRecordData = null;
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -404,9 +538,65 @@ class _ExperienceHostScreenState extends State<ExperienceHostScreen> {
         screenId,
         _currentPackage.interface,
         _runtime.stateEngine,
-        onEvent: (eventId, {data}) =>
-            _runtime.dispatchEvent(eventId, data: data),
+        onEvent: (eventId, {data}) async {
+          // Handle "Add" buttons: navigate to the create form screen
+          // instead of dispatching a create event directly.
+          final formScreen = _findFormScreenForAction(eventId);
+          if (formScreen != null) {
+            _router?.navigate(
+              NavigationRequest(
+                action: NavigationAction.push,
+                targetScreenId: formScreen,
+              ),
+            );
+            if (mounted) setState(() {});
+            return;
+          }
+
+          // Handle submitForm: dispatch then pop back to the list screen
+          if (eventId == 'submitForm') {
+            await _runtime.dispatchEvent(eventId, data: data);
+            if (mounted) {
+              // Pop back to the entity list (pop the form screen)
+              if (_router?.history.isNotEmpty == true) {
+                _router?.navigate(
+                  const NavigationRequest(action: NavigationAction.pop),
+                );
+              }
+              setState(() {});
+            }
+            return;
+          }
+
+          // Handle deleteRecord: dispatch then navigate back to the list
+          if (eventId == 'deleteRecord') {
+            await _runtime.dispatchEvent(eventId, data: data);
+            if (mounted) {
+              // Navigate back to the parent list after deletion
+              if (_router?.history.isNotEmpty == true) {
+                _router?.navigate(
+                  const NavigationRequest(action: NavigationAction.pop),
+                );
+              }
+              setState(() {});
+            }
+            return;
+          }
+
+          // Handle searchChanged: update search term state
+          if (eventId == 'searchChanged') {
+            final term = data?['term'] as String? ?? '';
+            _runtime.stateEngine.write('searchTerm', term);
+            await _runtime.dispatchEvent(eventId, data: data);
+            if (mounted) setState(() {});
+            return;
+          }
+
+          await _runtime.dispatchEvent(eventId, data: data);
+          if (mounted) setState(() {});
+        },
         runtimeContext: runtimeContext,
+        data: renderData,
       ),
       bottomNavigationBar: _navigationItems.isNotEmpty
           ? NavigationBar(
@@ -416,10 +606,11 @@ class _ExperienceHostScreenState extends State<ExperienceHostScreen> {
                 final targetScreenId = _getScreenIdForTab(index);
                 _router?.navigate(
                   NavigationRequest(
-                    action: NavigationAction.switchTab,
+                    action: NavigationAction.push,
                     targetScreenId: targetScreenId,
                   ),
                 );
+                setState(() {});
               },
               destinations: _navigationItems
                   .take(5)

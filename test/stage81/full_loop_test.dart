@@ -40,7 +40,7 @@ void main() {
 
       expect(runtime.getState('display'), equals('56'));
 
-      runtime.closeSession();
+      await runtime.closeSession();
     });
   });
 
@@ -76,7 +76,7 @@ void main() {
       await dr1.update('habits', drinkId, {'completed': true});
 
       // Step 4: Close everything
-      runtime1.closeSession();
+      await runtime1.closeSession();
       await dr1.dispose();
 
       // Step 5: Reopen (simulates app restart)
@@ -131,7 +131,7 @@ void main() {
       }
 
       // Cleanup
-      runtime2.closeSession();
+      await runtime2.closeSession();
       await dr2.dispose();
     });
   });
@@ -170,7 +170,7 @@ void main() {
         expect(notes.length, equals(2));
 
         // Step 4: Close and reopen
-        runtime.closeSession();
+        await runtime.closeSession();
         await dr.dispose();
 
         final runtime2 = AnythingRuntime();
@@ -227,7 +227,7 @@ void main() {
         expect(notes.length, equals(1));
 
         // Cleanup
-        runtime2.closeSession();
+        await runtime2.closeSession();
         await dr2.dispose();
       },
     );
@@ -246,7 +246,7 @@ void main() {
       runtime.setState('display', '42');
       expect(runtime.getState('display'), equals('42'));
 
-      runtime.closeSession();
+      await runtime.closeSession();
     });
   });
 
@@ -269,7 +269,7 @@ void main() {
       runtime.setState('display', result.toString());
 
       expect(runtime.getState('display'), equals('15.0'));
-      runtime.closeSession();
+      await runtime.closeSession();
     });
 
     test('Habit Tracker works without network', () async {
@@ -278,7 +278,7 @@ void main() {
 
       final runtime = AnythingRuntime();
       await runtime.openExperience(package);
-      runtime.closeSession();
+      await runtime.closeSession();
     });
   });
 }

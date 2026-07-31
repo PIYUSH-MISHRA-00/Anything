@@ -27,19 +27,92 @@ class BehaviorExecutionContext {
 /// Interprets BehaviorGraph nodes.
 class BehaviorInterpreter {
   static const int _maxNodesPerExecution = 100;
+  Map<String, dynamic>? _eventData;
 
   /// Execute behavior for a given event.
   Future<void> execute(
     BehaviorGraph graph,
-    String eventId,
-    BehaviorExecutionContext context,
-  ) async {
+    String eventId, {
+    BehaviorExecutionContext? context,
+    Map<String, dynamic>? data,
+  }) async {
+    _eventData = data;
+
     // Find the node matching the event
-    final startNode = graph.nodes.where((n) => n.id == eventId).firstOrNull;
+    var startNode = graph.nodes.where((n) => n.id == eventId).firstOrNull;
+
+    // If no direct match, try the _event suffix convention used by generated
+    // behavior graphs (e.g., button fires 'add_person', graph has 'add_person_event').
+    if (startNode == null) {
+      startNode = graph.nodes
+          .where((n) => n.id == '${eventId}_event')
+          .firstOrNull;
+    }
+
+    // If no direct match, resolve generic renderer events to behavior graph nodes.
+    // The renderer sends generic IDs (submitForm, deleteRecord) but the graph
+    // uses action-specific IDs (create_person_event, delete_person_event).
+    if (startNode == null) {
+      startNode = _resolveGenericEvent(graph, eventId, data);
+    }
+
     if (startNode == null) return;
 
     // Execute the graph starting from this node
-    await _executeNode(startNode, graph, context, <String>{});
+    await _executeNode(startNode, graph, context!, <String>{});
+    _eventData = null;
+  }
+
+  /// Maps generic renderer event IDs to behavior graph event nodes.
+  ///
+  /// The renderer dispatches generic events (submitForm, deleteRecord, etc.)
+  /// but the generated behavior graph uses action-specific IDs
+  /// (create_person_event, delete_person_event, etc.). This method resolves
+  /// the mapping by inspecting event node configs and matching entity/action type.
+  BehaviorNode? _resolveGenericEvent(
+    BehaviorGraph graph,
+    String eventId,
+    Map<String, dynamic>? data,
+  ) {
+    final entityId = data?['entityId'] as String?;
+    if (entityId == null) return null;
+
+    // Map generic renderer events to expected action types
+    String? actionType;
+    if (eventId == 'submitForm') {
+      final mode = data?['mode'] as String?;
+      actionType = mode == 'edit' ? 'update' : 'create';
+    } else if (eventId == 'deleteRecord') {
+      actionType = 'delete';
+    }
+    if (actionType == null) return null;
+
+    // Find event node that targets this entity with matching action type
+    for (final node in graph.nodes) {
+      if (node.type != 'event') continue;
+      final config = node.config;
+      final configEventId = config['eventId'] as String?;
+      if (configEventId == null) continue;
+
+      // Match by entity ID in the action ID
+      if (!configEventId.contains(entityId)) continue;
+
+      // Also match by action type prefix
+      if (actionType == 'create' &&
+          (configEventId.startsWith('create_') ||
+              configEventId.startsWith('add_'))) {
+        return node;
+      } else if (actionType == 'update' &&
+          (configEventId.startsWith('update_') ||
+              configEventId.startsWith('edit_'))) {
+        return node;
+      } else if (actionType == 'delete' &&
+          (configEventId.startsWith('delete_') ||
+              configEventId.startsWith('remove_'))) {
+        return node;
+      }
+    }
+    return null;
   }
 
   Future<void> _executeNode(
@@ -365,24 +438,36 @@ class BehaviorInterpreter {
   ) async {
     final operation = node.config['operation'] as String?;
     final entity = node.config['entity'] as String?;
-    final data = node.config['data'] as Map<String, dynamic>?;
+    // Prefer data from the event (form values), fall back to node config
+    final data =
+        _eventData?['values'] as Map<String, dynamic>? ??
+        node.config['data'] as Map<String, dynamic>?;
 
     if (operation == null || entity == null) return;
 
+    // If the event data has a recordId (edit mode), always update.
+    final eventRecordId = _eventData?['recordId'] as String?;
+    final eventMode = _eventData?['mode'] as String?;
+    if (eventMode == 'edit' && eventRecordId != null && data != null) {
+      await context.dataRuntime.update(entity, eventRecordId, data);
+      return;
+    }
+
     switch (operation) {
       case 'insert':
+      case 'create':
         if (data != null) {
-          context.dataRuntime.insert(entity, data);
+          await context.dataRuntime.insert(entity, data);
         }
       case 'update':
-        final id = node.config['id'] as String?;
+        final id = node.config['id'] as String? ?? eventRecordId;
         if (id != null && data != null) {
-          context.dataRuntime.update(entity, id, data);
+          await context.dataRuntime.update(entity, id, data);
         }
       case 'delete':
-        final id = node.config['id'] as String?;
+        final id = node.config['id'] as String? ?? eventRecordId;
         if (id != null) {
-          context.dataRuntime.delete(entity, id);
+          await context.dataRuntime.delete(entity, id);
         }
     }
   }
