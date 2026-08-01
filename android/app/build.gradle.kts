@@ -15,9 +15,12 @@ android {
     namespace = "com.anything.anything"
     compileSdk = flutter.compileSdkVersion
     // speech_to_text (and the rest of the current plugin set) requests
-    // 28.2.13676358; both NDKs are installed locally, so aligning to the
-    // higher version avoids the mismatch rather than leaving it latent.
-    ndkVersion = "28.2.13676358"
+    // 28.2.13676358, but the locally installed copy of that NDK is a
+    // corrupted/incomplete download (missing source.properties — see
+    // docs/audit/V2_SECURITY_AUDIT.md / M2 Android build note). Staying on
+    // 27.0.12077973, which IS a valid, verified-present install, until a
+    // clean 28.2.13676358 is re-downloaded outside this repo's scope.
+    ndkVersion = "27.0.12077973"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
