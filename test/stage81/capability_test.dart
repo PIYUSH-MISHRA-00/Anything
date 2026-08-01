@@ -1,4 +1,6 @@
 /// Tests for Capability Platform.
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:anything/capabilities/platform/capability_platform.dart';
@@ -162,6 +164,9 @@ void main() {
       final cap = HttpCapability(
         transport: transport,
         allowedHosts: ['api.example.com'],
+        // Fake resolver — DNS-rebinding re-validation must not depend on
+        // live network in tests (see docs/security/RUNTIME_LIMITS.md).
+        hostResolver: (host) async => [InternetAddress('93.184.216.34')],
       );
 
       final result = await cap.execute('get', {
