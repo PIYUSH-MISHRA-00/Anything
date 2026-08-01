@@ -14,6 +14,9 @@ import 'package:anything/design_system/components/anything_section_header.dart';
 import 'package:anything/design_system/tokens/spacing.dart';
 import 'package:anything/features/home/intent_composer.dart';
 import 'package:anything/kernel/anything_kernel.dart';
+import 'package:anything/knowledge/knowledge_acquisition_engine.dart';
+import 'package:anything/knowledge/search_provider.dart';
+import 'package:anything/knowledge/webweavex_adapter.dart';
 import 'package:anything/services/provider_registry.dart';
 import 'package:anything/services/voice_service.dart';
 import 'package:anything/storage/sqlite_experience_repository.dart';
@@ -60,7 +63,19 @@ class HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     final providerRegistry = AnythingProviderRegistry();
-    final kernel = AnythingKernel(providerRegistry: providerRegistry);
+    final kernel = AnythingKernel(
+      providerRegistry: providerRegistry,
+      // Production wiring for real knowledge acquisition: SearchProvider
+      // resolves a query to candidate URLs, WebWeaveXAdapter extracts real
+      // content from each via package:webweavex. Every other Kernel/engine
+      // construction in the codebase (tests included) keeps the safe,
+      // no-network default (KnowledgeAcquisitionEngine()) unless it opts in
+      // explicitly — this is the one production composition root.
+      knowledgeEngine: KnowledgeAcquisitionEngine(
+        searchProvider: DuckDuckGoSearchProvider(),
+        webweavexAdapter: WebWeaveXAdapter(),
+      ),
+    );
     _coordinator = ExperienceCreationCoordinator(kernel: kernel);
     _openingCoordinator = ExperienceOpeningCoordinator();
     _repository = SqliteExperienceRepository();

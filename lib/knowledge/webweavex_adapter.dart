@@ -1,94 +1,126 @@
 /// WebWeaveX adapter for Anything.
 ///
-/// Translates Anything knowledge requests into WebWeaveX operations
-/// and normalizes results into Anything-owned domain models.
+/// Translates a candidate URL into a normalized, provenance-carrying
+/// KnowledgeResource using the published `package:webweavex` extraction
+/// primitives. This adapter never resolves a text query to a URL — that is
+/// SearchProvider's job (see search_provider.dart). WebWeaveX-specific
+/// types stop at this adapter boundary; only this file imports
+/// `package:webweavex/...`.
 ///
 /// Architecture:
-///   Kernel → KnowledgeRequirement → KnowledgeAcquisitionEngine →
-///   KnowledgeProvider → WebWeaveXKnowledgeProvider → package:webweavex → WebWeaveX
-///
-/// WebWeaveX-specific types stop at this adapter boundary.
-/// Only this file should import `package:webweavex/...`.
+///   SearchProvider (query -> URLs) -> WebWeaveXAdapter (URL -> KnowledgeResource)
 library;
 
 import 'package:webweavex/webweavex.dart' as wwx;
 
+import '../security/runtime_security_limits.dart';
 import 'knowledge_resource.dart';
 
-/// Adapter for WebWeaveX knowledge retrieval.
+/// Fetches a page and returns WebWeaveX's `renderPage` shape
+/// (`{url, status, html, available}`). Injectable purely so tests can
+/// exercise the real WebWeaveX parsing/extraction logic below without
+/// touching live network; production always uses `wwx.renderPage`, the
+/// package's own real, bounded HTTP fetch.
+typedef PageFetcher = Future<Map<String, dynamic>> Function(String url);
+
+/// Adapter for WebWeaveX-backed knowledge extraction.
 ///
-/// Uses the published `webweavex` Dart package for deterministic
-/// runtime extraction and knowledge acquisition.
+/// Uses the published `webweavex` package's real HTTP fetch (`renderPage`)
+/// and real HTML parsing (`extractSemanticHtml`/`extractSemanticContent`,
+/// its bs4-parity Soup engine) — no bespoke fetch/parse logic is
+/// duplicated here.
 class WebWeaveXAdapter {
-  /// WebWeaveX is deterministic runtime cognition infrastructure.
-  /// It captures runtime state, not just HTML content.
-  ///
-  /// For Anything's knowledge acquisition, we use WebWeaveX's
-  /// extraction pipeline and runtime graph capabilities.
+  final PageFetcher _fetchPage;
 
-  /// Retrieve knowledge resources for a query.
+  WebWeaveXAdapter({PageFetcher? fetchPage})
+    : _fetchPage = fetchPage ?? wwx.renderPage;
+
+  /// Extract a single candidate URL into a KnowledgeResource.
   ///
-  /// Uses WebWeaveX's extraction pipeline to acquire resources.
-  Future<List<KnowledgeResource>> retrieve(String query) async {
+  /// Returns null (not a thrown exception) when the page is unreachable or
+  /// yields no usable content — a network/target failure for one candidate
+  /// must not abort acquisition of the others.
+  Future<KnowledgeResource?> extract(String url) async {
+    final uri = Uri.tryParse(url);
+    if (uri == null || !uri.scheme.startsWith('http')) return null;
+
+    Map<String, dynamic> rendered;
     try {
-      // Use WebWeaveX's deterministic serialization for query normalization
-      wwx.stableSerialize({'query': query});
-
-      // Use WebWeaveX's runtime graph for structured knowledge
-      final graph = wwx.buildRuntimeGraph({
-        'nodes': [
-          {'id': 'query-1', 'type': 'knowledge_query', 'query': query},
-        ],
-        'edges': [],
-      });
-
-      // Use WebWeaveX's memory fabric for caching
-      wwx.buildRuntimeMemoryFabric(graph);
-
-      // For now, return the query as a knowledge resource
-      // Real WebWeaveX integration would use its extraction pipeline
-      return [
-        KnowledgeResource(
-          id: 'wwx-${DateTime.now().millisecondsSinceEpoch}',
-          type: KnowledgeResourceType.generalArticle,
-          title: 'Knowledge for: $query',
-          sourceUri: 'webweavex://knowledge/$query',
-          sourceDomain: 'webweavex',
-          retrievedAt: DateTime.now(),
-          content: 'Knowledge resource acquired via WebWeaveX for: $query',
-          contentHash: wwx.computeDeterministicHash({'query': query}),
-          provenance: ResourceProvenance(
-            sourceUrl: 'webweavex://knowledge/$query',
-            sourceDomain: 'webweavex',
-            retrievedAt: DateTime.now(),
-            provider: 'webweavex',
-          ),
-          license: const LicenseMetadata(
-            policy: LicensePolicy.unknownReviewRequired,
-            source: 'webweavex',
-            confidence: 0.5,
-          ),
-          trust: const TrustMetadata(
-            level: TrustLevel.unknown,
-            reason: 'Acquired via WebWeaveX',
-            confidence: 0.5,
-          ),
-          freshness: const FreshnessMetadata(),
-          ranking: const RankingMetadata(
-            relevanceScore: 0.5,
-            authorityScore: 0.5,
-            freshnessScore: 0.5,
-          ),
-        ),
-      ];
-    } catch (e) {
-      // WebWeaveX failure should not break Anything
-      return [];
+      rendered = await _fetchPage(url);
+    } catch (_) {
+      return null;
     }
+
+    if (rendered['available'] != true) return null;
+    final html = rendered['html'] as String? ?? '';
+    if (html.isEmpty) return null;
+
+    final semanticHtml = wwx.extractSemanticHtml(html);
+    final semanticContent = wwx.extractSemanticContent(html);
+
+    final title = (semanticHtml['title'] as String? ?? '').trim();
+    final paragraphs = (semanticContent['paragraphs'] as List? ?? [])
+        .cast<String>();
+    final fullText = semanticHtml['text'] as String? ?? '';
+    var content = paragraphs.isNotEmpty ? paragraphs.join('\n\n') : fullText;
+    if (content.isEmpty) return null;
+
+    // Trusted knowledge-size ceiling — a single huge page must not blow the
+    // reasoning-prompt budget downstream (see RuntimeSecurityLimits and
+    // ModelApplicationReasoner's own tighter per-prompt truncation).
+    if (content.length > RuntimeSecurityLimits.maxKnowledgeBytes) {
+      content = content.substring(0, RuntimeSecurityLimits.maxKnowledgeBytes);
+    }
+
+    final now = DateTime.now();
+    final contentHash = KnowledgeResource.computeHash(content);
+
+    return KnowledgeResource(
+      id: 'wwx-${now.microsecondsSinceEpoch}',
+      type: KnowledgeResourceType.webDocument,
+      title: title.isNotEmpty ? title : uri.host,
+      sourceUri: url,
+      sourceDomain: uri.host,
+      retrievedAt: now,
+      content: content,
+      contentHash: contentHash,
+      provenance: ResourceProvenance(
+        sourceUrl: url,
+        sourceDomain: uri.host,
+        retrievedAt: now,
+        provider: 'webweavex',
+        contentHash: contentHash,
+      ),
+      license: const LicenseMetadata(
+        policy: LicensePolicy.unknownReviewRequired,
+        source: 'webweavex',
+        confidence: 0.5,
+      ),
+      trust: const TrustMetadata(
+        level: TrustLevel.unknown,
+        reason:
+            'Retrieved from the open web via WebWeaveX; not independently '
+            'verified.',
+        confidence: 0.5,
+      ),
+      freshness: FreshnessMetadata(lastModified: now),
+      ranking: const RankingMetadata(
+        relevanceScore: 0.5,
+        authorityScore: 0.5,
+        freshnessScore: 0.5,
+      ),
+    );
   }
 
-  /// Check if the adapter is available.
-  bool get isAvailable => true;
+  /// Extract multiple candidate URLs, dropping any that fail individually.
+  Future<List<KnowledgeResource>> extractAll(List<String> urls) async {
+    final results = <KnowledgeResource>[];
+    for (final url in urls) {
+      final resource = await extract(url);
+      if (resource != null) results.add(resource);
+    }
+    return results;
+  }
 
   /// Get WebWeaveX version info.
   String get version => '3.0.0';
