@@ -43,6 +43,30 @@ for the full narrative.
 
 **Bottom line:** `test/stage11/stage11_final_production_certification_test.dart` now truthfully proves create→real-SQLite-via-generated-UI→close→reopen→generated-UI-shows-data, with no faked DB layer, no UI bypass, and no optional assertions on required behavior. Stage 11's restart-certification gap, as documented in the original version of this matrix, is closed.
 
+## M2 — Security & Runtime Coverage Closure (new, 2026-08-01)
+
+| File | Type | What it proves |
+|---|---|---|
+| `test/security/behavior_cycle_safety_test.dart` | ADVERSARIAL | A→A, A→B→A, A→B→C→A cycles each execute every node exactly once; per-event execution budget (100) holds at limit−1/limit/limit+1 and against a 5000-node malicious chain; a dangerous node wired past the budget never executes; state-write nodes cannot re-trigger event dispatch (structural re-entrancy proof) |
+| `test/security/package_and_query_limits_test.dart` | ADVERSARIAL + INTEGRATION (real SQLite) | Screen count, behavior-node count, manifest field length, and component property text length budgets reject oversized packages; a real SQLite table with more rows than the trusted fetch ceiling never returns more than the ceiling from one `query()` call; requested limits are clamped, never raised |
+| `test/security/http_capability_hardening_test.dart` | ADVERSARIAL | IPv6 loopback/unique-local/link-local/IPv4-mapped addresses denied; a declared host that resolves (via injected fake DNS) to a private IP is denied; DNS resolution failure fails closed; oversized response/request bodies rejected. No live network. |
+| `test/security/modification_rollback_test.dart` | ADVERSARIAL | A modification spec engineered to blow the behavior-node budget produces a candidate the validator rejects, and the pre-existing package instance is proven byte-for-byte unchanged; experience ID is preserved across a successful modification |
+| `test/security/kaalka_tamper_test.dart` | ADVERSARIAL + INTEGRATION (real Kaalka) | A bit-flipped persisted ciphertext fails closed with a redacted message (no raw crypto exception, no leaked ciphertext); a partial-write state (protection flag set, envelope missing) recovers the still-present plaintext when available and fails safely when not |
+
+**Execution result (M2, 2026-08-01):** all 5 new files pass in full; see
+`docs/audit/V2_SECURITY_AUDIT.md` for the complete narrative and the
+production-code fixes each test certifies (unbounded-fetch DoS, dangling-
+reference render crash, migration-identifier sanitization, HTTP IPv6/DNS-
+rebinding gaps, AI capability input/output bounds).
+
+**Pre-existing coverage relied on, not re-litigated:** `test/stage81`
+(capability declaration/budget/ownership, credential vault shape,
+modification data-preservation, Experience data isolation),
+`test/stage82`/`test/stage83`/`test/stage84` (file/notification ownership,
+capability escalation, migration malicious-identifier rejection,
+migration transactional rollback) — all read in full this pass and cited
+directly in the Security Audit rather than re-implemented.
+
 ## Stage 8.x / 8.1-8.4, 8.2, 8.3, 8.4
 
 Not re-verified line-by-line in this pass (out of scope given session constraints — these predate the generated-UI work and were the subject of prior "closure" commits). `test/stage81/full_loop_test.dart` and `test/stage81/persistence_test.dart` are among the files with uncommitted edits (adjusting call sites for the now-`async` `closeSession()`); not independently re-run.

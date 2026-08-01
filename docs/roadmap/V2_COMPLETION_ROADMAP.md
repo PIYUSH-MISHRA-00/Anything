@@ -42,12 +42,30 @@ met.
 
 ---
 
-## M2 — Security & Runtime Coverage Closure (M) — NEXT (not started)
+## M2 — Security & Runtime Coverage Closure (M) — ✅ COMPLETE (2026-08-01)
 
-M1 is complete. Per the standing priority rule, M2 is now the approved next
-milestone — **not started in this session**; it awaits explicit sign-off
-before implementation begins, consistent with "execute only the next
-justified milestone" and the M1 handoff's explicit stop condition.
+**Closure evidence:** `docs/audit/V2_SECURITY_AUDIT.md` (fully rewritten),
+`docs/security/TRUST_BOUNDARIES.md`, `docs/security/CAPABILITY_SECURITY_MATRIX.md`,
+`docs/security/RUNTIME_LIMITS.md` (all new), plus five new adversarial test
+files under `test/security/` (behavior cycle/budget safety, package/query
+structural limits, HTTP SSRF hardening, modification rollback, Kaalka
+tamper resistance). Every security-relevant UNKNOWN in the pre-M2 audit is
+now VERIFIED. Concrete production fixes made: an unbounded-SQLite-fetch
+DoS vector, a dangling-reference render crash, a latent DDL-identifier-
+injection path in an unused migration module, HTTP IPv6/DNS-rebinding/
+response-size gaps, AI capability input/output bounds, and new
+package-level structural budgets (screens, behavior-node count, property
+text length, package size), all centralized in
+`lib/security/runtime_security_limits.dart`. Master finding: the
+`CapabilityPlatform` (Clock/Notifications/HTTP/AI/Knowledge/File) is fully
+built and well-tested but not yet wired into the live
+`AnythingRuntime`/`BehaviorInterpreter` dispatch path — only Clock is
+reachable from a running Experience today. This narrows today's real
+attack surface while the capability code has still been hardened ahead of
+that integration, which is out of M2 scope by design. Zero critical,
+currently-exploitable vulnerability found. M1's certification
+(`test/stage11/stage11_final_production_certification_test.dart`) remains
+green throughout, unweakened.
 
 **Objective:** Close every UNKNOWN in `V2_SECURITY_AUDIT.md`: behavior-graph cycle safety under a malicious/malformed graph, component-tree budget enforcement (verify it's the production validator under test, not a reimplementation), query-controller budgets/pagination/allowed-fields, per-capability audit for Clock/Notifications/AI/Knowledge/File (registration, ownership, budget, permission model), HTTP capability gaps (10.0.0.0/8 coverage, redirect re-validation, size/timeout enforcement), migration system audit (stable IDs, transactional, malicious-identifier defense), modification engine audit (data preservation, versioning, rollback), relationship referential-integrity-on-delete behavior, secure-storage usage pattern for API keys.
 
@@ -63,7 +81,11 @@ justified milestone" and the M1 handoff's explicit stop condition.
 
 ---
 
-## M3 — Design Parity & Accessibility Pass (M)
+## M3 — Design Parity & Accessibility Pass (M) — NEXT (not started)
+
+M2 is complete. Per the standing priority rule, M3 is now the approved
+next milestone — not started as part of M2's closure, consistent with M2's
+explicit stop condition (audit/harden only, no design/accessibility work).
 
 **Objective:** Establish a definitive mapping of which ~10-15 Stitch screens (of the ~85 in `design/stitch/product_foundation/`) are canonical for v2.0.0 scope, then do a real screen-by-screen comparison against the four live screens (Home, My Apps, Activity, Preferences) plus creation/birth flow, Experience host, and empty/error states. Follow with an accessibility pass (semantic labels, touch targets, text scaling, contrast, reduced motion) and confirm tablet/responsive behavior. Resolve the ink-sparkle/theme question from M1 as part of this (does the design call for Material sparkle ripple or not).
 

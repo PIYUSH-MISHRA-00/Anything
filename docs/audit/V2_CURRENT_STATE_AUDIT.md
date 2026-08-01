@@ -108,13 +108,38 @@ Directly verified on 2026-07-30 (source read + actual `flutter test` execution, 
 - No `CalculatorScreen`/`PeopleScreen`/domain-specific screen classes exist in production.
 - No arbitrary-execution primitives found: `grep` for `Process.run`, `Process.start`, `dart:mirrors`, `eval(` across `lib/` returned zero hits.
 
-## 9. Security Boundary (partial verification — see gaps below)
+## 9. Security Boundary — CLOSED (M2, 2026-08-01)
 
-- **Kaalka**: pinned exact version `5.0.0` (pubspec.lock). Single canonical adapter chain: `lib/legacy/kaalka_adapter.dart` (`KaalkaProtectionProvider`) ← imported only by `lib/security/protection_service.dart`. `test/stage94/*` (18 tests) pass against the **real** Kaalka package (not a mock) — protect/unprotect roundtrip, wrong-time rejection, trusted-opening statuses, Activity independence, restart persistence all verified passing.
-- **WebWeaveX**: pinned exact version `3.0.0`. Single import site in all of `lib/`: `lib/knowledge/webweavex_adapter.dart`. This matches the intended boundary (no scattered UI/runtime imports).
-- **HTTP capability** (`lib/capabilities/builtin/http_capability.dart`): blocks `localhost`/`127.0.0.1`/`::1`/`0.0.0.0`, blocks the full `172.16.`–`172.31.` and `192.168.` private ranges, and enforces `https://`-only URLs (rejects with `'Only HTTPS is allowed'`). This is real, non-trivial SSRF defense, not a stub. (10.x range coverage, redirect handling, and timeout/size-limit enforcement were not independently re-verified in this pass — flagged for the security-focused follow-up in the roadmap.)
-- **Arbitrary execution**: none found in generated-Experience execution paths (§8).
-- Deeper coverage of `BehaviorInterpreter` execution-budget/cycle handling, `RuntimeComponentRegistry` component-tree limits, and `ExperienceQueryController` query budgets was **not completed** in this pass (the dedicated security research agent was cut off by the account rate limit before reporting) — flagged as open in the Vision Gap Matrix, not claimed as verified.
+Superseded by the M2 pass; see `docs/audit/V2_SECURITY_AUDIT.md` for the
+full, current account and `docs/security/TRUST_BOUNDARIES.md`,
+`docs/security/CAPABILITY_SECURITY_MATRIX.md`,
+`docs/security/RUNTIME_LIMITS.md` for supporting detail. Summary:
+
+- **Kaalka**: pinned exact version `5.0.0`. Single canonical adapter
+  chain confirmed (`kaalka_adapter.dart` ← `kaalka_service.dart`, the
+  only file importing `package:kaalka` directly). 18/18 Stage 9.4 tests
+  pass against the real package; M2 added tamper tests (bit-flipped
+  ciphertext, partial-write recovery) — all pass.
+- **WebWeaveX**: pinned exact version `3.0.0`, single import site.
+  Retrieval is currently a stub (no real web fetch yet); the
+  prompt-injection defense at the consumption point
+  (`ModelApplicationReasoner`) is already implemented and tested.
+- **HTTP capability**: 10/8 + all RFC1918 ranges + IPv6
+  loopback/link-local/unique-local/IPv4-mapped now blocked; DNS-rebinding
+  re-validated; response/request size bounded. Redirects are not
+  auto-followed (no live redirect path exists yet).
+- **Arbitrary execution**: none found in generated-Experience execution
+  paths (§8), re-confirmed in M2.
+- `BehaviorInterpreter` cycle/budget safety, `RuntimeComponentRegistry`/
+  `ExperiencePackageValidator` structural budgets, and
+  `ExperienceQueryController`/`ExperienceDataRuntime` query budgets are
+  now all independently verified with adversarial tests
+  (`test/security/`) — the gap this section previously flagged is closed.
+- **Master finding**: `CapabilityPlatform` (all builtins except Clock) is
+  not wired into the live runtime dispatch path — see
+  `docs/security/TRUST_BOUNDARIES.md`. This is a product-completion gap
+  tracked for a future milestone, not a security defect in the code that
+  exists.
 
 ## 10. Secrets / Repo Hygiene
 
