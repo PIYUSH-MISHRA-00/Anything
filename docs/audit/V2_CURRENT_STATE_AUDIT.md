@@ -141,6 +141,26 @@ full, current account and `docs/security/TRUST_BOUNDARIES.md`,
   tracked for a future milestone, not a security defect in the code that
   exists.
 
+## 9a. Knowledge Acquisition — Real Retrieval (Vision Milestone V1, 2026-08-01)
+
+`WebWeaveXAdapter` now performs genuine retrieval instead of the M2-era
+placeholder: `wwx.renderPage(url)` (real, bounded HTTP GET via
+`package:webweavex`) followed by `wwx.extractSemanticHtml`/
+`extractSemanticContent` (WebWeaveX's real bs4-parity HTML parser). Since
+WebWeaveX has no query-to-URL search capability, a new, independent
+`SearchProvider` interface (`lib/knowledge/search_provider.dart`) owns
+that step; the default `DuckDuckGoSearchProvider` implementation does its
+own small, bounded HTTP fetch + narrow link-parse of DuckDuckGo's key-less
+HTML results endpoint, with zero dependency on WebWeaveX or the Kernel.
+Real wiring is constructed explicitly at the single production
+composition root (`lib/features/home/home_screen.dart`); every other
+caller — including the pre-existing Stage 10.3/10.4 Kernel-knowledge-loop
+tests — keeps the original deterministic, network-free default unless it
+opts in, verified by re-running that suite unchanged (188/188 pass in
+`test/stage10`). See `docs/architecture/KNOWLEDGE_ENGINE.md`,
+`docs/security/TRUST_BOUNDARIES.md`, and
+`docs/progress/V2_KNOWLEDGE_PERFORMANCE.md`.
+
 ## 10. Secrets / Repo Hygiene
 
 - `.gitignore` covers `.dart_tool/`, `/build/`, `/coverage/` at repo root; `android/.gitignore` covers `local.properties`, `key.properties`, `**/*.keystore`, `**/*.jks`.

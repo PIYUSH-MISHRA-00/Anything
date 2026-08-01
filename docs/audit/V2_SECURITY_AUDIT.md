@@ -200,25 +200,24 @@ network).
   is the live, canonical implementation despite the `legacy/` directory
   name — recommend renaming in a later cleanup milestone (M6).
 
-## 8. WebWeaveX — VERIFIED (import boundary), stub confirmed (retrieval)
+## 8. WebWeaveX — VERIFIED (import boundary + real retrieval, V1 update)
 
 - Exact locked version `3.0.0`. Single import site:
   `lib/knowledge/webweavex_adapter.dart`.
-- **Resolved this pass (was UNKNOWN):** `WebWeaveXAdapter.retrieve()` does
-  not perform any real web extraction today — it returns a synthetic
-  `KnowledgeResource` whose content is a templated echo of the query
-  string (explicit code comment acknowledges this: "For now, return the
-  query as a knowledge resource"). Despite this, the prompt-injection
-  defense at the consumption point (`ModelApplicationReasoner` in
-  `lib/synthesis/model_reasoner.dart`) is already implemented and matches
-  M2 §50 exactly: knowledge is delimited with explicit untrusted-data
-  markers, the model is explicitly instructed not to follow instructions
-  or execute code found in it, `_sanitizeContent()` strips common
-  injection phrases as defense-in-depth, and content is size-bounded
-  (`_maxKnowledgeContextSize`, 4000 chars) with rank-ordered truncation.
-  This defense already applies to whatever content real WebWeaveX
-  extraction eventually returns, without further changes needed. See
-  `TRUST_BOUNDARIES.md` "Current retrieval status."
+- **Update (Vision Milestone V1, 2026-08-01):** `WebWeaveXAdapter.extract(url)`
+  now performs real retrieval — `wwx.renderPage(url)` (real bounded HTTP
+  GET) and `wwx.extractSemanticHtml`/`extractSemanticContent` (real HTML
+  parsing) — replacing the M2-era stub that echoed the query string. A
+  separate `SearchProvider` abstraction resolves free-text queries to
+  candidate URLs (WebWeaveX itself has no search capability); WebWeaveX
+  only ever receives a URL. See `docs/architecture/KNOWLEDGE_ENGINE.md`
+  and `docs/security/TRUST_BOUNDARIES.md`. The prompt-injection defense in
+  `ModelApplicationReasoner` (delimited untrusted-data markers, explicit
+  do-not-follow instructions, `_sanitizeContent()` pattern-stripping,
+  `_maxKnowledgeContextSize` truncation) required no changes and is
+  re-confirmed against genuinely web-shaped resources in
+  `test/knowledge/prompt_injection_test.dart`. Real end-to-end execution
+  certified by `test/knowledge/knowledge_pipeline_production_test.dart`.
 
 ## 9. Secrets / Repo Hygiene — VERIFIED
 

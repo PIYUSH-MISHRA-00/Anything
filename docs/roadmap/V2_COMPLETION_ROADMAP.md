@@ -2,6 +2,15 @@
 
 Built from the gaps documented in `docs/audit/V2_CURRENT_STATE_AUDIT.md`, `V2_VISION_GAP_MATRIX.md`, `V2_TEST_EVIDENCE_MATRIX.md`, `V2_SECURITY_AUDIT.md`, `V2_DESIGN_PARITY.md`, and `V2_RELEASE_READINESS.md` — not from historical stage numbering. Six milestones, ending at v2.0.0 Release Candidate.
 
+**Note on numbering:** "Vision Milestone V1 — Real Knowledge Acquisition &
+Autonomous Generation" (2026-08-01) is a separate, product-capability
+track from the M1-M6 hardening/readiness milestones below (it converted
+the knowledge-acquisition pipeline from a stub to real
+`package:webweavex`-backed retrieval). It doesn't map onto this M-series
+sequencing; the M1/M2 rows below remain accurate and unaffected. See
+`docs/progress/V2_KNOWLEDGE_PERFORMANCE.md` and
+`docs/architecture/KNOWLEDGE_ENGINE.md` for its closure evidence.
+
 ---
 
 ## M1 — Stage 11 Truthful Closure (S/M) — ✅ COMPLETE (2026-07-31)

@@ -43,6 +43,27 @@ for the full narrative.
 
 **Bottom line:** `test/stage11/stage11_final_production_certification_test.dart` now truthfully proves create→real-SQLite-via-generated-UI→close→reopen→generated-UI-shows-data, with no faked DB layer, no UI bypass, and no optional assertions on required behavior. Stage 11's restart-certification gap, as documented in the original version of this matrix, is closed.
 
+## Vision Milestone V1 — Real Knowledge Acquisition (new, 2026-08-01)
+
+| File | Type | What it proves |
+|---|---|---|
+| `test/knowledge/search_provider_test.dart` | UNIT (fake HTTP client) | DuckDuckGoSearchProvider parses real result-link markup, decodes redirect-wrapped URLs, dedupes, respects maxResults, and fails gracefully (empty list, not an exception) on network failure or non-200 responses |
+| `test/knowledge/webweavex_adapter_test.dart` | UNIT (real WebWeaveX parsing, fake HTTP fetch) | Real `extractSemanticHtml`/`extractSemanticContent` genuinely runs against canned HTML; unreachable pages, fetch exceptions, non-http URLs, and empty bodies all yield `null` rather than crashing; oversized content is truncated to the trusted ceiling |
+| `test/knowledge/knowledge_acquisition_engine_test.dart` | INTEGRATION (fake search + fake-fetch/real-parse extraction) | Full orchestration: provider-unavailable reports unresolved without touching network; multiple search results are all acquired; duplicate content is deduplicated by hash; malformed/unreachable URLs never enter the bundle; a cached query is served without re-invoking the search provider (offline reuse); `KnowledgeCacheKey` is deterministic and language-sensitive |
+| `test/knowledge/prompt_injection_test.dart` | INTEGRATION | A resource shaped exactly like real `WebWeaveXAdapter` output, containing injection phrases, cannot alter `ModelApplicationReasoner`'s behavior — delimiter markers present, injection phrases redacted in the actual prompt sent to the model; separately proves the extractor itself does not sanitize (that's the reasoner's job, not blurred across layers) |
+| `test/knowledge/knowledge_pipeline_production_test.dart` | PRODUCTION-PATH (real network, self-skips if unavailable) | `KnowledgeAcquisitionEngine` with the real `WebWeaveXAdapter` genuinely fetches and parses a live page end-to-end; a second test exercises the full real default wiring (`DuckDuckGoSearchProvider` + real `WebWeaveXAdapter`) and degrades gracefully if the search step yields nothing |
+| `test/knowledge/performance_test.dart` | PRODUCTION-PATH (real network, self-skips if unavailable) | Records real cache-miss vs. cache-hit vs. synthesis timings; see `docs/progress/V2_KNOWLEDGE_PERFORMANCE.md` |
+
+**Execution result (V1, 2026-08-01):** all 6 new files pass (30 tests, 2
+self-skippable if network is unavailable — both ran for real in this
+environment). Pre-existing `test/stage10/stage10_3_test.dart` and
+`stage10_4_test.dart` (Kernel knowledge-loop routing, multi-round
+accumulation, dedup, round-limit enforcement — 40+ tests relying on the
+pre-V1 `KnowledgeCache.store()`/fuzzy-match API) re-verified passing
+unchanged against the rewritten `KnowledgeAcquisitionEngine`, via a
+preserved legacy fallback lookup path (see
+`docs/architecture/KNOWLEDGE_ENGINE.md` "KnowledgeCache").
+
 ## M2 — Security & Runtime Coverage Closure (new, 2026-08-01)
 
 | File | Type | What it proves |
