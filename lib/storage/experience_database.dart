@@ -7,6 +7,7 @@ library;
 import 'dart:convert';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart' as p;
+import '../security/runtime_security_limits.dart';
 
 /// Real SQLite-backed database for Experience data.
 class ExperienceDatabase {
@@ -17,7 +18,7 @@ class ExperienceDatabase {
   /// Creates an ExperienceDatabase.
   /// If [customPath] is provided, uses that path instead of the default.
   ExperienceDatabase(this._experienceId, {String? customPath})
-      : _customPath = customPath;
+    : _customPath = customPath;
 
   /// Get or initialize the database.
   Future<Database> get database async {
@@ -27,7 +28,8 @@ class ExperienceDatabase {
   }
 
   Future<Database> _initDatabase() async {
-    final path = _customPath ??
+    final path =
+        _customPath ??
         p.join(await getDatabasesPath(), 'experience_$_experienceId.db');
     return await openDatabase(path, version: 1, onCreate: _createTables);
   }
@@ -65,14 +67,24 @@ class ExperienceDatabase {
     }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
-  /// Query all records for an entity.
-  Future<List<Map<String, dynamic>>> query(String entity) async {
+  /// Query records for an entity, bounded by a trusted maximum row count
+  /// regardless of how many rows actually exist — a generated Experience
+  /// cannot force an unbounded fetch into memory by growing its own table
+  /// (see RuntimeSecurityLimits.maxFetchRowsPerQuery). [limit], if given,
+  /// may only ever narrow that bound, never raise it.
+  Future<List<Map<String, dynamic>>> query(String entity, {int? limit}) async {
     final db = await database;
+    final effectiveLimit = limit == null
+        ? RuntimeSecurityLimits.maxFetchRowsPerQuery
+        : (limit < RuntimeSecurityLimits.maxFetchRowsPerQuery
+              ? limit
+              : RuntimeSecurityLimits.maxFetchRowsPerQuery);
     final rows = await db.query(
       'records',
       where: 'entity = ?',
       whereArgs: [entity],
       orderBy: 'created_at ASC',
+      limit: effectiveLimit,
     );
 
     return rows.map((row) {

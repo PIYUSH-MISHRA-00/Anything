@@ -2,8 +2,15 @@
 library;
 
 import 'dart:async';
+import 'dart:io' show InternetAddress, InternetAddressType;
 
+import '../../security/runtime_security_limits.dart';
 import '../platform/capability_platform.dart';
+
+/// Resolves a hostname to its IP addresses. Injectable so tests never touch
+/// live DNS/network (see docs/security/RUNTIME_LIMITS.md "HTTP — DNS
+/// resolution"); production default is [InternetAddress.lookup].
+typedef HostResolver = Future<List<InternetAddress>> Function(String host);
 
 /// HTTP transport abstraction.
 abstract class HttpTransport {
@@ -60,6 +67,7 @@ class FakeHttpTransport implements HttpTransport {
 class HttpCapability extends PlatformCapability {
   final HttpTransport _transport;
   final List<String> _allowedHosts;
+  final HostResolver _resolveHost;
 
   static const List<String> _blockedHosts = [
     'localhost',
@@ -93,8 +101,10 @@ class HttpCapability extends PlatformCapability {
   HttpCapability({
     required HttpTransport transport,
     required List<String> allowedHosts,
+    HostResolver? hostResolver,
   }) : _transport = transport,
        _allowedHosts = allowedHosts,
+       _resolveHost = hostResolver ?? InternetAddress.lookup,
        super(
          id: 'http',
          name: 'HTTP',
@@ -133,21 +143,8 @@ class HttpCapability extends PlatformCapability {
     }
 
     final host = uri.host;
-    if (_blockedHosts.contains(host)) {
-      return const CapabilityInvocationResult(
-        status: CapabilityResultStatus.policyDenied,
-        error: 'Access to this host is denied',
-      );
-    }
-
-    for (final range in _blockedRanges) {
-      if (host.startsWith(range)) {
-        return const CapabilityInvocationResult(
-          status: CapabilityResultStatus.policyDenied,
-          error: 'Access to private networks is denied',
-        );
-      }
-    }
+    final directBlockError = _checkHostLiteral(host);
+    if (directBlockError != null) return directBlockError;
 
     if (!_allowedHosts.contains(host)) {
       return const CapabilityInvocationResult(
@@ -156,15 +153,122 @@ class HttpCapability extends PlatformCapability {
       );
     }
 
+    // Request body size (defense-in-depth; no production caller sends a
+    // body today, but a future one must not exceed the trusted cap).
+    final body = params['body'] as String?;
+    if (body != null &&
+        body.length > RuntimeSecurityLimits.maxHttpRequestBytes) {
+      return const CapabilityInvocationResult(
+        status: CapabilityResultStatus.policyDenied,
+        error: 'Request body too large',
+      );
+    }
+
+    // Resolve DNS and re-validate every resolved address. A host allowed by
+    // name can still resolve to a private/loopback address (DNS rebinding);
+    // hostname allow-listing alone is not sufficient (see
+    // docs/security/RUNTIME_LIMITS.md "HTTP — DNS resolution").
+    try {
+      final addresses = await _resolveHost(host);
+      for (final address in addresses) {
+        if (_isPrivateOrReservedAddress(address)) {
+          return const CapabilityInvocationResult(
+            status: CapabilityResultStatus.policyDenied,
+            error: 'Host resolves to a private/reserved network address',
+          );
+        }
+      }
+    } catch (_) {
+      // Resolution failure — fail closed rather than proceed unresolved.
+      return const CapabilityInvocationResult(
+        status: CapabilityResultStatus.policyDenied,
+        error: 'Host could not be resolved',
+      );
+    }
+
     try {
       final response = await _transport.request(
         HttpRequest(method: operation.toUpperCase(), url: url),
       );
+      if (response.body.length > RuntimeSecurityLimits.maxHttpResponseBytes) {
+        return const CapabilityInvocationResult(
+          status: CapabilityResultStatus.policyDenied,
+          error: 'Response too large',
+        );
+      }
+      // NOTE: this capability does not itself follow redirects — a 3xx
+      // response is returned to the caller as-is. If a real HttpTransport
+      // is ever introduced, it MUST NOT auto-follow redirects internally;
+      // HttpCapability must own manual redirect following, re-running this
+      // entire validation (scheme/host/DNS) against each hop's target, up
+      // to RuntimeSecurityLimits.maxHttpRedirects.
       return CapabilityInvocationResult.success(
         data: {'statusCode': response.statusCode, 'body': response.body},
       );
     } catch (e) {
       return CapabilityInvocationResult.failure(e.toString());
     }
+  }
+
+  /// String/literal checks that don't require DNS (fast-path, and the only
+  /// path available when [host] is already a literal IP).
+  CapabilityInvocationResult? _checkHostLiteral(String host) {
+    if (_blockedHosts.contains(host)) {
+      return const CapabilityInvocationResult(
+        status: CapabilityResultStatus.policyDenied,
+        error: 'Access to this host is denied',
+      );
+    }
+    for (final range in _blockedRanges) {
+      if (host.startsWith(range)) {
+        return const CapabilityInvocationResult(
+          status: CapabilityResultStatus.policyDenied,
+          error: 'Access to private networks is denied',
+        );
+      }
+    }
+    final literal = InternetAddress.tryParse(host);
+    if (literal != null && _isPrivateOrReservedAddress(literal)) {
+      return const CapabilityInvocationResult(
+        status: CapabilityResultStatus.policyDenied,
+        error: 'Access to private networks is denied',
+      );
+    }
+    return null;
+  }
+
+  /// True for loopback, link-local, unique-local (IPv6 fc00::/7), and
+  /// IPv4-mapped-IPv6 forms of the same, using Dart's own address parser
+  /// rather than a hand-rolled string parser (per policy: trust the
+  /// standard library's understanding of address syntax).
+  bool _isPrivateOrReservedAddress(InternetAddress address) {
+    if (address.isLoopback || address.isLinkLocal) return true;
+
+    if (address.type == InternetAddressType.IPv4) {
+      return _blockedRanges.any((r) => address.address.startsWith(r));
+    }
+
+    if (address.type == InternetAddressType.IPv6) {
+      final bytes = address.rawAddress;
+      // fc00::/7 — unique local addresses.
+      if (bytes.isNotEmpty && (bytes[0] & 0xfe) == 0xfc) return true;
+      // ::ffff:0:0/96 — IPv4-mapped IPv6; re-check the embedded IPv4.
+      final isV4Mapped =
+          bytes.length == 16 &&
+          bytes.take(10).every((b) => b == 0) &&
+          bytes[10] == 0xff &&
+          bytes[11] == 0xff;
+      if (isV4Mapped) {
+        final mapped = '${bytes[12]}.${bytes[13]}.${bytes[14]}.${bytes[15]}';
+        final mappedAddr = InternetAddress.tryParse(mapped);
+        if (mappedAddr != null &&
+            (mappedAddr.isLoopback ||
+                _blockedRanges.any((r) => mapped.startsWith(r)))) {
+          return true;
+        }
+      }
+    }
+
+    return false;
   }
 }

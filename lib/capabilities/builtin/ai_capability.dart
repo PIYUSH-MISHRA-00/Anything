@@ -1,6 +1,7 @@
 /// AI capability — trusted ModelProvider access for Experiences.
 library;
 
+import '../../security/runtime_security_limits.dart';
 import '../platform/capability_platform.dart';
 
 /// AI provider abstraction for capability use.
@@ -56,10 +57,19 @@ class AiCapability extends PlatformCapability {
         error: 'Prompt required',
       );
     }
+    if (prompt.length > RuntimeSecurityLimits.maxAiPromptBytes) {
+      return const CapabilityInvocationResult(
+        status: CapabilityResultStatus.invalidArguments,
+        error: 'Prompt exceeds maximum allowed size',
+      );
+    }
 
     try {
       final result = await _provider.generate(prompt);
-      return CapabilityInvocationResult.success(data: {'response': result});
+      final bounded = result.length > RuntimeSecurityLimits.maxAiResponseBytes
+          ? result.substring(0, RuntimeSecurityLimits.maxAiResponseBytes)
+          : result;
+      return CapabilityInvocationResult.success(data: {'response': bounded});
     } catch (e) {
       return CapabilityInvocationResult.failure(e.toString());
     }

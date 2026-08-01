@@ -14,7 +14,10 @@ configurations.all {
 android {
     namespace = "com.anything.anything"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = "27.0.12077973"
+    // speech_to_text (and the rest of the current plugin set) requests
+    // 28.2.13676358; both NDKs are installed locally, so aligning to the
+    // higher version avoids the mismatch rather than leaving it latent.
+    ndkVersion = "28.2.13676358"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11

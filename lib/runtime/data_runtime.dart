@@ -38,10 +38,11 @@ class ExperienceDataRuntime {
     await _database!.insert(entity, recordWithId);
   }
 
-  /// Read all records from an entity.
-  Future<List<Map<String, dynamic>>> query(String entity) async {
+  /// Read records from an entity, bounded by a trusted maximum row count
+  /// (see ExperienceDatabase.query / RuntimeSecurityLimits.maxFetchRowsPerQuery).
+  Future<List<Map<String, dynamic>>> query(String entity, {int? limit}) async {
     if (_database == null) return [];
-    return await _database!.query(entity);
+    return await _database!.query(entity, limit: limit);
   }
 
   /// Read a single record by ID.

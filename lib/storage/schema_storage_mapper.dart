@@ -75,10 +75,19 @@ class SchemaStorageMapper {
   }
 
   /// Build initial mappings from a DataSchema using stable IDs.
+  ///
+  /// [experienceId] may originate from model-generated content (an
+  /// AppBlueprint id parsed from untrusted LLM JSON — see
+  /// BlueprintToSpecConverter) and must never be trusted to already be a
+  /// safe SQL identifier fragment: it is sanitized to a bounded
+  /// alphanumeric/underscore token before being folded into a table name,
+  /// so it can never break out of the `[...]` identifier quoting used by
+  /// MigrationExecutor's DDL statements.
   void buildFromSchema(DataSchema schema, {required String experienceId}) {
+    final safeExperienceId = _sanitizeIdentifierComponent(experienceId);
     for (var i = 0; i < schema.entities.length; i++) {
       final entity = schema.entities[i];
-      final tableName = 'exp_${experienceId}_e$i';
+      final tableName = 'exp_${safeExperienceId}_e$i';
       registerEntity(entity.id, tableName);
 
       for (var j = 0; j < entity.fields.length; j++) {
@@ -87,5 +96,16 @@ class SchemaStorageMapper {
         registerField(entity.id, field.id, columnName);
       }
     }
+  }
+
+  /// Reduce an untrusted string to a bounded-length token containing only
+  /// `[a-zA-Z0-9_]`, safe to fold into a SQL identifier under any quoting
+  /// style (bracket, double-quote, backtick) since it cannot contain the
+  /// quote/terminator character of any of them.
+  static String _sanitizeIdentifierComponent(String raw) {
+    final stripped = raw.replaceAll(RegExp(r'[^a-zA-Z0-9_]'), '_');
+    return stripped.isEmpty
+        ? 'x'
+        : stripped.substring(0, stripped.length > 64 ? 64 : stripped.length);
   }
 }

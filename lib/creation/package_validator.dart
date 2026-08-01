@@ -3,8 +3,11 @@
 /// Validates structure, references, limits, component tree budgets, and integrity.
 library;
 
+import 'dart:convert';
+
 import 'experience_package.dart';
 import '../runtime/component_registry.dart';
+import '../security/runtime_security_limits.dart';
 
 /// Validation result.
 class PackageValidationResult {
@@ -31,6 +34,18 @@ class ExperiencePackageValidator {
     final errors = <String>[];
     final warnings = <String>[];
 
+    // Reject oversized packages first, before any structural walk — a
+    // generated package must not be allowed to force expensive processing
+    // just by being huge (e.g. a pathological string outside the component
+    // tree, such as provenance/metadata blobs).
+    final serializedBytes = utf8.encode(jsonEncode(package.toJson())).length;
+    if (serializedBytes > RuntimeSecurityLimits.maxPackageBytes) {
+      return PackageValidationResult.invalid([
+        'package_size_exceeded: serialized package is $serializedBytes bytes '
+            '(max ${RuntimeSecurityLimits.maxPackageBytes})',
+      ]);
+    }
+
     // Validate version
     if (package.packageVersion > experiencePackageVersion) {
       errors.add('Package version ${package.packageVersion} not supported');
@@ -43,10 +58,32 @@ class ExperiencePackageValidator {
     if (package.manifest.name.isEmpty) {
       errors.add('Manifest missing name');
     }
+    if (package.manifest.name.length >
+        RuntimeSecurityLimits.maxMetadataFieldLength) {
+      errors.add(
+        'metadata_field_too_long: manifest name exceeds '
+        '${RuntimeSecurityLimits.maxMetadataFieldLength} characters',
+      );
+    }
+    if (package.manifest.description.length >
+        RuntimeSecurityLimits.maxMetadataFieldLength) {
+      errors.add(
+        'metadata_field_too_long: manifest description exceeds '
+        '${RuntimeSecurityLimits.maxMetadataFieldLength} characters',
+      );
+    }
 
     // Validate interface
     if (package.interface.screens.isEmpty) {
       warnings.add('Package has no screens');
+    }
+    if (package.interface.screens.length >
+        RuntimeSecurityLimits.maxScreensPerPackage) {
+      errors.add(
+        'ui_screen_count_exceeded: package has '
+        '${package.interface.screens.length} screens '
+        '(max ${RuntimeSecurityLimits.maxScreensPerPackage})',
+      );
     }
 
     // Validate component tree budgets for each screen
@@ -58,6 +95,14 @@ class ExperiencePackageValidator {
     // Validate behavior
     if (package.behavior.nodes.isEmpty) {
       warnings.add('Package has no behavior nodes');
+    }
+    if (package.behavior.nodes.length >
+        RuntimeSecurityLimits.maxBehaviorNodesPerPackage) {
+      errors.add(
+        'behavior_node_count_exceeded: package declares '
+        '${package.behavior.nodes.length} behavior nodes '
+        '(max ${RuntimeSecurityLimits.maxBehaviorNodesPerPackage})',
+      );
     }
 
     // Validate state references in behavior
@@ -150,6 +195,20 @@ class ComponentTreeValidator {
         'ui_children_exceeded: node "${node.id}" has ${node.children.length} children '
         '(max ${RuntimeComponentRegistry.maxChildrenPerNode})',
       );
+    }
+
+    // Property text size check — a generated node must not smuggle a
+    // multi-megabyte string into a presentation property.
+    for (final entry in node.properties.entries) {
+      final value = entry.value;
+      if (value is String &&
+          value.length > RuntimeSecurityLimits.maxComponentPropertyTextLength) {
+        errors.add(
+          'ui_property_text_too_long: node "${node.id}" property '
+          '"${entry.key}" exceeds '
+          '${RuntimeSecurityLimits.maxComponentPropertyTextLength} characters',
+        );
+      }
     }
 
     // Recurse into children

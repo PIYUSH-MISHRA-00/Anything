@@ -881,7 +881,16 @@ class ExperienceRenderer {
       builder: (context, snapshot) {
         final records = snapshot.data ?? [];
         final stateId = 'form_$fieldId';
-        final currentValue = runtimeContext?.readState(stateId)?.toString();
+        final rawValue = runtimeContext?.readState(stateId)?.toString();
+        // A reference may dangle (its target record was deleted after this
+        // value was set — no cascade/restrict is enforced on delete).
+        // DropdownButtonFormField requires initialValue to match one of its
+        // items or be null; passing a dangling ID through unchanged throws.
+        // Deterministic, safe fallback: render as unselected rather than
+        // crash (see docs/security/RUNTIME_LIMITS.md "Relationships").
+        final currentValue = records.any((r) => r['id']?.toString() == rawValue)
+            ? rawValue
+            : null;
 
         return DropdownButtonFormField<String>(
           initialValue: currentValue,
