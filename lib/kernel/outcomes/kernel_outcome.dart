@@ -5,6 +5,7 @@
 library;
 
 import '../../application_engineering/engineering_plan.dart';
+import '../../feature_discovery/feature_plan.dart';
 import '../../synthesis/app_blueprint.dart';
 import '../specification/experience_spec.dart';
 import '../planning/execution_plan.dart';
@@ -56,11 +57,18 @@ class ExecutionPlanReady extends KernelOutcome {
   /// Kernel always populates this alongside [blueprint]).
   final EngineeringPlan? engineeringPlan;
 
+  /// The Feature Discovery Engine's output for this creation (Vision
+  /// Milestone V4) — the approved FeatureGraph that shaped Architecture
+  /// and Engineering. Null only for outcomes that never reach feature
+  /// discovery (there are none on the production path).
+  final FeaturePlan? featurePlan;
+
   const ExecutionPlanReady({
     required this.plan,
     required this.specification,
     this.blueprint,
     this.engineeringPlan,
+    this.featurePlan,
     required super.message,
     required super.timestamp,
   });

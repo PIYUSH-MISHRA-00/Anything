@@ -5,6 +5,7 @@
 /// only a typed, justified strategy record.
 library;
 
+import '../feature_discovery/feature_types.dart';
 import '../software_architect/architecture_candidate.dart';
 import '../software_architect/architecture_types.dart' show OfflineCapability, SyncStrategy;
 import '../software_architect/confidence.dart';
@@ -61,7 +62,12 @@ class OfflineEngineeringResult {
 class OfflineEngineering {
   const OfflineEngineering();
 
-  OfflineEngineeringResult plan(ArchitectureCandidate candidate) {
+  /// [featureGraph] is the Feature Discovery Engine's approved output
+  /// (Vision Milestone V4), if available — cross-referenced only to
+  /// corroborate/cite the discovered Offline Strategy feature's priority
+  /// in the rationale; the strategy itself is still decided from the real
+  /// ArchitectureCandidate, exactly as before this cross-reference existed.
+  OfflineEngineeringResult plan(ArchitectureCandidate candidate, {FeatureGraph? featureGraph}) {
     final strategy = switch (candidate.offline.capability) {
       OfflineCapability.fullyOffline => OfflineStrategy.offlineFirst,
       OfflineCapability.cacheThenOnline => OfflineStrategy.cacheFirst,
@@ -73,6 +79,13 @@ class OfflineEngineering {
     // not a fabricated merge algorithm.
     const conflictStrategy = ConflictStrategy.none;
 
+    final offlineFeature = featureGraph?.nodeById('feature:offline');
+    final rationale = offlineFeature != null
+        ? '${candidate.offline.decision.rationale} Confirmed by Feature '
+              'Discovery\'s Offline Strategy feature (priority: '
+              '${offlineFeature.priority.name}).'
+        : candidate.offline.decision.rationale;
+
     return OfflineEngineeringResult(
       strategy: strategy,
       conflictStrategy: conflictStrategy,
@@ -81,7 +94,7 @@ class OfflineEngineering {
         category: EngineeringDecisionCategory.offline,
         subjectId: 'offline',
         decision: 'Offline strategy: ${strategy.name}',
-        rationale: candidate.offline.decision.rationale,
+        rationale: rationale,
         confidence: candidate.offline.decision.confidence,
       ),
     );

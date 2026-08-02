@@ -6,6 +6,7 @@
 /// docs/audit/V2_SECURITY_AUDIT.md §4) rather than an imagined one.
 library;
 
+import '../feature_discovery/feature_types.dart';
 import '../software_architect/confidence.dart';
 import 'engineering_context.dart';
 import 'engineering_types.dart';
@@ -39,6 +40,15 @@ class DataEngineering {
   const DataEngineering();
 
   DataEngineeringResult plan(EngineeringContext context) {
+    final featureGraph = context.featureGraph;
+    bool corroboratedByFeatureDiscovery(String entityId) {
+      if (featureGraph == null) return false;
+      final persistenceId = 'feature:persistence:$entityId';
+      return featureGraph.edgesTo(persistenceId).any((e) {
+        return featureGraph.nodeById(e.fromFeatureId)?.category == FeatureCategory.indexing;
+      });
+    }
+
     final indexes = <IndexDecision>[];
     for (final entity in context.app.entities) {
       // Recommend an index on the display field and on every reference
@@ -48,6 +58,7 @@ class DataEngineering {
         if (entity.displayField.isNotEmpty) entity.displayField,
         ...entity.fields.where((f) => f.referenceEntityId != null).map((f) => f.id),
       };
+      final corroborated = corroboratedByFeatureDiscovery(entity.id);
       for (final fieldId in candidates) {
         indexes.add(
           IndexDecision(
@@ -64,10 +75,13 @@ class DataEngineering {
                   '(ExperienceDatabase) is a single generic JSON-blob '
                   'table with no per-field SQL indexes — this is a '
                   'recorded optimization opportunity, not something '
-                  'enforced today.',
-              confidence: const Confidence(
-                score: 0.7,
-                reason: 'Real access-pattern signal, but no index actually exists yet.',
+                  'enforced today.'
+                  '${corroborated ? ' Confirmed by Feature Discovery\'s Index feature for this entity\'s list view.' : ''}',
+              confidence: Confidence(
+                score: corroborated ? 0.85 : 0.7,
+                reason: corroborated
+                    ? 'Real access-pattern signal, corroborated by an independently discovered Index feature.'
+                    : 'Real access-pattern signal, but no index actually exists yet.',
                 risk: RiskLevel.low,
               ),
             ),

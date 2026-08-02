@@ -40,6 +40,10 @@ import 'package:anything/application_engineering/engineering_context.dart';
 import 'package:anything/application_engineering/engineering_plan.dart';
 import 'package:anything/application_engineering/engineering_planner.dart';
 import 'package:anything/application_engineering/engineering_refinement.dart';
+import 'package:anything/feature_discovery/feature_discovery_context.dart';
+import 'package:anything/feature_discovery/feature_discovery_engine.dart';
+import 'package:anything/feature_discovery/feature_plan.dart';
+import 'package:anything/feature_discovery/feature_refinement.dart';
 
 /// Maximum knowledge refinement rounds (trusted limit).
 const int _maxKnowledgeRounds = 2;
@@ -76,6 +80,8 @@ class AnythingKernel {
   final ApplicationReasoner _reasoner;
   final RequirementExtractor _requirementExtractor;
   final ConstraintPlanner _constraintPlanner;
+  final FeatureDiscoveryEngine _featureDiscoveryEngine;
+  final FeatureRefinement _featureRefinement;
   final ArchitecturePlanner _architecturePlanner;
   final RefinementPlanner _refinementPlanner;
   final ArchitectureToBlueprintConverter _architectureToBlueprint;
@@ -93,12 +99,16 @@ class AnythingKernel {
     ApplicationReasoner? reasoner,
     RequirementExtractor? requirementExtractor,
     ConstraintPlanner? constraintPlanner,
+    FeatureDiscoveryEngine? featureDiscoveryEngine,
+    FeatureRefinement? featureRefinement,
     ArchitecturePlanner? architecturePlanner,
     RefinementPlanner? refinementPlanner,
     ArchitectureToBlueprintConverter? architectureToBlueprint,
   }) : _requirementExtractor =
            requirementExtractor ?? const RequirementExtractor(),
        _constraintPlanner = constraintPlanner ?? const ConstraintPlanner(),
+       _featureDiscoveryEngine = featureDiscoveryEngine ?? const FeatureDiscoveryEngine(),
+       _featureRefinement = featureRefinement ?? const FeatureRefinement(),
        _architecturePlanner =
            architecturePlanner ?? const ArchitecturePlanner(),
        _refinementPlanner = refinementPlanner ?? const RefinementPlanner(),
@@ -201,16 +211,42 @@ class AnythingKernel {
           );
       }
 
-      // Step 6: Autonomous Software Architecture Engine — Requirement
-      // Extraction -> Knowledge Graph -> Architecture Planning -> Self
-      // Critique -> Iterative Refinement -> Final Blueprint. Every
-      // ReasoningReady result passes through here; there is no path from
-      // a SemanticApp to a blueprint that bypasses it.
-      final architectureOutcome = _planArchitecture(
+      // Step 5.5: Feature Discovery Engine — Requirement Graph -> Knowledge
+      // Graph -> Feature Discovery -> Feature Review -> Feature Refinement.
+      // Runs before Architecture, per the Vision Milestone V4 pipeline;
+      // every ReasoningReady result passes through here, no bypass.
+      final requirementGraph = _requirementExtractor.extract(
         app: reasonResult.semanticApp,
         understanding: understanding,
-        knowledge: _lastAcquiredKnowledge,
       );
+      _constraintPlanner.plan(requirementGraph);
+      final knowledgeGraph = _lastAcquiredKnowledge != null
+          ? KnowledgeGraphBuilder.build(_lastAcquiredKnowledge!)
+          : null;
+      final featureGraph = _featureDiscoveryEngine.plan(
+        FeatureDiscoveryContext(
+          app: reasonResult.semanticApp,
+          requirements: requirementGraph,
+          knowledge: knowledgeGraph,
+        ),
+      );
+      final featurePlan = _featureRefinement.refine(featureGraph);
+      if (featurePlan.outcome == FeatureRefinementOutcome.budgetExhausted &&
+          featurePlan.finalReview.hasCriticalIssues) {
+        return PlanningFailed(
+          error:
+              'Unable to produce a sound feature discovery plan after '
+              'refinement — please try rephrasing or simplifying the request.',
+          message: 'Feature discovery could not produce a viable design',
+          timestamp: DateTime.now(),
+        );
+      }
+
+      // Step 6: Autonomous Software Architecture Engine — Architecture
+      // Planning -> Self Critique -> Iterative Refinement -> Final
+      // Blueprint. Every ReasoningReady result passes through here; there
+      // is no path from a SemanticApp to a blueprint that bypasses it.
+      final architectureOutcome = _planArchitecture(app: reasonResult.semanticApp);
       if (architectureOutcome.blueprint == null) {
         return PlanningFailed(
           error: architectureOutcome.error!,
@@ -240,6 +276,7 @@ class AnythingKernel {
         EngineeringContext(
           architecture: architectureOutcome.approvedCandidate!,
           app: reasonResult.semanticApp,
+          featureGraph: featurePlan.finalGraph,
         ),
       );
       final engineeringPlan = EngineeringRefinement().refine(engineeringCandidate);
@@ -296,6 +333,7 @@ class AnythingKernel {
         specification: spec,
         blueprint: blueprint,
         engineeringPlan: engineeringPlan,
+        featurePlan: featurePlan,
         message: 'Ready to create',
         timestamp: DateTime.now(),
       );
@@ -477,29 +515,13 @@ class AnythingKernel {
   }
 
   /// Runs the full Autonomous Software Architecture Engine pipeline:
-  /// Requirement Extraction -> Constraint Analysis -> Knowledge Graph ->
   /// Architecture Planning -> Self Critique -> Iterative Refinement ->
   /// Final Blueprint. Structural throughout — nothing here inspects an
-  /// entity/field/view name, only its shape.
+  /// entity/field/view name, only its shape. Requirement extraction and
+  /// constraint analysis now run once in `processIntent`, shared with
+  /// Feature Discovery which runs immediately before this stage.
   ({AppBlueprint? blueprint, ArchitectureCandidate? approvedCandidate, String? error})
-  _planArchitecture({
-    required SemanticApp app,
-    required IntentUnderstanding understanding,
-    required KnowledgeBundle? knowledge,
-  }) {
-    // Requirement extraction + constraint analysis run unconditionally —
-    // this is where a future policy could reject on structural grounds
-    // before spending any planning effort; today their output augments
-    // the report rather than gating it.
-    final requirementGraph = _requirementExtractor.extract(
-      app: app,
-      understanding: understanding,
-    );
-    _constraintPlanner.plan(requirementGraph);
-    if (knowledge != null) {
-      KnowledgeGraphBuilder.build(knowledge);
-    }
-
+  _planArchitecture({required SemanticApp app}) {
     final initialCandidate = _architecturePlanner.plan(app);
     final report = _refinementPlanner.refine(initialCandidate);
 

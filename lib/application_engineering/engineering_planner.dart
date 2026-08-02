@@ -79,7 +79,7 @@ class EngineeringPlanner {
       stateMachines: behaviors.map((b) => b.stateMachine).toList(),
     );
     final persistence = _persistence.plan(context.architecture, data.migrationDecision);
-    final offline = _offline.plan(context.architecture);
+    final offline = _offline.plan(context.architecture, featureGraph: context.featureGraph);
     final synchronization = _synchronization.plan(context.architecture);
     final lifecycle = _lifecycle.plan();
     final performance = _performance.plan();
