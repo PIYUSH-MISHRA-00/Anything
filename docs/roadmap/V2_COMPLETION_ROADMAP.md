@@ -5,31 +5,36 @@ Built from the gaps documented in `docs/audit/V2_CURRENT_STATE_AUDIT.md`, `V2_VI
 **Note on numbering:** "Vision Milestone V1 — Real Knowledge Acquisition &
 Autonomous Generation" (2026-08-01), "Vision Milestone V2 — Autonomous
 Software Architecture Engine" (2026-08-02), "Vision Milestone V3 —
-Application Engineering Engine" (2026-08-02), and "Vision Milestone V4 —
-Feature Discovery & Dependency Intelligence Engine" (2026-08-02) are a
-separate, product-capability track from the M1-M6 hardening/readiness
-milestones below. V1 converted the knowledge-acquisition pipeline from a
-stub to real `package:webweavex`-backed retrieval; V2 inserted a real,
-typed, self-critiquing architecture-planning stage between reasoning and
-blueprint conversion; V3 inserted a real, typed Engineering stage between
-architecture approval and blueprint/spec/plan conversion, compiling a
-generic per-entity state machine into the existing BehaviorGraph/
-StateSchema vocabulary so the unmodified BehaviorInterpreter executes it;
-V4 inserted a real, typed Feature Discovery stage between requirement
-extraction and Architecture Planning, surfacing cross-cutting features
-(search, indexing, relational navigation, permission strategy, offline
-posture, reporting) and their dependencies structurally, before
-Architecture runs, and wired Engineering to genuinely cross-reference the
-result. None of the four map onto this M-series sequencing; the M1/M2 rows
-below remain accurate and unaffected. See
+Application Engineering Engine" (2026-08-02), "Vision Milestone V4 —
+Feature Discovery & Dependency Intelligence Engine" (2026-08-02), and
+"Vision Milestone V5 — Multi-Solution Reasoning & Architecture Selection
+Engine" (2026-08-02) are a separate, product-capability track from the
+M1-M6 hardening/readiness milestones below. V1 converted the knowledge-
+acquisition pipeline from a stub to real `package:webweavex`-backed
+retrieval; V2 inserted a real, typed, self-critiquing architecture-
+planning stage between reasoning and blueprint conversion; V3 inserted a
+real, typed Engineering stage between architecture approval and
+blueprint/spec/plan conversion, compiling a generic per-entity state
+machine into the existing BehaviorGraph/StateSchema vocabulary so the
+unmodified BehaviorInterpreter executes it; V4 inserted a real, typed
+Feature Discovery stage between requirement extraction and Architecture
+Planning, surfacing cross-cutting features and their dependencies
+structurally; V5 replaced the single-candidate architecture stage with
+genuine multi-solution reasoning — 2-4 real architecture variants
+generated, scored across 15 tradeoff dimensions, reviewed, refined, and
+selected via an ordered tie-break cascade rather than "first candidate
+wins," with Engineering now consuming the selected SolutionCandidate
+exclusively. None of the five map onto this M-series sequencing; the
+M1/M2 rows below remain accurate and unaffected. See
 `docs/progress/V2_KNOWLEDGE_PERFORMANCE.md` /
 `docs/architecture/KNOWLEDGE_ENGINE.md` (V1),
 `docs/progress/V2_ASAE_PERFORMANCE.md` /
 `docs/architecture/SOFTWARE_ARCHITECT_ENGINE.md` (V2),
-`docs/architecture/APPLICATION_ENGINEERING_ENGINE.md` (V3), and
-`docs/architecture/FEATURE_DISCOVERY_ENGINE.md` (V4) for closure evidence.
-V4 is complete; per its own instructions, V5 awaits external review before
-starting.
+`docs/architecture/APPLICATION_ENGINEERING_ENGINE.md` (V3),
+`docs/architecture/FEATURE_DISCOVERY_ENGINE.md` (V4), and
+`docs/architecture/SOLUTION_REASONING_ENGINE.md` (V5) for closure
+evidence. V5 is complete; per its own instructions, V6 awaits external
+review before starting.
 
 ---
 

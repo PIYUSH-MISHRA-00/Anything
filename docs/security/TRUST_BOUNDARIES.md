@@ -131,6 +131,22 @@ existing decisions — it never reaches the runtime or a generated package
 directly. See `docs/architecture/FEATURE_DISCOVERY_ENGINE.md` for the full
 pipeline.
 
+## Solution Reasoning stage (Vision Milestone V5, 2026-08-02)
+
+`lib/solution_reasoning/` (SolutionExplorer -> SolutionGenerator ->
+SolutionScorer -> SolutionReviewer -> SolutionRefinement ->
+SolutionComparison -> SolutionSelector) sits entirely on the TRUSTED side,
+between Feature Discovery and Engineering. It introduces no new trust
+boundary and no new untrusted input surface: its only inputs
+(`SemanticApp`, `FeatureGraph`, `DependencyGraph`) are already-trusted
+output of prior TRUSTED stages, and every architecture variant it produces
+is a bounded, structurally-real overlay (`copyWith` on
+`interactions`/`navigation`/`offline`/`synchronization` only) on top of
+the same self-critiqued `ArchitectureCandidate` `ArchitecturePlanner`
+already produces — no new architecture-planning logic, no new capability
+surface, no new execution path. See
+`docs/architecture/SOLUTION_REASONING_ENGINE.md` for the full pipeline.
+
 ## Modification path
 
 ```

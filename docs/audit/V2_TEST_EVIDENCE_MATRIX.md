@@ -173,6 +173,45 @@ immediately after: `test/stage10` + `test/stage11` (388 tests, M1
 certification, unchanged), full suite (782 tests, all green), `flutter
 analyze` (71 issues, 0 errors — identical to the pre-V4 baseline).
 
+## Vision Milestone V5 — Multi-Solution Reasoning & Architecture Selection Engine (2026-08-02)
+
+38 new tests across 9 files under `test/solution_reasoning/`:
+`SolutionExplorer`'s full orchestration (never exactly one candidate;
+Flat Navigation/Offline First appear only when structurally applicable;
+every candidate carries a complete 15-dimension tradeoff table),
+`SolutionScorer` (richness/offline scoring rank correctly; every score is
+a self-explaining `Confidence`; all 15 `TradeoffDimension` values present
+exactly once), `SolutionComparison` (dominance/equivalence/alternative
+edges computed from real score+complexity comparisons),
+`SolutionSelector` (never "first candidate wins" — proven by placing the
+objectively worse candidate first in the input list; Pareto-frontier
+filtering; the full ordered tie-break cascade), `SolutionReviewer` (all
+seven defect categories: duplicate/equivalent/impossible/contradictory/
+weak/overEngineered/incomplete), `SolutionRefinement` (auto-fix/
+termination, never drops every candidate), Engineering integration
+(minimal vs. full richness produce genuinely different EventGraphs;
+each candidate's own EngineeringPlan reflects its own architecture
+variant), full Kernel integration (no bypass, the blueprint derives from
+the selected solution, the EngineeringPlan is `identical()`-reused rather
+than recomputed), and a second, unrelated novel domain ("Beekeeper's
+Apiary Rotation Log").
+
+Two real bugs were caught and fixed during development: (1) an
+over-aggressive "contradictory" review check false-flagged any full-
+richness candidate for an app with zero declared views (where
+`supportsSearch` is legitimately always `false`) — fixed by skipping the
+check when `NavigationGraph`'s decision id is the `'navigation:default'`
+single-screen fallback; (2) a novel-domain test fixture requested the
+`knowledge` capability without registering it in the test's
+`CapabilityRegistry`, causing capability resolution to reject the
+blueprint — fixed by registering it, matching the same class of fixture
+bug already seen (and fixed the same way) in V4's own novel-domain test.
+
+**Execution result:** all 38 pass in full. Full regression re-run
+immediately after: `test/stage10` + `test/stage11` (388 tests, M1
+certification, unchanged), full suite (820 tests, all green), `flutter
+analyze` (71 issues, 0 errors — identical to the pre-V5 baseline).
+
 ## Documentation vs. reality
 
 `docs/progress/V2_STAGE_11.md` (last touched at commit `68bf60f`, 2026-07-29) claims `Status: COMPLETE` and "119/All passing" — this predates all three untracked Stage 11 test files and the uncommitted production-code DI changes, and does not reflect the 194/199 result measured in this audit. It should be treated as historical, not current, until Stage 11 closure (Roadmap M1) actually lands and this doc is updated with a fresh, dated, execution-verified count.
