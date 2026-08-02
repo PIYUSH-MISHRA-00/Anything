@@ -224,3 +224,14 @@ Every class in `lib/world_model/` uses real typed fields — enums,
   (a V8 limitation, unchanged by this milestone) — so `RuntimeGraphBridge`
   ingests whatever `UsageGraph`/`LearningRecord`s a caller already has,
   not a live, continuously-updating stream.
+- `ingestKnowledge` — real since V9, but had zero real call sites until
+  Implementation Milestone R2, which wired it into
+  `AnythingKernel.processIntent` (reusing the `KnowledgeGraph` already
+  computed for Feature Discovery) and fixed a real `KnowledgeGraphBridge`
+  identity bug in the process. See
+  `docs/architecture/KNOWLEDGE_ENGINE.md`'s "World Graph ingestion
+  (Implementation Milestone R2)" section for the full account, including
+  the honest limit of what "represent conflicting knowledge" achieves
+  today (a real, surfaced `GraphConflict`, not a co-existing pair of
+  nodes — `WorldNode`'s minimal shape has no confidence/freshness field
+  to hold a second observation).

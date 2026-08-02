@@ -154,3 +154,73 @@ Resources are classified as:
 - Content size bounded (`RuntimeSecurityLimits.maxKnowledgeBytes`) independent of the tighter per-prompt truncation in `ModelApplicationReasoner`
 - Source code non-executable — extracted content is always treated as text data, never parsed/evaluated as code
 - Real network calls (search + extraction) are made by Anything's own trusted orchestration on the user's behalf, not mediated as an Experience capability — this is a different trust boundary than `HttpCapability` (see `docs/security/TRUST_BOUNDARIES.md`)
+
+## World Graph ingestion (Implementation Milestone R2)
+
+Closes MIS-1 Part 2's finding that `WorldModelCoordinator.ingestKnowledge`
+had zero real call sites. Investigation (Rule 3: reality wins) found both
+halves of the pipeline the milestone spec asked for already existed as
+real, general (not test-fixture-only) implementations:
+
+- `KnowledgeGraphBuilder.build(KnowledgeBundle)`
+  (`lib/software_architect/knowledge_graph.dart`) already converts a real
+  `KnowledgeBundle` into a typed `KnowledgeGraph`, preserving every
+  resource's `ResourceProvenance`/`LicenseMetadata`/`TrustMetadata` and a
+  small, genuine, deterministic concept-extraction heuristic (capitalized
+  title words) used to link related resources. Already reachable and
+  already exercised at Kernel Step 5.5, which passes its result into
+  `FeatureDiscoveryContext(knowledge: ...)` — the "Requirement
+  Enrichment" stage the milestone asked about already exists; R2 did not
+  need to invent it.
+- `KnowledgeGraphBridge.bridge(KnowledgeGraph)`
+  (`lib/world_model/bridges/knowledge_graph_bridge.dart`) already
+  translates a `KnowledgeGraph` into a `GraphUpdate` for
+  `WorldModelCoordinator.ingestKnowledge`, which was itself already a
+  complete, working method.
+
+The only real gap was wiring: `AnythingKernel.processIntent` reuses the
+SAME `knowledgeGraph` value it already computes for Feature Discovery
+and passes it to `_worldModel?.ingestKnowledge(knowledgeGraph)` via the
+existing R1 `_ingestIntoWorldModelSafely` defensive-ingestion helper —
+optional, best-effort, never able to fail generation.
+
+**A real bug was found and fixed while verifying "no duplicate nodes"
+(Rule 3, reality wins over assumption)**: `KnowledgeGraphBridge`
+resolved World Graph identity from `KnowledgeResource.id`, which
+`WebWeaveXAdapter` assigns as `'wwx-${microsecondsSinceEpoch}'` — a
+fresh value on every fetch, since it identifies the acquisition event,
+not the resource. Using it as the World Graph node identity meant every
+re-acquisition of the SAME URL minted a brand-new, disconnected node —
+the opposite of "must not duplicate." Fixed by resolving identity from
+`sourceUri` instead (matching `KnowledgeAcquisitionEngine`'s own local
+dedup key), so `GraphMerge`'s already-existing, already-tested identity
+dedup (same identity+kind+label → clean no-op merge) now correctly
+recognizes a repeat fetch of the same URL as the same node.
+
+### Conflict representation — honest scope
+
+When the same URL is re-observed with a genuinely different title,
+`GraphMerge` produces a real `GraphConflict` (unchanged Vision Milestone
+V9 policy, not altered by R2) — and because every `ingest*` method
+(unchanged since V9) routes through `WorldPlanner`'s all-or-nothing
+approve/reject gate, a conflicting update is rejected in full: the graph
+is left exactly as it was before that ingestion, not partially applied,
+not silently overwritten. This satisfies "never silently overwrite," but
+falls short of the milestone's more ambitious framing — "represent both
+sides, store confidence, allow reasoning later" — since `WorldNode`'s
+shape (`{identity, kind, label}`, shared identically by all 6 Bridges)
+has no field for confidence, freshness, or multiple co-existing
+observations of one identity. Extending it would be a real, legitimate,
+additive schema change (Rule 1 permits extending a canonical type), but
+touches all 6 Bridges' output shape and the persisted schema — a
+properly scoped migration in its own right, not something to fold
+silently into a "wire the known gap" milestone. Documented here as a
+named, honest limitation for a future milestone, not implemented.
+
+Proven in `test/world_model/knowledge_ingestion_test.dart`: identity
+stability across re-fetches, real deduplication (300-resource stress
+case), the documented conflict-rejection behavior, full Kernel
+end-to-end wiring (with and without a `WorldModelCoordinator` injected,
+and with an intentionally-throwing one to prove `processIntent` never
+fails because of a World Graph error), and Knowledge + Software
+Cognition writing into the SAME shared graph instance.

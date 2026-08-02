@@ -596,6 +596,47 @@ pre-R1**), `flutter analyze` (71 issues, 0 errors, 0 new — identical to
 the pre-R1 baseline, after removing one transient `unused_import` in the
 new test file). Zero pre-existing test modified or weakened.
 
+## Implementation Milestone R2 — Knowledge Intelligence / World Knowledge Integration (2026-08-02)
+
+9 new tests in `test/world_model/knowledge_ingestion_test.dart`:
+`KnowledgeGraphBridge` identity stability (the same URL bridged twice now
+resolves to the same `EntityIdentity` — the real bug this milestone
+found and fixed, since the pre-R2 identity source,
+`KnowledgeResource.id`, is acquisition-timestamp-based and never
+repeats), a real repeat-acquisition dedup proof (same URL ingested
+twice into one `WorldModelCoordinator` produces exactly 1 node, not 2),
+a real distinct-URL proof (2 nodes for 2 URLs), and a real, honest
+conflict-rejection proof (same URL re-observed with a different title:
+the second ingestion is rejected in full by the pre-existing,
+unmodified `WorldPlanner` gate — first version's label and the graph's
+version number both stay unchanged, proving the rejection is real and
+total, not partial). Kernel wiring end-to-end: a real
+`_KnowledgeRequestingReasoner` forces a genuine knowledge-acquisition
+round through a real `KnowledgeAcquisitionEngine` (fake network, real
+extraction logic — the same fixture pattern
+`test/knowledge/knowledge_acquisition_engine_test.dart` already
+established), and the resulting World Graph carries a real knowledge
+node sourced from that fetch; a second test proves omitting
+`worldModel` behaves byte-for-byte as before R2; a third proves
+`processIntent` still succeeds even when the injected
+`WorldModelCoordinator` throws on `ingestKnowledge` (a hand-written
+`_ThrowingWorldModelCoordinator implements WorldModelCoordinator` via
+`noSuchMethod`, proving R1's `_ingestIntoWorldModelSafely` pattern
+correctly covers this new call site, not just the two it was written
+for). One test proves Knowledge and Software Cognition ingestion write
+into the SAME shared `WorldModelCoordinator` graph. One stress/
+performance test ingests 300 distinct real resources and reports real
+measured elapsed time (~140ms observed this run) without asserting a
+fabricated SLA.
+
+**Execution result:** all 9 pass in full. Full regression re-run
+immediately after: full suite (**1121 tests, all green — up from 1112
+pre-R2**), `flutter analyze` (71 issues, 0 errors, 0 new — identical to
+the pre-R2 baseline). Zero pre-existing test modified or weakened;
+`test/world_model/bridges_test.dart`'s pre-existing `KnowledgeGraphBridge`
+test (asserts node/edge counts and kinds, not specific identity values)
+re-verified passing unchanged despite the identity-source fix.
+
 ## Documentation vs. reality
 
 `docs/progress/V2_STAGE_11.md` (last touched at commit `68bf60f`, 2026-07-29) claims `Status: COMPLETE` and "119/All passing" — this predates all three untracked Stage 11 test files and the uncommitted production-code DI changes, and does not reflect the 194/199 result measured in this audit. It should be treated as historical, not current, until Stage 11 closure (Roadmap M1) actually lands and this doc is updated with a fresh, dated, execution-verified count.

@@ -59,8 +59,22 @@ screen/coordinator that needs them.
   `test/app/r1_composition_root_test.dart` proves this directly: a
   creation via one coordinator is visible to a DIFFERENT coordinator's
   real `precheckModification()` call, against the SAME graph.
-- `ingestKnowledge` remains unreached — deliberately deferred (see Known
-  Limitations).
+- `ingestKnowledge` is now wired (Implementation Milestone R2). Investigation
+  found the conversion this limitation described as "not cleanly scoped"
+  already existed in full: `KnowledgeGraphBuilder.build(KnowledgeBundle)`
+  (`lib/software_architect/knowledge_graph.dart`) was already a real,
+  general builder — not a test-only fixture helper — and Kernel Step 5.5
+  already called it to feed Feature Discovery's optional `knowledge:`
+  parameter. R2 reused that SAME, already-computed `KnowledgeGraph`
+  value and passed it to `_ingestIntoWorldModelSafely(() =>
+  _worldModel?.ingestKnowledge(knowledgeGraph))` immediately afterward —
+  no new builder, no new call to acquire anything twice. See
+  `docs/architecture/KNOWLEDGE_ENGINE.md`'s "World Graph ingestion
+  (Implementation Milestone R2)" section for the full account, including
+  a real bug found and fixed in `KnowledgeGraphBridge`'s identity
+  computation (it previously used the acquisition-timestamp-based
+  `KnowledgeResource.id`, which made every re-fetch of the same URL
+  mint a brand-new World Graph node instead of deduplicating).
 
 ### Capability Platform wiring
 
@@ -148,9 +162,10 @@ negative Software Cognition creation-pipeline hook cases.
 
 ## Known limitations
 
-- `ingestKnowledge` remains unreached — converting a `KnowledgeBundle`
-  into a typed `KnowledgeGraph` at the right Kernel step wasn't cleanly
-  scoped this milestone; a real, named candidate for R2.
+- `ingestKnowledge` was wired in Implementation Milestone R2 — see
+  `docs/architecture/KNOWLEDGE_ENGINE.md`. (This limitation is now
+  closed; kept here, struck through in spirit, for the historical
+  record of what R1 shipped.)
 - `NotificationCapability`/`FileCapability` have no real production
   backing service (Fakes only) — building either is new capability
   implementation, not wiring, and needs a product decision first (does

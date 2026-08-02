@@ -269,6 +269,42 @@ R1's scope — see MIS-1 Part 3's roadmap for R2+).
 
 ---
 
+### R2 — Knowledge Intelligence / World Knowledge Integration — ✅ COMPLETE (2026-08-02)
+
+**Closure evidence:** `docs/architecture/KNOWLEDGE_ENGINE.md`'s "World
+Graph ingestion (Implementation Milestone R2)" section (new). Closed
+R1's `ingestKnowledge` limitation — investigation found both
+`KnowledgeGraphBuilder.build(KnowledgeBundle)` and
+`KnowledgeGraphBridge.bridge(KnowledgeGraph)` already existed as real,
+general implementations (not test-only fixtures), and Kernel Step 5.5
+already built a real `KnowledgeGraph` for Feature Discovery — R2 reused
+that same value and passed it to
+`_worldModel?.ingestKnowledge(knowledgeGraph)` via R1's existing
+`_ingestIntoWorldModelSafely` helper. A real bug was found and fixed in
+the process: `KnowledgeGraphBridge` resolved World Graph identity from
+the acquisition-timestamp-based `KnowledgeResource.id`, so every
+re-fetch of the same URL previously minted a brand-new, never-deduped
+node — fixed by resolving identity from `sourceUri` instead. 9 new
+tests (`test/world_model/knowledge_ingestion_test.dart`): identity
+stability, real dedup, real conflict-rejection (the existing,
+unmodified `WorldPlanner` all-or-nothing gate — not changed by R2), full
+Kernel wiring (with/without a `WorldModelCoordinator`, and with one that
+throws, proving generation can never fail because of a World Graph
+error), Knowledge + Software Cognition sharing one graph, and a real
+300-resource performance measurement. Full regression: 1121/1121 (up
+from 1112), zero pre-existing test modified; `flutter analyze`: 71/0,
+unchanged baseline.
+
+**Known limitation carried forward:** conflict representation stays
+surface-and-reject, not "represent both sides with confidence for later
+reasoning" — `WorldNode`'s minimal `{identity, kind, label}` shape
+(shared identically by all 6 Bridges) has no field for confidence or
+freshness. Extending it is a real, legitimate, additive schema change,
+but touches all 6 Bridges and the persisted schema — a properly scoped
+migration in its own right, not folded into this wiring milestone.
+
+---
+
 ## v2.0.0 Release Candidate
 
 **Objective:** All of M1-M6 acceptance gates met; `flutter analyze` clean; full `flutter test` suite passes (not just the subsets exercised in this audit); `flutter build apk --debug` succeeds and release build succeeds where a signing environment is available; no UNKNOWN rows remain in `V2_VISION_GAP_MATRIX.md` for anything in v2.0.0 scope; `docs/progress/V2_STAGE_11.md` and other stage docs reflect actual, dated, execution-verified state; CI is green on the release branch.
