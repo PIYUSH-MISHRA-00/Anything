@@ -23,27 +23,22 @@ import 'package:anything/kernel/resolution/experience_resolver.dart';
 import 'package:anything/capabilities/registry/capability_registry.dart';
 import 'package:anything/knowledge/knowledge_acquisition_engine.dart';
 import 'package:anything/knowledge/knowledge_bundle.dart';
-import 'package:anything/synthesis/app_blueprint.dart';
 import 'package:anything/synthesis/application_reasoner.dart';
 import 'package:anything/synthesis/composite_reasoner.dart';
 import 'package:anything/synthesis/blueprint_to_spec.dart';
 import 'package:anything/synthesis/blueprint_validator.dart';
-import 'package:anything/software_architect/architecture_candidate.dart';
-import 'package:anything/software_architect/architecture_planner.dart';
-import 'package:anything/software_architect/architecture_review.dart';
 import 'package:anything/software_architect/architecture_to_blueprint.dart';
 import 'package:anything/software_architect/constraint_planner.dart';
 import 'package:anything/software_architect/knowledge_graph.dart';
-import 'package:anything/software_architect/refinement_planner.dart';
 import 'package:anything/software_architect/requirement_extractor.dart';
-import 'package:anything/application_engineering/engineering_context.dart';
 import 'package:anything/application_engineering/engineering_plan.dart';
-import 'package:anything/application_engineering/engineering_planner.dart';
-import 'package:anything/application_engineering/engineering_refinement.dart';
+import 'package:anything/feature_discovery/dependency_resolver.dart';
 import 'package:anything/feature_discovery/feature_discovery_context.dart';
 import 'package:anything/feature_discovery/feature_discovery_engine.dart';
 import 'package:anything/feature_discovery/feature_plan.dart';
 import 'package:anything/feature_discovery/feature_refinement.dart';
+import 'package:anything/solution_reasoning/solution_explorer.dart';
+import 'package:anything/solution_reasoning/solution_exploration_context.dart';
 
 /// Maximum knowledge refinement rounds (trusted limit).
 const int _maxKnowledgeRounds = 2;
@@ -82,8 +77,7 @@ class AnythingKernel {
   final ConstraintPlanner _constraintPlanner;
   final FeatureDiscoveryEngine _featureDiscoveryEngine;
   final FeatureRefinement _featureRefinement;
-  final ArchitecturePlanner _architecturePlanner;
-  final RefinementPlanner _refinementPlanner;
+  final SolutionExplorer _solutionExplorer;
   final ArchitectureToBlueprintConverter _architectureToBlueprint;
 
   /// The knowledge accumulated by the most recent `_reasonWithKnowledgeLoop`
@@ -101,17 +95,14 @@ class AnythingKernel {
     ConstraintPlanner? constraintPlanner,
     FeatureDiscoveryEngine? featureDiscoveryEngine,
     FeatureRefinement? featureRefinement,
-    ArchitecturePlanner? architecturePlanner,
-    RefinementPlanner? refinementPlanner,
+    SolutionExplorer? solutionExplorer,
     ArchitectureToBlueprintConverter? architectureToBlueprint,
   }) : _requirementExtractor =
            requirementExtractor ?? const RequirementExtractor(),
        _constraintPlanner = constraintPlanner ?? const ConstraintPlanner(),
        _featureDiscoveryEngine = featureDiscoveryEngine ?? const FeatureDiscoveryEngine(),
        _featureRefinement = featureRefinement ?? const FeatureRefinement(),
-       _architecturePlanner =
-           architecturePlanner ?? const ArchitecturePlanner(),
-       _refinementPlanner = refinementPlanner ?? const RefinementPlanner(),
+       _solutionExplorer = solutionExplorer ?? const SolutionExplorer(),
        _architectureToBlueprint =
            architectureToBlueprint ?? const ArchitectureToBlueprintConverter(),
        _experienceResolver = experienceResolver ?? ExperienceResolver(),
@@ -242,19 +233,40 @@ class AnythingKernel {
         );
       }
 
-      // Step 6: Autonomous Software Architecture Engine — Architecture
-      // Planning -> Self Critique -> Iterative Refinement -> Final
-      // Blueprint. Every ReasoningReady result passes through here; there
-      // is no path from a SemanticApp to a blueprint that bypasses it.
-      final architectureOutcome = _planArchitecture(app: reasonResult.semanticApp);
-      if (architectureOutcome.blueprint == null) {
+      // Step 6: Multi-Solution Reasoning & Architecture Selection Engine —
+      // Architecture Exploration (reuses ASAE unchanged) -> Multi-Solution
+      // Generation -> Tradeoff Analysis -> Solution Review -> Solution
+      // Refinement -> Solution Selection. Every ReasoningReady result
+      // passes through here; there is no path from a SemanticApp to a
+      // blueprint that bypasses it, and never "first candidate wins" —
+      // the selected solution is chosen by SolutionSelector's scored,
+      // ordered tie-break cascade.
+      final dependencyGraph = const DependencyGraphBuilder().build(
+        featurePlan.finalGraph.nodes.map((n) => n.candidate).toList(),
+      );
+      final explorationResult = _solutionExplorer.explore(
+        app: reasonResult.semanticApp,
+        context: SolutionExplorationContext(
+          app: reasonResult.semanticApp,
+          featureGraph: featurePlan.finalGraph,
+          dependencyGraph: dependencyGraph,
+        ),
+      );
+      if (explorationResult.decision == null) {
         return PlanningFailed(
-          error: architectureOutcome.error!,
-          message: 'Architecture planning could not produce a viable design',
+          error: explorationResult.error!,
+          message: 'Solution reasoning could not produce a viable design',
           timestamp: DateTime.now(),
         );
       }
-      final blueprint = architectureOutcome.blueprint!;
+      final solutionDecision = explorationResult.decision!;
+      final selectedSolution = solutionDecision.selected;
+
+      final blueprint = _architectureToBlueprint.convert(
+        originalApp: reasonResult.semanticApp,
+        approved: selectedSolution.architecture,
+        reasonerForConversion: _reasoner,
+      );
 
       // Step 7: Validate blueprint
       final validation = BlueprintValidator.validate(blueprint);
@@ -266,20 +278,14 @@ class AnythingKernel {
         );
       }
 
-      // Step 7.5: Application Engineering Engine — Behavior/Data/Navigation/
-      // Interaction/Binding/Validation/Persistence/Offline/Synchronization/
-      // Lifecycle/Performance/Accessibility/Security Engineering, then
-      // machine-checked review + iterative refinement. Every approved
-      // architecture passes through here; there is no path from a blueprint
-      // to a spec that bypasses it.
-      final engineeringCandidate = EngineeringPlanner().plan(
-        EngineeringContext(
-          architecture: architectureOutcome.approvedCandidate!,
-          app: reasonResult.semanticApp,
-          featureGraph: featurePlan.finalGraph,
-        ),
-      );
-      final engineeringPlan = EngineeringRefinement().refine(engineeringCandidate);
+      // Step 7.5: Application Engineering Engine. The selected solution
+      // already carries its own real, approved EngineeringPlan (computed
+      // once during Solution Generation, before selection) — reused here
+      // rather than recomputed, since EngineeringPlanner.plan() is a pure
+      // function of the EngineeringContext already evaluated for this
+      // exact architecture. Engineering therefore consumes the selected
+      // SolutionGraph, not a freshly (and redundantly) re-derived one.
+      final engineeringPlan = selectedSolution.engineeringVariation.plan;
       if (engineeringPlan.outcome == EngineeringRefinementOutcome.budgetExhausted &&
           engineeringPlan.finalReview.hasCriticalIssues) {
         return PlanningFailed(
@@ -334,6 +340,7 @@ class AnythingKernel {
         blueprint: blueprint,
         engineeringPlan: engineeringPlan,
         featurePlan: featurePlan,
+        solutionDecision: solutionDecision,
         message: 'Ready to create',
         timestamp: DateTime.now(),
       );
@@ -512,36 +519,6 @@ class AnythingKernel {
       warnings: warnings,
       generatedAt: bundle.generatedAt,
     );
-  }
-
-  /// Runs the full Autonomous Software Architecture Engine pipeline:
-  /// Architecture Planning -> Self Critique -> Iterative Refinement ->
-  /// Final Blueprint. Structural throughout — nothing here inspects an
-  /// entity/field/view name, only its shape. Requirement extraction and
-  /// constraint analysis now run once in `processIntent`, shared with
-  /// Feature Discovery which runs immediately before this stage.
-  ({AppBlueprint? blueprint, ArchitectureCandidate? approvedCandidate, String? error})
-  _planArchitecture({required SemanticApp app}) {
-    final initialCandidate = _architecturePlanner.plan(app);
-    final report = _refinementPlanner.refine(initialCandidate);
-
-    if (report.outcome == RefinementOutcome.budgetExhausted &&
-        report.finalReview.hasCriticalIssues) {
-      return (
-        blueprint: null,
-        approvedCandidate: null,
-        error:
-            'Unable to produce a sound application design after '
-            'refinement — please try rephrasing or simplifying the request.',
-      );
-    }
-
-    final blueprint = _architectureToBlueprint.convert(
-      originalApp: app,
-      approved: report.finalCandidate,
-      reasonerForConversion: _reasoner,
-    );
-    return (blueprint: blueprint, approvedCandidate: report.finalCandidate, error: null);
   }
 
   ExecutionPlan _buildPlan(ExperienceSpec spec) {

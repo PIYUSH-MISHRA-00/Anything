@@ -6,6 +6,7 @@ library;
 
 import '../../application_engineering/engineering_plan.dart';
 import '../../feature_discovery/feature_plan.dart';
+import '../../solution_reasoning/solution_decision.dart';
 import '../../synthesis/app_blueprint.dart';
 import '../specification/experience_spec.dart';
 import '../planning/execution_plan.dart';
@@ -63,12 +64,22 @@ class ExecutionPlanReady extends KernelOutcome {
   /// discovery (there are none on the production path).
   final FeaturePlan? featurePlan;
 
+  /// The Multi-Solution Reasoning & Architecture Selection Engine's
+  /// output for this creation (Vision Milestone V5) — the selected
+  /// SolutionCandidate plus every rejected alternative and why. [blueprint]
+  /// and [engineeringPlan] above are both derived from
+  /// `solutionDecision.selected`, never independently computed. Null only
+  /// for outcomes that never reach solution reasoning (there are none on
+  /// the production path).
+  final SolutionDecision? solutionDecision;
+
   const ExecutionPlanReady({
     required this.plan,
     required this.specification,
     this.blueprint,
     this.engineeringPlan,
     this.featurePlan,
+    this.solutionDecision,
     required super.message,
     required super.timestamp,
   });
