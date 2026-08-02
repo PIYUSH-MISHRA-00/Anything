@@ -23,11 +23,18 @@ import 'package:anything/kernel/resolution/experience_resolver.dart';
 import 'package:anything/capabilities/registry/capability_registry.dart';
 import 'package:anything/knowledge/knowledge_acquisition_engine.dart';
 import 'package:anything/knowledge/knowledge_bundle.dart';
+import 'package:anything/synthesis/app_blueprint.dart';
 import 'package:anything/synthesis/application_reasoner.dart';
 import 'package:anything/synthesis/composite_reasoner.dart';
-import 'package:anything/synthesis/synthesis_planner.dart';
 import 'package:anything/synthesis/blueprint_to_spec.dart';
 import 'package:anything/synthesis/blueprint_validator.dart';
+import 'package:anything/software_architect/architecture_planner.dart';
+import 'package:anything/software_architect/architecture_review.dart';
+import 'package:anything/software_architect/architecture_to_blueprint.dart';
+import 'package:anything/software_architect/constraint_planner.dart';
+import 'package:anything/software_architect/knowledge_graph.dart';
+import 'package:anything/software_architect/refinement_planner.dart';
+import 'package:anything/software_architect/requirement_extractor.dart';
 
 /// Maximum knowledge refinement rounds (trusted limit).
 const int _maxKnowledgeRounds = 2;
@@ -62,6 +69,16 @@ class AnythingKernel {
   final IntentClassifier _classifier;
   final KnowledgeAcquisitionEngine _knowledgeEngine;
   final ApplicationReasoner _reasoner;
+  final RequirementExtractor _requirementExtractor;
+  final ConstraintPlanner _constraintPlanner;
+  final ArchitecturePlanner _architecturePlanner;
+  final RefinementPlanner _refinementPlanner;
+  final ArchitectureToBlueprintConverter _architectureToBlueprint;
+
+  /// The knowledge accumulated by the most recent `_reasonWithKnowledgeLoop`
+  /// call — read immediately afterward by `processIntent` to build the
+  /// KnowledgeGraph. Never persisted, never shared across calls.
+  KnowledgeBundle? _lastAcquiredKnowledge;
 
   AnythingKernel({
     required ModelProviderRegistry providerRegistry,
@@ -69,7 +86,20 @@ class AnythingKernel {
     CapabilityRegistry? capabilityRegistry,
     KnowledgeAcquisitionEngine? knowledgeEngine,
     ApplicationReasoner? reasoner,
-  }) : _experienceResolver = experienceResolver ?? ExperienceResolver(),
+    RequirementExtractor? requirementExtractor,
+    ConstraintPlanner? constraintPlanner,
+    ArchitecturePlanner? architecturePlanner,
+    RefinementPlanner? refinementPlanner,
+    ArchitectureToBlueprintConverter? architectureToBlueprint,
+  }) : _requirementExtractor =
+           requirementExtractor ?? const RequirementExtractor(),
+       _constraintPlanner = constraintPlanner ?? const ConstraintPlanner(),
+       _architecturePlanner =
+           architecturePlanner ?? const ArchitecturePlanner(),
+       _refinementPlanner = refinementPlanner ?? const RefinementPlanner(),
+       _architectureToBlueprint =
+           architectureToBlueprint ?? const ArchitectureToBlueprintConverter(),
+       _experienceResolver = experienceResolver ?? ExperienceResolver(),
        _capabilityRegistry = capabilityRegistry ?? CapabilityRegistry(),
        _understandingService = ModelUnderstandingService(providerRegistry),
        _classifier = IntentClassifier(),
@@ -166,10 +196,24 @@ class AnythingKernel {
           );
       }
 
-      // Step 6: Convert semantic app to blueprint
-      final blueprint = _synthesisPlanner.convertToBlueprint(
-        reasonResult.semanticApp,
+      // Step 6: Autonomous Software Architecture Engine — Requirement
+      // Extraction -> Knowledge Graph -> Architecture Planning -> Self
+      // Critique -> Iterative Refinement -> Final Blueprint. Every
+      // ReasoningReady result passes through here; there is no path from
+      // a SemanticApp to a blueprint that bypasses it.
+      final architectureOutcome = _planArchitecture(
+        app: reasonResult.semanticApp,
+        understanding: understanding,
+        knowledge: _lastAcquiredKnowledge,
       );
+      if (architectureOutcome.blueprint == null) {
+        return PlanningFailed(
+          error: architectureOutcome.error!,
+          message: 'Architecture planning could not produce a viable design',
+          timestamp: DateTime.now(),
+        );
+      }
+      final blueprint = architectureOutcome.blueprint!;
 
       // Step 7: Validate blueprint
       final validation = BlueprintValidator.validate(blueprint);
@@ -243,6 +287,7 @@ class AnythingKernel {
     IntentUnderstanding understanding,
   ) async {
     KnowledgeBundle? knowledgeBundle;
+    _lastAcquiredKnowledge = null;
     final capabilityIds = _capabilityRegistry.all.map((c) => c.id).toList();
 
     for (var round = 0; round <= _maxKnowledgeRounds; round++) {
@@ -350,6 +395,7 @@ class AnythingKernel {
       knowledgeBundle = accumulated != null
           ? _enforceKnowledgeBudget(accumulated)
           : null;
+      _lastAcquiredKnowledge = knowledgeBundle;
     }
 
     // Should not reach here, but safety fallback
@@ -397,8 +443,49 @@ class AnythingKernel {
     );
   }
 
-  /// Lazy access to synthesis planner for blueprint conversion.
-  late final SynthesisPlanner _synthesisPlanner = SynthesisPlanner(_reasoner);
+  /// Runs the full Autonomous Software Architecture Engine pipeline:
+  /// Requirement Extraction -> Constraint Analysis -> Knowledge Graph ->
+  /// Architecture Planning -> Self Critique -> Iterative Refinement ->
+  /// Final Blueprint. Structural throughout — nothing here inspects an
+  /// entity/field/view name, only its shape.
+  ({AppBlueprint? blueprint, String? error}) _planArchitecture({
+    required SemanticApp app,
+    required IntentUnderstanding understanding,
+    required KnowledgeBundle? knowledge,
+  }) {
+    // Requirement extraction + constraint analysis run unconditionally —
+    // this is where a future policy could reject on structural grounds
+    // before spending any planning effort; today their output augments
+    // the report rather than gating it.
+    final requirementGraph = _requirementExtractor.extract(
+      app: app,
+      understanding: understanding,
+    );
+    _constraintPlanner.plan(requirementGraph);
+    if (knowledge != null) {
+      KnowledgeGraphBuilder.build(knowledge);
+    }
+
+    final initialCandidate = _architecturePlanner.plan(app);
+    final report = _refinementPlanner.refine(initialCandidate);
+
+    if (report.outcome == RefinementOutcome.budgetExhausted &&
+        report.finalReview.hasCriticalIssues) {
+      return (
+        blueprint: null,
+        error:
+            'Unable to produce a sound application design after '
+            'refinement — please try rephrasing or simplifying the request.',
+      );
+    }
+
+    final blueprint = _architectureToBlueprint.convert(
+      originalApp: app,
+      approved: report.finalCandidate,
+      reasonerForConversion: _reasoner,
+    );
+    return (blueprint: blueprint, error: null);
+  }
 
   ExecutionPlan _buildPlan(ExperienceSpec spec) {
     final steps = <ExecutionStep>[];
