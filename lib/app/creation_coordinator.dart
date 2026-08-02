@@ -5,6 +5,7 @@ library;
 
 import 'dart:async';
 
+import 'package:anything/application_engineering/engineering_plan.dart';
 import 'package:anything/core/contracts/intent.dart';
 import 'package:anything/kernel/anything_kernel.dart';
 import 'package:anything/kernel/outcomes/kernel_outcome.dart';
@@ -118,6 +119,7 @@ class ExperienceCreationCoordinator {
             specification: kernelOutcome.specification,
             plan: kernelOutcome.plan,
             blueprint: kernelOutcome.blueprint,
+            engineeringPlan: kernelOutcome.engineeringPlan,
           );
 
         case ExperienceSpecificationReady():
@@ -169,6 +171,7 @@ class ExperienceCreationCoordinator {
     required ExperienceSpec specification,
     required ExecutionPlan plan,
     AppBlueprint? blueprint,
+    EngineeringPlan? engineeringPlan,
   }) async {
     _state = CreationState.creating;
 
@@ -179,6 +182,7 @@ class ExperienceCreationCoordinator {
           specification: specification,
           plan: plan,
           blueprint: blueprint,
+          engineeringPlan: engineeringPlan,
           platformContext: const PlatformContext(
             platform: 'android',
             sdkVersion: 34,

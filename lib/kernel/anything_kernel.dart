@@ -28,6 +28,7 @@ import 'package:anything/synthesis/application_reasoner.dart';
 import 'package:anything/synthesis/composite_reasoner.dart';
 import 'package:anything/synthesis/blueprint_to_spec.dart';
 import 'package:anything/synthesis/blueprint_validator.dart';
+import 'package:anything/software_architect/architecture_candidate.dart';
 import 'package:anything/software_architect/architecture_planner.dart';
 import 'package:anything/software_architect/architecture_review.dart';
 import 'package:anything/software_architect/architecture_to_blueprint.dart';
@@ -35,6 +36,10 @@ import 'package:anything/software_architect/constraint_planner.dart';
 import 'package:anything/software_architect/knowledge_graph.dart';
 import 'package:anything/software_architect/refinement_planner.dart';
 import 'package:anything/software_architect/requirement_extractor.dart';
+import 'package:anything/application_engineering/engineering_context.dart';
+import 'package:anything/application_engineering/engineering_plan.dart';
+import 'package:anything/application_engineering/engineering_planner.dart';
+import 'package:anything/application_engineering/engineering_refinement.dart';
 
 /// Maximum knowledge refinement rounds (trusted limit).
 const int _maxKnowledgeRounds = 2;
@@ -225,8 +230,35 @@ class AnythingKernel {
         );
       }
 
+      // Step 7.5: Application Engineering Engine — Behavior/Data/Navigation/
+      // Interaction/Binding/Validation/Persistence/Offline/Synchronization/
+      // Lifecycle/Performance/Accessibility/Security Engineering, then
+      // machine-checked review + iterative refinement. Every approved
+      // architecture passes through here; there is no path from a blueprint
+      // to a spec that bypasses it.
+      final engineeringCandidate = EngineeringPlanner().plan(
+        EngineeringContext(
+          architecture: architectureOutcome.approvedCandidate!,
+          app: reasonResult.semanticApp,
+        ),
+      );
+      final engineeringPlan = EngineeringRefinement().refine(engineeringCandidate);
+      if (engineeringPlan.outcome == EngineeringRefinementOutcome.budgetExhausted &&
+          engineeringPlan.finalReview.hasCriticalIssues) {
+        return PlanningFailed(
+          error:
+              'Unable to produce a sound engineering plan after '
+              'refinement — please try rephrasing or simplifying the request.',
+          message: 'Engineering planning could not produce a viable design',
+          timestamp: DateTime.now(),
+        );
+      }
+
       // Step 8: Convert to ExperienceSpec
-      final spec = BlueprintToSpecConverter.convert(blueprint);
+      final spec = BlueprintToSpecConverter.convert(
+        blueprint,
+        engineeringPlan: engineeringPlan,
+      );
 
       // Step 8: Resolve capabilities
       final capabilityIds = spec.requiredCapabilities
@@ -263,6 +295,7 @@ class AnythingKernel {
         plan: plan,
         specification: spec,
         blueprint: blueprint,
+        engineeringPlan: engineeringPlan,
         message: 'Ready to create',
         timestamp: DateTime.now(),
       );
@@ -448,7 +481,8 @@ class AnythingKernel {
   /// Architecture Planning -> Self Critique -> Iterative Refinement ->
   /// Final Blueprint. Structural throughout — nothing here inspects an
   /// entity/field/view name, only its shape.
-  ({AppBlueprint? blueprint, String? error}) _planArchitecture({
+  ({AppBlueprint? blueprint, ArchitectureCandidate? approvedCandidate, String? error})
+  _planArchitecture({
     required SemanticApp app,
     required IntentUnderstanding understanding,
     required KnowledgeBundle? knowledge,
@@ -473,6 +507,7 @@ class AnythingKernel {
         report.finalReview.hasCriticalIssues) {
       return (
         blueprint: null,
+        approvedCandidate: null,
         error:
             'Unable to produce a sound application design after '
             'refinement — please try rephrasing or simplifying the request.',
@@ -484,7 +519,7 @@ class AnythingKernel {
       approved: report.finalCandidate,
       reasonerForConversion: _reasoner,
     );
-    return (blueprint: blueprint, error: null);
+    return (blueprint: blueprint, approvedCandidate: report.finalCandidate, error: null);
   }
 
   ExecutionPlan _buildPlan(ExperienceSpec spec) {

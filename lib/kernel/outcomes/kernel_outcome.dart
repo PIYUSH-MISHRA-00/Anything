@@ -4,6 +4,7 @@
 /// UI maps these to human-friendly messages.
 library;
 
+import '../../application_engineering/engineering_plan.dart';
 import '../../synthesis/app_blueprint.dart';
 import '../specification/experience_spec.dart';
 import '../planning/execution_plan.dart';
@@ -49,10 +50,17 @@ class ExecutionPlanReady extends KernelOutcome {
   final ExperienceSpec specification;
   final AppBlueprint? blueprint;
 
+  /// The Application Engineering Engine's output for this creation
+  /// (Vision Milestone V3), null only for outcomes that never reach
+  /// engineering planning (there are none on the production path — the
+  /// Kernel always populates this alongside [blueprint]).
+  final EngineeringPlan? engineeringPlan;
+
   const ExecutionPlanReady({
     required this.plan,
     required this.specification,
     this.blueprint,
+    this.engineeringPlan,
     required super.message,
     required super.timestamp,
   });

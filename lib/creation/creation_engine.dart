@@ -4,6 +4,7 @@
 /// Does NOT execute arbitrary code.
 library;
 
+import '../application_engineering/engineering_to_blueprint.dart';
 import '../kernel/specification/experience_spec.dart';
 import '../synthesis/app_blueprint.dart';
 import 'creation_context.dart';
@@ -111,14 +112,30 @@ class CreationEngine {
           : _buildInterface(spec);
 
       // Build behavior — use blueprint when available for richer behavior
-      final behavior = blueprint != null
+      var behavior = blueprint != null
           ? _buildBehaviorFromBlueprint(blueprint)
           : _buildBehavior(spec);
 
       // Build state — use blueprint when available for richer state
-      final state = blueprint != null
+      var state = blueprint != null
           ? _buildStateFromBlueprint(blueprint)
           : _buildState(spec);
+
+      // Vision Milestone V3: if the Kernel produced an EngineeringPlan
+      // (approved architecture-machine-checked engineering), augment the
+      // behavior/state CreationEngine already built with real generic
+      // status-tracking state transitions. No-op when absent — every
+      // caller that predates this milestone is unaffected.
+      if (blueprint != null && context.engineeringPlan != null) {
+        final augmented = const EngineeringToBlueprintAugmenter().augment(
+          blueprint: blueprint,
+          behavior: behavior,
+          state: state,
+          plan: context.engineeringPlan,
+        );
+        behavior = augmented.behavior;
+        state = augmented.state;
+      }
 
       // Build data schema — use blueprint entities with fields
       DataSchema? data;

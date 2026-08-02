@@ -1,6 +1,7 @@
 /// Creation Context — contains everything the CreationEngine needs.
 library;
 
+import '../application_engineering/engineering_plan.dart';
 import '../core/contracts/intent.dart';
 import '../kernel/specification/experience_spec.dart';
 import '../kernel/planning/execution_plan.dart';
@@ -66,6 +67,14 @@ class CreationContext {
   final ExperienceSpec specification;
   final ExecutionPlan plan;
   final AppBlueprint? blueprint;
+
+  /// The Application Engineering Engine's output for this creation, if
+  /// the Kernel produced one (Vision Milestone V3). When null, behavior/
+  /// state are built purely from [blueprint], exactly as before this
+  /// milestone — every existing caller that doesn't know about this field
+  /// gets identical output to before.
+  final EngineeringPlan? engineeringPlan;
+
   final KnowledgeBundle? knowledgeBundle;
   final List<CapabilityDescriptor> availableCapabilities;
   final PlatformContext platformContext;
@@ -78,6 +87,7 @@ class CreationContext {
     required this.specification,
     required this.plan,
     this.blueprint,
+    this.engineeringPlan,
     this.knowledgeBundle,
     this.availableCapabilities = const [],
     required this.platformContext,

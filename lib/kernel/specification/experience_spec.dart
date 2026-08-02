@@ -3,6 +3,7 @@
 /// Versioned, technology-independent specification of what an Experience requires.
 library;
 
+import '../../application_engineering/engineering_plan.dart';
 import '../../core/contracts/intent.dart';
 
 const int experienceSpecVersion = 1;
@@ -33,6 +34,11 @@ class ExperienceSpec {
   final IntentId? sourceIntentId;
   final DateTime createdAt;
 
+  /// The Application Engineering Engine's output for this spec's blueprint
+  /// (Vision Milestone V3). Null for callers/paths that predate engineering
+  /// planning — every existing consumer of ExperienceSpec is unaffected.
+  final EngineeringPlan? engineeringPlan;
+
   const ExperienceSpec({
     this.specVersion = experienceSpecVersion,
     required this.id,
@@ -58,6 +64,7 @@ class ExperienceSpec {
     required this.offlineBehavior,
     this.sourceIntentId,
     required this.createdAt,
+    this.engineeringPlan,
   });
 }
 

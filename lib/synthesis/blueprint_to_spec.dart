@@ -8,14 +8,20 @@
 /// All category/interaction/UI derivation is based on blueprint structure.
 library;
 
+import '../application_engineering/engineering_plan.dart';
 import '../kernel/specification/experience_spec.dart';
 import 'app_archetype.dart';
 import 'app_blueprint.dart';
 
 /// Converts an AppBlueprint into an ExperienceSpec.
 class BlueprintToSpecConverter {
-  /// Convert a validated AppBlueprint into an ExperienceSpec.
-  static ExperienceSpec convert(AppBlueprint blueprint) {
+  /// Convert a validated AppBlueprint into an ExperienceSpec. [engineeringPlan]
+  /// is carried through onto the resulting spec unchanged (Vision Milestone V3);
+  /// omit it for every pre-V3 call site.
+  static ExperienceSpec convert(
+    AppBlueprint blueprint, {
+    EngineeringPlan? engineeringPlan,
+  }) {
     return ExperienceSpec(
       id: blueprint.id,
       name: blueprint.name,
@@ -38,6 +44,7 @@ class BlueprintToSpecConverter {
       accessibilityRequirements: const AccessibilityRequirements(),
       offlineBehavior: _deriveOfflineBehavior(blueprint),
       createdAt: DateTime.now(),
+      engineeringPlan: engineeringPlan,
     );
   }
 
