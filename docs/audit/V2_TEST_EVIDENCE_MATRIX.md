@@ -512,6 +512,62 @@ standing, pre-existing, Anything-code-unrelated `KeytoolException: Failed
 to read key AndroidDebugKey ... Tag number over 30 is not supported`
 JDK/keytool incompatibility confirmed in every prior milestone.
 
+## Vision Milestone V11 — Software Cognition & Universal Software Acquisition Engine (2026-08-02)
+
+68 new tests across 8 files: `test/software_cognition/software_identity_test.dart`
+(8 — SoftwareIdentity stable/structural determinism, SoftwareFingerprint
+Jaccard similarity including empty/disjoint/partial-overlap cases),
+`test/software_cognition/repository_analyzer_test.dart` (10 — real
+dependency/class/function/entrypoint extraction from acquired source
+text via WebWeaveX's own `compileRepository`, infra-signal detection,
+graph construction, confidence differentiation, two independent novel
+repositories never colliding, `acquireFromUrl` with an injected fetcher
+— no live network, null-on-unreachable/non-http), `test/software_cognition/package_analyzer_test.dart`
+(9 — the real pubspec.yaml dependency-block parser correctly excludes
+dev_dependencies and nested sdk: maps, evidence-backed capability
+inference, never fabricating dependencies from prose),
+`test/software_cognition/copyright_and_review_test.dart` (9 —
+CopyrightBoundary's verbatim-excerpt detection and short-substring/empty-
+source non-false-positive cases, AttributionCheck's honest
+present/missing reporting, SoftwareReview's confidence/provenance
+checks), `test/software_cognition/software_cognition_engine_and_coordinator_test.dart`
+(8 — end-to-end sound/unsound understanding, KnowledgeResource
+conversion never leaking raw source, World Graph sync, an Evolution
+opportunity suggestion backed by 2 independently-acquired repositories),
+`test/software_cognition/software_similarity_and_reasoner_test.dart`
+(8 — deterministic similarity, multi-source reasoning's "repeated across
+2+ candidates → accepted, seen once → rejected but reported" gate,
+pattern detection, pairwise similarity, empty-input safety),
+`test/software_cognition/component_api_architecture_test.dart` (11 —
+ComponentAnalyzer via WebWeaveX's own `Soup`, WidgetAnalyzer's naming
+heuristic, APIAnalyzer's real OpenAPI paths/schemas extraction and
+malformed-JSON safety, ArchitectureAnalyzer's real directory-convention
+layering, StorageAnalyzer, DependencyProjections), and
+`test/world_model/software_graph_bridge_test.dart` (6 — the 6th World
+Model Bridge's node/edge kind mapping, entity/capability unification
+with the World Graph's own kinds, empty-graph safety).
+
+Two real bugs were caught and fixed during development, both via these
+tests: (1) `ArchitectureAnalyzer`'s top-level-directory filter excluded
+every directory (directory paths end with `/`, so `!path.contains('/')`
+was never true for a directory) — fixed by stripping the trailing slash
+before checking for nesting; (2) `CopyrightBoundary`'s "digest larger
+than source" check produced false positives for legitimate, fixed-format
+digests of small sources — removed rather than patched, since it didn't
+correlate with actual copying and the remaining verbatim-excerpt check
+is the real, meaningful signal.
+
+**Execution result:** all 68 pass in full. Full regression re-run
+immediately after: full suite (**1103 tests, all green — up from 1035
+pre-V11**), `flutter analyze` (71 issues, 0 errors, 0 new warnings —
+identical to the pre-V11 baseline, after removing 5 newly-introduced-
+then-fixed `unnecessary_import` infos in the new test files). `flutter
+build apk --debug` attempted (post `flutter clean` + `flutter pub get`);
+blocked by the same standing, pre-existing, Anything-code-unrelated
+`KeytoolException: Failed to read key AndroidDebugKey ... Tag number
+over 30 is not supported` JDK/keytool incompatibility confirmed in every
+prior milestone.
+
 ## Documentation vs. reality
 
 `docs/progress/V2_STAGE_11.md` (last touched at commit `68bf60f`, 2026-07-29) claims `Status: COMPLETE` and "119/All passing" — this predates all three untracked Stage 11 test files and the uncommitted production-code DI changes, and does not reflect the 194/199 result measured in this audit. It should be treated as historical, not current, until Stage 11 closure (Roadmap M1) actually lands and this doc is updated with a fresh, dated, execution-verified count.

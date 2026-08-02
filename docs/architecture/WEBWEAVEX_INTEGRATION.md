@@ -53,3 +53,16 @@ For Stage 5, we use WebWeaveX's deterministic serialization and runtime graph ca
 - Source code remains non-executable
 - Prompt-injection trust boundary maintained
 - Local/private network retrieval blocked by default
+
+## Software Cognition (Vision Milestone V11, 2026-08-02)
+
+`lib/software_cognition/` is the second real, non-knowledge consumer of
+`package:webweavex` (alongside `lib/knowledge/webweavex_adapter.dart`).
+It uses WebWeaveX's already-exported deterministic repository/document IR
+engine (`compileRepository`, `queryRepository`, `analyze`, `compileDocument`)
+and its exported `Soup` HTML parser directly — it introduces zero new
+acquisition, crawling, or HTML-parsing logic. See
+`docs/architecture/SOFTWARE_COGNITION_ENGINE.md` for the full account,
+including the two small, genuine gaps filled (pubspec.yaml dependency
+parsing, OpenAPI paths/schemas extraction) where WebWeaveX's equivalent
+capability is either absent or not part of its public export surface.

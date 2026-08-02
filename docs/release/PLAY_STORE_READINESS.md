@@ -52,6 +52,15 @@ Anything v2 is in early development. This document tracks Play Store readiness.
 | Crash reporting | None |
 | Advertising | None |
 
+## Software Cognition (Vision Milestone V11, 2026-08-02)
+
+`lib/software_cognition/` (repository/package/API understanding) adds no
+new network destination beyond `package:webweavex`'s existing bounded
+HTTP fetch, no background execution, no new permission requirement, and
+no `eval`/`dart:mirrors`/runtime compilation — it remains declarative and
+deterministic, consistent with every existing Play Store constraint row
+above.
+
 ## Pre-release Checklist
 
 - [ ] Real application ID

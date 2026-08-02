@@ -291,6 +291,38 @@ trusted `AppBlueprint` entity shapes (name + field types, the same data
 read of untrusted content, and its fallback path (no match) is
 unchanged from V9.
 
+## Software Cognition (Vision Milestone V11, 2026-08-02)
+
+`lib/software_cognition/` sits entirely on the TRUSTED side and
+introduces no new acquisition boundary: every acquisition path routes
+through `package:webweavex`'s own `renderPage`/`extractSemanticHtml`/
+`extractSemanticContent`/`Soup` — the identical, already-audited boundary
+`WebWeaveXAdapter` established in V1 (bounded fetch, no arbitrary code
+execution, no eval/mirrors). Acquired repository/package content is
+UNTRUSTED exactly like any other WebWeaveX-retrieved resource; it never
+becomes authority.
+
+**A digest is a distillation, never a copy — enforced, not assumed**:
+`CopyrightBoundary.check()` flags any digest text that is a large
+(≥200 char) verbatim excerpt of the original acquired source, and
+`SoftwareCognitionCoordinator.toKnowledgeResource()`/`packageToKnowledgeResource()`
+return `null` rather than construct a `KnowledgeResource` from an
+understanding that fails this check or carries a critical
+`SoftwareReview` issue (e.g. no recorded source URL).
+
+**No second prompt-injection surface**: a converted `KnowledgeResource`
+flows into `ModelApplicationReasoner`'s prompt through the exact same
+delimited/sanitized/size-bounded "acquired knowledge" boundary every
+other web resource already uses (unchanged since V1) — Software
+Cognition does not construct or send any prompt itself.
+
+**World Graph integration reuses the existing review gate**: the new
+`SoftwareGraphBridge` (6th Bridge) produces a `GraphUpdate` exactly like
+the other five; it is still subject to `WorldPlanner`'s `GraphConsistency`
+gate before being considered approved — no bridge output is trusted
+merely because it came from Software Cognition. See
+`docs/architecture/SOFTWARE_COGNITION_ENGINE.md` for the full account.
+
 ## Modification path
 
 ```

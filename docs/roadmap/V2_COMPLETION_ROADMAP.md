@@ -61,20 +61,27 @@ the M1/M2 rows below remain accurate and unaffected. See
 `docs/architecture/DESIGN_REVIEW_ENGINE.md` (V6),
 `docs/architecture/EVOLUTION_ENGINE.md` (V7),
 `docs/architecture/RUNTIME_INTELLIGENCE_LAYER.md` (V8),
-`docs/architecture/WORLD_MODEL_AND_SEMANTIC_GRAPH.md` (V9), and
-`docs/architecture/RELEASE_CANDIDATE_HARDENING.md` (V10) for closure
+`docs/architecture/WORLD_MODEL_AND_SEMANTIC_GRAPH.md` (V9),
+`docs/architecture/RELEASE_CANDIDATE_HARDENING.md` (V10), and
+`docs/architecture/SOFTWARE_COGNITION_ENGINE.md` (V11) for closure
 evidence. V10 — Release Candidate Engineering & Production Hardening —
-is complete: it resolved every V9-documented persistence limitation
-(World Model/Runtime Intelligence memory now survive process restart via
-the existing SQLite architecture), wired `precheckModification()` into
-the real Modification production path, unified Evolution/World
-identities for blueprint-matched entities, added the repository's first
-structured logging/diagnostics module and CI/CD pipeline, and closed a
-real SQLite migration gap (`SqliteExperienceRepository` had no
-`onUpgrade` path at all before V10). It did not add a new architectural
-layer, matching its own directive that "the architecture is considered
-complete." Per its own instructions, V11 awaits external release review
-before starting.
+resolved every V9-documented persistence limitation (World Model/Runtime
+Intelligence memory now survive process restart via the existing SQLite
+architecture), wired `precheckModification()` into the real Modification
+production path, unified Evolution/World identities for blueprint-matched
+entities, added the repository's first structured logging/diagnostics
+module and CI/CD pipeline, and closed a real SQLite migration gap. V11 —
+Software Cognition & Universal Software Acquisition Engine — is complete:
+it gives Anything the ability to understand existing repositories/
+packages/APIs/components/architecture (via a pure typed translation of
+WebWeaveX's own already-computed deterministic repository IR — never a
+second acquisition/parsing engine), reason about them across multiple
+independently-acquired sources (never adopting a pattern from a single
+source), enforce a real copyright/attribution boundary, and feed that
+understanding into the existing, unmodified LLM-reasoning prompt pathway
+via a real `KnowledgeResource` — all while keeping the generated
+application fresh and never assembled from copied source. Per its own
+instructions, V12 awaits external architectural review before starting.
 
 **V10's relationship to M3/M5/M6 below:** V10 made real, scoped progress
 on ground these M-series milestones also cover — a real (but partial,
