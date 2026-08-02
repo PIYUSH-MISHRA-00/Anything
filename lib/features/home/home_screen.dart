@@ -5,6 +5,7 @@ library;
 
 import 'package:flutter/material.dart';
 
+import 'package:anything/app/app_composition.dart';
 import 'package:anything/app/creation_coordinator.dart';
 import 'package:anything/app/experience_opening_coordinator.dart';
 import 'package:anything/design_system/components/birth_sequence.dart';
@@ -13,11 +14,6 @@ import 'package:anything/design_system/components/anything_empty_state.dart';
 import 'package:anything/design_system/components/anything_section_header.dart';
 import 'package:anything/design_system/tokens/spacing.dart';
 import 'package:anything/features/home/intent_composer.dart';
-import 'package:anything/kernel/anything_kernel.dart';
-import 'package:anything/knowledge/knowledge_acquisition_engine.dart';
-import 'package:anything/knowledge/search_provider.dart';
-import 'package:anything/knowledge/webweavex_adapter.dart';
-import 'package:anything/services/provider_registry.dart';
 import 'package:anything/services/voice_service.dart';
 import 'package:anything/storage/sqlite_experience_repository.dart';
 import 'package:anything/storage/intent_repository.dart';
@@ -27,13 +23,21 @@ import 'package:anything/runtime/experience_host_screen.dart';
 
 /// Home screen with production creation pipeline.
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  /// Shared composition root (Implementation Milestone R1). Defaults to a
+  /// fresh `AppComposition.production()` when not supplied — preserves
+  /// exact prior behavior for any caller/test constructing `HomeScreen()`
+  /// directly, though the real app (`AnythingAppShell`) always threads its
+  /// own single shared instance.
+  final AppComposition? composition;
+
+  const HomeScreen({super.key, this.composition});
 
   @override
   HomeScreenState createState() => HomeScreenState();
 }
 
 class HomeScreenState extends State<HomeScreen> {
+  late final AppComposition _composition;
   late final ExperienceCreationCoordinator _coordinator;
   late final ExperienceOpeningCoordinator _openingCoordinator;
   late final SqliteExperienceRepository _repository;
@@ -62,25 +66,22 @@ class HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    final providerRegistry = AnythingProviderRegistry();
-    final kernel = AnythingKernel(
-      providerRegistry: providerRegistry,
-      // Production wiring for real knowledge acquisition: SearchProvider
-      // resolves a query to candidate URLs, WebWeaveXAdapter extracts real
-      // content from each via package:webweavex. Every other Kernel/engine
-      // construction in the codebase (tests included) keeps the safe,
-      // no-network default (KnowledgeAcquisitionEngine()) unless it opts in
-      // explicitly — this is the one production composition root.
-      knowledgeEngine: KnowledgeAcquisitionEngine(
-        searchProvider: DuckDuckGoSearchProvider(),
-        webweavexAdapter: WebWeaveXAdapter(),
-      ),
+    // Implementation Milestone R1: the Kernel/KnowledgeAcquisitionEngine/
+    // ProviderRegistry/WorldModelCoordinator are no longer constructed
+    // here — they come from the single shared `AppComposition`, so this
+    // screen, `ExperienceHostScreen`, and `ExperiencesScreen` all read and
+    // write the SAME World Graph and provider registry (MIS-1 Part 2's
+    // ownership finding).
+    _composition = widget.composition ?? AppComposition.production();
+    _coordinator = ExperienceCreationCoordinator(
+      kernel: _composition.kernel,
+      worldModel: _composition.worldModel,
+      softwareCognition: _composition.softwareCognition,
     );
-    _coordinator = ExperienceCreationCoordinator(kernel: kernel);
     _openingCoordinator = ExperienceOpeningCoordinator();
     _repository = SqliteExperienceRepository();
     _intentRepository = IntentRepository();
-    _composer = IntentComposer(kernel);
+    _composer = IntentComposer(_composition.kernel);
     _voiceService = VoiceInputService();
     _voiceService.addListener(_onVoiceStateChanged);
     _loadRecent();
@@ -214,6 +215,8 @@ class HomeScreenState extends State<HomeScreen> {
               package: result.package,
               experienceName: result.experienceName,
               experienceId: result.experienceId,
+              worldModel: _composition.worldModel,
+              capabilityPlatform: _composition.capabilityPlatform,
             ),
           ),
         ).then((_) => _loadRecent());
@@ -301,6 +304,8 @@ class HomeScreenState extends State<HomeScreen> {
               package: openResult.package,
               experienceName: openResult.experienceName,
               experienceId: openResult.experienceId,
+              worldModel: _composition.worldModel,
+              capabilityPlatform: _composition.capabilityPlatform,
             ),
           ),
         ).then((_) => _loadRecent());
@@ -352,6 +357,8 @@ class HomeScreenState extends State<HomeScreen> {
               package: openResult.package,
               experienceName: openResult.experienceName,
               experienceId: openResult.experienceId,
+              worldModel: _composition.worldModel,
+              capabilityPlatform: _composition.capabilityPlatform,
             ),
           ),
         ).then((_) => _loadRecent());

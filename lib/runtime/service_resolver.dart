@@ -1,14 +1,57 @@
 /// Experience Service Resolver — maps service definitions to trusted implementations.
 library;
 
+import '../capabilities/platform/capability_platform.dart';
 import '../creation/experience_package.dart';
+
+/// Maps a `ServiceDefinition.type` string to the matching
+/// `CapabilityPlatform` capability id. `localDatabase` has no entry — no
+/// registered Capability Platform capability answers it yet (REALITY,
+/// Implementation Milestone R1: `ExperienceDataRuntime` already owns real
+/// generic CRUD outside this resolver entirely; extending Capability
+/// Platform with a new "database" capability would be inventing new
+/// architecture, out of R1's "wire what exists" scope).
+const Map<String, String> _serviceTypeToCapabilityId = {
+  'httpClient': 'http',
+  'notifications': 'notifications',
+  'fileAccess': 'files',
+  'knowledgeRetrieval': 'knowledge',
+  'aiInference': 'ai',
+};
 
 /// Resolves service definitions to trusted Runtime services.
 class ExperienceServiceResolver {
   final Map<String, _ServiceEntry> _services = {};
 
-  /// Resolve a list of service definitions.
-  void resolve(List<ServiceDefinition> definitions) {
+  /// Optional shared Capability Platform (Implementation Milestone R1).
+  /// REALITY before R1: `localDatabase`/`httpClient` always returned
+  /// `{'status': 'not_implemented'}` and `notifications`/`fileAccess`/
+  /// `knowledgeRetrieval`/`aiInference` always fell through to "Unknown
+  /// service type" — `CapabilityPlatform.register()`/`.invoke()` existed
+  /// and were fully tested (M2) but had zero production callers (MIS-1
+  /// Part 1/2's largest standing finding). Null by default — every
+  /// existing test/call site that constructs `ExperienceServiceResolver()`
+  /// without one keeps identical (stubbed) behavior; `clock` is untouched
+  /// either way.
+  final CapabilityPlatform? _capabilityPlatform;
+  List<String>? _declaredCapabilities;
+  String? _sessionId;
+
+  ExperienceServiceResolver({CapabilityPlatform? capabilityPlatform}) : _capabilityPlatform = capabilityPlatform;
+
+  /// Resolve a list of service definitions. [experienceId] and
+  /// [declaredCapabilities] (Implementation Milestone R1) scope the
+  /// Capability Platform dispatch below to this Experience's own
+  /// declarations and session budget — omitted, dispatch still works but
+  /// without a declared-capability allow-list (matches the permissive
+  /// default every pre-R1 caller already relied on for `clock`).
+  void resolve(
+    List<ServiceDefinition> definitions, {
+    String? experienceId,
+    List<String>? declaredCapabilities,
+  }) {
+    _sessionId = experienceId;
+    _declaredCapabilities = declaredCapabilities;
     for (final def in definitions) {
       if (_isKnownService(def.type)) {
         _services[def.id] = _ServiceEntry(
@@ -50,11 +93,39 @@ class ExperienceServiceResolver {
         return _executeClock(operation, params);
       case 'localDatabase':
         return _executeDatabase(operation, params);
-      case 'httpClient':
-        return _executeHttp(operation, params);
       default:
-        return {'error': 'Unknown service type: ${entry.type}'};
+        final capabilityId = _serviceTypeToCapabilityId[entry.type];
+        if (capabilityId != null && _capabilityPlatform != null) {
+          return _executeViaCapabilityPlatform(capabilityId, operation, params);
+        }
+        return entry.type == 'httpClient'
+            ? _executeHttp(operation, params)
+            : {'error': 'Unknown service type: ${entry.type}'};
     }
+  }
+
+  /// Dispatches through the shared Capability Platform (Implementation
+  /// Milestone R1) — the real, budgeted, declaration-enforced invocation
+  /// path `CapabilityPlatform.invoke()` already provides (M2-certified;
+  /// unchanged here). Translates its typed `CapabilityInvocationResult`
+  /// into this resolver's existing `Map<String, dynamic>` contract so
+  /// every caller (`BehaviorInterpreter`) is unaffected by the change.
+  Future<Map<String, dynamic>> _executeViaCapabilityPlatform(
+    String capabilityId,
+    String operation,
+    Map<String, dynamic> params,
+  ) async {
+    final result = await _capabilityPlatform!.invoke(
+      capabilityId,
+      operation,
+      params,
+      declaredCapabilities: _declaredCapabilities,
+      sessionId: _sessionId,
+    );
+    if (result.status == CapabilityResultStatus.success) {
+      return result.data;
+    }
+    return {'error': result.error ?? result.status.name};
   }
 
   bool _isKnownService(String type) {

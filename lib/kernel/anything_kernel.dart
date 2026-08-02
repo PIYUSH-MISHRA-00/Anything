@@ -48,6 +48,8 @@ import 'package:anything/evolution/evolution_context.dart';
 import 'package:anything/evolution/evolution_engine.dart';
 import 'package:anything/evolution/evolution_history.dart';
 import 'package:anything/evolution/evolution_memory.dart';
+import 'package:anything/knowledge/knowledge_resource.dart';
+import 'package:anything/world_model/world_model_coordinator.dart';
 
 /// Maximum knowledge refinement rounds (trusted limit).
 const int _maxKnowledgeRounds = 2;
@@ -91,6 +93,18 @@ class AnythingKernel {
   final EvolutionEngine _evolutionEngine;
   final ArchitectureToBlueprintConverter _architectureToBlueprint;
 
+  /// Optional shared World Graph (Implementation Milestone R1). REALITY
+  /// before R1: the Kernel held no World Model reference at all, so
+  /// `ingestReviewSession`/`ingestEvolutionRoadmap` were never called from
+  /// anywhere (MIS-1 Part 2, "World Model Assessment"). Null by default —
+  /// every existing caller/test that constructs an `AnythingKernel`
+  /// without one keeps identical behavior (Rule 10: backward compatible).
+  /// A World Model ingestion failure NEVER changes `processIntent`'s
+  /// return value — it is wrapped defensively and, at most, silently
+  /// skipped, since a generated app must never fail to build because of a
+  /// bookkeeping graph write.
+  final WorldModelCoordinator? _worldModel;
+
   /// Every Design Review session this Kernel instance has ever run, and a
   /// memory of accepted/fixed decisions keyed by structural fingerprint —
   /// both persist for the lifetime of this Kernel instance (never reset
@@ -125,7 +139,9 @@ class AnythingKernel {
     DesignReviewEngine? designReviewEngine,
     EvolutionEngine? evolutionEngine,
     ArchitectureToBlueprintConverter? architectureToBlueprint,
-  }) : _requirementExtractor =
+    WorldModelCoordinator? worldModel,
+  }) : _worldModel = worldModel,
+       _requirementExtractor =
            requirementExtractor ?? const RequirementExtractor(),
        _constraintPlanner = constraintPlanner ?? const ConstraintPlanner(),
        _featureDiscoveryEngine = featureDiscoveryEngine ?? const FeatureDiscoveryEngine(),
@@ -145,7 +161,17 @@ class AnythingKernel {
            CompositeApplicationReasoner(providerRegistry: providerRegistry);
 
   /// Process an intent through the full Kernel pipeline.
-  Future<KernelOutcome> processIntent(Intent intent) async {
+  ///
+  /// [seedKnowledge] optionally seeds the knowledge refinement loop with
+  /// resources acquired BEFORE reasoning starts (Implementation Milestone
+  /// R1's Software Cognition wiring: a caller that already acquired real
+  /// repository/package understanding via `SoftwareCognitionCoordinator`
+  /// passes its `KnowledgeResource` here). Empty/omitted by default —
+  /// existing behavior is byte-for-byte unchanged when not supplied.
+  Future<KernelOutcome> processIntent(
+    Intent intent, {
+    List<KnowledgeResource> seedKnowledge = const [],
+  }) async {
     try {
       // Step 1: Classify the intent
       final category = _classifier.classify(intent.expression);
@@ -189,7 +215,10 @@ class AnythingKernel {
       }
 
       // Step 5: Reason about the application with knowledge refinement loop
-      final reasonResult = await _reasonWithKnowledgeLoop(understanding);
+      final reasonResult = await _reasonWithKnowledgeLoop(
+        understanding,
+        seedKnowledge: seedKnowledge,
+      );
 
       // Handle non-success outcomes from reasoning
       switch (reasonResult) {
@@ -335,6 +364,7 @@ class AnythingKernel {
         );
       }
       final reviewedContext = reviewOutcome.session.result.finalContext;
+      _ingestIntoWorldModelSafely(() => _worldModel?.ingestReviewSession(reviewOutcome.session));
 
       // Step 7.6: Application Engineering Engine output. The selected,
       // now review-approved solution already carries its own real
@@ -368,6 +398,9 @@ class AnythingKernel {
         EvolutionContext(reviewContext: reviewedContext, reviewSession: reviewOutcome.session),
         memory: _evolutionMemory,
         history: _evolutionHistory,
+      );
+      _ingestIntoWorldModelSafely(
+        () => _worldModel?.ingestEvolutionRoadmap(evolutionResult.roadmap, blueprint: blueprint),
       );
 
       // Step 8: Convert to ExperienceSpec
@@ -429,6 +462,20 @@ class AnythingKernel {
     }
   }
 
+  /// Best-effort World Graph ingestion (Implementation Milestone R1): a
+  /// failure here must NEVER surface as a `processIntent` failure — the
+  /// World Graph is a bookkeeping/observability concern, not part of the
+  /// generation contract. A no-op entirely when no `_worldModel` was
+  /// injected.
+  void _ingestIntoWorldModelSafely(void Function() ingest) {
+    if (_worldModel == null) return;
+    try {
+      ingest();
+    } catch (_) {
+      // Deliberately swallowed — see doc comment above.
+    }
+  }
+
   /// Reason with knowledge refinement loop.
   ///
   /// Flow:
@@ -437,10 +484,18 @@ class AnythingKernel {
   /// 3. Repeat up to max rounds
   /// 4. If still knowledge required after max rounds → fail
   Future<AppReasoningResult> _reasonWithKnowledgeLoop(
-    IntentUnderstanding understanding,
-  ) async {
-    KnowledgeBundle? knowledgeBundle;
-    _lastAcquiredKnowledge = null;
+    IntentUnderstanding understanding, {
+    List<KnowledgeResource> seedKnowledge = const [],
+  }) async {
+    KnowledgeBundle? knowledgeBundle = seedKnowledge.isEmpty
+        ? null
+        : KnowledgeBundle(
+            id: 'seed-${DateTime.now().microsecondsSinceEpoch}',
+            status: BundleStatus.ready,
+            resources: seedKnowledge,
+            generatedAt: DateTime.now(),
+          );
+    _lastAcquiredKnowledge = knowledgeBundle;
     final capabilityIds = _capabilityRegistry.all.map((c) => c.id).toList();
 
     for (var round = 0; round <= _maxKnowledgeRounds; round++) {

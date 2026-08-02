@@ -12,6 +12,7 @@ import '../features/home/home_screen.dart';
 import '../features/experiences/experiences_screen.dart';
 import '../features/activity/activity_screen.dart';
 import '../features/preferences/preferences_screen.dart';
+import 'app_composition.dart';
 
 /// The main application shell with bottom navigation.
 class AnythingAppShell extends StatefulWidget {
@@ -27,9 +28,15 @@ class _AnythingAppShellState extends State<AnythingAppShell> {
   int _currentIndex = 0;
   final GlobalKey<HomeScreenState> _homeKey = GlobalKey<HomeScreenState>();
 
+  /// The ONE canonical production composition root (Implementation
+  /// Milestone R1), constructed exactly once for the lifetime of this
+  /// shell and threaded to every screen that needs a shared instance.
+  final AppComposition _composition = AppComposition.production();
+
   late final List<Widget Function()> _screenBuilders = [
-    () => HomeScreen(key: _homeKey),
+    () => HomeScreen(key: _homeKey, composition: _composition),
     () => ExperiencesScreen(
+      composition: _composition,
       onCreateRequested: () {
         setState(() => _currentIndex = 0);
         _homeKey.currentState?.focusIntentField();

@@ -5,9 +5,11 @@ import 'dart:async' show unawaited;
 import 'package:flutter/material.dart';
 
 import '../app/experience_modification_coordinator.dart';
+import '../capabilities/platform/capability_platform.dart';
 import '../creation/experience_package.dart';
 import '../storage/activity_repository.dart';
 import '../security/protection_service.dart';
+import '../world_model/world_model_coordinator.dart';
 import 'anything_runtime.dart';
 import 'experience_renderer.dart';
 import 'experience_router.dart';
@@ -25,6 +27,19 @@ class ExperienceHostScreen extends StatefulWidget {
   /// SQLite (created outside the testWidgets context where FFI works).
   final AnythingRuntime? runtime;
 
+  /// Shared, canonical World Graph / Capability Platform (Implementation
+  /// Milestone R1) — threaded from the composition root
+  /// (`AnythingAppShell` -> `AppComposition`) so every Experience shares
+  /// the SAME `WorldModelCoordinator`/`CapabilityPlatform` instance rather
+  /// than each host screen constructing its own (MIS-1 Part 2's ownership
+  /// finding). Both null by default: existing tests/callers that construct
+  /// `ExperienceHostScreen` directly are unaffected (`ExperienceModificationCoordinator`
+  /// falls back to its own default `WorldModelCoordinator()`, and
+  /// `AnythingRuntime` falls back to the stubbed dispatch path, exactly as
+  /// before R1).
+  final WorldModelCoordinator? worldModel;
+  final CapabilityPlatform? capabilityPlatform;
+
   const ExperienceHostScreen({
     super.key,
     required this.package,
@@ -32,6 +47,8 @@ class ExperienceHostScreen extends StatefulWidget {
     this.experienceId,
     this.protectionService,
     this.runtime,
+    this.worldModel,
+    this.capabilityPlatform,
   });
 
   @override
@@ -59,8 +76,8 @@ class _ExperienceHostScreenState extends State<ExperienceHostScreen> {
   @override
   void initState() {
     super.initState();
-    _runtime = widget.runtime ?? AnythingRuntime();
-    _modificationCoordinator = ExperienceModificationCoordinator();
+    _runtime = widget.runtime ?? AnythingRuntime(capabilityPlatform: widget.capabilityPlatform);
+    _modificationCoordinator = ExperienceModificationCoordinator(worldModel: widget.worldModel);
     _activity = ActivityRepository();
     _protectionService =
         widget.protectionService ?? ExperienceProtectionService();

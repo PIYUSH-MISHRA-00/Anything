@@ -10,6 +10,7 @@ import 'package:anything/core/contracts/intent.dart';
 import 'package:anything/kernel/anything_kernel.dart';
 import 'package:anything/kernel/outcomes/kernel_outcome.dart';
 import 'package:anything/kernel/specification/experience_spec.dart';
+import 'package:anything/knowledge/knowledge_resource.dart';
 import 'package:anything/creation/creation_engine.dart';
 import 'package:anything/creation/creation_context.dart';
 import 'package:anything/creation/experience_package.dart';
@@ -18,6 +19,8 @@ import 'package:anything/kernel/planning/execution_plan.dart';
 import 'package:anything/storage/sqlite_experience_repository.dart';
 import 'package:anything/storage/activity_repository.dart';
 import 'package:anything/synthesis/app_blueprint.dart';
+import 'package:anything/software_cognition/software_cognition_coordinator.dart';
+import 'package:anything/world_model/world_model_coordinator.dart';
 
 /// User-facing creation state.
 enum CreationState {
@@ -83,6 +86,22 @@ class ExperienceCreationCoordinator {
   final SqliteExperienceRepository _repository;
   final ActivityRepository _activity;
 
+  /// Optional shared World Graph (Implementation Milestone R1). When
+  /// present, a successful creation is ingested via `ingestExperience` —
+  /// REALITY before R1: this coordinator never referenced World Model at
+  /// all (MIS-1 Part 2). Null by default, fully backward compatible.
+  final WorldModelCoordinator? _worldModel;
+
+  /// Optional shared Software Cognition coordinator (Implementation
+  /// Milestone R1). When both this AND a `referenceUrl` are supplied to
+  /// `createFromIntent`, acquired repository understanding is fed into
+  /// the Kernel's existing, already-safe knowledge pathway BEFORE
+  /// reasoning runs — never a second, parallel prompt-injection surface
+  /// (see `docs/architecture/SOFTWARE_COGNITION_ENGINE.md`, "The
+  /// architectural correction"). Purely additive: omitting `referenceUrl`
+  /// leaves creation byte-for-byte unchanged.
+  final SoftwareCognitionCoordinator? _softwareCognition;
+
   CreationState _state = CreationState.idle;
   CreationState get state => _state;
 
@@ -91,17 +110,34 @@ class ExperienceCreationCoordinator {
     CreationEngine? creationEngine,
     SqliteExperienceRepository? repository,
     ActivityRepository? activity,
+    WorldModelCoordinator? worldModel,
+    SoftwareCognitionCoordinator? softwareCognition,
   }) : _kernel = kernel,
        _creationEngine = creationEngine ?? CreationEngine(),
        _repository = repository ?? SqliteExperienceRepository(),
-       _activity = activity ?? ActivityRepository();
+       _activity = activity ?? ActivityRepository(),
+       _worldModel = worldModel,
+       _softwareCognition = softwareCognition;
 
   /// Create from a canonical Intent.
-  Future<CreationResult> createFromIntent(Intent intent) async {
+  ///
+  /// [referenceUrl] optionally names an existing repository/package the
+  /// user wants this creation "inspired by" — when supplied (and a
+  /// `SoftwareCognitionCoordinator` was injected), real acquired
+  /// understanding (never copied source) is fed into reasoning. Omitted
+  /// by default; existing callers are unaffected.
+  Future<CreationResult> createFromIntent(
+    Intent intent, {
+    String? referenceUrl,
+  }) async {
     _state = CreationState.understanding;
 
     try {
-      final kernelOutcome = await _kernel.processIntent(intent);
+      final seedKnowledge = await _acquireSoftwareCognitionSeed(referenceUrl);
+      final kernelOutcome = await _kernel.processIntent(
+        intent,
+        seedKnowledge: seedKnowledge,
+      );
 
       switch (kernelOutcome) {
         case OpenExistingExperience():
@@ -162,8 +198,40 @@ class ExperienceCreationCoordinator {
   }
 
   /// Convenience: create from expression string.
-  Future<CreationResult> createFromExpression(String expression) async {
-    return createFromIntent(Intent.create(expression: expression));
+  Future<CreationResult> createFromExpression(
+    String expression, {
+    String? referenceUrl,
+  }) async {
+    return createFromIntent(
+      Intent.create(expression: expression),
+      referenceUrl: referenceUrl,
+    );
+  }
+
+  /// Acquires real Software Cognition understanding of [referenceUrl] (if
+  /// supplied and a coordinator was injected) and converts a sound result
+  /// into a `KnowledgeResource` seed — never raw source, never a
+  /// fabricated resource from an unsound/unreviewed result (see
+  /// `SoftwareCognitionCoordinator.toKnowledgeResource`). Returns an empty
+  /// list on any failure or when the feature isn't in use — this is
+  /// always an optional enhancement, never a hard dependency of creation.
+  Future<List<KnowledgeResource>> _acquireSoftwareCognitionSeed(
+    String? referenceUrl,
+  ) async {
+    if (referenceUrl == null || referenceUrl.isEmpty || _softwareCognition == null) {
+      return const [];
+    }
+    try {
+      final result = await _softwareCognition.engine.understandRepositoryFromUrl(
+        referenceUrl,
+        name: Uri.tryParse(referenceUrl)?.host ?? referenceUrl,
+      );
+      if (result == null || !result.isSound) return const [];
+      final resource = _softwareCognition.toKnowledgeResource(result);
+      return resource == null ? const [] : [resource];
+    } catch (_) {
+      return const [];
+    }
   }
 
   Future<CreationResult> _createExperience({
@@ -215,17 +283,29 @@ class ExperienceCreationCoordinator {
       // Persist
       _state = CreationState.persisting;
       final package = creationResult.package;
-      await _repository.savePackage(package);
-      await _repository.saveMetadata(
-        ExperienceMetadataRecord(
-          id: package.manifest.experienceId,
-          name: package.manifest.name,
-          description: package.manifest.description,
-          category: package.manifest.category,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-        ),
+      final metadata = ExperienceMetadataRecord(
+        id: package.manifest.experienceId,
+        name: package.manifest.name,
+        description: package.manifest.description,
+        category: package.manifest.category,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
       );
+      await _repository.savePackage(package);
+      await _repository.saveMetadata(metadata);
+
+      // World Graph ingestion (Implementation Milestone R1) — best-effort,
+      // never allowed to fail creation itself; see AnythingKernel's
+      // identical `_ingestIntoWorldModelSafely` rationale.
+      if (_worldModel != null) {
+        try {
+          _worldModel.ingestExperience(metadata, package);
+          await _worldModel.persist();
+        } catch (_) {
+          // Deliberately swallowed — World Graph bookkeeping must never
+          // block a successful creation from being reported to the user.
+        }
+      }
 
       await _activity.record(
         ActivityEvent(

@@ -3,6 +3,7 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../../app/app_composition.dart';
 import '../../app/experience_opening_coordinator.dart';
 import '../../core/contracts/protection_provider.dart';
 import '../../design_system/components/components.dart';
@@ -17,11 +18,17 @@ class ExperiencesScreen extends StatefulWidget {
   final VoidCallback? onCreateRequested;
   final void Function(String experienceId)? onProtectRequested;
 
+  /// Shared composition root (Implementation Milestone R1) — see
+  /// `HomeScreen.composition`. Defaults to a fresh
+  /// `AppComposition.production()` when not supplied.
+  final AppComposition? composition;
+
   const ExperiencesScreen({
     super.key,
     this.repository,
     this.onCreateRequested,
     this.onProtectRequested,
+    this.composition,
   });
 
   @override
@@ -29,6 +36,7 @@ class ExperiencesScreen extends StatefulWidget {
 }
 
 class _ExperiencesScreenState extends State<ExperiencesScreen> {
+  late final AppComposition _composition;
   late final SqliteExperienceRepository _repo;
   late final ActivityRepository _activity;
   late final ExperienceOpeningCoordinator _openingCoordinator;
@@ -38,6 +46,7 @@ class _ExperiencesScreenState extends State<ExperiencesScreen> {
   @override
   void initState() {
     super.initState();
+    _composition = widget.composition ?? AppComposition.production();
     _repo = widget.repository ?? SqliteExperienceRepository();
     _activity = ActivityRepository();
     _openingCoordinator = ExperienceOpeningCoordinator();
@@ -71,6 +80,8 @@ class _ExperiencesScreenState extends State<ExperiencesScreen> {
               package: result.package,
               experienceName: result.experienceName,
               experienceId: result.experienceId,
+              worldModel: _composition.worldModel,
+              capabilityPlatform: _composition.capabilityPlatform,
             ),
           ),
         ).then((_) => _loadExperiences());
@@ -156,6 +167,8 @@ class _ExperiencesScreenState extends State<ExperiencesScreen> {
               package: openResult.package,
               experienceName: openResult.experienceName,
               experienceId: openResult.experienceId,
+              worldModel: _composition.worldModel,
+              capabilityPlatform: _composition.capabilityPlatform,
             ),
           ),
         ).then((_) => _loadExperiences());
@@ -207,6 +220,8 @@ class _ExperiencesScreenState extends State<ExperiencesScreen> {
               package: openResult.package,
               experienceName: openResult.experienceName,
               experienceId: openResult.experienceId,
+              worldModel: _composition.worldModel,
+              capabilityPlatform: _composition.capabilityPlatform,
             ),
           ),
         ).then((_) => _loadExperiences());

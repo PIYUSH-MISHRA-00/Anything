@@ -6,6 +6,7 @@ library;
 
 import 'dart:async';
 
+import '../capabilities/platform/capability_platform.dart';
 import '../creation/experience_package.dart';
 import 'experience_session.dart';
 import 'experience_renderer.dart';
@@ -42,16 +43,21 @@ class AnythingRuntime {
   ExperienceRouter? get router => _router;
   RuntimeComponentContext? get runtimeContext => _runtimeContext;
 
+  /// [capabilityPlatform] (Implementation Milestone R1) is ignored when
+  /// [serviceResolver] is explicitly supplied (the caller's resolver wins,
+  /// matching every other optional-dependency in this class); otherwise it
+  /// is threaded into a freshly-constructed `ExperienceServiceResolver`.
   AnythingRuntime({
     ExperienceRenderer? renderer,
     BehaviorInterpreter? behaviorInterpreter,
     ExperienceStateEngine? stateEngine,
     ExperienceDataRuntime? dataRuntime,
     ExperienceServiceResolver? serviceResolver,
+    CapabilityPlatform? capabilityPlatform,
   }) : _behaviorInterpreter = behaviorInterpreter ?? BehaviorInterpreter(),
        _stateEngine = stateEngine ?? ExperienceStateEngine(),
        _dataRuntime = dataRuntime ?? ExperienceDataRuntime(),
-       _serviceResolver = serviceResolver ?? ExperienceServiceResolver(),
+       _serviceResolver = serviceResolver ?? ExperienceServiceResolver(capabilityPlatform: capabilityPlatform),
        _renderer = renderer ?? ExperienceRenderer();
 
   /// Open an ExperiencePackage and create a running session.
@@ -77,7 +83,11 @@ class AnythingRuntime {
         );
       }
 
-      _serviceResolver.resolve(package.services);
+      _serviceResolver.resolve(
+        package.services,
+        experienceId: package.manifest.experienceId,
+        declaredCapabilities: package.capabilityDeclarations.map((c) => c.capabilityId).toList(),
+      );
 
       // Build router from interface screens
       final validScreenIds = package.interface.screens.map((s) => s.id).toSet();

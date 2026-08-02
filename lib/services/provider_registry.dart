@@ -4,23 +4,26 @@
 /// Resolves the active provider from local configuration.
 library;
 
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:uuid/uuid.dart';
 
 import '../core/contracts/model_provider.dart';
 import '../legacy/groq_adapter.dart';
+import '../security/credential_vault.dart';
 
 /// Concrete implementation of [ModelProviderRegistry].
 class AnythingProviderRegistry implements ModelProviderRegistry {
-  final FlutterSecureStorage _secureStorage;
   final Map<String, ModelProvider> _providers = {};
   final Map<String, ProviderConfig> _configs = {};
   String? _activeProviderId;
 
-  AnythingProviderRegistry({FlutterSecureStorage? secureStorage})
-    : _secureStorage = secureStorage ?? const FlutterSecureStorage() {
+  /// [credentialVault] is the canonical, shared credential store
+  /// (Implementation Milestone R1) — routed to every built-in provider
+  /// that needs one, rather than each provider constructing its own raw
+  /// secure-storage instance (MIS-1 Part 2/3's "BYOK Assessment").
+  AnythingProviderRegistry({CredentialVault? credentialVault}) {
+    final vault = credentialVault ?? CredentialVault();
     // Register built-in providers
-    final groq = GroqModelProvider(secureStorage: _secureStorage);
+    final groq = GroqModelProvider(credentialVault: vault);
     _providers[groq.providerId] = groq;
   }
 
