@@ -305,6 +305,33 @@ migration in its own right, not folded into this wiring milestone.
 
 ---
 
+## R3 — Deterministic Engineering Pipeline (Implementation Milestone) — ✅ COMPLETE
+
+**Closure evidence:** `docs/architecture/DETERMINISTIC_ENGINEERING_PIPELINE.md`.
+Investigation confirmed the AI boundary (one mandatory LLM call),
+Architecture Graph (`ArchitectureCandidate`), and Engineering Graph
+(`EngineeringPlan`) all already existed and needed no new parallel
+system — only verification. Real new work: Knowledge/Software Cognition
+and World Model (capability-familiarity) now structurally enrich Feature
+Discovery confidence (`FeatureConfidenceAnalyzer`, bounded ±0.1/+0.05,
+never overriding the base per-feature analysis), and a new, real,
+deterministic `RequirementGraphDiff`/`RequirementGraphDiffer`
+(`lib/software_architect/requirement_graph_diff.dart`) — planning-only,
+mirroring `GraphMerge`'s established structural-comparison shape.
+Engineering Cache investigated and deliberately not built (near-zero
+real-world hit rate for LLM-derived, request-unique input — YAGNI).
+Full regression: 1136/1136 (up from 1121), zero pre-existing test
+modified; `flutter analyze`: 71/0, unchanged baseline.
+
+**Known limitations carried forward:** only `RequirementGraphDiff` was
+built; Architecture/Engineering/Experience Diff are a real, scoped R4+
+candidate. The diff chain is not wired into any UI/modification flow yet
+— a real, tested, standalone capability. World Model read-enrichment is
+scoped to capability familiarity only, not the full "user preferences/
+learned patterns" ambition.
+
+---
+
 ## v2.0.0 Release Candidate
 
 **Objective:** All of M1-M6 acceptance gates met; `flutter analyze` clean; full `flutter test` suite passes (not just the subsets exercised in this audit); `flutter build apk --debug` succeeds and release build succeeds where a signing environment is available; no UNKNOWN rows remain in `V2_VISION_GAP_MATRIX.md` for anything in v2.0.0 scope; `docs/progress/V2_STAGE_11.md` and other stage docs reflect actual, dated, execution-verified state; CI is green on the release branch.

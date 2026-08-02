@@ -637,6 +637,26 @@ the pre-R2 baseline). Zero pre-existing test modified or weakened;
 test (asserts node/edge counts and kinds, not specific identity values)
 re-verified passing unchanged despite the identity-source fix.
 
+## Implementation Milestone R3 — Deterministic Engineering Pipeline (2026-08-02)
+
+15 new tests, `test/feature_discovery/r3_engineering_enrichment_test.dart`:
+`FeatureConfidenceAnalyzer`'s knowledge-trust and prior-capability
+enrichment (backward-compatible when omitted, bounded, bidirectional —
+low-trust knowledge genuinely lowers confidence, never a one-directional
+"knowledge exists therefore confident" fallacy), a real
+`FeatureDiscoveryEngine.plan()` end-to-end proof that
+`priorCapabilityIds` measurably changes `overallConfidence`, a real
+World Graph read (`ingestSoftwareGraph` then `nodesOfKind(capability)`)
+proving the exact query the Kernel runs, and 7 `RequirementGraphDiff`
+tests (identical graphs -> empty diff, add/remove/changed-node,
+add/remove relations, determinism, and a 500/500-node performance
+measurement, ~1ms observed).
+
+**Execution result:** all 15 pass in full. Full regression re-run
+immediately after: full suite (**1136 tests, all green — up from 1121
+pre-R3**), `flutter analyze` (71 issues, 0 errors, 0 new — identical to
+the pre-R3 baseline). Zero pre-existing test modified or weakened.
+
 ## Documentation vs. reality
 
 `docs/progress/V2_STAGE_11.md` (last touched at commit `68bf60f`, 2026-07-29) claims `Status: COMPLETE` and "119/All passing" — this predates all three untracked Stage 11 test files and the uncommitted production-code DI changes, and does not reflect the 194/199 result measured in this audit. It should be treated as historical, not current, until Stage 11 closure (Roadmap M1) actually lands and this doc is updated with a fresh, dated, execution-verified count.
