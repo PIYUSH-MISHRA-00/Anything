@@ -6,6 +6,7 @@ library;
 
 import '../../application_engineering/engineering_plan.dart';
 import '../../design_review/review_history.dart' show ReviewSession;
+import '../../evolution/evolution_roadmap.dart' show EvolutionRoadmap;
 import '../../feature_discovery/feature_plan.dart';
 import '../../solution_reasoning/solution_decision.dart';
 import '../../synthesis/app_blueprint.dart';
@@ -81,6 +82,14 @@ class ExecutionPlanReady extends KernelOutcome {
   /// implies `reviewSession` exists and was approved).
   final ReviewSession? reviewSession;
 
+  /// The Autonomous Evolution Engine's (Vision Milestone V7) roadmap for
+  /// this creation — Current/Immediate/Next/Later/Future/Experimental
+  /// proposals, all reviewed and ranked but never auto-executed. Null
+  /// only for outcomes that never reach evolution planning (there are
+  /// none on the production path — reaching this outcome at all implies
+  /// `evolutionRoadmap` exists).
+  final EvolutionRoadmap? evolutionRoadmap;
+
   const ExecutionPlanReady({
     required this.plan,
     required this.specification,
@@ -89,6 +98,7 @@ class ExecutionPlanReady extends KernelOutcome {
     this.featurePlan,
     this.solutionDecision,
     this.reviewSession,
+    this.evolutionRoadmap,
     required super.message,
     required super.timestamp,
   });

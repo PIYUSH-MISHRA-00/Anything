@@ -44,6 +44,10 @@ import 'package:anything/design_review/review_approval.dart';
 import 'package:anything/design_review/review_context.dart';
 import 'package:anything/design_review/review_history.dart';
 import 'package:anything/design_review/review_memory.dart';
+import 'package:anything/evolution/evolution_context.dart';
+import 'package:anything/evolution/evolution_engine.dart';
+import 'package:anything/evolution/evolution_history.dart';
+import 'package:anything/evolution/evolution_memory.dart';
 
 /// Maximum knowledge refinement rounds (trusted limit).
 const int _maxKnowledgeRounds = 2;
@@ -84,6 +88,7 @@ class AnythingKernel {
   final FeatureRefinement _featureRefinement;
   final SolutionExplorer _solutionExplorer;
   final DesignReviewEngine _designReviewEngine;
+  final EvolutionEngine _evolutionEngine;
   final ArchitectureToBlueprintConverter _architectureToBlueprint;
 
   /// Every Design Review session this Kernel instance has ever run, and a
@@ -93,6 +98,13 @@ class AnythingKernel {
   /// genuinely reuses prior review findings rather than re-deriving them.
   final ReviewHistory _reviewHistory = ReviewHistory();
   final ReviewMemory _reviewMemory = ReviewMemory();
+
+  /// Every Evolution pass this Kernel instance has ever run, and a memory
+  /// of accepted/rejected proposals keyed by structural fingerprint — the
+  /// Vision Milestone V7 counterpart to [_reviewHistory]/[_reviewMemory],
+  /// same lifetime and reuse contract.
+  final EvolutionHistory _evolutionHistory = EvolutionHistory();
+  final EvolutionMemory _evolutionMemory = EvolutionMemory();
 
   /// The knowledge accumulated by the most recent `_reasonWithKnowledgeLoop`
   /// call — read immediately afterward by `processIntent` to build the
@@ -111,6 +123,7 @@ class AnythingKernel {
     FeatureRefinement? featureRefinement,
     SolutionExplorer? solutionExplorer,
     DesignReviewEngine? designReviewEngine,
+    EvolutionEngine? evolutionEngine,
     ArchitectureToBlueprintConverter? architectureToBlueprint,
   }) : _requirementExtractor =
            requirementExtractor ?? const RequirementExtractor(),
@@ -119,6 +132,7 @@ class AnythingKernel {
        _featureRefinement = featureRefinement ?? const FeatureRefinement(),
        _solutionExplorer = solutionExplorer ?? const SolutionExplorer(),
        _designReviewEngine = designReviewEngine ?? const DesignReviewEngine(),
+       _evolutionEngine = evolutionEngine ?? const EvolutionEngine(),
        _architectureToBlueprint =
            architectureToBlueprint ?? const ArchitectureToBlueprintConverter(),
        _experienceResolver = experienceResolver ?? ExperienceResolver(),
@@ -340,6 +354,22 @@ class AnythingKernel {
         );
       }
 
+      // Step 7.7: Autonomous Evolution Engine (Vision Milestone V7) —
+      // Observe -> Estimate -> Review -> Approve -> Plan -> Predict. Every
+      // approved design is observed for real, structural evolution
+      // opportunities (deferred FeatureGraph nodes, missing navigation/
+      // search/filtering, offline/sync posture, non-critical Design
+      // Review findings) and produces a roadmap. Never blocks creation —
+      // unlike Design Review, Evolution Planning cannot fail this
+      // pipeline; it only ever adds a roadmap for later use, since
+      // "Do NOT automatically execute" applies here even more strongly
+      // than at Design Review.
+      final evolutionResult = _evolutionEngine.evolve(
+        EvolutionContext(reviewContext: reviewedContext, reviewSession: reviewOutcome.session),
+        memory: _evolutionMemory,
+        history: _evolutionHistory,
+      );
+
       // Step 8: Convert to ExperienceSpec
       final spec = BlueprintToSpecConverter.convert(
         blueprint,
@@ -385,6 +415,7 @@ class AnythingKernel {
         featurePlan: featurePlan,
         solutionDecision: solutionDecision,
         reviewSession: reviewOutcome.session,
+        evolutionRoadmap: evolutionResult.roadmap,
         message: 'Ready to create',
         timestamp: DateTime.now(),
       );
