@@ -147,6 +147,25 @@ already produces — no new architecture-planning logic, no new capability
 surface, no new execution path. See
 `docs/architecture/SOLUTION_REASONING_ENGINE.md` for the full pipeline.
 
+## Design Review stage (Vision Milestone V6, 2026-08-02)
+
+`lib/design_review/` (`DesignReviewEngine` -> `DesignReviewer`'s 15
+sub-reviewers -> `ReviewRefinement` -> `ReviewApproval`) sits entirely on
+the TRUSTED side, between Solution Reasoning and blueprint consumption. It
+introduces no new trust boundary and no new untrusted input surface: its
+only input, `ReviewContext`, is assembled entirely from already-trusted
+output of prior TRUSTED stages (`SemanticApp`, `RequirementGraph`,
+`FeatureGraph`, `DependencyGraph`, the selected `SolutionCandidate`, the
+converted `AppBlueprint`). It never accepts user or model input directly,
+never touches SQLite, never renders UI, and never invokes WebWeaveX or
+Kaalka logic itself — `IntegrityReviewer` only *inspects* the security
+decision's rationale text that V3's Security Engineering already produced,
+as a regression guard confirming Kaalka usage stays canonical. The only
+mutation `ReviewRefinement` ever performs is removing specific
+`BindingGraph`/`DependencyGraph` edges already flagged auto-fixable — it
+never adds new capabilities, permissions, entities, or network access. See
+`docs/architecture/DESIGN_REVIEW_ENGINE.md` for the full pipeline.
+
 ## Modification path
 
 ```

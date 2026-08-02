@@ -212,6 +212,60 @@ immediately after: `test/stage10` + `test/stage11` (388 tests, M1
 certification, unchanged), full suite (820 tests, all green), `flutter
 analyze` (71 issues, 0 errors — identical to the pre-V5 baseline).
 
+## Vision Milestone V6 — Self-Critique & Autonomous Design Review Engine (SCARE) (2026-08-02)
+
+42 new tests across 11 files under `test/design_review/`: every one of the
+15 sub-reviewers against a real, approved design (no false positives) and
+against a deliberately manufactured defect (correctly flagged) —
+`ArchitectureReviewer`, `DependencyReviewer` (redundant/missing edges,
+auto-fixable), `EngineeringReviewer`, `SpecificationReviewer` +
+`NavigationReviewer` (including two dedicated regression fixtures,
+`multiEntityApp()` and `dashboardApp()`) + `BehaviorReviewer`,
+`CapabilityReviewer`/`SecurityReviewer`/`IntegrityReviewer` (including a
+dedicated Kaalka-tamper regression guard), `AccessibilityReviewer`
+(including a dedicated "never fabricate capability" regression guard),
+`PerformanceReviewer`/`MaintainabilityReviewer`/`OfflineReviewer`/
+`RuntimeReviewer`, `MigrationReviewer`/`ModificationReviewer`/
+`ConsistencyReviewer`, `ReviewMemory`/`ReviewHistory` (fingerprint reuse,
+nothing lost), `ReviewRefinement` (auto-fix applied and logged, never
+silent), `DesignReviewEngine` end-to-end (approval, deterministic
+fingerprint, concrete denial reasons), full Kernel integration (no bypass,
+Review Memory reused across two structurally-identical requests, the
+blueprint reaching Creation is the one Design Review actually approved),
+and a second, unrelated novel domain ("Lighthouse Keeper's Fuel Log").
+
+Four real bugs were caught and fixed during development, all via this
+milestone's own full-regression run against `test/stage10`/`test/stage11`
+(pre-existing, novel-domain-rich fixtures the initial narrow test fixtures
+never exercised) — see `docs/architecture/DESIGN_REVIEW_ENGINE.md` for full
+detail:
+
+1. `EngineeringReviewer` false-flagged real search bindings as unused
+   (assumed every `viewToState` edge was field-shaped; search bindings are
+   not).
+2. `ReviewRefinement`'s loop condition (`hasCriticalIssues`) never applied
+   warning-severity auto-fixes, decoupled from approval-blocking logic.
+3. `NavigationReviewer` false-flagged independent multi-entity list screens
+   as unreachable, not knowing about `CreationEngine`'s real bottom-
+   navigation reachability path. Fixed by cross-referencing
+   `context.blueprint.views`.
+4. `NavigationReviewer` correctly caught a genuine, pre-existing gap in
+   `CreationEngine`: `dashboard`-type entry views never got the "Add
+   \<entity\>" button that `list`-type views get, leaving a dashboard-only
+   entity's form screen genuinely unreachable (caught by the pre-existing
+   "OrbitMetrics" stage11 certification fixture). Fixed at the root in
+   `CreationEngine._buildInterfaceFromBlueprint`, not by relaxing the
+   reviewer.
+
+**Execution result:** all 42 pass in full. Full regression re-run
+immediately after: `test/stage10` + `test/stage11` (M1 certification,
+unchanged), full suite (862 tests, all green — up from 820 pre-V6), `flutter
+analyze` (71 issues, 0 errors — identical to the pre-V6 baseline). `flutter
+build apk --debug` attempted; blocked by the same standing, pre-existing,
+Anything-code-unrelated `KeytoolException: Failed to read key
+AndroidDebugKey ... Tag number over 30 is not supported` JDK/keytool
+incompatibility confirmed in every prior milestone.
+
 ## Documentation vs. reality
 
 `docs/progress/V2_STAGE_11.md` (last touched at commit `68bf60f`, 2026-07-29) claims `Status: COMPLETE` and "119/All passing" — this predates all three untracked Stage 11 test files and the uncommitted production-code DI changes, and does not reflect the 194/199 result measured in this audit. It should be treated as historical, not current, until Stage 11 closure (Roadmap M1) actually lands and this doc is updated with a fresh, dated, execution-verified count.
