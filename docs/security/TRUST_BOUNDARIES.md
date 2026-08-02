@@ -166,6 +166,33 @@ mutation `ReviewRefinement` ever performs is removing specific
 never adds new capabilities, permissions, entities, or network access. See
 `docs/architecture/DESIGN_REVIEW_ENGINE.md` for the full pipeline.
 
+## Evolution Planning stage (Vision Milestone V7, 2026-08-02)
+
+`lib/evolution/` (`EvolutionEngine`: Observe -> Estimate -> Review ->
+Approve -> Plan -> Predict) sits entirely on the TRUSTED side, between
+Design Review and blueprint-to-spec conversion. It introduces no new
+trust boundary and no new untrusted input surface: its only input,
+`EvolutionContext`, is assembled entirely from already-trusted output of
+prior TRUSTED stages (the full `ReviewContext` plus the real
+`ReviewSession`). It never accepts user or model input directly, never
+touches SQLite during planning, never renders UI, and never invokes
+WebWeaveX or Kaalka logic itself. It never mutates the design being
+planned for — `EvolutionEngine.evolve()` only ever reads `EvolutionContext`
+and produces a roadmap; nothing in Evolution Planning writes back into
+the architecture, blueprint, or engineering plan that reaches Creation.
+
+`EvolutionCoordinator` (the separate, application-facing Modification
+Integration entry point) DOES cross into persistence — it loads and
+saves an `ExperiencePackage` via the existing `SqliteExperienceRepository`
+— but only ever compiles an already-reviewed, already-approved-for-
+roadmap proposal into the **existing** `ModificationOperation` vocabulary
+and executes it through the **existing** `ModificationEngine`/
+`ExperiencePackageValidator`. It never executes automatically: a
+proposal's `approvedForExecution` flag starts `false` and is only ever
+set `true` inside this same explicit, separate call — never during
+roadmap planning. See `docs/architecture/EVOLUTION_ENGINE.md` for the
+full pipeline.
+
 ## Modification path
 
 ```

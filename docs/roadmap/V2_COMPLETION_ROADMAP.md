@@ -8,8 +8,9 @@ Software Architecture Engine" (2026-08-02), "Vision Milestone V3 —
 Application Engineering Engine" (2026-08-02), "Vision Milestone V4 —
 Feature Discovery & Dependency Intelligence Engine" (2026-08-02), and
 "Vision Milestone V5 — Multi-Solution Reasoning & Architecture Selection
-Engine" (2026-08-02), and "Vision Milestone V6 — Self-Critique & Autonomous
-Design Review Engine (SCARE)" (2026-08-02) are a separate, product-capability
+Engine" (2026-08-02), "Vision Milestone V6 — Self-Critique & Autonomous
+Design Review Engine (SCARE)" (2026-08-02), and "Vision Milestone V7 —
+Autonomous Evolution Engine (AEE)" (2026-08-02) are a separate, product-capability
 track from the M1-M6 hardening/readiness milestones below. V1 converted the knowledge-
 acquisition pipeline from a stub to real `package:webweavex`-backed
 retrieval; V2 inserted a real, typed, self-critiquing architecture-
@@ -27,8 +28,14 @@ selected via an ordered tie-break cascade rather than "first candidate
 wins," with Engineering now consuming the selected SolutionCandidate
 exclusively; V6 inserted a mandatory Design Review gate (15 sub-reviewers,
 conservative auto-fix, Review Memory/History) between Solution Reasoning
-and blueprint consumption, failing closed if approval isn't reached. None
-of the six map onto this M-series sequencing; the M1/M2 rows below remain
+and blueprint consumption, failing closed if approval isn't reached; V7
+inserted a mandatory Evolution Planning stage (EvolutionEngine: Observe ->
+Estimate -> Review -> Approve -> Plan -> Predict) between Design Review
+and blueprint-to-spec conversion, producing a real, reviewed, ranked
+roadmap for every approved design without ever auto-executing anything,
+plus a separate EvolutionCoordinator extending the existing
+ModificationEngine pipeline for Modification Integration. None of the
+seven map onto this M-series sequencing; the M1/M2 rows below remain
 accurate and unaffected. See
 `docs/progress/V2_KNOWLEDGE_PERFORMANCE.md` /
 `docs/architecture/KNOWLEDGE_ENGINE.md` (V1),
@@ -36,10 +43,11 @@ accurate and unaffected. See
 `docs/architecture/SOFTWARE_ARCHITECT_ENGINE.md` (V2),
 `docs/architecture/APPLICATION_ENGINEERING_ENGINE.md` (V3),
 `docs/architecture/FEATURE_DISCOVERY_ENGINE.md` (V4),
-`docs/architecture/SOLUTION_REASONING_ENGINE.md` (V5), and
-`docs/architecture/DESIGN_REVIEW_ENGINE.md` (V6) for closure evidence. V6
-is complete; per its own instructions, V7 awaits external review before
-starting.
+`docs/architecture/SOLUTION_REASONING_ENGINE.md` (V5),
+`docs/architecture/DESIGN_REVIEW_ENGINE.md` (V6), and
+`docs/architecture/EVOLUTION_ENGINE.md` (V7) for closure evidence. V7
+is complete; per its own instructions, V8 awaits external architectural
+review before starting.
 
 ---
 

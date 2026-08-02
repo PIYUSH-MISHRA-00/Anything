@@ -266,6 +266,81 @@ Anything-code-unrelated `KeytoolException: Failed to read key
 AndroidDebugKey ... Tag number over 30 is not supported` JDK/keytool
 incompatibility confirmed in every prior milestone.
 
+## Vision Milestone V7 — Autonomous Evolution Engine (AEE) (2026-08-02)
+
+48 new tests across 11 files under `test/evolution/`: `EvolutionObserver`
+(every one of its 10 opportunity categories against real fixtures —
+deferred FeatureGraph nodes become real missingCapability/missingWorkflow
+opportunities in exact 1:1 correspondence; a low-field-count entity
+correctly does NOT trigger missingSearch, proving the detector is a real
+threshold; a multi-entity app with independent list screens produces zero
+missingNavigation false positives; accessibility/performance/
+maintainability opportunities trace to real, still-present SCARE
+`ReviewIssue`s), `EvolutionEstimator` (every candidate's benefit bounded
+0.0-1.0 and fully explained; offline/synchronization candidates carry
+real migration/data risk; priority derived structurally, never a bare
+number), `EvolutionReviewer` (every real, observed candidate accepted by
+construction; a candidate whose sourceReviewIssueId no longer exists is
+rejected; a candidate referencing a missing entity is rejected),
+`EvolutionApprover` (only accepted candidates become proposals; none
+pre-approved for execution), `EvolutionPlanner`/`EvolutionRoadmap` (every
+roadmap owns all 6 phases even when empty; budget cap respected; a
+conservative strategy never places more into "immediate" than an
+aggressive one would for the same candidates), `EvolutionPrediction`
+(every forecast carries a real confidence and named basis; a
+multi-entity/multi-relationship app forecasts higher storage-evolution
+likelihood than a single-entity app; capability-addition forecasts trace
+only to real roadmap proposals), `EvolutionGraph` (every candidate
+produces a real currentState->opportunity->candidate chain; a
+synchronization candidate structurally requires its matching offline
+candidate; every requires-edge verified to genuinely connect the claimed
+categories), `EvolutionEngine` end-to-end (deterministic fingerprint;
+memory/history recording and recall; `EvolutionMetrics.from` accounting),
+`EngineeringMemory` (accepted/rejected ideas and tradeoffs sourced from
+the real EvolutionMemory; architectural/security/performance history
+verified as real filtered slices of ReviewHistory, not a separate
+ledger), `EvolutionExecutor`/`EvolutionValidator` (an unapproved proposal
+never compiles regardless of category; missingCapability compiles to a
+real `requiredCapabilities` entry; missingWorkflow/missingNavigation/
+missingSearch/missingFiltering compile to a real `addUiNode`
+`ModificationOperation`; missingAccessibility/missingPerformance/
+missingMaintainability/missingOffline/missingSynchronization are
+honestly reported `EvolutionNotExecutable`, never a fabricated no-op;
+executing a compiled proposal against a real golden-path package produces
+a valid, updated package via the **existing** `ModificationEngine`),
+`EvolutionCoordinator` end-to-end against a **real SQLite-backed
+repository** (real file I/O, not a mock): applying a proposal persists a
+new validated version; a user objective merges into the executed spec's
+objective rather than being silently dropped; a not-yet-executable
+proposal fails honestly; a nonexistent experience fails honestly), full
+Kernel integration (Evolution Planning runs for every approved design,
+never blocks creation, EvolutionMemory reused across two structurally-
+identical requests), and a second, unrelated novel domain ("Community
+Seed Library Exchange").
+
+One real bug was caught and fixed during development, via this
+milestone's own test-writing (not the full-regression pass, since AEE is
+purely additive and could not regress any pre-existing suite):
+`EvolutionReviewer`'s fallback branch assumed every non-feature,
+non-review-issue-sourced opportunity was entity/interaction-shaped, but
+offline/synchronization opportunities are architecture **posture**-shaped
+(their evidence's `affectedNodeId` is a decision id like
+`"synchronization:strategy"`, not an entity id) — the fallback's
+`architecture.interactions.any((i) => i.entityId == entityId)` check
+always failed for these, incorrectly rejecting every real
+offline/synchronization opportunity. Fixed by adding a dedicated posture
+branch that checks the candidate's evidence against the architecture's
+current `offline.decision.id`/`synchronization.decision.id` instead.
+
+**Execution result:** all 48 pass in full. Full regression re-run
+immediately after: `test/stage10` + `test/stage11` (M1 certification,
+unchanged), full suite (910 tests, all green — up from 862 pre-V7),
+`flutter analyze` (71 issues, 0 errors — identical to the pre-V7
+baseline). `flutter build apk --debug` attempted; blocked by the same
+standing, pre-existing, Anything-code-unrelated `KeytoolException: Failed
+to read key AndroidDebugKey ... Tag number over 30 is not supported`
+JDK/keytool incompatibility confirmed in every prior milestone.
+
 ## Documentation vs. reality
 
 `docs/progress/V2_STAGE_11.md` (last touched at commit `68bf60f`, 2026-07-29) claims `Status: COMPLETE` and "119/All passing" — this predates all three untracked Stage 11 test files and the uncommitted production-code DI changes, and does not reflect the 194/199 result measured in this audit. It should be treated as historical, not current, until Stage 11 closure (Roadmap M1) actually lands and this doc is updated with a fresh, dated, execution-verified count.
