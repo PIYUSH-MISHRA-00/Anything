@@ -3,18 +3,26 @@
 Built from the gaps documented in `docs/audit/V2_CURRENT_STATE_AUDIT.md`, `V2_VISION_GAP_MATRIX.md`, `V2_TEST_EVIDENCE_MATRIX.md`, `V2_SECURITY_AUDIT.md`, `V2_DESIGN_PARITY.md`, and `V2_RELEASE_READINESS.md` — not from historical stage numbering. Six milestones, ending at v2.0.0 Release Candidate.
 
 **Note on numbering:** "Vision Milestone V1 — Real Knowledge Acquisition &
-Autonomous Generation" (2026-08-01) and "Vision Milestone V2 — Autonomous
-Software Architecture Engine" (2026-08-02) are a separate, product-capability
-track from the M1-M6 hardening/readiness milestones below. V1 converted
-the knowledge-acquisition pipeline from a stub to real
+Autonomous Generation" (2026-08-01), "Vision Milestone V2 — Autonomous
+Software Architecture Engine" (2026-08-02), and "Vision Milestone V3 —
+Application Engineering Engine" (2026-08-02) are a separate,
+product-capability track from the M1-M6 hardening/readiness milestones
+below. V1 converted the knowledge-acquisition pipeline from a stub to real
 `package:webweavex`-backed retrieval; V2 inserted a real, typed,
 self-critiquing architecture-planning stage between reasoning and
-blueprint conversion. Neither maps onto this M-series sequencing; the
-M1/M2 rows below remain accurate and unaffected. See
+blueprint conversion; V3 inserted a real, typed Engineering stage between
+architecture approval and blueprint/spec/plan conversion, compiling a
+generic per-entity state machine into the existing BehaviorGraph/
+StateSchema vocabulary so the unmodified BehaviorInterpreter executes it.
+None of the three map onto this M-series sequencing; the M1/M2 rows below
+remain accurate and unaffected. See
 `docs/progress/V2_KNOWLEDGE_PERFORMANCE.md` /
-`docs/architecture/KNOWLEDGE_ENGINE.md` (V1) and
+`docs/architecture/KNOWLEDGE_ENGINE.md` (V1),
 `docs/progress/V2_ASAE_PERFORMANCE.md` /
-`docs/architecture/SOFTWARE_ARCHITECT_ENGINE.md` (V2) for closure evidence.
+`docs/architecture/SOFTWARE_ARCHITECT_ENGINE.md` (V2), and
+`docs/architecture/APPLICATION_ENGINEERING_ENGINE.md` (V3) for closure
+evidence. V3 is complete; per its own instructions, V4 awaits external
+review before starting.
 
 ---
 

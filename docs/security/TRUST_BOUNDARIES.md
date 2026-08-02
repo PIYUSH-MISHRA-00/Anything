@@ -100,6 +100,23 @@ output (`AppBlueprint`) is validated exactly as before by
 decision is trusted merely because ASAE made it. See
 `docs/architecture/SOFTWARE_ARCHITECT_ENGINE.md` for the full pipeline.
 
+## Engineering stage (Vision Milestone V3, 2026-08-02)
+
+`lib/application_engineering/` (BehaviorEngineering -> ... ->
+EngineeringPlanner -> EngineeringReview -> EngineeringRefinement ->
+EngineeringToBlueprintAugmenter) likewise sits entirely on the TRUSTED
+side, between ASAE's approved `ArchitectureCandidate` and blueprint/spec/
+plan conversion. It introduces no new trust boundary and no new untrusted
+input surface: every input (`ArchitectureCandidate`, `SemanticApp`) is
+already-trusted output of prior TRUSTED stages, and its own output (new
+`stateWrite` BehaviorNodes, `<entity>_status` StateVariables) is executed
+by the same unmodified, M2-certified `BehaviorInterpreter` under the same
+budgets (`RuntimeSecurityLimits.maxBehaviorNodesPerPackage`,
+`_maxNodesPerExecution`) as every other generated node — AEE adds nodes
+to the graph, it does not add a new execution path around the graph's
+existing bounds. See `docs/architecture/APPLICATION_ENGINEERING_ENGINE.md`
+for the full pipeline.
+
 ## Modification path
 
 ```

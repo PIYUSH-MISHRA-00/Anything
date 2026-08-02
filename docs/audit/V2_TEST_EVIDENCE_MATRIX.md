@@ -120,6 +120,31 @@ Not re-verified line-by-line in this pass (out of scope given session constraint
 - Conditional/optional assertions on required features: concentrated almost entirely in `stage11_real_generated_app_test.dart` (16 instances); one lower-risk instance in `stage11_5_production_certification_test.dart`.
 - No `router.push(...)`/`queryController.setSearch(...)` direct-call bypasses found — certification tests that do simulate user action go through real widget taps/text entry, not controller shortcuts. This is a genuine positive.
 
+## Vision Milestone V3 — Application Engineering Engine (2026-08-02)
+
+47 new tests across `test/application_engineering/` (11 files): every
+Engineering module in isolation against real `ArchitecturePlanner`-produced
+candidates for a novel domain ("Hive Inspection Log", zero footprint in
+`lib/`), `EngineeringPlanner` assembly + real computed confidence,
+`EngineeringReview` defect detection (dangling bindings, behavior
+inconsistencies, low confidence) and `EngineeringRefinement`'s auto-fix/
+termination behavior, `EngineeringToBlueprintAugmenter`'s compiled output
+(explicitly guarding the `'text'` vs `'string'` `StateVariable` type-string
+regression class already hit once in M2), full Kernel-to-Runtime
+integration (`AnythingKernel.processIntent` produces an approved
+`EngineeringPlan`, `CreationEngine` augments additively — byte-for-byte
+identical output when no plan is supplied — and the real, unmodified,
+M2-certified `BehaviorInterpreter` genuinely transitions a generated
+entity's `<entity>_status` state variable when a real dispatched event
+reaches it), and a second, unrelated novel domain ("Lighthouse Maintenance
+Log") proving no domain name ever leaks into the fixed `GenericState`
+vocabulary.
+
+**Execution result:** all 47 pass in full. Full regression re-run
+immediately after: `test/stage10` + `test/stage11` (388 tests, M1
+certification, unchanged), full suite (727 tests, all green), `flutter
+analyze` (71 issues, 0 errors — identical to the pre-V3 baseline).
+
 ## Documentation vs. reality
 
 `docs/progress/V2_STAGE_11.md` (last touched at commit `68bf60f`, 2026-07-29) claims `Status: COMPLETE` and "119/All passing" — this predates all three untracked Stage 11 test files and the uncommitted production-code DI changes, and does not reflect the 194/199 result measured in this audit. It should be treated as historical, not current, until Stage 11 closure (Roadmap M1) actually lands and this doc is updated with a fresh, dated, execution-verified count.
