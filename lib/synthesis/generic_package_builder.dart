@@ -607,7 +607,7 @@ class GenericPackageBuilder {
           return DataFieldSchema(
             id: field.id,
             name: field.name,
-            type: _mapBlueprintFieldTypeToDataFieldType(field.type),
+            type: mapBlueprintFieldTypeToDataFieldType(field.type),
             required: field.required,
             defaultValue: field.defaultValue,
           );
@@ -618,7 +618,7 @@ class GenericPackageBuilder {
     return DataSchema(entities: entitySchemas, schemaVersion: 1);
   }
 
-  static String _mapBlueprintFieldTypeToDataFieldType(BlueprintFieldType type) {
+  static String mapBlueprintFieldTypeToDataFieldType(BlueprintFieldType type) {
     switch (type) {
       case BlueprintFieldType.integer:
         return 'integer';

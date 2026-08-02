@@ -22,6 +22,8 @@ import '../runtime_intelligence/learning_record.dart';
 import '../runtime_intelligence/usage_graph.dart';
 import '../software_architect/knowledge_graph.dart';
 import '../storage/sqlite_experience_repository.dart';
+import '../storage/world_model_repository.dart';
+import '../synthesis/app_blueprint.dart' show AppBlueprint;
 import 'bridges/evolution_graph_bridge.dart';
 import 'bridges/experience_graph_bridge.dart';
 import 'bridges/knowledge_graph_bridge.dart';
@@ -35,6 +37,7 @@ import 'world_history.dart';
 import 'world_memory.dart';
 import 'world_model.dart';
 import 'world_model_engine.dart';
+import 'world_snapshot.dart';
 import 'world_types.dart';
 
 class ModificationImpactCheck {
@@ -63,6 +66,15 @@ class WorldModelCoordinator {
   final WorldHistory history;
   final WorldMemory memory;
 
+  /// Optional real, SQLite-backed persistence (Vision Milestone V10),
+  /// resolving V9's own documented limitation that WorldMemory/
+  /// WorldHistory never survived a process restart. Deliberately
+  /// separate, explicit `persist()`/`restore()` calls rather than making
+  /// every `ingest*` method asynchronous — preserving full backward
+  /// compatibility with every synchronous call site V9 already
+  /// established and tested.
+  final WorldModelRepository? _persistence;
+
   WorldModel _model;
 
   WorldModelCoordinator({
@@ -77,6 +89,7 @@ class WorldModelCoordinator {
     GraphConsistency consistency = const GraphConsistency(),
     WorldHistory? history,
     WorldMemory? memory,
+    WorldModelRepository? persistence,
   }) : _resolver = resolver,
        _knowledgeBridge = knowledgeBridge ?? KnowledgeGraphBridge(resolver: resolver),
        _experienceBridge = experienceBridge ?? ExperienceGraphBridge(resolver: resolver),
@@ -88,6 +101,7 @@ class WorldModelCoordinator {
        _consistency = consistency,
        history = history ?? WorldHistory(),
        memory = memory ?? WorldMemory(),
+       _persistence = persistence,
        _model = engine.empty();
 
   WorldModel get model => _model;
@@ -100,8 +114,12 @@ class WorldModelCoordinator {
     _model = _engine.apply(_model, _experienceBridge.bridge(metadata, package), history: history, memory: memory);
   }
 
-  void ingestEvolutionRoadmap(EvolutionRoadmap roadmap) {
-    _model = _engine.apply(_model, _evolutionBridge.bridge(roadmap), history: history, memory: memory);
+  /// [blueprint] is optional but strongly recommended (Vision Milestone
+  /// V10): when supplied, evolution-affected entities unify with
+  /// ExperienceGraphBridge's identity for the same real entity instead
+  /// of anchoring on a separate, un-unified node for the raw id.
+  void ingestEvolutionRoadmap(EvolutionRoadmap roadmap, {AppBlueprint? blueprint}) {
+    _model = _engine.apply(_model, _evolutionBridge.bridge(roadmap, blueprint: blueprint), history: history, memory: memory);
   }
 
   void ingestUsage(UsageGraph usageGraph) {
@@ -117,13 +135,47 @@ class WorldModelCoordinator {
   }
 
   /// Ingests every real, already-persisted Experience via the existing,
-  /// read-only SqliteExperienceRepository — never writes anything.
+  /// read-only SqliteExperienceRepository — never writes anything to it.
+  /// Automatically persists the resulting World Graph afterward when
+  /// this coordinator was configured with a WorldModelRepository.
   Future<void> ingestAllPersistedExperiences(SqliteExperienceRepository repository) async {
     for (final metadata in await repository.listAll()) {
       final package = await repository.getPackage(metadata.id);
       if (package == null) continue;
       ingestExperience(metadata, package);
     }
+    await persist();
+  }
+
+  /// Persists the current World Graph (always the latest state — "no
+  /// stale graph") and records a WorldSnapshotRecord audit-trail entry.
+  /// A no-op when no WorldModelRepository was configured.
+  Future<void> persist() async {
+    final persistence = _persistence;
+    if (persistence == null) return;
+    await persistence.saveGraph(_model.graph);
+    await persistence.recordSnapshot(
+      WorldSnapshotRecord(
+        version: _model.version.number,
+        createdAt: _model.version.createdAt,
+        nodeCount: _model.graph.nodes.length,
+        edgeCount: _model.graph.edges.length,
+      ),
+    );
+  }
+
+  /// Rehydrates this coordinator's World Graph from persistence — the
+  /// counterpart to `persist()`, resolving V9's "not yet persisted across
+  /// process restarts" limitation. A no-op when no WorldModelRepository
+  /// was configured, or when nothing has ever been persisted.
+  Future<void> restore() async {
+    final persistence = _persistence;
+    if (persistence == null) return;
+    final graph = await persistence.loadGraph();
+    if (graph.nodes.isEmpty && graph.edges.isEmpty) return;
+    final history = await persistence.loadSnapshotHistory();
+    final latestVersion = history.isEmpty ? 0 : history.last.version;
+    _model = WorldModel(graph: graph, context: _model.context, version: WorldVersion(number: latestVersion, createdAt: DateTime.now()));
   }
 
   ImpactReport impactOf(EntityIdentity identity) => _impactAnalyzer.analyze(_model.graph, identity);

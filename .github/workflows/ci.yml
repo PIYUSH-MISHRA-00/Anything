@@ -1,0 +1,104 @@
+name: CI
+
+# Vision Milestone V10 (Release Candidate Engineering & Production
+# Hardening) — the first CI/CD pipeline in this repository (repository
+# audit confirmed zero .github/workflows existed before this milestone).
+# Every step below uses tooling already present in this project's
+# pubspec.yaml (flutter_lints, sqflite_common_ffi) or built into the
+# Flutter/Dart SDK itself (flutter analyze, flutter test --coverage,
+# dart format) — no new dependency was added for CI.
+
+on:
+  push:
+    branches: [main, v2.0.0]
+  pull_request:
+    branches: [main, v2.0.0]
+
+jobs:
+  analyze-and-test:
+    name: Analyze, Format, Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.8'
+          channel: 'stable'
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Verify formatting
+        run: dart format --set-exit-if-changed .
+
+      - name: Analyze (0 new errors, 0 new warnings beyond the documented baseline)
+        run: flutter analyze
+
+      - name: Run full test suite with coverage
+        run: flutter test --coverage
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-lcov
+          path: coverage/lcov.info
+          if-no-files-found: warn
+
+  documentation-validation:
+    name: Documentation validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify architecture docs exist for every Vision Milestone
+        run: |
+          set -e
+          required=(
+            "docs/architecture/KNOWLEDGE_ENGINE.md"
+            "docs/architecture/SOFTWARE_ARCHITECT_ENGINE.md"
+            "docs/architecture/APPLICATION_ENGINEERING_ENGINE.md"
+            "docs/architecture/FEATURE_DISCOVERY_ENGINE.md"
+            "docs/architecture/SOLUTION_REASONING_ENGINE.md"
+            "docs/architecture/DESIGN_REVIEW_ENGINE.md"
+            "docs/architecture/EVOLUTION_ENGINE.md"
+            "docs/architecture/RUNTIME_INTELLIGENCE_LAYER.md"
+            "docs/architecture/WORLD_MODEL_AND_SEMANTIC_GRAPH.md"
+          )
+          for f in "${required[@]}"; do
+            if [ ! -f "$f" ]; then
+              echo "Missing required documentation file: $f"
+              exit 1
+            fi
+          done
+          echo "All required architecture documentation present."
+
+  package-validation:
+    name: Package / artifact validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.8'
+          channel: 'stable'
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Verify pubspec is well-formed and dependencies resolve
+        run: flutter pub outdated --no-dev-dependencies || true
+
+      - name: Confirm no forbidden files are tracked
+        run: |
+          set -e
+          forbidden_patterns=(".env" "local.properties" "key.properties" "*.jks" "*.keystore")
+          for pattern in "${forbidden_patterns[@]}"; do
+            matches=$(git ls-files | grep -E "${pattern//\*/.*}$" || true)
+            if [ -n "$matches" ]; then
+              echo "Forbidden file tracked in git: $matches"
+              exit 1
+            fi
+          done
+          echo "No forbidden files tracked."

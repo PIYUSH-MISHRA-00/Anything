@@ -91,7 +91,7 @@ class SqliteExperienceRepository {
   Future<Database> _initDatabase() async {
     final dbPath = await getDatabasesPath();
     final path = p.join(dbPath, _dbName);
-    return await openDatabase(path, version: 1, onCreate: _createTables);
+    return await openDatabase(path, version: 2, onCreate: _createTables, onUpgrade: _upgradeTables);
   }
 
   Future<void> _createTables(Database db, int version) async {
@@ -126,6 +126,29 @@ class SqliteExperienceRepository {
         created_at TEXT NOT NULL
       )
     ''');
+
+    await _createIndexes(db);
+  }
+
+  /// Vision Milestone V10: a real `onUpgrade` migration path — this
+  /// database previously had version:1 with no upgrade mechanism at all
+  /// (confirmed by repository audit). `CREATE INDEX IF NOT EXISTS` is
+  /// idempotent and additive only: it never touches existing rows, never
+  /// changes any public API, and is safe to run against a database that
+  /// already has these indexes (fresh installs get them via
+  /// `_createTables` directly).
+  Future<void> _upgradeTables(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      await _createIndexes(db);
+    }
+  }
+
+  /// `listAll()` orders by `last_used_at DESC, created_at DESC` — this
+  /// index lets SQLite satisfy that ordering directly instead of a full
+  /// table scan + sort as the experiences table grows.
+  Future<void> _createIndexes(Database db) async {
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_experiences_last_used ON experiences(last_used_at DESC, created_at DESC)');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_experiences_category ON experiences(category)');
   }
 
   /// Save experience metadata.

@@ -14,6 +14,8 @@ import '../evolution/evolution_roadmap.dart';
 import '../runtime/experience_router.dart';
 import '../runtime/query_controller.dart';
 import '../storage/sqlite_experience_repository.dart';
+import '../storage/world_model_repository.dart';
+import '../world_model/world_model_coordinator.dart';
 import 'automation_executor.dart';
 import 'automation_history.dart';
 import 'automation_memory.dart';
@@ -36,6 +38,15 @@ class RuntimeIntelligenceCoordinator {
   final RuntimeIntelligenceEngine _engine;
   final AutomationExecutor _executor;
 
+  /// Optional real, SQLite-backed persistence (Vision Milestone V10),
+  /// resolving V9's own documented "not yet persisted across process
+  /// restarts" limitation for Observation/Learning/Automation history.
+  /// Deliberately a separate, explicit `persist()` call rather than
+  /// making every existing method asynchronous — preserving full
+  /// backward compatibility with every synchronous call site V8/V9
+  /// already established and tested.
+  final WorldModelRepository? _persistence;
+
   RuntimeIntelligenceCoordinator({
     ObservationMemory? observationMemory,
     LearningMemory? learningMemory,
@@ -43,12 +54,14 @@ class RuntimeIntelligenceCoordinator {
     AutomationHistory? automationHistory,
     RuntimeIntelligenceEngine engine = const RuntimeIntelligenceEngine(),
     AutomationExecutor executor = const AutomationExecutor(),
+    WorldModelRepository? persistence,
   }) : observationMemory = observationMemory ?? ObservationMemory(),
        learningMemory = learningMemory ?? LearningMemory(),
        automationMemory = automationMemory ?? AutomationMemory(),
        automationHistory = automationHistory ?? AutomationHistory(),
        _engine = engine,
-       _executor = executor;
+       _executor = executor,
+       _persistence = persistence;
 
   /// Starts observing a real runtime session — attaches to whichever of
   /// the router/query controllers/state engine the caller passes;
@@ -90,6 +103,28 @@ class RuntimeIntelligenceCoordinator {
       automationMemory.record(record);
     }
 
+    return result;
+  }
+
+  /// Experience Runtime -> Observation -> Learning -> World Graph ->
+  /// Recommendations -> Automation, as ONE call (Vision Milestone V10) —
+  /// runs the full RuntimeIntelligenceEngine pass and immediately syncs
+  /// its real UsageGraph and learned patterns into the given
+  /// WorldModelCoordinator, instead of a caller having to manually
+  /// sequence `runIntelligence()` -> `ingestUsage()` -> `ingestLearning()`
+  /// in the right order itself. Attaching ObservationEngine to a live
+  /// runtime session remains a separate, explicit `attachSession()` call
+  /// (see that method's own docs for why — avoiding an invasive change
+  /// to ExperienceHostScreen, unchanged since V8).
+  RuntimeIntelligenceResult runAndSyncToWorldModel(
+    WorldModelCoordinator worldModel, {
+    required CapabilityRegistry capabilityRegistry,
+    EvolutionRoadmap? evolutionRoadmap,
+    int minOccurrences = 2,
+  }) {
+    final result = runIntelligence(capabilityRegistry: capabilityRegistry, evolutionRoadmap: evolutionRoadmap, minOccurrences: minOccurrences);
+    worldModel.ingestUsage(result.usageGraph);
+    worldModel.ingestLearning(result.learned);
     return result;
   }
 
@@ -135,4 +170,60 @@ class RuntimeIntelligenceCoordinator {
 
   SessionContext session(String sessionId, {String? experienceId}) =>
       SessionContext(sessionId: sessionId, experienceId: experienceId, startedAt: DateTime.now());
+
+  /// Persists every observation captured so far, plus a real, honest
+  /// SUMMARY of learned patterns and planned automations (never a
+  /// fabricated full reconstruction of their nested evidence/step data —
+  /// see WorldModelRepository's own documentation of this tradeoff). A
+  /// no-op when no WorldModelRepository was configured.
+  Future<void> persist() async {
+    final persistence = _persistence;
+    if (persistence == null) return;
+
+    await persistence.recordObservations(observationMemory.records);
+
+    for (final record in learningMemory.records) {
+      await persistence.recordLearningSummary(
+        PersistedLearningSummary(
+          id: record.id,
+          patternId: record.pattern.id,
+          patternKind: record.pattern.kind,
+          description: record.pattern.description,
+          confidenceScore: record.pattern.confidence.score,
+          confidenceReason: record.pattern.confidence.reason,
+          learnedAt: record.learnedAt,
+          version: record.version,
+        ),
+      );
+    }
+
+    for (final record in automationHistory.records) {
+      await persistence.recordAutomationSummary(
+        PersistedAutomationSummary(
+          planId: record.plan.id,
+          description: record.plan.description,
+          allEligible: record.report.allEligible,
+          plannedAt: record.plannedAt,
+          version: record.version,
+        ),
+      );
+    }
+  }
+
+  /// Rehydrates full-fidelity ObservationRecords from persistence into
+  /// `observationMemory`. Learning/Automation history is intentionally
+  /// NOT auto-rehydrated into `learningMemory`/`automationHistory` — only
+  /// a summary was ever persisted for those (see `persist()`), and
+  /// fabricating a full `LearningRecord`/`AutomationRecord` with an empty
+  /// evidence/step list would misrepresent what was actually observed.
+  /// Callers wanting the persisted summaries directly should query
+  /// WorldModelRepository's own `loadLearningSummaries()`/
+  /// `loadAutomationSummaries()`.
+  Future<void> restoreObservations() async {
+    final persistence = _persistence;
+    if (persistence == null) return;
+    for (final record in await persistence.loadObservations()) {
+      observationMemory.record(record);
+    }
+  }
 }

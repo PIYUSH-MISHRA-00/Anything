@@ -1358,7 +1358,13 @@ class ExperienceRenderer {
         ? (stateEngine.read(stateId) as bool? ?? false)
         : false;
 
-    return Switch(
+    // Accessibility (Vision Milestone V10): a bare Switch has no textual
+    // label for screen readers — the visible widget alone announces only
+    // "on"/"off", never WHAT it controls. Wrap with the same label the
+    // field/node already carries (real data already present on this
+    // node, never fabricated).
+    final label = node.properties['label']?.toString();
+    final switchWidget = Switch(
       value: currentValue,
       onChanged: stateId != null
           ? (value) {
@@ -1367,12 +1373,17 @@ class ExperienceRenderer {
             }
           : null,
     );
+    return label == null ? switchWidget : Semantics(label: label, toggled: currentValue, child: ExcludeSemantics(child: switchWidget));
   }
 
   Widget _renderIcon(Map<String, dynamic> properties) {
     final iconName = properties['icon'] as String? ?? 'help';
     final iconData = _resolveIcon(iconName);
-    return Icon(iconData, size: 24);
+    // Accessibility (Vision Milestone V10): a bare Icon conveys nothing to
+    // a screen reader by default. Use the icon's own semantic name — the
+    // one real, already-available description of what it represents —
+    // rather than fabricating a description or leaving it silent.
+    return Icon(iconData, size: 24, semanticLabel: iconName);
   }
 
   Widget _renderUnknown(InterfaceNode node) {
