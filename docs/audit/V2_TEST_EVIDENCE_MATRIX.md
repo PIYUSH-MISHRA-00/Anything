@@ -455,6 +455,63 @@ unrelated `KeytoolException: Failed to read key AndroidDebugKey ... Tag
 number over 30 is not supported` JDK/keytool incompatibility confirmed
 in every prior milestone.
 
+## Vision Milestone V10 — Release Candidate Engineering & Production Hardening (2026-08-02)
+
+36 new tests across 9 files: `test/storage/world_model_repository_test.dart`
+(6 — full-fidelity graph/observation/learning/automation round-trips,
+proof `WorldModelRepository` shares the same physical DB as
+`SqliteExperienceRepository`), `test/storage/sqlite_migration_test.dart`
+(1 — a real version-1 database upgrades cleanly to version 2 with zero
+data loss), `test/world_model/evolution_identity_unification_test.dart`
+(2 — a real blueprint-matched evolution proposal produces the identical
+`EntityIdentity` `ExperienceGraphBridge` would compute; an unmatched id
+falls back honestly), `test/app/experience_modification_coordinator_test.dart`
+(3 — first-ever coverage for this class: default construction never
+bypasses the World Model, a real modification succeeds end-to-end, a
+nonexistent experience fails honestly), `test/runtime_intelligence/runtime_and_world_sync_test.dart`
+(1 — `runAndSyncToWorldModel` syncs usage/learning into the World Graph
+in one call), `test/runtime_intelligence/runtime_intelligence_persistence_test.dart`
+(2 — persist/restore across a simulated process restart; no-persistence
+calls are harmless no-ops), `test/world_model/world_model_persistence_test.dart`
+(3 — same restart proof for the World Graph itself), `test/runtime/accessibility_test.dart`
+(3 — real `tester.getSemantics()` assertions for labeled/unlabeled
+`Switch` and labeled `Icon`), `test/diagnostics/diagnostics_test.dart`
+(10 — `StructuredLogger` categorization/redaction/bounded buffer,
+`ErrorReport` never leaks raw exception text, `HealthReport` family
+reflects real graph/security/storage state), `test/world_model/stress_test.dart`
+(5 — 1000 nodes / 10000 edges: `GraphConsistency`, `GraphTraversal`,
+`ImpactAnalyzer`, `GraphMerge`, and `WorldModelRepository.saveGraph`/
+`loadGraph` all stay correct at scale, each printing real measured
+`Stopwatch` timings, never a fabricated benchmark).
+
+Two real bugs were caught and fixed during development, both via these
+new tests, not the full-regression pass (V10 is additive persistence,
+not a change to any pre-existing pipeline stage): (1)
+`WorldModelRepository.loadGraph()`'s identity-reconstruction helper
+passed an edge row's `RelationshipKind` (e.g. `"consumes"`) into a
+function expecting a `WorldNodeKind` name — fixed by deriving the kind
+from the identity value's own self-namespaced prefix instead of an
+unrelated column; (2) the stress test itself used `RelationshipKind.relatesTo`
+for `ImpactAnalyzer`, which by design excludes non-impact-implying
+relations — fixed by switching the stress fixture to `dependsOn` (a
+test-construction fix, not a product bug).
+
+One real, measured performance finding: `WorldModelRepository.saveGraph()`
+initially inserted each row individually inside a transaction, measured
+at ~5.7s for 1000 nodes / 10000 edges. Converting to a real `Batch`
+(`txn.batch()` + `commit(noResult: true)`) cut this to ~1.4–2.3s — a
+genuine ~3-4x improvement, found and fixed by this milestone's own stress
+test.
+
+**Execution result:** all 36 pass in full. Full regression re-run
+immediately after: full suite (**1035 tests, all green — up from 999
+pre-V10**), `flutter analyze` (71 issues, 0 errors, 0 new warnings —
+identical to the pre-V10 baseline). `flutter build apk --debug`
+attempted (post `flutter clean` + `flutter pub get`); blocked by the same
+standing, pre-existing, Anything-code-unrelated `KeytoolException: Failed
+to read key AndroidDebugKey ... Tag number over 30 is not supported`
+JDK/keytool incompatibility confirmed in every prior milestone.
+
 ## Documentation vs. reality
 
 `docs/progress/V2_STAGE_11.md` (last touched at commit `68bf60f`, 2026-07-29) claims `Status: COMPLETE` and "119/All passing" — this predates all three untracked Stage 11 test files and the uncommitted production-code DI changes, and does not reflect the 194/199 result measured in this audit. It should be treated as historical, not current, until Stage 11 closure (Roadmap M1) actually lands and this doc is updated with a fresh, dated, execution-verified count.

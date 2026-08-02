@@ -267,11 +267,46 @@ runs beforehand, never a replacement for or bypass of Modification's own
 existing path. See `docs/architecture/WORLD_MODEL_AND_SEMANTIC_GRAPH.md`
 for the full pipeline.
 
+## Release Candidate hardening (Vision Milestone V10, 2026-08-02)
+
+`WorldModelRepository` (lib/storage/) introduces no new trust boundary:
+it persists only already-trusted, already-typed output of TRUSTED stages
+(`WorldGraph`, `ObservationRecord`, learning/automation summaries) and
+deliberately shares `SqliteExperienceRepository`'s own database
+connection rather than opening a second store — there is no new
+untrusted input surface, and no new SQL is built from unsanitized
+string concatenation (every write uses parameterized `db.insert`/
+`Batch.insert`).
+
+`ExperienceModificationCoordinator` now runs `precheckModification()`
+before every modification (see updated Modification path below) —
+`WorldModelCoordinator` defaults to a real instance when not injected,
+so no caller can bypass the pre-check. This does not weaken the existing
+validate-before-persist boundary; it adds an earlier, additional gate in
+front of it.
+
+`EvolutionGraphBridge`'s identity-unification fix reads only already-
+trusted `AppBlueprint` entity shapes (name + field types, the same data
+`ExperienceGraphBridge` already reads) — it does not introduce any new
+read of untrusted content, and its fallback path (no match) is
+unchanged from V9.
+
 ## Modification path
 
 ```
 Existing ExperiencePackage (trusted, already validated)
   + ExperienceModificationSpec (derived from untrusted NL text)
+  │
+  ▼
+WorldModelCoordinator.precheckModification()  ── TRUST BOUNDARY (V10)
+  │  (real GraphConsistency check on the current World Graph; gates
+  │   outright on inconsistency. Computes a real ImpactReport for
+  │   visibility — does not yet evaluate the specific proposed edit's
+  │   structural impact, since ModificationOperation carries no
+  │   structural signal ImpactAnalyzer can reason over — a named,
+  │   honest scope boundary, not a gap introduced by this milestone)
+  │
+  ├─ not approved → ModificationCoordinatorFailed, no further action
   │
   ▼
 ModificationEngine.modify()  — pure/immutable: builds a new package,
