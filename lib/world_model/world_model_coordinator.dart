@@ -21,6 +21,7 @@ import '../evolution/evolution_roadmap.dart';
 import '../runtime_intelligence/learning_record.dart';
 import '../runtime_intelligence/usage_graph.dart';
 import '../software_architect/knowledge_graph.dart';
+import '../software_cognition/semantic_software_graph.dart';
 import '../storage/sqlite_experience_repository.dart';
 import '../storage/world_model_repository.dart';
 import '../synthesis/app_blueprint.dart' show AppBlueprint;
@@ -29,6 +30,7 @@ import 'bridges/experience_graph_bridge.dart';
 import 'bridges/knowledge_graph_bridge.dart';
 import 'bridges/review_graph_bridge.dart';
 import 'bridges/runtime_graph_bridge.dart';
+import 'bridges/software_graph_bridge.dart';
 import 'entity_identity.dart';
 import 'entity_resolver.dart';
 import 'graph_consistency.dart';
@@ -59,6 +61,7 @@ class WorldModelCoordinator {
   final EvolutionGraphBridge _evolutionBridge;
   final RuntimeGraphBridge _runtimeBridge;
   final ReviewGraphBridge _reviewBridge;
+  final SoftwareGraphBridge _softwareBridge;
   final WorldModelEngine _engine;
   final ImpactAnalyzer _impactAnalyzer;
   final GraphConsistency _consistency;
@@ -84,6 +87,7 @@ class WorldModelCoordinator {
     EvolutionGraphBridge? evolutionBridge,
     RuntimeGraphBridge? runtimeBridge,
     ReviewGraphBridge? reviewBridge,
+    SoftwareGraphBridge? softwareBridge,
     WorldModelEngine engine = const WorldModelEngine(),
     ImpactAnalyzer impactAnalyzer = const ImpactAnalyzer(),
     GraphConsistency consistency = const GraphConsistency(),
@@ -96,6 +100,7 @@ class WorldModelCoordinator {
        _evolutionBridge = evolutionBridge ?? EvolutionGraphBridge(resolver: resolver),
        _runtimeBridge = runtimeBridge ?? RuntimeGraphBridge(resolver: resolver),
        _reviewBridge = reviewBridge ?? ReviewGraphBridge(resolver: resolver),
+       _softwareBridge = softwareBridge ?? SoftwareGraphBridge(resolver: resolver),
        _engine = engine,
        _impactAnalyzer = impactAnalyzer,
        _consistency = consistency,
@@ -132,6 +137,14 @@ class WorldModelCoordinator {
 
   void ingestReviewSession(ReviewSession session) {
     _model = _engine.apply(_model, _reviewBridge.bridge(session), history: history, memory: memory);
+  }
+
+  /// Ingests a real SemanticSoftwareGraph (Vision Milestone V11's
+  /// Software Cognition subsystem) — acquired repositories/packages
+  /// become real World Graph nodes, connected the same way every other
+  /// graph already is.
+  void ingestSoftwareGraph(SemanticSoftwareGraph softwareGraph) {
+    _model = _engine.apply(_model, _softwareBridge.bridge(softwareGraph), history: history, memory: memory);
   }
 
   /// Ingests every real, already-persisted Experience via the existing,

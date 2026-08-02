@@ -23,6 +23,9 @@ enum WorldNodeKind {
   project,
   observation,
   learning,
+  repository,
+  softwarePackage,
+  softwareComponent,
 }
 
 /// Every typed relationship the World Graph supports — never a raw
