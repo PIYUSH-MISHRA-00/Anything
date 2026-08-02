@@ -273,6 +273,14 @@ class AnythingKernel {
       final knowledgeGraph = _lastAcquiredKnowledge != null
           ? KnowledgeGraphBuilder.build(_lastAcquiredKnowledge!)
           : null;
+      // Implementation Milestone R2: the same, already-built KnowledgeGraph
+      // Feature Discovery consumes below is also ingested into the shared
+      // World Graph — closing MIS-1 Part 2's "ingestKnowledge has zero
+      // call sites" finding. Reuses the existing R1 defensive-ingestion
+      // pattern: optional, best-effort, never able to fail processIntent.
+      if (knowledgeGraph != null && !knowledgeGraph.isEmpty) {
+        _ingestIntoWorldModelSafely(() => _worldModel?.ingestKnowledge(knowledgeGraph));
+      }
       final featureGraph = _featureDiscoveryEngine.plan(
         FeatureDiscoveryContext(
           app: reasonResult.semanticApp,
