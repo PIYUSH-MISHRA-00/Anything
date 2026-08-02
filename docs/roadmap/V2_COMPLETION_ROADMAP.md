@@ -228,6 +228,47 @@ explicit stop condition (audit/harden only, no design/accessibility work).
 
 ---
 
+## MIS-1 Implementation Track (R1-R9) — separate from the M-series above
+
+Following the Vision Milestone track (V1-V11) and the four MIS-1
+audit/design documents (Repository Audit, Architecture Map, Integration
+Blueprint, Canonical Engineering Specifications — all Desktop
+deliverables, not tracked in this repo), a third, parallel implementation
+track (R1-R9) executes MIS-1 Part 3's Implementation Roadmap. This is
+distinct from the M-series (M1-M6) above, which predates MIS-1.
+
+### R1 — Canonical Composition Root — ✅ COMPLETE (2026-08-02)
+
+**Closure evidence:** `docs/architecture/PRODUCTION_COMPOSITION_ROOT.md`
+(new). A single `AppComposition` (lib/app/app_composition.dart) now holds
+one shared `WorldModelCoordinator`/`CapabilityPlatform`/`CredentialVault`/
+`AnythingProviderRegistry`/`AnythingKernel`, threaded to
+`HomeScreen`/`ExperiencesScreen`/`ExperienceHostScreen`. `AnythingKernel`
+gained an optional `WorldModelCoordinator?` parameter (auto-ingests
+`ReviewSession`/`EvolutionRoadmap` when present, best-effort, never
+failing generation). `ExperienceServiceResolver` now dispatches
+`httpClient`/`notifications`/`fileAccess`/`knowledgeRetrieval`/
+`aiInference` through the real `CapabilityPlatform` (real backing for
+http/ai/knowledge via new thin adapters over already-canonical systems;
+notifications/files remain Fake-backed, honestly documented). BYOK
+credential storage now routes through `CredentialVault` instead of raw
+`FlutterSecureStorage`. Software Cognition gained an optional,
+purely-additive `referenceUrl` creation-pipeline hook. 9 new integration
+tests (`test/app/r1_composition_root_test.dart`). Full regression: see
+`docs/audit/V2_TEST_EVIDENCE_MATRIX.md`'s R1 section for exact counts;
+zero pre-existing test modified. `flutter analyze`: 71/0, unchanged
+baseline.
+
+**Known limitations carried to R2+:** `ingestKnowledge` still unreached
+(no clean `KnowledgeBundle` → `KnowledgeGraph` conversion point scoped
+this milestone); `NotificationCapability`/`FileCapability` have no real
+production backing service; no UI entry point yet for the Software
+Cognition `referenceUrl` hook; `RuntimeIntelligenceCoordinator`/
+`ObservationEngine.attachSession()` remain unwired (explicitly out of
+R1's scope — see MIS-1 Part 3's roadmap for R2+).
+
+---
+
 ## v2.0.0 Release Candidate
 
 **Objective:** All of M1-M6 acceptance gates met; `flutter analyze` clean; full `flutter test` suite passes (not just the subsets exercised in this audit); `flutter build apk --debug` succeeds and release build succeeds where a signing environment is available; no UNKNOWN rows remain in `V2_VISION_GAP_MATRIX.md` for anything in v2.0.0 scope; `docs/progress/V2_STAGE_11.md` and other stage docs reflect actual, dated, execution-verified state; CI is green on the release branch.

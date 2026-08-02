@@ -568,6 +568,34 @@ blocked by the same standing, pre-existing, Anything-code-unrelated
 over 30 is not supported` JDK/keytool incompatibility confirmed in every
 prior milestone.
 
+## Implementation Milestone R1 — Canonical Composition Root (2026-08-02)
+
+9 new tests in `test/app/r1_composition_root_test.dart`: shared
+`WorldModelCoordinator` instance sharing (Kernel auto-ingestion of
+`ReviewSession`/`EvolutionRoadmap` when injected — proven by real graph
+state, not object identity alone; Kernel behavior unchanged when not
+injected; `ExperienceCreationCoordinator`/`ExperienceModificationCoordinator`
+reading/writing the SAME shared instance, proven via a real
+`modifyExperience()` call succeeding against a graph a DIFFERENT
+coordinator populated), `CredentialVault` routing (verified through a
+real `flutter_secure_storage` platform-channel mock — real
+`CredentialVault`/`GroqModelProvider` code runs unmodified, only the
+platform response is faked, unlike the older `test/stage81/credential_test.dart`
+pattern which hand-duplicates the vault's logic rather than exercising
+it), `CapabilityPlatform` dispatch (wired path routes through real
+adapters over already-canonical systems; un-wired path preserves the
+exact pre-R1 stub; `localDatabase` honestly stays stubbed even when a
+platform is wired, since no capability answers it), and both the
+positive (`referenceUrl` supplied, real acquired understanding — never
+raw HTML — reaches reasoning) and negative (omitted, zero behavior
+change) Software Cognition creation-pipeline hook cases.
+
+**Execution result:** all 9 pass in full. Full regression re-run
+immediately after: full suite (**1112 tests, all green — up from 1103
+pre-R1**), `flutter analyze` (71 issues, 0 errors, 0 new — identical to
+the pre-R1 baseline, after removing one transient `unused_import` in the
+new test file). Zero pre-existing test modified or weakened.
+
 ## Documentation vs. reality
 
 `docs/progress/V2_STAGE_11.md` (last touched at commit `68bf60f`, 2026-07-29) claims `Status: COMPLETE` and "119/All passing" — this predates all three untracked Stage 11 test files and the uncommitted production-code DI changes, and does not reflect the 194/199 result measured in this audit. It should be treated as historical, not current, until Stage 11 closure (Roadmap M1) actually lands and this doc is updated with a fresh, dated, execution-verified count.

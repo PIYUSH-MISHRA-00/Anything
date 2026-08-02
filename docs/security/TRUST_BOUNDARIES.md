@@ -356,49 +356,58 @@ ExperiencePackageValidator.validate()  ── TRUST BOUNDARY, same validator
   └─ valid → _repository.savePackage() (same experienceId, bumped version)
 ```
 
-## Important architectural finding: capability platform is not yet wired to the live runtime
+## Capability platform wiring (updated R1, 2026-08-02): now partially reachable
 
-This is the single most consequential finding of the M2 audit and changes
-how every capability-related section below should be read.
+M2's original finding (below, kept for history) was: `CapabilityPlatform`
+was fully implemented and tested but never registered/dispatched from
+production code — only `clock` had a real runtime effect.
 
-`CapabilityPlatform` and all five builtin capabilities (`ClockCapability`,
-`NotificationCapability`, `HttpCapability`, `AiCapability`,
-`KnowledgeCapability`) are fully implemented and independently
-well-tested (`test/stage81`, `test/stage82`, `test/stage83`,
-`test/stage84`) for declaration enforcement, per-session invocation
-budgets, ownership scoping, and (for HTTP/File) SSRF/size controls.
+**As of Implementation Milestone R1**, this has partially changed.
+`AppComposition.production()` (`lib/app/app_composition.dart`) now
+constructs ONE `CapabilityPlatform`, registers all five builtin
+capabilities, and threads it to every `AnythingRuntime`/
+`ExperienceServiceResolver` the app constructs.
+`ExperienceServiceResolver.execute()` now genuinely dispatches
+`httpClient`/`notifications`/`fileAccess`/`knowledgeRetrieval`/
+`aiInference` through `CapabilityPlatform.invoke()` — the same
+declaration-enforcement/per-session-budget/ownership-scoping/SSRF-size
+controls M2 certified are exercised for real, not just in isolated unit
+tests. `_isKnownService`'s declaration/budget checks and
+`HttpCapability`'s SSRF/DNS-rebinding defenses are unchanged and are now
+on a reachable path for the `http` capability specifically.
 
-**However**, `CapabilityPlatform().register(...)` is never called anywhere
-in production `lib/` code, and the actual dispatch path reachable from a
-running Experience's behavior graph — `ExperienceServiceResolver`
-(`lib/runtime/service_resolver.dart`) — only implements `clock`'s `now`
-and `date` operations. `_executeDatabase` and `_executeHttp` both return
-`{'status': 'not_implemented'}`, and `notifications` / `fileAccess` /
-`knowledgeRetrieval` / `aiInference` are accepted as "known" service types
-for declaration purposes but have no `execute()` branch at all (fall
-through to a safe "Unknown service type" error).
+**However, real backing services still only exist for three of five
+capabilities**: `http` (new `RealHttpTransport`, wraps `package:http`),
+`ai` (new `ModelProviderAiAdapter`, wraps the existing BYOK
+`ModelProviderRegistry`), and `knowledge` (new
+`KnowledgeAcquisitionProviderAdapter`, wraps the existing
+`KnowledgeAcquisitionEngine`) — each a thin adapter over an
+already-canonical, already-trusted system, never a new acquisition/AI
+path. `notifications` and `fileAccess` are registered with their
+`Fake*` backing services in production — no real OS notification
+delivery or file-picker-backed `FileService` exists yet, so these two
+remain honestly non-functional even though their dispatch path is now
+real. `localDatabase` remains stubbed (`{'status': 'not_implemented'}`)
+— no Capability Platform capability answers it; `ExperienceDataRuntime`
+already owns real generic CRUD entirely outside this dispatch path.
+`CredentialVault` is now instantiated in production (`AppComposition`)
+and used by `AnythingProviderRegistry`'s Groq credential storage — no
+longer unused.
 
-**Practical consequence:** today, a generated Experience's behavior graph
-cannot make an HTTP request, read/write a file, schedule a notification,
-or call an AI/knowledge provider through the live runtime — the only
-capability with a real effect is `clock`. Every HTTP/File/Notification/
-AI/Knowledge `HttpTransport`/`FileService`/`AiProvider`/
-`NotificationService`/`KnowledgeProvider` implementation in the repository
-is a `Fake*` used only by tests — there is no real production
-implementation of any of them yet, and `CredentialVault` (also fully
-implemented, FlutterSecureStorage-backed) is never instantiated in
-production code either.
-
-This substantially narrows the *current* real attack surface (SSRF,
-credential leakage, file sandbox escape, and notification abuse are all
-properties of code that is not yet reachable by a generated Experience),
-but it also means the credential-scoping and capability-wiring items
-below are hardened defensively for when this integration lands, not
-verified against a live exploit path today. **Wiring the capability
-platform into the runtime is explicitly out of M2 scope** (M2 audits and
-hardens what exists; this is a product-completion gap for a future
-milestone, tentatively "capability runtime integration," to be sequenced
-before or alongside M4).
+**Practical consequence, updated**: a generated Experience's behavior
+graph can now make a real HTTPS request (subject to the unchanged
+per-package declared-host allow-list and SSRF defenses) and can now
+invoke the active BYOK provider or trigger a real knowledge-acquisition
+lookup, through the live runtime. Notification scheduling and file
+access remain inert. This is a real, if partial, narrowing of the
+"M2 narrowed the current attack surface" framing below — HTTP/AI/
+Knowledge capabilities are no longer purely theoretical; their existing
+M2-certified defenses are what stands between a declared capability and
+real effect. **Wiring the remaining two capabilities (real notification
+delivery, real file service) is out of R1's scope** — a product decision
+(does this need a new dependency like `flutter_local_notifications`?) is
+needed first, tracked as a known limitation in
+`docs/architecture/PRODUCTION_COMPOSITION_ROOT.md`.
 
 ## Knowledge retrieval status (updated V1, 2026-08-01): real, not a stub
 
