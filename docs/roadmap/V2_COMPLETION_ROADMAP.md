@@ -11,7 +11,8 @@ Feature Discovery & Dependency Intelligence Engine" (2026-08-02), and
 Engine" (2026-08-02), "Vision Milestone V6 — Self-Critique & Autonomous
 Design Review Engine (SCARE)" (2026-08-02), and "Vision Milestone V7 —
 Autonomous Evolution Engine (AEE)" (2026-08-02), and "Vision Milestone V8 —
-Runtime Intelligence Layer (RIL)" (2026-08-02) are a separate, product-capability
+Runtime Intelligence Layer (RIL)" (2026-08-02), and "Vision Milestone V9 —
+World Model & Semantic Graph (WMSG)" (2026-08-02) are a separate, product-capability
 track from the M1-M6 hardening/readiness milestones below. V1 converted the knowledge-
 acquisition pipeline from a stub to real `package:webweavex`-backed
 retrieval; V2 inserted a real, typed, self-critiquing architecture-
@@ -42,9 +43,14 @@ PatternDetector finding real structural usage patterns, Recommendation
 Engine reusing Evolution's roadmap for dedup, and 100% declarative
 Automation Planning/Scheduling) as a separate, application-facing
 RuntimeIntelligenceCoordinator — not a new Kernel pipeline stage, since
-Observation is inherently post-Runtime. None of the eight map onto this
-M-series sequencing; the M1/M2 rows below remain accurate and
-unaffected. See
+Observation is inherently post-Runtime; V9 unified every existing graph
+(DependencyGraph/EvolutionGraph/KnowledgeGraph/RIL's graphs) into one
+typed, versioned WorldGraph via 5 pure-translation Bridges, introducing
+the first stable, cross-Experience EntityIdentity (a deterministic
+structural fingerprint, never a database) and graph-based Impact/
+Dependency Analysis — again via a separate WorldModelCoordinator, not a
+new Kernel stage. None of the nine map onto this M-series sequencing;
+the M1/M2 rows below remain accurate and unaffected. See
 `docs/progress/V2_KNOWLEDGE_PERFORMANCE.md` /
 `docs/architecture/KNOWLEDGE_ENGINE.md` (V1),
 `docs/progress/V2_ASAE_PERFORMANCE.md` /
@@ -53,9 +59,10 @@ unaffected. See
 `docs/architecture/FEATURE_DISCOVERY_ENGINE.md` (V4),
 `docs/architecture/SOLUTION_REASONING_ENGINE.md` (V5),
 `docs/architecture/DESIGN_REVIEW_ENGINE.md` (V6),
-`docs/architecture/EVOLUTION_ENGINE.md` (V7), and
-`docs/architecture/RUNTIME_INTELLIGENCE_LAYER.md` (V8) for closure
-evidence. V8 is complete; per its own instructions, V9 awaits external
+`docs/architecture/EVOLUTION_ENGINE.md` (V7),
+`docs/architecture/RUNTIME_INTELLIGENCE_LAYER.md` (V8), and
+`docs/architecture/WORLD_MODEL_AND_SEMANTIC_GRAPH.md` (V9) for closure
+evidence. V9 is complete; per its own instructions, V10 awaits external
 architectural review before starting.
 
 ---

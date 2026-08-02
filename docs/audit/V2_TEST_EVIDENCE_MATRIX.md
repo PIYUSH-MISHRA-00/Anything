@@ -396,6 +396,65 @@ blocked by the same standing, pre-existing, Anything-code-unrelated
 30 is not supported` JDK/keytool incompatibility confirmed in every prior
 milestone.
 
+## Vision Milestone V9 — World Model & Semantic Graph (WMSG) (2026-08-02)
+
+48 new tests across 10 files under `test/world_model/`: `EntityIdentity`/
+`EntityResolver`/`RelationshipIdentity` (structural fingerprints are
+order-independent and cross-"experience" identical for identical shapes;
+different shapes/kinds produce different identities), `WorldGraph`/
+`GraphIndex`/`GraphResolver` (real typed lookups; `concat` never
+deduplicates, proving `GraphMerge` is the only deduplication path),
+`GraphTraversal` (bounded forward/reverse traversal; an explicit cyclic-
+graph test proving termination; relation-kind filtering), `GraphSearch`/
+`GraphQuery`/`SemanticQueryEngine` (typed query execution; a minimal
+structural intent parser proven both for a recognized phrase and an
+unrecognized one, never crashing), `GraphMerge`/`GraphConflict` (clean
+dedup for identical identity+kind+label; a real, surfaced conflict for
+identical identity with a different kind/label, never silently
+overwritten; edge deduplication), `GraphConsistency`/`GraphValidation`
+(a sound graph validates; a dangling edge is honestly reported),
+`GraphProjection`/`GraphView`/`SemanticGraph.projectFrom` (real filtered
+sub-graphs; `SemanticGraph` proven to exclude non-semantic kinds like
+`review`), `ImpactAnalyzer`/`DependencyAnalyzer` (a synthetic "what
+breaks if the http capability changes" scenario correctly names both
+real consuming Experiences and excludes an unrelated third one),
+`WorldPlanner`/`WorldModelEngine` (a clean update is approved and
+versions the model; a dangling-edge update is honestly rejected and
+leaves the model **completely unchanged** — proven directly), all 5
+Bridges with real fixtures — Knowledge Integration (a real
+`KnowledgeGraph` with `ResourceProvenance`/`LicenseMetadata`/
+`TrustMetadata`), Experience Integration (a real golden-path
+`ExperiencePackage`), Evolution Integration (a real `EvolutionRoadmap`),
+Runtime Integration (a real `UsageGraph` and real `LearningRecord`s from
+V8's own `LearningEngine`), Review Integration (a real SCARE
+`ReviewSession` via `test/design_review/review_test_support.dart`) —
+plus a combined-bridges consistency check, `WorldModelCoordinator`
+end-to-end (deterministic versioning; Modification Integration via
+`precheckModification`; a real SQLite-backed bulk ingestion of two real
+golden-path Experiences proving capability-node deduplication across
+Experiences), a combined Kernel + Evolution + Review Integration test
+(a real `AnythingKernel.processIntent()` run's `reviewSession`/
+`evolutionRoadmap` both ingested cleanly), and a second, unrelated novel
+domain ("orchid cultivation").
+
+No bugs were found this milestone — the design's heavy reuse of
+already-certified V4/V6/V7/V8 patterns (the shared `{id,kind,label}`
+node shape, evidence-verification review, deterministic fingerprinting
+already proven in `ReviewMemory`/`EvolutionMemory`/RIL's fingerprints)
+meant the areas most likely to hide a defect were already proven correct
+elsewhere; the one known rough edge (evolution-affected-node ids not
+always aligning with `ExperienceGraphBridge`'s structural fingerprints)
+was designed around explicitly rather than discovered as a bug.
+
+**Execution result:** all 48 pass in full, first run. Full regression
+re-run immediately after: full suite (999 tests, all green — up from
+951 pre-V9), `flutter analyze` (71 issues, 0 errors, 0 new warnings —
+identical to the pre-V9 baseline). `flutter build apk --debug`
+attempted; blocked by the same standing, pre-existing, Anything-code-
+unrelated `KeytoolException: Failed to read key AndroidDebugKey ... Tag
+number over 30 is not supported` JDK/keytool incompatibility confirmed
+in every prior milestone.
+
 ## Documentation vs. reality
 
 `docs/progress/V2_STAGE_11.md` (last touched at commit `68bf60f`, 2026-07-29) claims `Status: COMPLETE` and "119/All passing" — this predates all three untracked Stage 11 test files and the uncommitted production-code DI changes, and does not reflect the 194/199 result measured in this audit. It should be treated as historical, not current, until Stage 11 closure (Roadmap M1) actually lands and this doc is updated with a fresh, dated, execution-verified count.

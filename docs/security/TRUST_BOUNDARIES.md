@@ -233,6 +233,40 @@ read-only `SqliteExperienceRepository` calls — never record data, never a
 write. See `docs/architecture/RUNTIME_INTELLIGENCE_LAYER.md` for the full
 pipeline.
 
+## World Model & Semantic Graph (Vision Milestone V9, 2026-08-02)
+
+`lib/world_model/` sits entirely on the TRUSTED side and introduces no
+new trust boundary. Every Bridge only ever reads already-trusted, already
+-typed output of prior TRUSTED stages (`KnowledgeGraph`, `ExperiencePackage`
+via the existing read-only `SqliteExperienceRepository`, `EvolutionRoadmap`,
+RIL's `UsageGraph`/`LearningRecord`s, SCARE's `ReviewSession`) — it never
+accepts external input directly, never touches the network, and never
+invokes WebWeaveX or Kaalka logic itself.
+
+**Protected Experiences remain protected**: `ExperienceGraphBridge` reads
+only `ExperiencePackage.data`/`capabilityDeclarations` — it never reads
+`PackageIntegrity` or any Kaalka-protected envelope, and produces no
+protection-relevant output. Protection metadata is not translated into
+graph metadata by this milestone; that remains exclusively Kaalka's
+concern.
+
+**Entity identity never carries data**: `EntityIdentity.structural`
+fingerprints are built from an entity's name and its field *type* names
+only (e.g. `"text"`, `"dateTime"`) — never field values, never record
+content. Two Experiences sharing an identical entity shape resolve to the
+same identity purely because they are the same shape, never because any
+actual data was compared or transmitted.
+
+**Graph modifications never bypass review**: `WorldPlanner` requires a
+clean `GraphMerge` (no identity conflicts) and a structurally consistent
+result (`GraphConsistency`, no dangling edges) before any `GraphUpdate` is
+considered approved; a rejected update leaves the World Graph completely
+unchanged. `WorldModelCoordinator.precheckModification()` never invokes
+`ModificationEngine` itself — it is a separate, real pre-check a caller
+runs beforehand, never a replacement for or bypass of Modification's own
+existing path. See `docs/architecture/WORLD_MODEL_AND_SEMANTIC_GRAPH.md`
+for the full pipeline.
+
 ## Modification path
 
 ```
