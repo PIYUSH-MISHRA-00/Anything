@@ -117,6 +117,20 @@ to the graph, it does not add a new execution path around the graph's
 existing bounds. See `docs/architecture/APPLICATION_ENGINEERING_ENGINE.md`
 for the full pipeline.
 
+## Feature Discovery stage (Vision Milestone V4, 2026-08-02)
+
+`lib/feature_discovery/` (FeatureDiscoveryEngine -> FeatureClassifier ->
+FeaturePriorityAnalyzer/FeatureComplexityAnalyzer -> FeatureConfidenceAnalyzer
+-> FeatureReviewer -> FeatureRefinement) sits entirely on the TRUSTED side,
+between the requirement graph and Architecture Planning. It introduces no
+new trust boundary and no new untrusted input surface: its only inputs
+(`SemanticApp`, `RequirementGraph`, optionally `KnowledgeGraph`) are
+already-trusted output of prior TRUSTED stages, and its output
+(`FeatureGraph`) is consumed read-only by Engineering to corroborate
+existing decisions — it never reaches the runtime or a generated package
+directly. See `docs/architecture/FEATURE_DISCOVERY_ENGINE.md` for the full
+pipeline.
+
 ## Modification path
 
 ```

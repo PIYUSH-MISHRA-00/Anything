@@ -145,6 +145,34 @@ immediately after: `test/stage10` + `test/stage11` (388 tests, M1
 certification, unchanged), full suite (727 tests, all green), `flutter
 analyze` (71 issues, 0 errors — identical to the pre-V3 baseline).
 
+## Vision Milestone V4 — Feature Discovery & Dependency Intelligence Engine (2026-08-02)
+
+55 new tests across 10 files under `test/feature_discovery/`:
+`FeatureDiscoveryEngine.discover()`'s structural rules (data/persistence/
+relational/search/index/capability/navigation/validation/state/reporting/
+offline/security features, tested against "Hive Inspection Log", zero
+footprint in `lib/`), `plan()`'s full orchestration (real feature-to-feature
+edges, real computed confidence, identical graph shape for two
+structurally-identical differently-named apps), all 5 `DependencyResolver`s
++ `DependencyGraphBuilder` assembly, `FeaturePriorityAnalyzer` (all 5
+priority levels reachable from real signals, including the honest
+`experimental` case for an unimplemented capability), `FeatureComplexityAnalyzer`
+(typed `ComplexityLevel` only, never a raw number), `FeatureClassifier`
+de-duplication, capability discovery across the full known/unknown
+capability split, `FeatureReviewer` defect detection (duplicate/dangling/
+conflicting/impossible/low-confidence), `FeatureRefinement`'s auto-fix/
+termination behavior, full Kernel integration (no bypass, `FeaturePlan`
+reaches `ExecutionPlanReady`, Engineering's index/offline decisions are
+genuinely corroborated end-to-end), a dedicated Engineering-integration
+file proving the DataEngineering/OfflineEngineering cross-references are
+additive-only, and a second, unrelated novel domain ("Lighthouse
+Maintenance Log").
+
+**Execution result:** all 55 pass in full. Full regression re-run
+immediately after: `test/stage10` + `test/stage11` (388 tests, M1
+certification, unchanged), full suite (782 tests, all green), `flutter
+analyze` (71 issues, 0 errors — identical to the pre-V4 baseline).
+
 ## Documentation vs. reality
 
 `docs/progress/V2_STAGE_11.md` (last touched at commit `68bf60f`, 2026-07-29) claims `Status: COMPLETE` and "119/All passing" — this predates all three untracked Stage 11 test files and the uncommitted production-code DI changes, and does not reflect the 194/199 result measured in this audit. It should be treated as historical, not current, until Stage 11 closure (Roadmap M1) actually lands and this doc is updated with a fresh, dated, execution-verified count.
