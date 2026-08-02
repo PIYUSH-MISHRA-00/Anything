@@ -580,6 +580,26 @@ class CreationEngine {
                 properties: {'title': view.name, 'metrics': metrics},
               ),
             );
+            final createAction = blueprint.actions
+                .where(
+                  (a) =>
+                      a.actionType == BlueprintActionType.create &&
+                      a.targetEntityId == entity.id,
+                )
+                .firstOrNull;
+            if (createAction != null) {
+              nodes.add(
+                InterfaceNode(
+                  type: 'button',
+                  id: '${view.id}_add_button',
+                  properties: {'label': 'Add ${entity.name}', 'primary': true},
+                  actionBinding: ActionBinding(
+                    actionId: createAction.id,
+                    parameters: {'entityId': entity.id},
+                  ),
+                ),
+              );
+            }
           }
           break;
 

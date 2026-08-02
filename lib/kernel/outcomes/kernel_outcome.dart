@@ -5,6 +5,7 @@
 library;
 
 import '../../application_engineering/engineering_plan.dart';
+import '../../design_review/review_history.dart' show ReviewSession;
 import '../../feature_discovery/feature_plan.dart';
 import '../../solution_reasoning/solution_decision.dart';
 import '../../synthesis/app_blueprint.dart';
@@ -73,6 +74,13 @@ class ExecutionPlanReady extends KernelOutcome {
   /// the production path).
   final SolutionDecision? solutionDecision;
 
+  /// The Self-Critique & Autonomous Design Review Engine's session for
+  /// this creation (Vision Milestone V6) — the full review/refine/approve
+  /// record. Null only for outcomes that never reach Design Review (there
+  /// are none on the production path — reaching this outcome at all
+  /// implies `reviewSession` exists and was approved).
+  final ReviewSession? reviewSession;
+
   const ExecutionPlanReady({
     required this.plan,
     required this.specification,
@@ -80,6 +88,7 @@ class ExecutionPlanReady extends KernelOutcome {
     this.engineeringPlan,
     this.featurePlan,
     this.solutionDecision,
+    this.reviewSession,
     required super.message,
     required super.timestamp,
   });

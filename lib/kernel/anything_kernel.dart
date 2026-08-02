@@ -39,6 +39,11 @@ import 'package:anything/feature_discovery/feature_plan.dart';
 import 'package:anything/feature_discovery/feature_refinement.dart';
 import 'package:anything/solution_reasoning/solution_explorer.dart';
 import 'package:anything/solution_reasoning/solution_exploration_context.dart';
+import 'package:anything/design_review/design_review_engine.dart';
+import 'package:anything/design_review/review_approval.dart';
+import 'package:anything/design_review/review_context.dart';
+import 'package:anything/design_review/review_history.dart';
+import 'package:anything/design_review/review_memory.dart';
 
 /// Maximum knowledge refinement rounds (trusted limit).
 const int _maxKnowledgeRounds = 2;
@@ -78,7 +83,16 @@ class AnythingKernel {
   final FeatureDiscoveryEngine _featureDiscoveryEngine;
   final FeatureRefinement _featureRefinement;
   final SolutionExplorer _solutionExplorer;
+  final DesignReviewEngine _designReviewEngine;
   final ArchitectureToBlueprintConverter _architectureToBlueprint;
+
+  /// Every Design Review session this Kernel instance has ever run, and a
+  /// memory of accepted/fixed decisions keyed by structural fingerprint —
+  /// both persist for the lifetime of this Kernel instance (never reset
+  /// per call), so a later request producing the same structural shape
+  /// genuinely reuses prior review findings rather than re-deriving them.
+  final ReviewHistory _reviewHistory = ReviewHistory();
+  final ReviewMemory _reviewMemory = ReviewMemory();
 
   /// The knowledge accumulated by the most recent `_reasonWithKnowledgeLoop`
   /// call — read immediately afterward by `processIntent` to build the
@@ -96,6 +110,7 @@ class AnythingKernel {
     FeatureDiscoveryEngine? featureDiscoveryEngine,
     FeatureRefinement? featureRefinement,
     SolutionExplorer? solutionExplorer,
+    DesignReviewEngine? designReviewEngine,
     ArchitectureToBlueprintConverter? architectureToBlueprint,
   }) : _requirementExtractor =
            requirementExtractor ?? const RequirementExtractor(),
@@ -103,6 +118,7 @@ class AnythingKernel {
        _featureDiscoveryEngine = featureDiscoveryEngine ?? const FeatureDiscoveryEngine(),
        _featureRefinement = featureRefinement ?? const FeatureRefinement(),
        _solutionExplorer = solutionExplorer ?? const SolutionExplorer(),
+       _designReviewEngine = designReviewEngine ?? const DesignReviewEngine(),
        _architectureToBlueprint =
            architectureToBlueprint ?? const ArchitectureToBlueprintConverter(),
        _experienceResolver = experienceResolver ?? ExperienceResolver(),
@@ -278,14 +294,41 @@ class AnythingKernel {
         );
       }
 
-      // Step 7.5: Application Engineering Engine. The selected solution
-      // already carries its own real, approved EngineeringPlan (computed
-      // once during Solution Generation, before selection) — reused here
-      // rather than recomputed, since EngineeringPlanner.plan() is a pure
-      // function of the EngineeringContext already evaluated for this
-      // exact architecture. Engineering therefore consumes the selected
-      // SolutionGraph, not a freshly (and redundantly) re-derived one.
-      final engineeringPlan = selectedSolution.engineeringVariation.plan;
+      // Step 7.5: Self-Critique & Autonomous Design Review Engine (SCARE)
+      // — Produce -> Review -> Improve -> Review -> Improve -> Approve.
+      // The first stage to see the requirement graph, feature graph,
+      // dependency graph, selected solution, and blueprint all together;
+      // every approved solution passes through here, and Engineering
+      // cannot reach ExperienceSpec without a real ReviewApproval — fail
+      // closed otherwise.
+      final reviewOutcome = _designReviewEngine.review(
+        ReviewContext(
+          app: reasonResult.semanticApp,
+          requirements: requirementGraph,
+          featureGraph: featurePlan.finalGraph,
+          dependencyGraph: dependencyGraph,
+          solution: selectedSolution,
+          blueprint: blueprint,
+        ),
+        memory: _reviewMemory,
+        history: _reviewHistory,
+      );
+      if (!reviewOutcome.approved) {
+        return PlanningFailed(
+          error: const ReviewApproval().denialReason(reviewOutcome.session.result),
+          message: 'Design review did not approve this design',
+          timestamp: DateTime.now(),
+        );
+      }
+      final reviewedContext = reviewOutcome.session.result.finalContext;
+
+      // Step 7.6: Application Engineering Engine output. The selected,
+      // now review-approved solution already carries its own real
+      // EngineeringPlan (computed once during Solution Generation) —
+      // reused here rather than recomputed, and reflecting any
+      // conservative auto-fixes Design Review applied to its binding
+      // graph.
+      final engineeringPlan = reviewedContext.solution.engineeringVariation.plan;
       if (engineeringPlan.outcome == EngineeringRefinementOutcome.budgetExhausted &&
           engineeringPlan.finalReview.hasCriticalIssues) {
         return PlanningFailed(
@@ -341,6 +384,7 @@ class AnythingKernel {
         engineeringPlan: engineeringPlan,
         featurePlan: featurePlan,
         solutionDecision: solutionDecision,
+        reviewSession: reviewOutcome.session,
         message: 'Ready to create',
         timestamp: DateTime.now(),
       );
