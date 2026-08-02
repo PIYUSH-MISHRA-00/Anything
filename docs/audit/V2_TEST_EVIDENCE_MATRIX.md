@@ -43,6 +43,26 @@ for the full narrative.
 
 **Bottom line:** `test/stage11/stage11_final_production_certification_test.dart` now truthfully proves create→real-SQLite-via-generated-UI→close→reopen→generated-UI-shows-data, with no faked DB layer, no UI bypass, and no optional assertions on required behavior. Stage 11's restart-certification gap, as documented in the original version of this matrix, is closed.
 
+## Vision Milestone V2 — Autonomous Software Architecture Engine (new, 2026-08-02)
+
+| File | Type | What it proves |
+|---|---|---|
+| `test/software_architect/requirement_extractor_test.dart` | UNIT | RequirementExtractor derives entity/field/relationship/view/action/capability/constraint/storage/state/navigation nodes structurally from a SemanticApp's shape; a dedicated test proves two SemanticApps identical in shape but different in every name produce identically-shaped graphs — the extractor never inspects names |
+| `test/software_architect/knowledge_graph_test.dart` | UNIT | KnowledgeGraphBuilder preserves provenance/license/trust/relevance 1:1 from KnowledgeBundle; concept-based linking between resources is real and deterministic |
+| `test/software_architect/architecture_planner_test.dart` | INTEGRATION | All 13 sub-planners (entity/field/relationship/state/navigation/interaction/capability/permission/security/offline/synchronization/storage/validation) produce real, justified decisions from one novel-domain SemanticApp ("Telescope Observation Log", zero footprint elsewhere in `lib/`); capability honesty verified (unimplemented capabilities reported, not fabricated); overall confidence proven to be a real computed value, not a constant |
+| `test/software_architect/self_critic_and_refinement_test.dart` | UNIT | SelfCritic detects duplicate entities, dangling relationships, empty entities, disconnected navigation, unresolved capabilities, and low confidence at the correct severities; RefinementPlanner fixes auto-fixable critical issues and re-critiques; the loop is proven to terminate deterministically both by convergence and by a hard iteration cap even when the same defect would otherwise persist |
+| `test/software_architect/kernel_integration_test.dart` | PRODUCTION-PATH | `AnythingKernel.processIntent` genuinely routes every `ReasoningReady` result through the full ASAE pipeline with no bypass; a dangling reference is provably dropped by refinement and the *final* generated blueprint reflects the fix (not the original broken reference); `ReasoningProviderRequired` still short-circuits before ASAE runs; a pathologically capability-heavy app with unimplemented capabilities fails closed rather than shipping a false success |
+| `test/software_architect/performance_test.dart` | PRODUCTION-PATH | Real timings for extraction/planning/refinement/conversion/package-generation; see `docs/progress/V2_ASAE_PERFORMANCE.md` |
+
+**Execution result (V2, 2026-08-02):** all 6 new files pass (39 tests, 0
+skipped). Critical regression check:
+`flutter test test/stage10 test/stage11` (388 tests, including M1's
+`stage11_final_production_certification_test.dart`) re-verified passing
+**unchanged** with ASAE now mandatory in the Kernel's reasoning-to-blueprint
+path — proof that inserting a real, non-bypassed architecture-planning
+stage did not alter the certified end-to-end behavior for a well-formed
+generated app.
+
 ## Vision Milestone V1 — Real Knowledge Acquisition (new, 2026-08-01)
 
 | File | Type | What it proves |

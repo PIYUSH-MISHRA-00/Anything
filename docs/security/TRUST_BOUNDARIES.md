@@ -87,6 +87,19 @@ ExperienceHostScreen → AnythingRuntime
         actually reachable from a running Experience today (see below)
 ```
 
+## Architecture planning stage (Vision Milestone V2, 2026-08-02)
+
+`lib/software_architect/` (RequirementExtractor -> ArchitecturePlanner ->
+SelfCritic -> RefinementPlanner -> ArchitectureToBlueprintConverter) sits
+entirely on the TRUSTED side of the diagram above, between the reasoning
+layer's output (`SemanticApp`) and blueprint conversion. It does not
+introduce a new trust boundary: it consumes the same `SemanticApp` the
+existing (already-trust-mediating) reasoning layer produced, and its own
+output (`AppBlueprint`) is validated exactly as before by
+`BlueprintValidator` and later `ExperiencePackageValidator` — no ASAE
+decision is trusted merely because ASAE made it. See
+`docs/architecture/SOFTWARE_ARCHITECT_ENGINE.md` for the full pipeline.
+
 ## Modification path
 
 ```
