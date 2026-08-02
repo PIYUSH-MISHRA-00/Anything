@@ -13,5 +13,18 @@ class FeatureDiscoveryContext {
   final RequirementGraph requirements;
   final KnowledgeGraph? knowledge;
 
-  const FeatureDiscoveryContext({required this.app, required this.requirements, this.knowledge});
+  /// Capability ids already observed as real World Graph `capability`
+  /// nodes (Implementation Milestone R3) — a primitive `Set<String>`, not
+  /// a `WorldGraph`/`WorldModelCoordinator` reference, so this module
+  /// gains no new dependency on `lib/world_model/` (the Kernel, the one
+  /// place that already depends on both, computes this and passes it in).
+  /// Empty by default — byte-for-byte pre-R3 behavior when omitted.
+  final Set<String> priorCapabilityIds;
+
+  const FeatureDiscoveryContext({
+    required this.app,
+    required this.requirements,
+    this.knowledge,
+    this.priorCapabilityIds = const {},
+  });
 }

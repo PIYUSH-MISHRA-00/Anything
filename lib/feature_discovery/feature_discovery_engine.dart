@@ -275,7 +275,13 @@ class FeatureDiscoveryEngine {
     }).toList();
 
     const confidenceAnalyzer = FeatureConfidenceAnalyzer();
-    final overallConfidence = confidenceAnalyzer.analyze(nodes.map((n) => n.decision).toList());
+    // Implementation Milestone R3: real, structural, bounded enrichment —
+    // never a fabricated boost — see feature_confidence_analyzer.dart.
+    final overallConfidence = confidenceAnalyzer.analyze(
+      nodes.map((n) => n.decision).toList(),
+      knowledge: context.knowledge,
+      priorCapabilityIds: context.priorCapabilityIds,
+    );
 
     return FeatureGraph(nodes: nodes, edges: edges, overallConfidence: overallConfidence);
   }

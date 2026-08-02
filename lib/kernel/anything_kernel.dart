@@ -50,6 +50,7 @@ import 'package:anything/evolution/evolution_history.dart';
 import 'package:anything/evolution/evolution_memory.dart';
 import 'package:anything/knowledge/knowledge_resource.dart';
 import 'package:anything/world_model/world_model_coordinator.dart';
+import 'package:anything/world_model/world_types.dart' show WorldNodeKind;
 
 /// Maximum knowledge refinement rounds (trusted limit).
 const int _maxKnowledgeRounds = 2;
@@ -286,6 +287,7 @@ class AnythingKernel {
           app: reasonResult.semanticApp,
           requirements: requirementGraph,
           knowledge: knowledgeGraph,
+          priorCapabilityIds: _priorCapabilityIdsSafely(),
         ),
       );
       final featurePlan = _featureRefinement.refine(featureGraph);
@@ -481,6 +483,24 @@ class AnythingKernel {
       ingest();
     } catch (_) {
       // Deliberately swallowed — see doc comment above.
+    }
+  }
+
+  /// Best-effort World Graph READ (Implementation Milestone R3): the
+  /// reverse direction of [_ingestIntoWorldModelSafely] — capability ids
+  /// already observed as real `WorldNodeKind.capability` nodes (from this
+  /// user's own prior Experiences/Evolution/Software Cognition, per R1's
+  /// Experience ingestion), fed into Feature Discovery as genuine,
+  /// structural corroborating evidence (see
+  /// `FeatureConfidenceAnalyzer`). A read failure — or no `_worldModel`
+  /// injected at all — returns an empty set, never breaking generation,
+  /// mirroring the ingestion side's same defensive contract.
+  Set<String> _priorCapabilityIdsSafely() {
+    if (_worldModel == null) return const {};
+    try {
+      return _worldModel.model.graph.nodesOfKind(WorldNodeKind.capability).map((n) => n.label).toSet();
+    } catch (_) {
+      return const {};
     }
   }
 
