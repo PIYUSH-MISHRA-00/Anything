@@ -10,7 +10,8 @@ Feature Discovery & Dependency Intelligence Engine" (2026-08-02), and
 "Vision Milestone V5 — Multi-Solution Reasoning & Architecture Selection
 Engine" (2026-08-02), "Vision Milestone V6 — Self-Critique & Autonomous
 Design Review Engine (SCARE)" (2026-08-02), and "Vision Milestone V7 —
-Autonomous Evolution Engine (AEE)" (2026-08-02) are a separate, product-capability
+Autonomous Evolution Engine (AEE)" (2026-08-02), and "Vision Milestone V8 —
+Runtime Intelligence Layer (RIL)" (2026-08-02) are a separate, product-capability
 track from the M1-M6 hardening/readiness milestones below. V1 converted the knowledge-
 acquisition pipeline from a stub to real `package:webweavex`-backed
 retrieval; V2 inserted a real, typed, self-critiquing architecture-
@@ -34,9 +35,16 @@ Estimate -> Review -> Approve -> Plan -> Predict) between Design Review
 and blueprint-to-spec conversion, producing a real, reviewed, ranked
 roadmap for every approved design without ever auto-executing anything,
 plus a separate EvolutionCoordinator extending the existing
-ModificationEngine pipeline for Modification Integration. None of the
-seven map onto this M-series sequencing; the M1/M2 rows below remain
-accurate and unaffected. See
+ModificationEngine pipeline for Modification Integration; V8 added a
+Runtime Intelligence Layer (ObservationEngine subscribing to the
+Runtime's own real navigation/query/state streams, LearningEngine/
+PatternDetector finding real structural usage patterns, Recommendation
+Engine reusing Evolution's roadmap for dedup, and 100% declarative
+Automation Planning/Scheduling) as a separate, application-facing
+RuntimeIntelligenceCoordinator — not a new Kernel pipeline stage, since
+Observation is inherently post-Runtime. None of the eight map onto this
+M-series sequencing; the M1/M2 rows below remain accurate and
+unaffected. See
 `docs/progress/V2_KNOWLEDGE_PERFORMANCE.md` /
 `docs/architecture/KNOWLEDGE_ENGINE.md` (V1),
 `docs/progress/V2_ASAE_PERFORMANCE.md` /
@@ -44,10 +52,11 @@ accurate and unaffected. See
 `docs/architecture/APPLICATION_ENGINEERING_ENGINE.md` (V3),
 `docs/architecture/FEATURE_DISCOVERY_ENGINE.md` (V4),
 `docs/architecture/SOLUTION_REASONING_ENGINE.md` (V5),
-`docs/architecture/DESIGN_REVIEW_ENGINE.md` (V6), and
-`docs/architecture/EVOLUTION_ENGINE.md` (V7) for closure evidence. V7
-is complete; per its own instructions, V8 awaits external architectural
-review before starting.
+`docs/architecture/DESIGN_REVIEW_ENGINE.md` (V6),
+`docs/architecture/EVOLUTION_ENGINE.md` (V7), and
+`docs/architecture/RUNTIME_INTELLIGENCE_LAYER.md` (V8) for closure
+evidence. V8 is complete; per its own instructions, V9 awaits external
+architectural review before starting.
 
 ---
 

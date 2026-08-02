@@ -341,6 +341,61 @@ standing, pre-existing, Anything-code-unrelated `KeytoolException: Failed
 to read key AndroidDebugKey ... Tag number over 30 is not supported`
 JDK/keytool incompatibility confirmed in every prior milestone.
 
+## Vision Milestone V8 — Runtime Intelligence Layer (RIL) (2026-08-02)
+
+41 new tests across 10 files under `test/runtime_intelligence/`:
+`ObservationEngine` (drives REAL `ExperienceRouter`/
+`ExperienceQueryController`/`ExperienceStateEngine` instances — the same
+objects the generated-app runtime uses — and proves captured records
+never carry raw navigation-argument, search-term, filter-value, or
+state-value content; `recordFailure`/`recordCapabilityUsage` structural;
+`dispose()` genuinely cancels subscriptions), `UsageGraph`/
+`PatternDetector`/`LearningEngine` (aggregation never crosses
+experiences; all 4 pattern kinds detected — including the literal
+"task app -> calendar -> reminder" 3-hop sequential-workflow example
+from this milestone's own spec, detected purely structurally; explicit
+false-positive proofs for below-threshold pairs and one-directional
+navigation; determinism and versioning), `RecommendationEngine`/
+`RecommendationReview` (every recommendation traces to a real, present
+pattern; a recommendation rejected when its pattern is missing; Evolution
+Integration: a recommendation already proposed by a real
+`EvolutionRoadmap` is never duplicated), `AutomationPlanner`/
+`AutomationExecutor`/`AutomationHistory`/`AutomationMemory`/
+`BackgroundCoordinator`/`NotificationPlanner`/`ReminderPlanner`
+(plans only automation/workflow-shaped recommendations; validation-only
+executor never invokes anything; a step naming an unregistered
+capability is honestly blocked; history/memory versioned and recallable;
+background queue respects budget and policy), `PredictionEngine`
+(frequency-ranked, deterministic, empty for an unvisited screen),
+`InteractionGraph`/`ExperienceRelationshipGraph`/`CollaborationGraph`
+(real followed-by chains; relationship inference proven both positive
+and negative — zero structural overlap produces zero edges; collaboration
+graph correctly requires 2+ independent signals), `RuntimeIntelligenceEngine`
+end-to-end (deterministic; honest empty result for empty observations),
+`RuntimeIntelligenceCoordinator` (real Runtime Integration via a real
+`ExperienceRouter`; real `CapabilityRegistry` validation; a REAL
+SQLite-backed `buildRelationshipGraph`/`buildCollaborationGraph` against
+two real golden-path packages), a combined Kernel + Evolution Integration
+test (a real `AnythingKernel.processIntent()` run's `evolutionRoadmap`
+fed directly into `RuntimeIntelligenceEngine`, proving no recommendation
+ever collides with a real Evolution proposal), and a second, unrelated
+novel domain ("beekeeping apiary rotation") proving zero domain-specific
+logic exists anywhere in the package.
+
+No bugs were found this milestone (the design's heavy reuse of already-
+certified V6/V7 patterns — evidence-verification review, dedup-by-
+description, typed graph node/edge shapes — meant the areas most likely
+to hide a defect were already proven correct elsewhere).
+
+**Execution result:** all 41 pass in full. Full regression re-run
+immediately after: full suite (951 tests, all green — up from 910
+pre-V8), `flutter analyze` (71 issues, 0 errors, 0 new warnings —
+identical to the pre-V8 baseline). `flutter build apk --debug` attempted;
+blocked by the same standing, pre-existing, Anything-code-unrelated
+`KeytoolException: Failed to read key AndroidDebugKey ... Tag number over
+30 is not supported` JDK/keytool incompatibility confirmed in every prior
+milestone.
+
 ## Documentation vs. reality
 
 `docs/progress/V2_STAGE_11.md` (last touched at commit `68bf60f`, 2026-07-29) claims `Status: COMPLETE` and "119/All passing" — this predates all three untracked Stage 11 test files and the uncommitted production-code DI changes, and does not reflect the 194/199 result measured in this audit. It should be treated as historical, not current, until Stage 11 closure (Roadmap M1) actually lands and this doc is updated with a fresh, dated, execution-verified count.

@@ -193,6 +193,46 @@ set `true` inside this same explicit, separate call — never during
 roadmap planning. See `docs/architecture/EVOLUTION_ENGINE.md` for the
 full pipeline.
 
+## Runtime Intelligence Layer (Vision Milestone V8, 2026-08-02)
+
+`lib/runtime_intelligence/` sits entirely on the TRUSTED side and
+introduces no new trust boundary. `ObservationEngine` subscribes to
+already-trusted, in-process runtime streams
+(`ExperienceRouter.events`/`ExperienceQueryController.stateStream`/
+`ExperienceStateEngine.watch`) — it never accepts external input, never
+touches the network, and never invokes WebWeaveX or Kaalka logic.
+
+**Privacy is a structural guarantee, not a policy**: `ObservationRecord`
+has no field capable of holding personal content — every field is an id,
+a count, a boolean, or an enum. Search terms, filter values, form field
+values, navigation arguments, and query result records are read only to
+compute a structural count or category; the underlying content is never
+stored, never passed to any constructor in this package, and is not
+reachable from any type this package exposes. This is verified directly
+by driving real runtime objects with deliberately "personal" values in
+`test/runtime_intelligence/observation_engine_test.dart` and asserting
+they never surface in the captured record.
+
+`AutomationExecutor`/`BackgroundCoordinator` never execute or schedule
+anything: `AutomationExecutor.validate()` only checks capability
+resolvability against the real `CapabilityRegistry` and never invokes a
+capability; `BackgroundCoordinator.queue()` only produces a typed
+description of what would run and when. No isolate is ever spawned, no
+arbitrary code is ever referenced — every automation step names an
+existing capability id only. Real OS-level background execution/
+notification delivery does not exist anywhere in this codebase (confirmed
+by repository audit: no `flutter_local_notifications`/`workmanager`
+dependency, `NotificationCapability` backed only by an in-memory
+`FakeNotificationService`) — RIL does not change this, and does not
+pretend otherwise.
+
+`ExperienceRelationshipGraph`/`CollaborationGraph` only ever compare
+purely structural fingerprints (capability ids, entity field *type*
+names) across independently-persisted Experiences read via the existing,
+read-only `SqliteExperienceRepository` calls — never record data, never a
+write. See `docs/architecture/RUNTIME_INTELLIGENCE_LAYER.md` for the full
+pipeline.
+
 ## Modification path
 
 ```
