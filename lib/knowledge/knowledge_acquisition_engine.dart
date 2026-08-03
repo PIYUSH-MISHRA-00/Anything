@@ -89,6 +89,13 @@ class KnowledgeAcquisitionEngine {
        _cache = cache ?? KnowledgeCache(),
        _maxResultsPerQuery = maxResultsPerQuery;
 
+  /// Exposes the shared `SearchProvider` (Implementation Milestone R16) —
+  /// same pattern as `SoftwareCognitionCoordinator.engine`/`.reasoner`
+  /// (R14/R15): lets a new consumer (`AnythingKernel`'s autonomous
+  /// discovery step) reuse the EXACT same provider instance this engine
+  /// already searches with, never a second search abstraction.
+  SearchProvider? get searchProvider => _searchProvider;
+
   /// Acquire knowledge for the given requirements.
   Future<KnowledgeBundle> acquire({
     required List<KnowledgeRequirement> requirements,

@@ -52,6 +52,9 @@ import 'package:anything/evolution/evolution_memory.dart';
 import 'package:anything/backend_engineering/backend_engineering_context.dart';
 import 'package:anything/backend_engineering/backend_engineering_planner.dart';
 import 'package:anything/knowledge/knowledge_resource.dart';
+import 'package:anything/knowledge/autonomous_knowledge_planner.dart';
+import 'package:anything/software_cognition/software_cognition_coordinator.dart';
+import 'package:anything/software_cognition/software_cognition_engine.dart' show RepositoryCognitionResult;
 import 'package:anything/software_cognition/software_reasoner.dart' show SoftwareRecommendation;
 import 'package:anything/world_model/world_model_coordinator.dart';
 import 'package:anything/world_model/world_types.dart' show WorldNodeKind;
@@ -113,6 +116,18 @@ class AnythingKernel {
   /// bookkeeping graph write.
   final WorldModelCoordinator? _worldModel;
 
+  /// Optional shared Software Cognition coordinator (Implementation
+  /// Milestone R16) — REALITY before R16: `AnythingKernel` held no
+  /// Software Cognition reference at all; acquisition only ever happened
+  /// at the `ExperienceCreationCoordinator` level, driven by a
+  /// human-supplied `referenceUrl`/`referenceUrls` (R14/R15). This field
+  /// lets the Kernel autonomously discover and understand repositories
+  /// from the reasoner's own already-emitted `knowledgeNeeds` — see
+  /// `_autoDiscoverSoftwareKnowledge`. Null by default, fully backward
+  /// compatible; the composition root passes the SAME shared instance
+  /// `ExperienceCreationCoordinator` already uses, never a second one.
+  final SoftwareCognitionCoordinator? _softwareCognition;
+
   /// Every Design Review session this Kernel instance has ever run, and a
   /// memory of accepted/fixed decisions keyed by structural fingerprint —
   /// both persist for the lifetime of this Kernel instance (never reset
@@ -148,9 +163,11 @@ class AnythingKernel {
     EvolutionEngine? evolutionEngine,
     ArchitectureToBlueprintConverter? architectureToBlueprint,
     WorldModelCoordinator? worldModel,
+    SoftwareCognitionCoordinator? softwareCognition,
     BackendEngineeringPlanner? backendEngineeringPlanner,
     CanonicalImplementationPlanner? canonicalImplementationPlanner,
   }) : _worldModel = worldModel,
+       _softwareCognition = softwareCognition,
        _requirementExtractor =
            requirementExtractor ?? const RequirementExtractor(),
        _constraintPlanner = constraintPlanner ?? const ConstraintPlanner(),
@@ -190,10 +207,22 @@ class AnythingKernel {
   /// `minSupportingCandidates` acceptance gate permanently vacuous. Empty
   /// by default; existing behavior is byte-for-byte unchanged when not
   /// supplied.
+  /// [autoDiscoverKnowledge] (Implementation Milestone R16) opts into
+  /// autonomous repository discovery: after reasoning succeeds, the
+  /// reasoner's own `SemanticApp.knowledgeNeeds` (real, already emitted by
+  /// the single reasoning call above, previously read by nothing
+  /// downstream) is turned into a deterministic acquisition plan, real
+  /// candidate URLs are found via the existing `SearchProvider`, and
+  /// sound results merge into `corroboratingRecommendations` alongside
+  /// whatever the caller already supplied. `false` by default — every
+  /// existing caller/test is byte-for-byte unchanged; autonomous network
+  /// searches on every creation would be a real behavioral/cost change
+  /// this milestone must not introduce silently.
   Future<KernelOutcome> processIntent(
     Intent intent, {
     List<KnowledgeResource> seedKnowledge = const [],
     List<SoftwareRecommendation> corroboratingRecommendations = const [],
+    bool autoDiscoverKnowledge = false,
   }) async {
     try {
       // Step 1: Classify the intent
@@ -284,7 +313,15 @@ class AnythingKernel {
           );
       }
 
-      // Step 5.5: Feature Discovery Engine — Requirement Graph -> Knowledge
+      // Step 5.5: Autonomous Knowledge Acquisition (Implementation
+      // Milestone R16) — deterministic, zero new LLM call. Opt-in; a
+      // no-op when `autoDiscoverKnowledge` is false (the default) or no
+      // `SoftwareCognitionCoordinator` was injected.
+      final autoDiscoveredRecommendations = autoDiscoverKnowledge
+          ? await _autoDiscoverSoftwareKnowledge(reasonResult.semanticApp)
+          : const <SoftwareRecommendation>[];
+
+      // Step 5.6: Feature Discovery Engine — Requirement Graph -> Knowledge
       // Graph -> Feature Discovery -> Feature Review -> Feature Refinement.
       // Runs before Architecture, per the Vision Milestone V4 pipeline;
       // every ReasoningReady result passes through here, no bypass.
@@ -482,7 +519,10 @@ class AnythingKernel {
           engineering: engineeringPlan.finalCandidate,
           backend: backendEngineeringPlan,
           resolvedCapabilities: resolutions.map((r) => r.descriptor).whereType<CapabilityDescriptor>().toList(),
-          corroboratingRecommendations: corroboratingRecommendations,
+          // Merges the caller-supplied list (R15, manual referenceUrls)
+          // with whatever Step 5.5's autonomous discovery found (R16,
+          // opt-in) — both compose, neither replaces the other.
+          corroboratingRecommendations: [...corroboratingRecommendations, ...autoDiscoveredRecommendations],
         ),
       );
       _ingestIntoWorldModelSafely(() => _worldModel?.ingestCanonicalImplementation(canonicalImplementationModel));
@@ -538,6 +578,59 @@ class AnythingKernel {
     } catch (_) {
       // Deliberately swallowed — see doc comment above.
     }
+  }
+
+  /// Real, deterministic-input acquisition step (Implementation Milestone
+  /// R16). Turns `AutonomousKnowledgeAcquisitionPlanner`'s plan into real
+  /// `SearchProvider.search` lookups and real
+  /// `SoftwareCognitionEngine.understandRepositoryFromUrl` acquisitions,
+  /// then corroborates every sound result via the SAME
+  /// `SoftwareReasoner.reasonAboutRepositories` R15 already wired for
+  /// manually-supplied sources — never a second reasoner, never a second
+  /// acquisition path. Best-effort throughout: a search/acquisition
+  /// failure for one target, or for the whole step, never fails creation,
+  /// matching this Kernel's other optional-enhancement contracts
+  /// (`_ingestIntoWorldModelSafely`).
+  Future<List<SoftwareRecommendation>> _autoDiscoverSoftwareKnowledge(SemanticApp app) async {
+    final softwareCognition = _softwareCognition;
+    final searchProvider = _knowledgeEngine.searchProvider;
+    if (softwareCognition == null || searchProvider == null) return const [];
+
+    final plan = const AutonomousKnowledgeAcquisitionPlanner().plan(app);
+    final soundResults = <RepositoryCognitionResult>[];
+
+    for (final target in plan.actionableTargets) {
+      try {
+        final searchResults = await searchProvider.search(target.query, maxResults: 3);
+        for (final candidate in searchResults) {
+          try {
+            final result = await softwareCognition.engine.understandRepositoryFromUrl(
+              candidate.url,
+              name: Uri.tryParse(candidate.url)?.host ?? candidate.url,
+            );
+            if (result != null && result.isSound) soundResults.add(result);
+          } catch (_) {
+            // One candidate URL failing must never fail creation.
+          }
+        }
+      } catch (_) {
+        // Search failing for one target must never fail creation.
+      }
+    }
+
+    if (soundResults.isEmpty) return const [];
+
+    // World Graph ingestion for every autonomously-discovered source —
+    // same non-blocking contract as R14's manual-acquisition sync.
+    final worldModel = _worldModel;
+    if (worldModel != null) {
+      for (final result in soundResults) {
+        _ingestIntoWorldModelSafely(() => softwareCognition.syncToWorldModel(worldModel, result.model));
+      }
+    }
+
+    final candidates = soundResults.map((r) => r.model).toList();
+    return softwareCognition.reasoner.reasonAboutRepositories(candidates).where((r) => r.accepted).toList();
   }
 
   /// Best-effort World Graph READ (Implementation Milestone R3): the

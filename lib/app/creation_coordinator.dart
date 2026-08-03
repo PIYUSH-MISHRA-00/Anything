@@ -154,10 +154,16 @@ class ExperienceCreationCoordinator {
   /// of the single-candidate case where its `minSupportingCandidates`
   /// gate can never accept anything (see R14's own documented limitation
   /// in `docs/architecture/SOFTWARE_COGNITION_ENGINE.md`).
+  /// [autoDiscoverKnowledge] (Implementation Milestone R16) opts the
+  /// Kernel into autonomous repository discovery from the reasoner's own
+  /// already-emitted `knowledgeNeeds` — no reference URL required. `false`
+  /// by default; composes with (does not replace) [referenceUrl]/
+  /// [referenceUrls] when both are supplied.
   Future<CreationResult> createFromIntent(
     Intent intent, {
     String? referenceUrl,
     List<String>? referenceUrls,
+    bool autoDiscoverKnowledge = false,
   }) async {
     _state = CreationState.understanding;
 
@@ -171,6 +177,7 @@ class ExperienceCreationCoordinator {
         intent,
         seedKnowledge: seedKnowledge,
         corroboratingRecommendations: corroboratingRecommendations,
+        autoDiscoverKnowledge: autoDiscoverKnowledge,
       );
 
       switch (kernelOutcome) {
@@ -240,11 +247,13 @@ class ExperienceCreationCoordinator {
     String expression, {
     String? referenceUrl,
     List<String>? referenceUrls,
+    bool autoDiscoverKnowledge = false,
   }) async {
     return createFromIntent(
       Intent.create(expression: expression),
       referenceUrl: referenceUrl,
       referenceUrls: referenceUrls,
+      autoDiscoverKnowledge: autoDiscoverKnowledge,
     );
   }
 

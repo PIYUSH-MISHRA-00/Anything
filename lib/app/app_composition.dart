@@ -113,7 +113,17 @@ class AppComposition {
       ..register(NotificationCapability(service: FakeNotificationService(), experienceId: ''))
       ..register(FileCapability(service: FakeFileService(), experienceId: ''));
 
-    final kernel = AnythingKernel(providerRegistry: providerRegistry, knowledgeEngine: knowledgeEngine, worldModel: worldModel);
+    // Implementation Milestone R16: built before `kernel` so the SAME
+    // instance is shared with `AnythingKernel`'s autonomous discovery step
+    // AND `ExperienceCreationCoordinator`'s manual-reference path below —
+    // never a second Software Cognition Engine.
+    final softwareCognition = SoftwareCognitionCoordinator();
+    final kernel = AnythingKernel(
+      providerRegistry: providerRegistry,
+      knowledgeEngine: knowledgeEngine,
+      worldModel: worldModel,
+      softwareCognition: softwareCognition,
+    );
 
     return AppComposition._(
       experienceRepository: experienceRepository,
@@ -122,7 +132,7 @@ class AppComposition {
       credentialVault: credentialVault,
       capabilityPlatform: capabilityPlatform,
       knowledgeEngine: knowledgeEngine,
-      softwareCognition: SoftwareCognitionCoordinator(),
+      softwareCognition: softwareCognition,
       runtimeIntelligence: RuntimeIntelligenceCoordinator(),
       kernel: kernel,
       engineeringMemory: EngineeringMemoryRepository(experienceRepository: experienceRepository),
