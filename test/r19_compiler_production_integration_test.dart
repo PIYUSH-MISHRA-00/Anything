@@ -232,13 +232,17 @@ void main() {
       // `dataFieldCountParity` and `screenCountParity` genuinely fail for
       // this fixture (this SemanticApp fixture declares only one blueprint
       // VIEW, so legacy produces a single screen where the compiler's
-      // entity-driven pipeline produces list/form/detail; field-count
-      // differences between the two pipelines' entity derivation are real
-      // too) — 9 of 11 real dimensions agree, a real, non-fabricated score.
+      // entity-driven pipeline produces list/form/detail; the compiler's
+      // real auto primary-key column, R8, makes its field COUNT differ
+      // from legacy's blueprint-declared fields too — a real, intentional
+      // difference, not a defect) — 10 of 12 real dimensions agree
+      // (Implementation Milestone R20 added `sharedFieldMetadataParity`,
+      // which trivially passes here since this fixture's one field
+      // ('title') carries no rich metadata to differ on).
       expect(report.compatibilityScore, lessThan(1.0));
       expect(report.compatibilityScore, greaterThan(0.0));
-      expect(report.dimensionsChecked, hasLength(11));
-      expect(report.dimensionsPassed, hasLength(9));
+      expect(report.dimensionsChecked, hasLength(12));
+      expect(report.dimensionsPassed, hasLength(10));
       expect(report.dimensionsChecked.toSet().difference(report.dimensionsPassed.toSet()), {'dataFieldCountParity', 'screenCountParity'});
     });
 
