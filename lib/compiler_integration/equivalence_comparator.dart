@@ -1,11 +1,25 @@
-/// EquivalenceComparator — Implementation Milestone R19. Real, itemized
-/// structural comparison between a legacy-pipeline and a compiler-pipeline
-/// `ExperiencePackage` produced from the SAME real creation request. Eleven
-/// real, individually-checked dimensions (see `_dimensionChecks`) — the
-/// compatibility score is `passed / total`, never a hand-waved constant.
+/// EquivalenceComparator — Implementation Milestone R19, identity-aware
+/// since R22. Real, itemized structural comparison between a legacy-pipeline
+/// and a compiler-pipeline `ExperiencePackage` produced from the SAME real
+/// creation request. Eleven real, individually-checked dimensions (see
+/// `_dimensionChecks`) — the compatibility score is `passed / total`, never
+/// a hand-waved constant.
+///
+/// `missingComponents`/`extraComponents` (Implementation Milestone R22):
+/// when the caller supplies the real source `legacyBlueprint`/
+/// `compilerModel` alongside the two packages, screen presence is compared
+/// by `ScreenIdentity` (`lib/experience_identity/`) — entity+role — instead
+/// of raw `InterfaceScreen.id` strings, so the `entries_list`-vs-`entry_list`
+/// class of incidental naming difference (R19's own documented finding) no
+/// longer reads as a real structural gap. Omitting them keeps the exact
+/// pre-R22 string-based behavior — purely additive, every existing R19-R21
+/// call site is unaffected.
 library;
 
 import '../creation/experience_package.dart';
+import '../experience_identity/experience_identity.dart';
+import '../implementation_model/canonical_implementation_model.dart';
+import '../synthesis/app_blueprint.dart';
 import 'equivalence_report.dart';
 
 /// Dart's default `Set<T>.==` is identity-based, not content-based — this
@@ -20,16 +34,29 @@ class EquivalenceComparator {
     ExperiencePackage compiler, {
     required Duration legacyLatency,
     required Duration compilerLatency,
+    AppBlueprint? legacyBlueprint,
+    CanonicalImplementationModel? compilerModel,
   }) {
-    final legacyScreenIds = legacy.interface.screens.map((s) => s.id).toSet();
-    final compilerScreenIds = compiler.interface.screens.map((s) => s.id).toSet();
-    final missingComponents = legacyScreenIds.difference(compilerScreenIds).toList()..sort();
-    final extraComponents = compilerScreenIds.difference(legacyScreenIds).toList()..sort();
+    final List<String> missingComponents;
+    final List<String> extraComponents;
+    if (legacyBlueprint != null && compilerModel != null) {
+      final identityDiff = _identityDiff(legacyScreenIdentities(legacyBlueprint), compilerScreenIdentities(compilerModel));
+      missingComponents = identityDiff.missing;
+      extraComponents = identityDiff.extra;
+    } else {
+      final legacyScreenIds = legacy.interface.screens.map((s) => s.id).toSet();
+      final compilerScreenIds = compiler.interface.screens.map((s) => s.id).toSet();
+      missingComponents = legacyScreenIds.difference(compilerScreenIds).toList()..sort();
+      extraComponents = compilerScreenIds.difference(legacyScreenIds).toList()..sort();
+    }
 
     final behaviorDifferences = _behaviorDifferences(legacy, compiler);
     final capabilityDifferences = _capabilityDifferences(legacy, compiler);
 
     final checks = _dimensionChecks(legacy, compiler);
+    if (legacyBlueprint != null && compilerModel != null) {
+      checks['screenIdentityCoverage'] = missingComponents.isEmpty && extraComponents.isEmpty;
+    }
     final passed = checks.entries.where((e) => e.value).map((e) => e.key).toList();
 
     return EquivalenceReport(
@@ -44,6 +71,37 @@ class EquivalenceComparator {
       dimensionsChecked: checks.keys.toList(),
       dimensionsPassed: passed,
     );
+  }
+
+  /// Real multiset comparison (Implementation Milestone R22): counts each
+  /// `ScreenIdentity`, not just set presence, so the compiler's genuine
+  /// create+edit split (2 `form`-role screens vs. legacy's 1, since legacy
+  /// has no create/edit distinction — see `experience_identity.dart`'s doc
+  /// comment) shows up as a real, honest, quantified difference rather than
+  /// being hidden or falsely equated.
+  ({List<String> missing, List<String> extra}) _identityDiff(List<ScreenIdentity> legacyIds, List<ScreenIdentity> compilerIds) {
+    final legacyCounts = <ScreenIdentity, int>{};
+    for (final id in legacyIds) {
+      legacyCounts[id] = (legacyCounts[id] ?? 0) + 1;
+    }
+    final compilerCounts = <ScreenIdentity, int>{};
+    for (final id in compilerIds) {
+      compilerCounts[id] = (compilerCounts[id] ?? 0) + 1;
+    }
+
+    final missing = <String>[];
+    for (final entry in legacyCounts.entries) {
+      final deficit = entry.value - (compilerCounts[entry.key] ?? 0);
+      if (deficit > 0) missing.add('${entry.key} (legacy $deficit more than compiler)');
+    }
+    final extra = <String>[];
+    for (final entry in compilerCounts.entries) {
+      final surplus = entry.value - (legacyCounts[entry.key] ?? 0);
+      if (surplus > 0) extra.add('${entry.key} (compiler $surplus more than legacy)');
+    }
+    missing.sort();
+    extra.sort();
+    return (missing: missing, extra: extra);
   }
 
   /// Ten real, itemized structural dimensions. Each predicate is
