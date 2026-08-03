@@ -2,9 +2,11 @@
 library;
 
 import 'package:anything/creation/experience_package.dart';
+import 'package:anything/creation/experience_package_diff.dart';
 import 'package:anything/creation/package_validator.dart';
 import 'package:anything/creation/modification/modification_engine.dart';
 import 'package:anything/creation/modification/experience_modification_spec.dart';
+import 'package:anything/evolution/evolution_diff_plan.dart';
 import 'package:anything/storage/sqlite_experience_repository.dart';
 import 'package:anything/storage/activity_repository.dart';
 import 'package:anything/world_model/world_model_coordinator.dart';
@@ -113,6 +115,22 @@ class ExperienceModificationCoordinator {
         // 5. Persist new version
         await _repository.savePackage(result.updatedPackage);
 
+        // 5.5. World Model ingestion (Implementation Milestone R4): every
+        // ACCEPTED modification updates the canonical, shared World Graph
+        // — closing MIS-1 Part 2's finding that `ingestExperience`
+        // (outside the bulk-load helper) had zero real call sites.
+        // Best-effort and defensive: an ingestion failure must never
+        // surface as a modification failure, mirroring R1/R2/R3's
+        // `_ingestIntoWorldModelSafely` contract exactly. A REJECTED
+        // modification (any earlier `return` above) never reaches this
+        // line, so the World Graph is never mutated on rejection —
+        // proven directly in this milestone's tests.
+        try {
+          _worldModel.ingestExperience(metadata, result.updatedPackage);
+        } catch (_) {
+          // Deliberately swallowed — see comment above.
+        }
+
         // 6. Record activity
         await _activity.record(
           ActivityEvent(
@@ -142,6 +160,45 @@ class ExperienceModificationCoordinator {
           message: "I couldn't apply that change.",
         );
     }
+  }
+
+  /// Computes an [EvolutionDiffPlan] for [modificationExpression] against
+  /// [experienceId]'s CURRENT package — Implementation Milestone R4's
+  /// "Incremental Software Evolution," planning-only. Reuses the exact
+  /// same [_parseOperations]/[ModificationEngine.modify] pure-function
+  /// path [modifyExperience] already uses (never a duplicate modification
+  /// implementation) but STOPS before persistence: no
+  /// `_repository.savePackage`, no activity record, no World Model
+  /// ingestion. Returns `null` when the Experience doesn't exist or the
+  /// candidate modification itself is honestly not computable (mirrors
+  /// [modifyExperience]'s own early-return conditions).
+  ///
+  /// Known limitation, stated honestly (see this milestone's report):
+  /// only [ExperienceDiff] is populated. `RequirementGraph`/
+  /// `ArchitectureCandidate`/`EngineeringCandidate` are transient,
+  /// Kernel-internal, per-request artifacts — never persisted per
+  /// Experience — so this coordinator has no real "before" instance of
+  /// them to diff against without re-running Kernel-level planning
+  /// (out of this milestone's scope; see Known Limitations).
+  Future<EvolutionDiffPlan?> planEvolution({
+    required String experienceId,
+    required String modificationExpression,
+  }) async {
+    final currentPackage = await _repository.getPackage(experienceId);
+    if (currentPackage == null) return null;
+
+    final spec = ExperienceModificationSpec(
+      targetExperienceId: experienceId,
+      basePackageVersion: currentPackage.manifest.version,
+      objective: modificationExpression,
+      operations: _parseOperations(modificationExpression),
+    );
+
+    final result = await _engine.modify(currentPackage, spec);
+    if (result is! ModificationReady) return null;
+
+    final experienceDiff = const ExperienceDiffer().diff(currentPackage, result.updatedPackage);
+    return const EvolutionDiffPlanBuilder().build(experienceId: experienceId, experienceDiff: experienceDiff);
   }
 
   List<ModificationOperation> _parseOperations(String expression) {
