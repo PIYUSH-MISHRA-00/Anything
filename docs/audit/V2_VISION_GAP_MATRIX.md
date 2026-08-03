@@ -251,3 +251,14 @@ Statuses: VERIFIED (directly confirmed by source/test execution), PARTIAL (real 
 | Equivalence measured again, real before/after | **VERIFIED** — on a deliberately entity-unrelated legacy view id (`'my_weird_screen_name'`), the id-mismatch class of false "missing"/"extra" report is resolved by identity; the compiler's real create/edit form split still honestly appears as an extra. |
 | Legacy remains compatible (zero code changes) | **VERIFIED** — `lib/creation/creation_engine.dart` untouched (`git diff --stat`); identity is derived from `BlueprintView`/`BlueprintAction`'s existing real fields, never by modifying legacy's own conversion logic. |
 | No duplicate ExperiencePackage / Runtime / Generator Framework / Build Graph / Planner / AI Boundary | **VERIFIED** — `lib/runtime/`, `lib/software_cognition/`, `lib/world_model/`, `lib/storage/engineering_memory_repository.dart`, `lib/generator_framework/generator.dart`, `lib/build_graph/`, `lib/generation_specification/` completely untouched (`git diff --stat`); zero new LLM calls. |
+
+## R23
+
+| Item | Status |
+|---|---|
+| Compiler Certification Framework automatically certifies compiler readiness across a real corpus | **VERIFIED** — `CertificationRunner.certifyCorpus()` (`lib/compiler_certification/`) runs all 13 real fixtures through the real Kernel/legacy/compiler pipelines and the real, unmodified `EquivalenceComparator`. |
+| Objective evidence produced for future compiler-default decisions | **VERIFIED** — real, measured `migrationReadinessScore` 0.681 on the 13-fixture corpus, with every contributing metric individually reported, not a single opaque number. |
+| Compiler-by-default NOT enabled without evidence | **VERIFIED** — `useCompilerPipeline` is never referenced anywhere in this milestone's code; its default remains `false`, untouched. |
+| Equivalence reused, never replaced | **VERIFIED** — `EquivalenceComparator`/`equivalence_report.dart` (R19-R22) imported and called unmodified; zero new comparison logic. |
+| Identity reused | **VERIFIED** — `legacyBlueprint`/`compilerModel` passed to `compare()` on every fixture; `identityCoverage` measured at 1.0. |
+| No duplicate Compiler / Comparator / Runtime / Generator Framework / Validation System / AI Boundary | **VERIFIED** — `lib/runtime/`, `lib/generator_framework/`, `lib/build_graph/`, `lib/generation_specification/`, `lib/software_cognition/`, `lib/world_model/`, `lib/storage/engineering_memory_repository.dart`, `lib/creation/creation_engine.dart` completely untouched (`git diff --stat` — zero existing files modified, only new files added); zero new LLM calls. |

@@ -1103,3 +1103,42 @@ Canonical Experience Identity" for the full audit.
 
 **DO NOT START R23 — per this milestone's own stop condition, wait for
 external architectural review.**
+
+## R23 — Compiler Certification Framework, Automated Equivalence Certification
+
+REUSE-and-AGGREGATE milestone over R19-R22's already-proven
+`EquivalenceComparator`/`CompilerPipelineRunner`/Canonical Experience
+Identity — all used completely unmodified. New
+`lib/compiler_certification/` (3 files): a real 13-fixture corpus
+(`crud`/`offline_first`/`dashboard`/`calendar`/`settings`/`summary`/
+`multi_entity`/`relationships`/`permissions`/`capabilities`/
+`navigation`/`backend_required`/`composite`), a runner that executes
+both pipelines per fixture via the real, unmodified `AnythingKernel`/
+`CreationEngine`/`runCompilerPipeline` and calls the real, unmodified
+`EquivalenceComparator.compare()` with R22's identity-aware parameters,
+a `CertificationReport` aggregator (every metric a documented
+fraction/average over real per-fixture `EquivalenceReport`s, never
+invented), and a real JSON-snapshot regression/trend mechanism (no new
+Engineering Memory/World Model persistence).
+
+Real, measured corpus result: `migrationReadinessScore` 0.681
+(`structuralEquivalence` 0.769, `determinismRate` 1.0). A genuinely new,
+corpus-scale finding: most fixtures under-declare `SemanticView`s
+relative to their entities' unconditionally-full CRUD surface
+(`BackendEngineeringPlan.api`, R18), so the compiler's always-full
+list/form/detail screen set diverges from legacy's views-only screen
+set on nearly every fixture — a fixture-corpus characteristic, not a
+newly discovered pipeline defect.
+
+`lib/generator_framework/`, `lib/build_graph/`,
+`lib/generation_specification/`, `lib/runtime/`,
+`lib/software_cognition/`, `lib/world_model/`,
+`lib/storage/engineering_memory_repository.dart`, and
+`lib/creation/creation_engine.dart` all completely untouched.
+`useCompilerPipeline` remains opt-in, default `false`.
+
+See `docs/architecture/COMPILER_PRODUCTION_INTEGRATION.md`, "R23 —
+Compiler Certification Framework" for the full audit.
+
+**DO NOT START R24 — per this milestone's own stop condition, wait for
+external architectural review.**

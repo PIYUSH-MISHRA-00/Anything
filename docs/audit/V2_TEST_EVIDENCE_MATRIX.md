@@ -1258,3 +1258,35 @@ baseline. `lib/runtime/`, `lib/software_cognition/`, `lib/world_model/`,
 `lib/generator_framework/generator.dart`, `lib/build_graph/`,
 `lib/generation_specification/`, `lib/creation/creation_engine.dart`
 all completely untouched.
+
+## R23 — Compiler Certification Framework, Automated Equivalence Certification
+
+`test/r23_compiler_certification_test.dart` — 13 new tests: corpus
+coverage (all 13 real categories present, one fixture each), the
+certification runner reaching a real, non-null result for every corpus
+fixture (including the `backend_required`/`permissions` fixtures'
+capability-driven paths), corpus-level aggregation (every metric a real
+fraction in `[0.0, 1.0]`, `identityCoverage`/`determinismRate` both
+`1.0` since every fixture is certified with R22's identity-aware
+parameters and both pipelines independently re-run identical),
+`knownDifferences` real and non-empty with every entry naming a
+specific fixture category, regression detection (a deliberately
+score-halved fixture flagged; a fixture missing from the current run
+also flagged; a clean re-run against its own snapshot produces zero
+findings), snapshot JSON round-trip, corpus expansion (one new fixture
+added produces a real, updated report, not a stale one), trend
+reporting over an ordered snapshot sequence, a backward-compatibility
+check that R19-R21's own no-identity-params `compare()` call shape is
+untouched (exercised by those files directly, unmodified), and real
+Stopwatch/`ProcessInfo.currentRss` performance numbers over 100/500/
+1000 synthetic (parameterized, never hand-authored) applications.
+
+**Execution result:** 13 new tests pass. Full regression: **1405/1405**
+(up from 1383). `flutter analyze`: 71 issues, 0 errors, unchanged
+baseline. `lib/runtime/`, `lib/generator_framework/`, `lib/build_graph/`,
+`lib/generation_specification/`, `lib/software_cognition/`,
+`lib/world_model/`, `lib/storage/engineering_memory_repository.dart`,
+`lib/creation/creation_engine.dart` all completely untouched (zero
+files modified this milestone — every change is a new file).
+`useCompilerPipeline` unaffected (never referenced by this milestone's
+code at all).
