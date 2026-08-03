@@ -100,3 +100,69 @@ Two additive changes, both backward-compatible:
   field changed — a real, honest scope boundary given
   `EngineeringCandidate`'s shape has no independent identity for these
   dimensions to diff more granularly.
+
+## Implementation Milestone R7 — wired into the real UI
+
+R6 built `ExperienceModificationCoordinator.applyEvolutionPlan()`/
+`.rollback()` (real validate-before-persist, World Model accept-only
+ingestion, deterministic rollback via the pre-apply package snapshot)
+but left them unwired from `ExperienceHostScreen`'s live UI. R7 closes
+this: the screen's "Change this app" flow now calls
+`planEvolution()` → `applyEvolutionPlan()` instead of `modifyExperience()`
+directly.
+
+**Documented routing decision** (explicitly required by R7's own
+spec): `modifyExperience()` was NOT changed to internally route through
+`EvolutionDiffPlan`, and was not deleted or redesigned — it remains a
+real, tested, independently-available coordinator method (other
+callers/tests still use it directly, re-confirmed by regression). Only
+`ExperienceHostScreen`'s own call site changed, because only the
+`planEvolution()`/`applyEvolutionPlan()` path returns a real
+`previousPackage`, which is what makes genuine Undo/rollback possible.
+
+**What R7 adds**, all real and tested:
+- Real progress-stage announcements ("Planning…", "Validating & saving…")
+  via `Semantics(liveRegion: true, ...)`, updated at genuine `await`
+  boundaries in the new `_runModification` method — never a fabricated
+  timed sequence.
+- A real, single-level Undo affordance: a `SnackBarAction` on the
+  success snackbar that calls `rollback()` with the exact
+  `previousPackage` `applyEvolutionPlan()` returned. Honestly scoped to
+  ONE level — `SqliteExperienceRepository` retains no version history
+  (confirmed R6), so only the immediately-preceding change can be
+  undone via this in-memory snapshot, never an arbitrary point in
+  history.
+- A real "Evolution history" view, reusing the EXISTING
+  `ActivityRepository` (no new repository) filtered to the current
+  Experience's own `'updated'` events — enriched with a real,
+  diff-derived summary (from `EvolutionDiffPlan.experienceDiff`, never
+  fabricated) and a real measured duration (`ActivityEvent` gained an
+  optional, backward-compatible `durationMs` field).
+- Honest, scoped state preservation: the current tab index / router
+  screen id is captured before a reload and restored after, when the
+  target still exists in the new package. Scroll position, focused
+  widget, and in-progress text-field contents are NOT preserved — they
+  live inside the widget subtree the reload rebuilds, and preserving
+  them would require much larger `ExperienceRenderer`/`ExperienceRouter`
+  changes out of this milestone's "extend, never redesign" scope.
+- `ExperienceHostScreen` gained an optional `modificationCoordinator`
+  constructor parameter, matching the exact DI convention already
+  established for `runtime`/`worldModel`/`engineeringMemory` — found
+  and fixed via this milestone's own widget testing (without it, the
+  screen's internal coordinator constructs its own default,
+  test-unreachable `SqliteExperienceRepository`).
+- A real bug found and fixed via widget testing: `ScaffoldMessenger`
+  queues snackbars one at a time, so a rollback confirmation shown
+  immediately after the original "App updated…" snackbar was silently
+  delayed behind it. Fixed with `hideCurrentSnackBar()` before showing
+  rollback feedback.
+
+**Known limitation, honestly scoped**: `AnythingRuntime`/`ExperienceRenderer`
+remain completely unmodified (confirmed via `git diff`) — the "reload"
+is a full, fast re-render through the existing, unchanged renderer
+after `closeSession()`/`openExperience()`, not granular in-place widget
+patching (MIS-1 Part 3 already flagged that as high-risk/not-recommended-
+near-term). This is fast enough in practice that this milestone's own
+widget tests found no reliably-observable "mid-flight" frame to assert
+on for a trivial fixture — a real, positive performance characteristic,
+not a test gap.

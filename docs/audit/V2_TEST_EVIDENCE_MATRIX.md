@@ -703,3 +703,37 @@ byte-identical persisted packages from the same plan); a real
 **Execution result:** all 9 pass. Full regression: **1177/1177** (up
 from 1168, zero pre-existing test modified). `flutter analyze`: 71
 issues, 0 errors, unchanged baseline.
+
+## Implementation Milestone R7 — Runtime Experience Integration (2026-08-03)
+
+`test/r7_runtime_experience_ux_test.dart` (8 tests): a real,
+diff-derived Evolution History summary + real measured duration on
+`applyEvolutionPlan()`/`rollback()`'s recorded `ActivityEvent`s;
+`ActivityEvent.durationMs` round-trips through `toJson()`/`fromJson()`
+and is honestly absent (never fabricated) for pre-R7-shaped JSON; a
+full, real widget-level proof of the live UI flow ("Change this app" →
+real progress announcements → real success snackbar with a working
+Undo action → tapping Undo genuinely rolls back, using
+`ExperienceHostScreen`'s new `modificationCoordinator` DI parameter to
+observe a test-seeded repository — found and added via this
+milestone's own testing, mirroring the exact DI convention `runtime`
+already established); a real failure-path proof (an unrecognized
+Experience never crashes, shows real error feedback); Evolution History
+rendering real, per-Experience-filtered entries (confirmed a DIFFERENT
+Experience's history never leaks in); a real accessibility check on the
+live Undo action's announced label; a regression proof that
+`modifyExperience()` remains unchanged and independently callable.
+
+Two real bugs found and fixed via this milestone's own widget testing,
+not assumed: (1) `ExperienceHostScreen` had no way to inject a
+test-seeded `ExperienceModificationCoordinator`, unlike every other
+dependency (`runtime`/`worldModel`/`engineeringMemory`) — fixed by
+adding the same DI parameter pattern; (2) `ScaffoldMessenger` queues
+SnackBars one at a time, so a rollback confirmation shown right after
+the original update snackbar was silently delayed behind it for the
+full default display duration — fixed with `hideCurrentSnackBar()`
+before the rollback feedback.
+
+**Execution result:** all 8 pass. Full regression: **1185/1185** (up
+from 1177, zero pre-existing test modified). `flutter analyze`: 71
+issues, 0 errors, unchanged baseline.

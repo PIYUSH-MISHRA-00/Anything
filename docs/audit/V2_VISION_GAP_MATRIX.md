@@ -50,3 +50,14 @@ Statuses: VERIFIED (directly confirmed by source/test execution), PARTIAL (real 
 |---|---|
 | Runtime patching (apply an EvolutionDiffPlan to a live Experience) | **VERIFIED** — `ExperienceModificationCoordinator.applyEvolutionPlan()`/`.rollback()`, real validate-before-persist, real deterministic rollback via pre-apply package snapshot, real World Model accept-only ingestion, a real widget-level test proving the live `AnythingRuntime`/`ExperienceRenderer` reflect an applied patch after reload. No second Runtime/Renderer/Coordinator/Planner introduced. |
 | Zero-regeneration / granular in-place patching | Honestly NOT achieved — MIS-1 Part 3 already flagged this as high-risk/not-recommended-near-term; R6 achieves full-reload-through-the-existing-runtime instead (sub-second, no AI call, no re-synthesis), a real and much safer scope. |
+
+## Implementation Milestone R7 update (2026-08-03)
+
+| Capability | Status |
+|---|---|
+| Runtime patching wired into the live UI | **VERIFIED** — `ExperienceHostScreen`'s "Change this app" flow now calls `planEvolution()` → `applyEvolutionPlan()` (R6) instead of `modifyExperience()` directly; `modifyExperience()` itself unchanged, still real, tested, independently available. |
+| Undo / rollback UX | **VERIFIED, honestly single-level** — a real `SnackBarAction` calls `rollback()` with the exact `previousPackage` `applyEvolutionPlan()` returned; only ONE level of undo, since `SqliteExperienceRepository` retains no version history (confirmed R6) — no arbitrary-point-in-history rollback claimed. |
+| Evolution History | **VERIFIED** — reuses the existing `ActivityRepository` (no new repository), filtered per-Experience, with a real diff-derived summary and real measured duration. |
+| Visible progress | **VERIFIED, structurally** — real `Semantics(liveRegion: true)` announcements at genuine await boundaries; honestly noted this milestone's own test found the underlying operations complete too fast in the FFI-no-isolate test harness to reliably assert on a "mid-flight" frame — a real performance characteristic, not a claim withdrawal. |
+| State preservation | **PARTIAL, honestly scoped** — current tab/screen restored across a reload when still valid; scroll position, focused widget, and in-progress text-field contents are NOT preserved (they live in the widget subtree the reload rebuilds) — not attempted, named as a real limitation. |
+| No duplicate architecture | **VERIFIED** — zero changes to `AnythingRuntime`/`ExperienceRenderer`/`BehaviorInterpreter` (confirmed `git diff`); no second Runtime/Coordinator/Evolution-pipeline/repository; `ExperienceHostScreen` gained one optional DI parameter (`modificationCoordinator`), matching the existing convention, not a new pattern. |

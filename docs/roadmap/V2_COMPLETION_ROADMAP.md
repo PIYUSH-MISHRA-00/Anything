@@ -417,3 +417,40 @@ milestones' new coordinators started with; (2) decide whether
 navigation/scroll/form-state preservation across a patch-triggered
 reload is worth pursuing, given it's a real, named, pre-existing
 limitation this milestone did not attempt to fix.
+
+## Implementation Milestone R7 — Runtime Experience Integration (2026-08-03) — ✅ COMPLETE
+
+Closed R6's own recommendation directly: `ExperienceHostScreen`'s live
+modification flow now calls `planEvolution()` → `applyEvolutionPlan()`
+(documented routing decision: `modifyExperience()` itself unchanged,
+still real/tested/available for other callers — only the UI's call site
+changed, since only the plan-based path returns a real `previousPackage`
+for genuine Undo). Real single-level Undo via `SnackBarAction` +
+`rollback()`. Real Evolution History reusing the existing
+`ActivityRepository` (no new repository), enriched with a real
+diff-derived summary and a real measured `durationMs` (new, optional,
+backward-compatible field on `ActivityEvent`). Real progress
+announcements at genuine await boundaries. Honest, scoped state
+preservation (current tab/screen only — scroll/focus/text-field
+contents explicitly NOT preserved, named as a real limitation, not
+attempted). Zero changes to `AnythingRuntime`/`ExperienceRenderer`/
+`BehaviorInterpreter` (confirmed via `git diff`).
+
+Two real bugs found and fixed via this milestone's own widget testing:
+`ExperienceHostScreen` had no way to inject a test-seeded modification
+coordinator (added a `modificationCoordinator` DI parameter, matching
+the existing `runtime`/`worldModel`/`engineeringMemory` convention); a
+rollback confirmation snackbar was silently queued behind the original
+update snackbar (fixed with `ScaffoldMessenger.hideCurrentSnackBar()`).
+
+Regression: 1185/1185 (+8). Analyzer: 71/0, unchanged.
+
+**Recommendation for R8**: (1) decide whether scroll-position/focused-
+widget/text-field-content preservation across a reload is worth the
+larger `ExperienceRenderer`/`ExperienceRouter` work required — a real,
+still-open limitation across R6 and R7; (2) consider whether Evolution
+History should surface `EngineeringMemoryRepository`'s persisted
+Requirement/Architecture "before" snapshots (R5) alongside the
+Experience-level summary, for a richer per-entry explanation; (3) the
+standing Capability Platform / BYOK-provider-count / localization gaps
+from MIS-1/V10 remain open and unrelated to the R-series' own scope.
