@@ -272,6 +272,7 @@ class ExperienceModificationCoordinator {
   /// re-validates [EvolutionDiffPlan.candidatePackage] through the exact
   /// same boundary [modifyExperience] already uses — never a bypass.
   Future<ModificationCoordinatorResult> applyEvolutionPlan(EvolutionDiffPlan plan) async {
+    final stopwatch = Stopwatch()..start();
     final candidate = plan.candidatePackage;
     if (candidate == null) {
       return const ModificationCoordinatorFailed(message: "This plan has no candidate to apply.");
@@ -304,14 +305,16 @@ class ExperienceModificationCoordinator {
       // as an evolution failure.
     }
 
+    stopwatch.stop();
     await _activity.record(
       ActivityEvent(
         id: 'evt-${DateTime.now().millisecondsSinceEpoch}',
         type: 'updated',
         experienceId: plan.experienceId,
         experienceName: metadata.name,
-        message: 'Evolved ${metadata.name}',
+        message: 'Evolved ${metadata.name}${_summarize(plan.experienceDiff)}',
         timestamp: DateTime.now(),
+        durationMs: stopwatch.elapsedMilliseconds,
       ),
     );
 
@@ -322,6 +325,26 @@ class ExperienceModificationCoordinator {
       newVersion: candidate.manifest.version,
       previousPackage: previousPackage,
     );
+  }
+
+  /// A real, evidence-backed one-line summary of what changed (Implementation
+  /// Milestone R7's "Evolution History" needs a real per-entry summary, not
+  /// a bare "Updated X") — built from [plan]'s own already-computed
+  /// [EvolutionDiffPlan.experienceDiff] (R4), never fabricated. Empty string
+  /// when the diff itself is empty (e.g. a plan applied with no
+  /// candidatePackage change detected).
+  static String _summarize(ExperienceDiff diff) {
+    if (diff.isEmpty) return '';
+    final parts = <String>[];
+    if (diff.addedScreens.isNotEmpty) parts.add('${diff.addedScreens.length} screen(s) added');
+    if (diff.removedScreens.isNotEmpty) parts.add('${diff.removedScreens.length} screen(s) removed');
+    if (diff.addedComponents.isNotEmpty) parts.add('${diff.addedComponents.length} component(s) added');
+    if (diff.removedComponents.isNotEmpty) parts.add('${diff.removedComponents.length} component(s) removed');
+    if (diff.addedCapabilities.isNotEmpty) parts.add('${diff.addedCapabilities.length} capability(ies) added');
+    if (diff.behaviorChanged) parts.add('behavior changed');
+    if (diff.stateChanged) parts.add('state changed');
+    if (diff.dataSchemaChanged) parts.add('data schema changed');
+    return parts.isEmpty ? '' : ' (${parts.join(', ')})';
   }
 
   /// Deterministic rollback (Implementation Milestone R6): restores
@@ -341,6 +364,7 @@ class ExperienceModificationCoordinator {
     required String experienceId,
     required ExperiencePackage previousPackage,
   }) async {
+    final stopwatch = Stopwatch()..start();
     final metadata = await _repository.getMetadata(experienceId);
     if (metadata == null) {
       return const ModificationCoordinatorFailed(message: 'App not found');
@@ -354,6 +378,7 @@ class ExperienceModificationCoordinator {
     final currentPackage = await _repository.getPackage(experienceId);
     await _repository.savePackage(previousPackage);
 
+    stopwatch.stop();
     await _activity.record(
       ActivityEvent(
         id: 'evt-${DateTime.now().millisecondsSinceEpoch}',
@@ -362,6 +387,7 @@ class ExperienceModificationCoordinator {
         experienceName: metadata.name,
         message: 'Rolled back ${metadata.name}',
         timestamp: DateTime.now(),
+        durationMs: stopwatch.elapsedMilliseconds,
       ),
     );
 

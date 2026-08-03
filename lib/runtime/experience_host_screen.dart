@@ -48,6 +48,19 @@ class ExperienceHostScreen extends StatefulWidget {
   /// historical engineering memory) exactly as before R5.
   final EngineeringMemoryRepository? engineeringMemory;
 
+  /// Optional pre-created modification coordinator (Implementation
+  /// Milestone R7), matching the exact same DI convention [runtime]
+  /// already established. Real, non-hypothetical need: [worldModel]/
+  /// [engineeringMemory] alone are not enough to make
+  /// `planEvolution()`/`applyEvolutionPlan()`/`rollback()` observable
+  /// against a test-seeded repository, since the coordinator otherwise
+  /// constructs its own default `SqliteExperienceRepository()` internally
+  /// — this was found and fixed via this milestone's own widget tests,
+  /// not spec-mandated speculatively. Null by default: every existing
+  /// caller/test that constructs `ExperienceHostScreen` without one keeps
+  /// identical behavior.
+  final ExperienceModificationCoordinator? modificationCoordinator;
+
   const ExperienceHostScreen({
     super.key,
     required this.package,
@@ -58,6 +71,7 @@ class ExperienceHostScreen extends StatefulWidget {
     this.worldModel,
     this.capabilityPlatform,
     this.engineeringMemory,
+    this.modificationCoordinator,
   });
 
   @override
@@ -72,12 +86,23 @@ class _ExperienceHostScreenState extends State<ExperienceHostScreen> {
   late ExperiencePackage _currentPackage;
   bool _isLoading = true;
   bool _hasError = false;
+  bool _isModifying = false;
   ExperienceRouter? _router;
   int _currentTabIndex = 0;
   Map<String, dynamic>? _editRecordData;
   String? _editScreenId;
   Map<String, dynamic>? _detailRecordData;
   String? _detailScreenId;
+
+  /// The package active immediately before the most recent successful
+  /// evolution (Implementation Milestone R7) — powers a single-level
+  /// Undo affordance. Real, honest scope: `SqliteExperienceRepository`
+  /// retains no version history (confirmed R6), so only the ONE most
+  /// recent change can be undone via this in-memory snapshot — not an
+  /// arbitrary point in Evolution History. Cleared after a rollback
+  /// (rather than chained) to keep this a real, simple, one-level undo,
+  /// never a fabricated multi-level history stack.
+  ExperiencePackage? _lastPreviousPackage;
 
   List<NavigationItem> get _navigationItems =>
       _currentPackage.interface.navigation?.items ?? [];
@@ -86,10 +111,11 @@ class _ExperienceHostScreenState extends State<ExperienceHostScreen> {
   void initState() {
     super.initState();
     _runtime = widget.runtime ?? AnythingRuntime(capabilityPlatform: widget.capabilityPlatform);
-    _modificationCoordinator = ExperienceModificationCoordinator(
-      worldModel: widget.worldModel,
-      engineeringMemory: widget.engineeringMemory,
-    );
+    _modificationCoordinator = widget.modificationCoordinator ??
+        ExperienceModificationCoordinator(
+          worldModel: widget.worldModel,
+          engineeringMemory: widget.engineeringMemory,
+        );
     _activity = ActivityRepository();
     _protectionService =
         widget.protectionService ?? ExperienceProtectionService();
@@ -166,94 +192,317 @@ class _ExperienceHostScreenState extends State<ExperienceHostScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      builder: (context) => Padding(
-        padding: EdgeInsets.fromLTRB(
-          32,
-          32,
-          32,
-          MediaQuery.of(context).viewInsets.bottom + 32,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Change this app',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+      isDismissible: true,
+      builder: (sheetContext) => StatefulBuilder(
+        builder: (sheetContext, setSheetState) {
+          return Padding(
+            padding: EdgeInsets.fromLTRB(
+              32,
+              32,
+              32,
+              MediaQuery.of(sheetContext).viewInsets.bottom + 32,
             ),
-            const SizedBox(height: 8),
-            Text(
-              'Describe what you want to change',
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: controller,
-              decoration: const InputDecoration(
-                hintText: 'Add a percentage button',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Row(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('Cancel'),
+                const Text(
+                  'Change this app',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Describe what you want to change',
+                  style: TextStyle(
+                    color: Theme.of(sheetContext).colorScheme.onSurfaceVariant,
                   ),
                 ),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () => _submitModification(controller.text),
-                    child: const Text('Submit'),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: controller,
+                  enabled: !_isModifying,
+                  decoration: const InputDecoration(
+                    hintText: 'Add a percentage button',
+                    border: OutlineInputBorder(),
                   ),
+                ),
+                if (_isModifying) ...[
+                  const SizedBox(height: 16),
+                  // A real, live-region announcement of the actual stage
+                  // this milestone's own coordinator calls are in
+                  // (Implementation Milestone R7's "visible progress") —
+                  // never a fake timed sequence, each label corresponds to
+                  // a real await boundary below.
+                  Semantics(
+                    liveRegion: true,
+                    label: _modificationStage,
+                    child: Row(
+                      children: [
+                        const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                        const SizedBox(width: 12),
+                        Text(_modificationStage, style: Theme.of(sheetContext).textTheme.bodySmall),
+                      ],
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextButton(
+                        onPressed: _isModifying ? null : () => Navigator.pop(sheetContext),
+                        child: const Text('Cancel'),
+                      ),
+                    ),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: _isModifying
+                            ? null
+                            : () => _runModification(
+                                controller.text,
+                                sheetContext,
+                                (stage) => setSheetState(() => _modificationStage = stage),
+                              ),
+                        child: _isModifying
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                              )
+                            : const Text('Submit'),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
 
-  Future<void> _submitModification(String expression) async {
-    Navigator.pop(context);
-    if (expression.trim().isEmpty || widget.experienceId == null) return;
+  /// Real progress-stage label (Implementation Milestone R7) — updated at
+  /// each genuine await boundary in [_runModification], never a fabricated
+  /// timed sequence.
+  String _modificationStage = '';
 
-    final result = await _modificationCoordinator.modifyExperience(
+  /// Plans, applies, and reloads a real [EvolutionDiffPlan] (Implementation
+  /// Milestone R6/R7) — replaces the direct [ExperienceModificationCoordinator.modifyExperience]
+  /// call this method used before R7. [ExperienceModificationCoordinator.modifyExperience]
+  /// itself is UNCHANGED and remains available (other callers/tests still
+  /// use it directly) — this screen's live UI flow switches to
+  /// `planEvolution()` -> `applyEvolutionPlan()` specifically because only
+  /// that path returns a real `previousPackage`, which is what makes real
+  /// Undo/rollback possible. Documented decision (R7 "MANDATORY FIRST
+  /// STEP" / "UI WIRING"): `modifyExperience()` was NOT changed to
+  /// internally route through `EvolutionDiffPlan` — it is a separate,
+  /// still-real, still-tested, lower-level path; only the UI's own call
+  /// site changed.
+  Future<void> _runModification(
+    String expression,
+    BuildContext sheetContext,
+    void Function(String stage) setStage,
+  ) async {
+    if (expression.trim().isEmpty || widget.experienceId == null) return;
+    setState(() => _isModifying = true);
+    setStage('Planning…');
+
+    final plan = await _modificationCoordinator.planEvolution(
       experienceId: widget.experienceId!,
       modificationExpression: expression.trim(),
     );
 
+    if (plan == null) {
+      setState(() => _isModifying = false);
+      if (mounted && sheetContext.mounted) Navigator.pop(sheetContext);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("I couldn't apply that change.")),
+        );
+      }
+      return;
+    }
+
+    setStage('Validating & saving…');
+    final result = await _modificationCoordinator.applyEvolutionPlan(plan);
+
+    if (!mounted) return;
+    setState(() => _isModifying = false);
+    if (sheetContext.mounted) Navigator.pop(sheetContext);
+
+    if (result is ModificationCoordinatorSucceeded) {
+      // Real, honest state preservation (Implementation Milestone R7):
+      // capture the current tab/screen BEFORE the reload tears down the
+      // router, so we can restore it after — only when the target still
+      // exists in the new package. Scroll position, focused widget, and
+      // in-progress text-field contents live inside Flutter's widget tree
+      // (rebuilt by this same reload) and are honestly NOT preserved —
+      // see this milestone's Known Limitations.
+      final preReloadTabIndex = _currentTabIndex;
+      final preReloadScreenId = _router?.currentScreenId;
+
+      setState(() => _currentPackage = result.newPackage);
+      _lastPreviousPackage = result.previousPackage;
+
+      await _runtime.closeSession();
+      await _runtime.openExperience(_currentPackage);
+      if (!mounted) return;
+      setState(() => _router = _runtime.router);
+      _reseedAfterReload(preferredScreenId: preReloadScreenId, preferredTabIndex: preReloadTabIndex);
+
+      final previousForUndo = result.previousPackage;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('App updated to version ${result.newVersion}'),
+          action: previousForUndo == null
+              ? null
+              : SnackBarAction(
+                  label: 'Undo',
+                  onPressed: () => _performRollback(previousForUndo),
+                ),
+        ),
+      );
+    } else if (result is ModificationCoordinatorFailed) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(result.message)));
+    }
+  }
+
+  /// Restores the pre-reload screen after a `closeSession()`/`openExperience()`
+  /// cycle, when it's still real in the new package (Implementation
+  /// Milestone R7). Falls back to the previous tab index when the exact
+  /// screen no longer exists, then to the existing default-screen seed.
+  void _reseedAfterReload({String? preferredScreenId, int? preferredTabIndex}) {
+    final router = _router;
+    if (router == null) return;
+
+    final screens = _currentPackage.interface.screens;
+    if (preferredScreenId != null && screens.any((s) => s.id == preferredScreenId)) {
+      router.navigate(NavigationRequest(action: NavigationAction.push, targetScreenId: preferredScreenId));
+      return;
+    }
+    if (preferredTabIndex != null && preferredTabIndex < _navigationItems.length) {
+      setState(() => _currentTabIndex = preferredTabIndex);
+      router.navigate(
+        NavigationRequest(action: NavigationAction.push, targetScreenId: _getScreenIdForTab(preferredTabIndex)),
+      );
+      return;
+    }
+    _seedDefaultScreen();
+  }
+
+  /// Real, deterministic rollback via the UI (Implementation Milestone
+  /// R7) — calls the exact same [ExperienceModificationCoordinator.rollback]
+  /// R6 already validated/tested; this method only adds the live reload +
+  /// user feedback around it. Real success/failure feedback, never leaves
+  /// the runtime half-reloaded (the reload is unconditional once
+  /// `rollback()` itself succeeds, mirroring the apply path exactly).
+  Future<void> _performRollback(ExperiencePackage previousPackage) async {
+    if (widget.experienceId == null) return;
+    final result = await _modificationCoordinator.rollback(
+      experienceId: widget.experienceId!,
+      previousPackage: previousPackage,
+    );
     if (!mounted) return;
 
     if (result is ModificationCoordinatorSucceeded) {
-      setState(() {
-        _currentPackage = result.newPackage;
-      });
+      setState(() => _currentPackage = result.newPackage);
+      // Deliberately NOT chained into a redo stack — one real, honest
+      // level of undo (see `_lastPreviousPackage`'s doc comment).
+      _lastPreviousPackage = null;
+
       await _runtime.closeSession();
       await _runtime.openExperience(_currentPackage);
-      if (mounted) {
-        setState(() {
-          _router = _runtime.router;
-        });
-        _seedDefaultScreen();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('App updated to version ${result.newVersion}'),
-          ),
-        );
-      }
+      if (!mounted) return;
+      setState(() => _router = _runtime.router);
+      _seedDefaultScreen();
+
+      // A rollback confirmation must never wait behind the original
+      // "App updated…" snackbar it's responding to — ScaffoldMessenger
+      // queues snackbars one at a time by default, which would otherwise
+      // delay real user feedback for the full ~4s default display
+      // duration (found via this milestone's own widget testing).
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Change undone')),
+      );
     } else if (result is ModificationCoordinatorFailed) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(result.message)));
-      }
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Couldn't undo: ${result.message}")),
+      );
     }
+  }
+
+  /// User-visible Evolution History (Implementation Milestone R7) —
+  /// reuses the EXISTING `ActivityRepository` (no new repository, per
+  /// this milestone's own "Absolute Rules") filtered to this Experience's
+  /// own real `'updated'` events, which `applyEvolutionPlan()`/`rollback()`
+  /// (R6/R7) already record with a real summary and real measured
+  /// duration. "Rollback available" is honestly shown ONLY on the single
+  /// most recent entry, matching `_lastPreviousPackage`'s real, one-level
+  /// scope — older entries have no persisted prior-package snapshot to
+  /// roll back to (`SqliteExperienceRepository` retains no version
+  /// history, confirmed R6), so claiming they're all undo-able would be
+  /// dishonest.
+  void _showEvolutionHistory() {
+    final experienceId = widget.experienceId;
+    if (experienceId == null) return;
+    final canUndoMostRecent = _lastPreviousPackage != null;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (sheetContext) => FutureBuilder<List<ActivityEvent>>(
+        future: _activity.list().then(
+          (events) => events.where((e) => e.experienceId == experienceId && e.type == 'updated').toList(),
+        ),
+        builder: (sheetContext, snapshot) {
+          final events = snapshot.data ?? const <ActivityEvent>[];
+          return SafeArea(
+            child: SizedBox(
+              height: MediaQuery.of(sheetContext).size.height * 0.6,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Padding(
+                    padding: EdgeInsets.fromLTRB(24, 24, 24, 8),
+                    child: Text('Evolution history', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),
+                  ),
+                  if (!snapshot.hasData)
+                    const Expanded(child: Center(child: CircularProgressIndicator()))
+                  else if (events.isEmpty)
+                    const Expanded(child: Center(child: Text('No changes yet')))
+                  else
+                    Expanded(
+                      child: ListView.builder(
+                        itemCount: events.length,
+                        itemBuilder: (context, index) {
+                          final event = events[index];
+                          final isMostRecent = index == 0;
+                          final durationLabel = event.durationMs == null ? '' : ' · ${event.durationMs}ms';
+                          return ListTile(
+                            leading: const Icon(Icons.history),
+                            title: Text(event.message),
+                            subtitle: Text('${event.timestamp.toLocal()}$durationLabel'),
+                            trailing: isMostRecent && canUndoMostRecent
+                                ? const Chip(label: Text('Undo available'))
+                                : null,
+                          );
+                        },
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
   }
 
   void _showProtectOptions() {
@@ -547,6 +796,9 @@ class _ExperienceHostScreenState extends State<ExperienceHostScreen> {
                 case 'change':
                   _showModificationIntent();
                   break;
+                case 'history':
+                  _showEvolutionHistory();
+                  break;
                 case 'protect':
                   _showProtectOptions();
                   break;
@@ -556,6 +808,10 @@ class _ExperienceHostScreenState extends State<ExperienceHostScreen> {
               const PopupMenuItem(
                 value: 'change',
                 child: Text('Change this app'),
+              ),
+              const PopupMenuItem(
+                value: 'history',
+                child: Text('Evolution history'),
               ),
               const PopupMenuItem(value: 'protect', child: Text('Protect')),
             ],

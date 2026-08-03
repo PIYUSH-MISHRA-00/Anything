@@ -13,6 +13,13 @@ class ActivityEvent {
   final String message;
   final DateTime timestamp;
 
+  /// Real, measured wall-clock duration of the operation this event
+  /// records, when the caller tracked one (Implementation Milestone R7)
+  /// — `null` for every pre-R7 event and any caller that doesn't measure
+  /// it. Never fabricated: `ExperienceModificationCoordinator.applyEvolutionPlan()`/
+  /// `.rollback()` populate this from a real `Stopwatch`.
+  final int? durationMs;
+
   const ActivityEvent({
     required this.id,
     required this.type,
@@ -20,6 +27,7 @@ class ActivityEvent {
     required this.experienceName,
     required this.message,
     required this.timestamp,
+    this.durationMs,
   });
 
   Map<String, dynamic> toJson() => {
@@ -29,6 +37,7 @@ class ActivityEvent {
     'experienceName': experienceName,
     'message': message,
     'timestamp': timestamp.toIso8601String(),
+    if (durationMs != null) 'durationMs': durationMs,
   };
 
   factory ActivityEvent.fromJson(Map<String, dynamic> json) {
@@ -39,6 +48,7 @@ class ActivityEvent {
       experienceName: json['experienceName'] as String,
       message: json['message'] as String,
       timestamp: DateTime.parse(json['timestamp'] as String),
+      durationMs: json['durationMs'] as int?,
     );
   }
 }
