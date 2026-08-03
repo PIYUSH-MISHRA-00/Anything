@@ -356,6 +356,38 @@ caller has both instances, but no such caller exists yet.
 
 ---
 
+## Implementation Milestone R5 — Engineering Memory — ✅ COMPLETE (2026-08-03)
+
+**Closure evidence:** new `EngineeringMemoryRepository`
+(`lib/storage/engineering_memory_repository.dart`) persists
+`RequirementGraph`/`ArchitectureCandidate` per Experience with full,
+real `toJson()`/`fromJson()` fidelity, and `EngineeringPlan` as a real,
+honest `EngineeringMemorySummary` — the same "summary, not full
+fidelity" call V10 already made for `LearningRecord`/`AutomationRecord`,
+applied here because `EngineeringCandidate`'s real type tree spans
+~1700 lines across 10 files. Shares `SqliteExperienceRepository`'s
+connection exactly like `WorldModelRepository` (no new storage layer).
+Wired at creation time (`ExperienceCreationCoordinator`, via
+`AppComposition`) and read at `planEvolution()` time
+(`ExperienceModificationCoordinator`), both optional/null-by-default —
+fully backward compatible, proven by a real test that a pre-R5
+Experience (no engineering memory row) degrades gracefully. `AnythingKernel`'s
+`ExecutionPlanReady` gained one additive `requirementGraph` field
+(previously computed and discarded). Full suite: **1168/1168** (up from
+1153, +15, zero regressions). `flutter analyze`: 71/0, unchanged.
+
+**Known limitation carried to R6+:** `EngineeringDiff` still cannot be
+populated with real historical state (a persisted summary can't satisfy
+`EngineeringDiffer.diff()`'s full-`EngineeringCandidate` signature).
+`requirementDiff`/`architectureDiff` remain `null` in `planEvolution()`'s
+output — no genuine "after" Requirement/Architecture state is derivable
+without re-running Kernel-level planning (would need either a new LLM
+call or new inference machinery, both out of scope); real historical
+"before" state is surfaced instead via
+`EvolutionDiffPlan.historicalEngineeringMemory`, honestly not a diff.
+
+---
+
 ## v2.0.0 Release Candidate
 
 **Objective:** All of M1-M6 acceptance gates met; `flutter analyze` clean; full `flutter test` suite passes (not just the subsets exercised in this audit); `flutter build apk --debug` succeeds and release build succeeds where a signing environment is available; no UNKNOWN rows remain in `V2_VISION_GAP_MATRIX.md` for anything in v2.0.0 scope; `docs/progress/V2_STAGE_11.md` and other stage docs reflect actual, dated, execution-verified state; CI is green on the release branch.
