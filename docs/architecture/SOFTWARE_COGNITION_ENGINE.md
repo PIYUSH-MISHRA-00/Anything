@@ -444,3 +444,131 @@ Kernel with two sources and reads the persisted record back.
   single-source claims — it does not detect two sources actively
   disagreeing about the same concern, since no concern taxonomy exists to
   make that determination honestly.
+
+## R16: Autonomous Knowledge Acquisition Planner
+
+### Reality: two already-real pipelines that never met
+
+Before R16, Anything had two separate, already-working acquisition
+pipelines that never touched each other:
+
+- **Pipeline A** (`AnythingKernel._reasonWithKnowledgeLoop`, pre-R16) —
+  already autonomous, already inside the single AI boundary. The SAME
+  reasoning call (`ApplicationReasoner.reason`) can return
+  `ReasoningKnowledgeRequired(requirements)`, and the Kernel resolves
+  those via `KnowledgeAcquisitionEngine.acquire` (`SearchProvider` ->
+  `WebWeaveXAdapter` -> generic `KnowledgeResource`s), looping reasoning
+  until satisfied. This never produces a `RepositoryModel` and never
+  touches Software Cognition.
+- **Pipeline B** (`ExperienceCreationCoordinator._acquireSoftwareCognitionSeeds`,
+  R14/R15) — real repository understanding via
+  `SoftwareCognitionEngine.understandRepositoryFromUrl`, real
+  multi-source corroboration via `SoftwareReasoner`, but only ever
+  operates on URLs a HUMAN CALLER explicitly supplies. Confirmed by grep:
+  zero `SearchProvider` usage anywhere in `lib/software_cognition/` or
+  `lib/app/creation_coordinator.dart` before this milestone.
+
+The real, additional reality this milestone found: `SemanticApp.
+knowledgeNeeds` (`lib/synthesis/application_reasoner.dart`) is a real
+field the SAME single reasoning call already populates on its FINAL,
+successful result (via `model_reasoner.dart`'s `knowledgeNeeds` JSON key)
+— not just the intermediate knowledge-loop path. Confirmed by
+repository-wide grep: nothing downstream ever read this field before
+R16. A real, orphaned signal, the same shape as V11's
+`SoftwareCognitionCoordinator` before R14 wired it in.
+
+### The AI-boundary resolution
+
+R16's spec requires "planner reasoning happens inside the existing
+reasoning boundary; everything afterwards remains deterministic." No
+prompt/schema change was made to the live, tested LLM integration
+(`model_reasoner.dart`'s `_systemPrompt`/`_jsonSchema`) — confirmed by
+reading it that `resourceType` is never actually taught to the model
+today, so in practice most `knowledgeNeeds` entries carry the default
+`'domainKnowledge'` category. The resolution: the judgment ("does this
+app need external software knowledge, and what") already happens inside
+the SINGLE existing reasoning call — `knowledgeNeeds` IS that call's own
+output. `AutonomousKnowledgeAcquisitionPlanner`
+(`lib/knowledge/autonomous_knowledge_planner.dart`) is a purely
+deterministic, zero-new-LLM-call transformation of that already-real
+signal into a ranked plan — it never invents a need the reasoner did not
+already name, and it never re-reasons.
+
+### Implementation
+
+- `AutonomousKnowledgeAcquisitionPlan`/`KnowledgeTarget`
+  (`lib/knowledge/autonomous_knowledge_planner.dart`) — real fields
+  derived 1:1 from `SynthesisKnowledgeRequirement`: `query` (verbatim),
+  `evidenceRequirement` (`required`), `confidence` (0.8 if required else
+  0.4 — reflects only how firmly the reasoner flagged the need, never a
+  claim about acquisition success), `priority`/final list order
+  (required first), `acquisitionOrder` (original position), `expectedContribution`
+  (`purpose`), and `sourceCategory` — a real, documented, non-exhaustive
+  mapping from the freeform `resourceType` string (same "known hints"
+  convention as R14's `_authDependencyHints`). Only `repository`/`package`
+  categories are `isActionable`; `documentation`/`api`/`general` targets
+  are named and ranked but never searched, since `RepositoryAnalyzer`
+  understands repositories specifically, not arbitrary API docs
+  (Pipeline A already exists for that).
+- `KnowledgeAcquisitionEngine.searchProvider` getter — exposes the
+  already-injected `SearchProvider` instance so the Kernel's new
+  discovery step reuses the EXACT same provider Pipeline A already
+  searches with, never a second search abstraction (same pattern as
+  R14/R15's `SoftwareCognitionCoordinator.engine`/`.reasoner` getters).
+- `AnythingKernel` gained an optional `SoftwareCognitionCoordinator?`
+  field and a new `autoDiscoverKnowledge` parameter on `processIntent`
+  (default `false`). When true and reasoning succeeds, a new Step 5.5
+  (`_autoDiscoverSoftwareKnowledge`) plans, searches (`SearchProvider.search`
+  per actionable target), and understands (`SoftwareCognitionEngine.
+  understandRepositoryFromUrl` per candidate URL) — every sound result
+  syncs into World Model (same non-blocking contract as R14) and feeds
+  the UNCHANGED `SoftwareReasoner.reasonAboutRepositories` for
+  corroboration. The resulting recommendations MERGE (not replace) with
+  whatever `corroboratingRecommendations` the caller already supplied at
+  Step 8.5 — R15's manual path and R16's autonomous path compose,
+  proven by a real test with both active simultaneously.
+- `ExperienceCreationCoordinator.createFromIntent`/`.createFromExpression`
+  gained an additive `autoDiscoverKnowledge` parameter, forwarded
+  unchanged to the Kernel. `AppComposition.production()` now builds its
+  `SoftwareCognitionCoordinator` before `AnythingKernel` and passes the
+  SAME instance to both — never a second Software Cognition Engine.
+
+### Why opt-in, not default-on
+
+Autonomous network searches on every single creation, by default, would
+be a real behavioral/cost/security change — this milestone does not
+introduce that silently. `autoDiscoverKnowledge` defaults to `false`;
+the one existing production call site
+(`lib/features/home/home_screen.dart`) passes neither `referenceUrl`,
+`referenceUrls`, nor `autoDiscoverKnowledge`, so its behavior is
+byte-for-byte unchanged.
+
+### World Model / Engineering Memory
+
+Both reuse R14/R15's existing wiring completely unchanged —
+autonomously-discovered repositories flow through the exact same
+`syncToWorldModel`/`corroboratingRecommendations` -> `CanonicalImplementationModel.
+corroboratedPatterns` -> `EngineeringMemoryRepository` path manually-supplied
+ones already used. No new persistence, no new ingestion path.
+
+### Known limitations
+
+- No UI opt-in yet — `home_screen.dart` never sets
+  `autoDiscoverKnowledge: true`; wiring a real user-facing toggle is a
+  separate, future, out-of-scope gap (matching R15's own "no UI yet"
+  limitation for `referenceUrls`).
+- `resourceType`'s software-shaped categories (`repository`/`package`/
+  `externalApi`/etc.) are recognized by the planner but not actually
+  taught to the live LLM prompt — confirmed by reading
+  `model_reasoner.dart`. In practice, `knowledgeNeeds` entries mostly
+  carry the default `'domainKnowledge'` category today, so autonomous
+  discovery is most useful once/if a future milestone teaches the prompt
+  to use these categories meaningfully — a deliberately separate,
+  higher-risk change to a live, tested LLM integration this milestone
+  did not make.
+- Acquisition strategy is always `'search+understand'` — no second
+  strategy exists yet; the field is real and named for a future one to
+  extend into, not fabricated variety.
+- Confidence values (0.8/0.4) are a simple, documented two-level split on
+  `required`, not a continuous, evidence-calibrated score — no real
+  signal exists yet to calibrate beyond the reasoner's own binary flag.

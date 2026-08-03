@@ -800,3 +800,62 @@ open.
 
 **DO NOT START R16 — per this milestone's own stop condition, wait for
 external architectural review.**
+
+## Implementation Milestone R16 — Autonomous Knowledge Acquisition Planner, Intent-Driven Software Discovery (2026-08-03)
+
+Closes R15's own "no UI yet" limitation from a different angle: instead
+of a human supplying reference URLs, the Kernel can now autonomously
+discover what to search for. Investigation found two already-real
+pipelines that never met — the Kernel's existing knowledge-loop
+(`KnowledgeAcquisitionEngine`, autonomous, generic `KnowledgeResource`s)
+and Software Cognition's repository understanding (R14/R15, real, but
+always human-URL-driven). The bridge: `SemanticApp.knowledgeNeeds`, a
+real field the SAME single reasoning call already populates on its
+final result, confirmed by repository-wide grep to have been read by
+nothing downstream before this milestone.
+
+**Wired:** `AutonomousKnowledgeAcquisitionPlanner`
+(`lib/knowledge/autonomous_knowledge_planner.dart`) deterministically
+turns `knowledgeNeeds` into a ranked plan — zero new LLM call, zero
+invented needs. `AnythingKernel` gained an optional
+`SoftwareCognitionCoordinator?` and an opt-in `autoDiscoverKnowledge`
+parameter (default `false`); when true, a new Step 5.5 searches
+(`SearchProvider`, reused via a new `KnowledgeAcquisitionEngine.
+searchProvider` getter) and understands (`SoftwareCognitionEngine.
+understandRepositoryFromUrl`, unchanged) each actionable target, then
+corroborates via the UNCHANGED `SoftwareReasoner.reasonAboutRepositories`
+— merging with, never replacing, whatever `corroboratingRecommendations`
+R15's manual path already supplied. `ExperienceCreationCoordinator` and
+`AppComposition.production()` thread the new opt-in flag and share one
+`SoftwareCognitionCoordinator` instance between the Kernel and the
+Coordinator.
+
+**Declined:** any live LLM prompt/schema change to teach the model
+`resourceType`'s software categories more reliably — a real, separate,
+higher-risk change to a tested production LLM integration, named as a
+recommendation rather than made silently inside this milestone.
+
+**Verified, not assumed:** a real Kernel-level test proves two fake
+search results corroborate "flutter" into `corroboratedPatterns` with
+zero human-supplied reference URLs; a real test proves the default
+(`autoDiscoverKnowledge: false`) never calls `SearchProvider` even with
+actionable `knowledgeNeeds` present (byte-for-byte backward
+compatibility); a real test proves R15's manual path and R16's
+autonomous path compose additively in one call.
+
+17 new tests, full regression **1300/1300** (up from 1283). `flutter
+analyze`: 71/0, unchanged baseline. Zero new LLM calls. `lib/generator_framework/`/
+`lib/build_graph/`/`lib/runtime/` untouched.
+
+**Recommendation for R17 (if resumed)**: (1) a real UI toggle for
+`autoDiscoverKnowledge` in `lib/features/home/home_screen.dart`; (2) if
+autonomous discovery proves valuable, the higher-risk `model_reasoner.dart`
+prompt/schema change to teach the model `resourceType`'s software
+categories deliberately and separately; (3) `CapabilityRegistry`'s
+zero-production-callers finding (named by R14/R15, still unaddressed)
+deserves independent architectural review; (4) the R13
+`ExperienceHostScreen` detail-cache characteristic and R10's "second,
+genuinely different generator" recommendation remain open.
+
+**DO NOT START R17 — per this milestone's own stop condition, wait for
+external architectural review.**

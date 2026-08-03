@@ -988,3 +988,50 @@ recorded as observed, not smoothed).
 **Execution result:** all 10 new tests pass. Full regression:
 **1283/1283** (up from 1273, zero pre-existing test modified).
 `flutter analyze`: 71 issues, 0 errors, unchanged baseline.
+
+## Implementation Milestone R16 — Autonomous Knowledge Acquisition Planner, Intent-Driven Software Discovery (2026-08-03)
+
+17 new tests in one file, `test/r16_autonomous_knowledge_planner_test.dart`
+(4 groups). `AutonomousKnowledgeAcquisitionPlanner`: an app with no
+`knowledgeNeeds` produces an empty plan; a single-domain need produces
+one actionable target with the documented confidence (0.8 for
+`required: true`); a cross-domain intent (repository + package needs)
+produces two actionable targets, required ranked first regardless of
+original order; an ambiguous/undocumented `resourceType` is planned but
+never actionable (no fabricated repository search for generic domain
+knowledge); an empty-query need is honestly dropped, never turned into
+an empty-string search; `documentation`/`api` categories are recognized
+but never actionable (Software Cognition understands repositories, not
+arbitrary docs). `KnowledgeAcquisitionEngine.searchProvider` getter:
+exposes the identical injected instance (`identical()`); a bare engine
+exposes `null`, never a fabricated default.
+
+`AnythingKernel` autonomous discovery (the centerpiece, 7 tests): a real
+repository need resolved to 2 fake search results both declaring
+`flutter` corroborates end-to-end into `ExecutionPlanReady.
+canonicalImplementationModel.corroboratedPatterns` with
+`supportingSourceCount == 2` and ZERO human-supplied reference URL, and
+the shared World Model's node count grows; `autoDiscoverKnowledge: false`
+(the default, omitted) never calls the `SearchProvider` even with real
+actionable `knowledgeNeeds` present — byte-for-byte backward
+compatibility, verified via a real call-count assertion, not inferred;
+an empty-knowledge intent produces an honest empty result, never an
+error; a single search result (one source) is honestly NOT corroborated
+— the same 2-source gate R14/R15 documented, now exercised from the
+autonomous path too; a missing `SearchProvider` (bare
+`KnowledgeAcquisitionEngine()`) makes the step cleanly no-op rather than
+throw; R15's manual `corroboratingRecommendations` and R16's autonomous
+discovery compose additively in one real Kernel call (`django` from the
+manual path and `flutter` from the autonomous path both survive into
+the same `corroboratedPatterns` list).
+
+**Real, measured performance** (`Stopwatch`/`ProcessInfo`, machine-
+dependent, recorded as observed): planning over 100 `knowledgeNeeds` —
+1ms; a full Kernel call across 10 actionable targets/20 candidate URLs
+(fake search + fake fetch, no real network) — ~106ms; process RSS delta
+while planning over 200 `knowledgeNeeds` — 0KB observed (no allocation
+signal at this scale).
+
+**Execution result:** all 17 new tests pass. Full regression:
+**1300/1300** (up from 1283, zero pre-existing test modified).
+`flutter analyze`: 71 issues, 0 errors, unchanged baseline.
