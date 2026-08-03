@@ -210,3 +210,137 @@ deterministic throughout.
   additive capabilities not yet auto-invoked by `EvolutionObserver`/
   `DesignReviewEngine` — a deliberate, named scope boundary (see
   Evolution/Design Review Integration above).
+
+## Implementation Milestone R14 — Software Cognition Engine, Semantic Software Understanding (2026-08-03)
+
+R14's own mandatory first step was to audit the repository for existing
+"Software Graph / Knowledge Graph / Semantic Model / Repository Analysis"
+abstractions before writing any code — this document and
+`lib/software_cognition/` (unchanged file count: 23) are exactly what
+that audit found. R14 is therefore an extension of this same, single
+engine, never a second one. Everything below is additive; every prior
+section of this document remains accurate.
+
+### What was orphaned, and what R14 wired
+
+MIS-1 Part 2 (2026-08-03, before this milestone) found
+`SoftwareCognitionCoordinator` had zero production callers. That
+finding was already partially stale by the time R14 started — R1 had
+since wired `toKnowledgeResource()`/`understandRepositoryFromUrl()`
+into `ExperienceCreationCoordinator._acquireSoftwareCognitionSeed`
+(`lib/app/creation_coordinator.dart`), giving the WebWeaveX-consumption
+half of the coordinator a real caller. Re-auditing directly (grep, not
+assumption — Principal Architect Mode Rule 3) confirmed the OTHER half,
+`syncToWorldModel`/`syncPackageToWorldModel`, still had zero production
+callers. R14 closes exactly this gap: the same
+`_acquireSoftwareCognitionSeed` method now also calls
+`syncToWorldModel(worldModel, result.model)`, best-effort, whenever a
+sound acquisition and an injected `WorldModelCoordinator` are both
+present — the identical non-blocking, try/catch-swallowed,
+accept-only-on-success contract every other `ingest*` call site in this
+codebase already uses (see `ingestExperience` two lines below it in the
+same method). No new World Model method was written; `ingestSoftwareGraph`
+(V11) and `SoftwareGraphBridge` (V11, the 6th Bridge) are unchanged.
+
+### Output taxonomy audit (this milestone's own "FIRST INVESTIGATION" requirement)
+
+R14 asked for eleven output categories. Checked directly against
+`lib/software_cognition/`'s existing modules:
+
+| Category | Status before R14 |
+|---|---|
+| Entities | Already real (`RepositoryModel`/`entity`-kind `SoftwareNode`s) |
+| Capabilities | Already real (`PackageAnalyzer`'s dependency->capability map) |
+| Relationships | Already real (`SemanticSoftwareGraph` edges) |
+| Architecture Patterns | Already real (`ArchitectureAnalyzer`) |
+| API Contracts | Already real (`APIAnalyzer`) |
+| Storage Patterns | Already real (`StorageAnalyzer`) |
+| Dependency Knowledge | Already real (`RepositoryModel.dependencies`/`PackageModel.dependencies`) |
+| Technology Metadata | Already real (`RepositoryModel.frameworks`/metadata) |
+| Workflows | Already real — `DependencyProjections.codeRelationshipGraph`'s calls/references projection over WebWeaveX's own call-graph reconstruction IS a workflow representation; no second engine was built for this |
+| Authentication Patterns | **Missing — filled this milestone** |
+| Navigation Patterns | **Missing — filled this milestone** |
+
+`AuthenticationPatternAnalyzer`/`NavigationPatternAnalyzer`
+(`lib/software_cognition/architecture_analyzer.dart`) fill the two real
+gaps, using the exact same shape as the existing `StorageAnalyzer`: a
+small, documented, non-exhaustive list of well-known dependency names
+matched case-insensitively as substrings against a repository's
+already-declared dependencies — never a re-parse of source, never a
+claim of understanding actual auth/nav flow logic. Two new
+`SoftwareNodeKind` values (`authenticationPattern`, `navigationPattern`)
+were added; `SoftwareGraphBridge`'s exhaustive `switch` (the one place
+in the codebase that pattern-matches every `SoftwareNodeKind`) unifies
+both into the existing `WorldNodeKind.softwareComponent` catch-all,
+exactly like `endpoint`/`schema`/`database`/`architectureLayer` already
+do — no new World Graph node kind was needed.
+
+### CanonicalImplementationModel enrichment — what was built, and what was deliberately not
+
+R14's own text: "Software Cognition must enrich future
+CanonicalImplementationModels. Never generate them directly." A new,
+additive field pair was built:
+
+- `CanonicalImplementationContext.corroboratingRecommendations`
+  (`List<SoftwareRecommendation>`, default empty) — a caller passes
+  ONLY recommendations it already accepted
+  (`SoftwareRecommendation.accepted`, V11's own real, ≥2-independent-
+  source acceptance gate in `SoftwareReasoner`).
+- `CanonicalImplementationModel.corroboratedPatterns`
+  (`List<CorroboratedPattern>`, default empty) —
+  `CanonicalImplementationPlanner._planCorroboratedPatterns()`
+  deterministically carries every accepted recommendation forward
+  verbatim (name/description/confidence score/supporting-source count).
+
+This is a **pass-through of already-validated evidence, never new
+inference**. An earlier design considered during this milestone's
+investigation — automatically cross-referencing acquired understanding
+against this generation's own resolved capabilities
+(`CapabilityAdapterSpec`/`CapabilityDescriptor`) — was investigated and
+explicitly rejected: `CapabilityRegistry` (`lib/capabilities/registry/`,
+distinct from the runtime `CapabilityPlatform` `AppComposition.production()`
+registers `ClockCapability`/`HttpCapability`/etc. into) is **never
+populated with any `CapabilityDescriptor` in production code** —
+confirmed via a repo-wide grep of `lib/` (only test fixtures like
+`test/app/r1_composition_root_test.dart`'s `_registryWithStorage()`
+construct one). Cross-referencing against a registry that is always
+empty in every real generation would be exactly the kind of vacuous
+integration point Rule 5 ("no speculative systems — solve only real,
+cited gaps") warns against. This is named here as a real, separate,
+pre-existing structural finding for architectural review — it predates
+R14 and is unrelated to Software Cognition itself.
+
+A second scope decision, also deliberate: `corroboratingRecommendations`
+is **not** threaded through `AnythingKernel.processIntent`'s own
+signature. The only real production caller
+(`ExperienceCreationCoordinator.createFromIntent`) acquires at most one
+`referenceUrl` per creation. `SoftwareReasoner.reasonAboutRepositories`/
+`reasonAboutPackages` require `minSupportingCandidates` (default 2)
+independently-acquired candidates before ANY recommendation is
+accepted — with today's single-acquisition production flow, this gate
+can mathematically never produce an accepted recommendation. Wiring a
+Kernel parameter that would always receive an empty list in every real
+invocation would not be honest, tested integration work; it would be
+dead plumbing. The mechanism itself is real, tested, and proven correct
+at the `CanonicalImplementationPlanner` boundary directly
+(`test/r14_software_cognition_enrichment_test.dart`) — Kernel-level
+wiring is a named, scoped recommendation for whenever a real
+multi-reference acquisition caller exists (see Known limitations
+below).
+
+### Known limitations
+
+- `corroboratingRecommendations`/`corroboratedPatterns` are real and
+  tested at the planner boundary but not yet reachable from
+  `AnythingKernel.processIntent` in production — see above.
+- `CapabilityRegistry` has zero production callers registering any
+  capability, a real, separate, pre-existing structural finding
+  surfaced (not fixed) by this milestone's investigation.
+- `SoftwareCognitionCoordinator.suggestEvolutionOpportunities` (V11)
+  still has zero production callers — unchanged by R14, since it
+  requires the same multi-repository-acquisition caller the
+  CanonicalImplementationModel enrichment hook above is also blocked
+  on; both are the same, single, named future gap.
+- `AuthenticationPatternAnalyzer`/`NavigationPatternAnalyzer`'s hint
+  lists are small and documented, not exhaustive — same honest
+  precedent as `_storageDependencyHints`.

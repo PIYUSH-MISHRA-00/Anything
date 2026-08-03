@@ -663,3 +663,85 @@ R-series' own scope.
 
 **DO NOT START R14 — per this milestone's own stop condition, wait for
 external architectural review.**
+
+## Implementation Milestone R14 — Software Cognition Engine, Semantic Software Understanding (2026-08-03)
+
+Investigation (the milestone's own mandatory first step) confirmed
+Vision Milestone V11's `lib/software_cognition/` (23 files) already IS
+the Software Cognition Engine the milestone asked for — real,
+tested, WebWeaveX-consuming, copyright/attribution-bounded — but two of
+its own key application-facing methods
+(`SoftwareCognitionCoordinator.syncToWorldModel`/
+`syncPackageToWorldModel`) had zero production callers (MIS-1 Part 2's
+finding, re-confirmed by grep before writing any code). R14 is
+therefore an EXTENSION milestone, not a new-engine milestone, matching
+the milestone's own "Nothing may be duplicated" rule.
+
+**Wired (real production callers, R14):** `ExperienceCreationCoordinator
+._acquireSoftwareCognitionSeed` (`lib/app/creation_coordinator.dart`)
+now calls `syncToWorldModel` best-effort whenever a sound acquisition
+and an injected `WorldModelCoordinator` are both present — the same
+non-blocking, accept-only contract every other `ingest*` call site in
+this codebase already uses.
+
+**Extended (real, tested, honestly-scoped additions):**
+`AuthenticationPatternAnalyzer`/`NavigationPatternAnalyzer`
+(`lib/software_cognition/architecture_analyzer.dart`) fill the two real
+gaps found auditing Software Cognition's output taxonomy against the
+milestone's own requested categories — same documented substring-match
+convention as the existing `StorageAnalyzer`; two new `SoftwareNodeKind`
+values, unified into the World Graph's existing `softwareComponent`
+catch-all, no new World Graph node kind needed.
+`CanonicalImplementationContext.corroboratingRecommendations` /
+`CanonicalImplementationModel.corroboratedPatterns` (new, additive)
+carry real, multi-source-corroborated `SoftwareRecommendation`s
+verbatim into the implementation model — proven correct at the planner
+boundary, full-fidelity serialized, backward-compatible with pre-R14
+persisted rows.
+
+**Deliberately declined (investigated, found to require fabrication,
+matching R3/R10/R11/R12's own "decline with a documented reason"
+precedent):** an automatic capability-id cross-reference between
+acquired Software Cognition understanding and this generation's
+resolved capabilities. Investigation found `CapabilityRegistry`
+(`lib/capabilities/registry/`, the Kernel Step 8 registry
+`resolvedCapabilities` is sourced from) has ZERO production callers
+registering any `CapabilityDescriptor` — the join key this
+cross-reference would need is unpopulated in every real generation
+today (confirmed via repo-wide grep; only test fixtures construct one).
+Building a matcher against permanently-empty production data would be
+the same kind of vacuous integration this investigation explicitly
+avoided elsewhere — named as a separate, pre-existing structural
+finding instead, unrelated to Software Cognition itself.
+
+**Also deliberately not done:** threading
+`corroboratingRecommendations` through `AnythingKernel.processIntent`'s
+own signature. The only real production caller
+(`ExperienceCreationCoordinator.createFromIntent`) acquires at most ONE
+reference repository per creation, and `SoftwareReasoner`'s real,
+deliberate `minSupportingCandidates: 2` acceptance gate can therefore
+never produce an accepted recommendation from today's only production
+entry point — adding a Kernel parameter that is always empty in every
+real invocation would not be honest, tested integration work. The hook
+is real and proven correct at the planner boundary; Kernel wiring is a
+named, scoped recommendation for whenever multi-reference acquisition
+exists.
+
+18 new tests, full regression 1272/1272 (up from 1254). `flutter
+analyze`: 71/0, unchanged baseline. Zero new LLM calls anywhere in the
+diff. `lib/generator_framework/`/`lib/build_graph/` (the compiler,
+R10-R13) untouched.
+
+**Recommendation for R15 (if resumed)**: (1) multi-reference Software
+Cognition acquisition (a real caller that acquires 2+ repositories per
+creation) would make `corroboratingRecommendations` non-vacuous in
+production and complete the CanonicalImplementationModel enrichment
+loop this milestone only proved at the planner boundary; (2) the
+`CapabilityRegistry`-has-zero-production-callers finding deserves its
+own architectural review — independent of Software Cognition; (3) the
+R13 `ExperienceHostScreen` detail-cache characteristic and the
+"second, genuinely different generator" recommendation remain open from
+R13.
+
+**DO NOT START R15 — per this milestone's own stop condition, wait for
+external architectural review.**

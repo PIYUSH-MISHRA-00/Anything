@@ -908,3 +908,47 @@ instance.
 **Execution result:** all 7 pass. Full regression: **1254/1254** (up
 from 1247, zero pre-existing test modified). `flutter analyze`: 71
 issues, 0 errors, unchanged baseline.
+
+## Implementation Milestone R14 — Software Cognition Engine, Semantic Software Understanding (2026-08-03)
+
+18 new tests across three files. `test/r14_software_cognition_enrichment_test.dart`
+(16 tests, 4 groups): CanonicalImplementationModel corroboration (an
+accepted, multi-source `SoftwareRecommendation` becomes a real
+`CorroboratedPattern`; an unaccepted single-source recommendation is
+never carried forward; omitting the new context field leaves the model
+byte-for-byte unaffected; a mix of accepted/rejected recommendations
+carries forward only the accepted ones, deterministically ordered;
+determinism across two `plan()` runs); serialization (full-fidelity
+round-trip; backward compatibility — JSON persisted before R14, missing
+the `corroboratedPatterns` key entirely, deserializes to an empty list
+rather than throwing); `AuthenticationPatternAnalyzer`/
+`NavigationPatternAnalyzer` (detects a real known dependency, produces
+no fabricated pattern when none is present, new `SoftwareNodeKind`
+values exist and are distinct); performance (real `Stopwatch`/
+`ProcessInfo.currentRss` numbers, never fabricated — see below).
+
+`test/app/r1_composition_root_test.dart` gained 2 tests in the existing
+"Software Cognition creation-pipeline hook" group: a sound acquisition
+now also grows the SAME shared `WorldModelCoordinator.model.graph`
+(before/after node-count, matching R4/R6/R8/R9's established proof
+pattern — the real production caller this milestone added); an unsound
+acquisition (fetch fails) never mutates the World Model and creation
+still succeeds (accept-only, best-effort).
+
+`test/world_model/software_graph_bridge_test.dart` gained 1 test: the
+two new `SoftwareNodeKind` values both map to the existing
+`WorldNodeKind.softwareComponent` catch-all — no new World Graph node
+kind was needed, matching V11's own established unification precedent.
+
+**Real, measured performance** (`Stopwatch`/`ProcessInfo`, machine-
+dependent, recorded as observed, never a target/SLA claim): repository
+understanding over a 500-file synthetic repository through all 4
+analyzers (Architecture/Storage/Authentication/Navigation) — ~81-83ms;
+large documentation processing (~147,000 characters) — ~525ms;
+`CanonicalImplementationPlanner.plan()` with 50 corroborating
+recommendations — 0ms (sub-millisecond); process RSS delta while
+sequentially understanding 50 repositories — ~2.0MB (~42KB/repository).
+
+**Execution result:** all 18 new tests pass. Full regression:
+**1272/1272** (up from 1254, zero pre-existing test modified).
+`flutter analyze`: 71 issues, 0 errors, unchanged baseline.
