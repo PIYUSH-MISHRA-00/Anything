@@ -27,6 +27,8 @@ import 'package:sqflite/sqflite.dart';
 import '../application_engineering/engineering_memory_summary.dart';
 import '../backend_engineering/backend_engineering_plan.dart';
 import '../backend_engineering/backend_engineering_serialization.dart';
+import '../implementation_model/canonical_implementation_model.dart';
+import '../implementation_model/canonical_implementation_serialization.dart';
 import '../software_architect/architecture_candidate.dart';
 import '../software_architect/architecture_candidate_serialization.dart';
 import '../software_architect/requirement_graph.dart';
@@ -46,6 +48,11 @@ class EngineeringMemoryRecord {
   /// Milestone R8) — `null` for every pre-R8 record, exactly like the
   /// other fields above are `null` for pre-R5 records.
   final BackendEngineeringPlan? backendEngineeringPlan;
+
+  /// Real, persisted, language-independent implementation model
+  /// (Implementation Milestone R9) — `null` for every pre-R9 record,
+  /// exactly like [backendEngineeringPlan] is `null` for pre-R8 records.
+  final CanonicalImplementationModel? canonicalImplementationModel;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -55,6 +62,7 @@ class EngineeringMemoryRecord {
     this.architectureCandidate,
     this.engineeringSummary,
     this.backendEngineeringPlan,
+    this.canonicalImplementationModel,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -62,14 +70,15 @@ class EngineeringMemoryRecord {
 
 class EngineeringMemoryRepository {
   // Implementation Milestone R8: bumped 1 -> 2 for the new
-  // backend_engineering_json column. Purely informational (stored per
-  // row, never enforced by sqflite itself) — the real migration is the
-  // additive `ALTER TABLE` in `_ensureTables` below, mirroring
-  // SqliteExperienceRepository's own real onUpgrade discipline (V10)
-  // at the column level rather than the whole-database level, since
-  // this table (unlike the main experiences table) has no separate
+  // backend_engineering_json column. Implementation Milestone R9: bumped
+  // 2 -> 3 for canonical_implementation_json. Purely informational
+  // (stored per row, never enforced by sqflite itself) — the real
+  // migration is the additive `ALTER TABLE` in `_ensureTables` below,
+  // mirroring SqliteExperienceRepository's own real onUpgrade discipline
+  // (V10) at the column level rather than the whole-database level,
+  // since this table (unlike the main experiences table) has no separate
   // onUpgrade hook of its own.
-  static const int _schemaVersion = 2;
+  static const int _schemaVersion = 3;
 
   final SqliteExperienceRepository _experienceRepository;
   bool _tablesEnsured = false;
@@ -95,29 +104,34 @@ class EngineeringMemoryRepository {
         architecture_candidate_json TEXT,
         engineering_summary_json TEXT,
         backend_engineering_json TEXT,
+        canonical_implementation_json TEXT,
         integrity_hash TEXT NOT NULL,
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL
       )
     ''');
-    // Implementation Milestone R8: additive column for a table that may
-    // already exist from an R5-era database (CREATE TABLE IF NOT EXISTS
-    // above is then a no-op and never adds this column). sqflite has no
-    // "ADD COLUMN IF NOT EXISTS" — catching the real "duplicate column"
-    // failure is the established, safe idempotency pattern for this
-    // exact situation; never destructive, never touches existing rows.
-    try {
-      await db.execute('ALTER TABLE engineering_memory ADD COLUMN backend_engineering_json TEXT');
-    } catch (_) {
-      // Column already exists (fresh-install CREATE TABLE already added
-      // it above, or a prior R8 run already migrated it) — expected,
-      // not an error.
+    // Implementation Milestone R8/R9: additive columns for a table that
+    // may already exist from an R5/R8-era database (CREATE TABLE IF NOT
+    // EXISTS above is then a no-op and never adds new columns). sqflite
+    // has no "ADD COLUMN IF NOT EXISTS" — catching the real "duplicate
+    // column" failure is the established, safe idempotency pattern for
+    // this exact situation; never destructive, never touches existing
+    // rows.
+    for (final column in ['backend_engineering_json', 'canonical_implementation_json']) {
+      try {
+        await db.execute('ALTER TABLE engineering_memory ADD COLUMN $column TEXT');
+      } catch (_) {
+        // Column already exists (fresh-install CREATE TABLE already added
+        // it above, or a prior R8/R9 run already migrated it) — expected,
+        // not an error.
+      }
     }
   }
 
   /// Deliberately UNCHANGED (still 3 fields) since Vision Milestone R5 —
-  /// Implementation Milestone R8's new `backendEngineeringJson` is
-  /// intentionally NOT included here. Extending this formula to 4 fields
+  /// Implementation Milestone R8's `backendEngineeringJson` and R9's
+  /// `canonicalImplementationJson` are intentionally NOT included here.
+  /// Extending this formula to 4+ fields
   /// would change every R5-era row's expected hash retroactively (an old
   /// row's `integrity_hash` was computed without a `backend_engineering`
   /// placeholder at all), which would make `load()` treat every
@@ -145,12 +159,14 @@ class EngineeringMemoryRepository {
     ArchitectureCandidate? architectureCandidate,
     EngineeringMemorySummary? engineeringSummary,
     BackendEngineeringPlan? backendEngineeringPlan,
+    CanonicalImplementationModel? canonicalImplementationModel,
   }) async {
     final db = await _db;
     final reqJson = requirementGraph == null ? null : jsonEncode(requirementGraph.toJson());
     final archJson = architectureCandidate == null ? null : jsonEncode(architectureCandidate.toJson());
     final engJson = engineeringSummary == null ? null : jsonEncode(engineeringSummary.toJson());
     final backendJson = backendEngineeringPlan == null ? null : jsonEncode(backendEngineeringPlan.toJson());
+    final cimJson = canonicalImplementationModel == null ? null : jsonEncode(canonicalImplementationModel.toJson());
     final now = DateTime.now().toIso8601String();
 
     await db.insert('engineering_memory', {
@@ -160,6 +176,7 @@ class EngineeringMemoryRepository {
       'architecture_candidate_json': archJson,
       'engineering_summary_json': engJson,
       'backend_engineering_json': backendJson,
+      'canonical_implementation_json': cimJson,
       'integrity_hash': _computeHash(reqJson, archJson, engJson),
       'created_at': now,
       'updated_at': now,
@@ -199,6 +216,11 @@ class EngineeringMemoryRepository {
     // _tablesEnsured gate make this a defensive belt, not a fix for an
     // observed bug.
     final backendJson = row.containsKey('backend_engineering_json') ? row['backend_engineering_json'] as String? : null;
+    // Implementation Milestone R9: same defensive row.containsKey read as
+    // backendJson above — an R5/R8-era row loaded before this process's
+    // own _ensureTables migration ran could theoretically be queried
+    // mid-migration.
+    final cimJson = row.containsKey('canonical_implementation_json') ? row['canonical_implementation_json'] as String? : null;
 
     try {
       return EngineeringMemoryRecord(
@@ -213,6 +235,7 @@ class EngineeringMemoryRepository {
             ? null
             : EngineeringMemorySummary.fromJson(jsonDecode(engJson) as Map<String, dynamic>),
         backendEngineeringPlan: backendJson == null ? null : backendEngineeringPlanFromJson(jsonDecode(backendJson) as Map<String, dynamic>),
+        canonicalImplementationModel: cimJson == null ? null : canonicalImplementationModelFromJson(jsonDecode(cimJson) as Map<String, dynamic>),
         createdAt: DateTime.parse(row['created_at'] as String),
         updatedAt: DateTime.parse(row['updated_at'] as String),
       );

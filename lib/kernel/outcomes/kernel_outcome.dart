@@ -6,6 +6,7 @@ library;
 
 import '../../application_engineering/engineering_plan.dart';
 import '../../backend_engineering/backend_engineering_plan.dart';
+import '../../implementation_model/canonical_implementation_model.dart';
 import '../../design_review/review_history.dart' show ReviewSession;
 import '../../evolution/evolution_roadmap.dart' show EvolutionRoadmap;
 import '../../feature_discovery/feature_plan.dart';
@@ -110,6 +111,14 @@ class ExecutionPlanReady extends KernelOutcome {
   /// are none on the production path).
   final BackendEngineeringPlan? backendEngineeringPlan;
 
+  /// The Canonical Implementation Model (Implementation Milestone R9) —
+  /// real, deterministic, language-independent unification of frontend
+  /// [engineeringPlan] and [backendEngineeringPlan] into one implementation-
+  /// concept vocabulary reusable by every future language generator. Null
+  /// only for outcomes that never reach this point (there are none on the
+  /// production path).
+  final CanonicalImplementationModel? canonicalImplementationModel;
+
   const ExecutionPlanReady({
     required this.plan,
     required this.specification,
@@ -121,6 +130,7 @@ class ExecutionPlanReady extends KernelOutcome {
     this.evolutionRoadmap,
     this.requirementGraph,
     this.backendEngineeringPlan,
+    this.canonicalImplementationModel,
     required super.message,
     required super.timestamp,
   });

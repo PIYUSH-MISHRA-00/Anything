@@ -26,9 +26,11 @@ import '../software_cognition/semantic_software_graph.dart';
 import '../storage/sqlite_experience_repository.dart';
 import '../storage/world_model_repository.dart';
 import '../synthesis/app_blueprint.dart' show AppBlueprint;
+import '../implementation_model/canonical_implementation_model.dart';
 import 'bridges/backend_graph_bridge.dart';
 import 'bridges/evolution_graph_bridge.dart';
 import 'bridges/experience_graph_bridge.dart';
+import 'bridges/implementation_graph_bridge.dart';
 import 'bridges/knowledge_graph_bridge.dart';
 import 'bridges/review_graph_bridge.dart';
 import 'bridges/runtime_graph_bridge.dart';
@@ -65,6 +67,7 @@ class WorldModelCoordinator {
   final ReviewGraphBridge _reviewBridge;
   final SoftwareGraphBridge _softwareBridge;
   final BackendGraphBridge _backendBridge;
+  final ImplementationGraphBridge _implementationBridge;
   final WorldModelEngine _engine;
   final ImpactAnalyzer _impactAnalyzer;
   final GraphConsistency _consistency;
@@ -92,6 +95,7 @@ class WorldModelCoordinator {
     ReviewGraphBridge? reviewBridge,
     SoftwareGraphBridge? softwareBridge,
     BackendGraphBridge? backendBridge,
+    ImplementationGraphBridge? implementationBridge,
     WorldModelEngine engine = const WorldModelEngine(),
     ImpactAnalyzer impactAnalyzer = const ImpactAnalyzer(),
     GraphConsistency consistency = const GraphConsistency(),
@@ -106,6 +110,7 @@ class WorldModelCoordinator {
        _reviewBridge = reviewBridge ?? ReviewGraphBridge(resolver: resolver),
        _softwareBridge = softwareBridge ?? SoftwareGraphBridge(resolver: resolver),
        _backendBridge = backendBridge ?? BackendGraphBridge(resolver: resolver),
+       _implementationBridge = implementationBridge ?? ImplementationGraphBridge(resolver: resolver),
        _engine = engine,
        _impactAnalyzer = impactAnalyzer,
        _consistency = consistency,
@@ -158,6 +163,14 @@ class WorldModelCoordinator {
   /// graph already is.
   void ingestBackendEngineering(BackendEngineeringPlan plan) {
     _model = _engine.apply(_model, _backendBridge.bridge(plan), history: history, memory: memory);
+  }
+
+  /// Ingests a real `CanonicalImplementationModel` (Implementation
+  /// Milestone R9) — entity/endpoint nodes are already covered by
+  /// `ingestBackendEngineering`; this adds the one genuinely new
+  /// contribution, entity-to-capability dependency edges.
+  void ingestCanonicalImplementation(CanonicalImplementationModel model) {
+    _model = _engine.apply(_model, _implementationBridge.bridge(model), history: history, memory: memory);
   }
 
   /// Ingests every real, already-persisted Experience via the existing,

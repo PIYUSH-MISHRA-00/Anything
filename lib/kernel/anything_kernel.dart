@@ -20,6 +20,7 @@ import 'package:anything/kernel/understanding/model_understanding_service.dart';
 import 'package:anything/kernel/specification/experience_spec.dart';
 import 'package:anything/kernel/planning/execution_plan.dart';
 import 'package:anything/kernel/resolution/experience_resolver.dart';
+import 'package:anything/capabilities/registry/capability_descriptor.dart';
 import 'package:anything/capabilities/registry/capability_registry.dart';
 import 'package:anything/knowledge/knowledge_acquisition_engine.dart';
 import 'package:anything/knowledge/knowledge_bundle.dart';
@@ -53,6 +54,7 @@ import 'package:anything/backend_engineering/backend_engineering_planner.dart';
 import 'package:anything/knowledge/knowledge_resource.dart';
 import 'package:anything/world_model/world_model_coordinator.dart';
 import 'package:anything/world_model/world_types.dart' show WorldNodeKind;
+import 'package:anything/implementation_model/canonical_implementation_planner.dart';
 
 /// Maximum knowledge refinement rounds (trusted limit).
 const int _maxKnowledgeRounds = 2;
@@ -96,6 +98,7 @@ class AnythingKernel {
   final EvolutionEngine _evolutionEngine;
   final ArchitectureToBlueprintConverter _architectureToBlueprint;
   final BackendEngineeringPlanner _backendEngineeringPlanner;
+  final CanonicalImplementationPlanner _canonicalImplementationPlanner;
 
   /// Optional shared World Graph (Implementation Milestone R1). REALITY
   /// before R1: the Kernel held no World Model reference at all, so
@@ -145,6 +148,7 @@ class AnythingKernel {
     ArchitectureToBlueprintConverter? architectureToBlueprint,
     WorldModelCoordinator? worldModel,
     BackendEngineeringPlanner? backendEngineeringPlanner,
+    CanonicalImplementationPlanner? canonicalImplementationPlanner,
   }) : _worldModel = worldModel,
        _requirementExtractor =
            requirementExtractor ?? const RequirementExtractor(),
@@ -157,6 +161,7 @@ class AnythingKernel {
        _architectureToBlueprint =
            architectureToBlueprint ?? const ArchitectureToBlueprintConverter(),
        _backendEngineeringPlanner = backendEngineeringPlanner ?? const BackendEngineeringPlanner(),
+       _canonicalImplementationPlanner = canonicalImplementationPlanner ?? const CanonicalImplementationPlanner(),
        _experienceResolver = experienceResolver ?? ExperienceResolver(),
        _capabilityRegistry = capabilityRegistry ?? CapabilityRegistry(),
        _understandingService = ModelUnderstandingService(providerRegistry),
@@ -452,6 +457,23 @@ class AnythingKernel {
         );
       }
 
+      // Step 8.5: Canonical Implementation Model (Implementation Milestone
+      // R9) — real, deterministic, LANGUAGE-INDEPENDENT unification of
+      // frontend `engineeringPlan.finalCandidate` (R3) and
+      // `backendEngineeringPlan` (R8), plus the just-resolved real
+      // `CapabilityDescriptor`s above — zero new AI call, zero new
+      // upstream dependency. A World Graph ingestion failure never
+      // changes this outcome (Rule 7/backward compatibility, matching
+      // every prior _ingestIntoWorldModelSafely call site exactly).
+      final canonicalImplementationModel = _canonicalImplementationPlanner.plan(
+        CanonicalImplementationContext(
+          engineering: engineeringPlan.finalCandidate,
+          backend: backendEngineeringPlan,
+          resolvedCapabilities: resolutions.map((r) => r.descriptor).whereType<CapabilityDescriptor>().toList(),
+        ),
+      );
+      _ingestIntoWorldModelSafely(() => _worldModel?.ingestCanonicalImplementation(canonicalImplementationModel));
+
       // Step 9: Build ExecutionPlan
       final plan = _buildPlan(spec);
 
@@ -477,6 +499,7 @@ class AnythingKernel {
         evolutionRoadmap: evolutionResult.roadmap,
         requirementGraph: requirementGraph,
         backendEngineeringPlan: backendEngineeringPlan,
+        canonicalImplementationModel: canonicalImplementationModel,
         message: 'Ready to create',
         timestamp: DateTime.now(),
       );
