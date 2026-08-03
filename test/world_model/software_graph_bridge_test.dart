@@ -71,6 +71,20 @@ void main() {
       expect(update.addedNodes, hasLength(2));
     });
 
+    test('R14: new authenticationPattern/navigationPattern node kinds map to WorldNodeKind.softwareComponent (no second taxonomy)', () {
+      final authId = sc.SoftwareIdentity.stable(sc.SoftwareNodeKind.authenticationPattern, 'firebase_auth');
+      final navId = sc.SoftwareIdentity.stable(sc.SoftwareNodeKind.navigationPattern, 'go_router');
+      final graph = SemanticSoftwareGraph(
+        nodes: [
+          sc.SoftwareNode(identity: authId, kind: sc.SoftwareNodeKind.authenticationPattern, label: 'firebase_auth'),
+          sc.SoftwareNode(identity: navId, kind: sc.SoftwareNodeKind.navigationPattern, label: 'go_router'),
+        ],
+      );
+
+      final update = const SoftwareGraphBridge().bridge(graph);
+      expect(update.addedNodes.map((n) => n.kind).toSet(), {WorldNodeKind.softwareComponent});
+    });
+
     test('an empty SemanticSoftwareGraph produces an empty GraphUpdate', () {
       final update = const SoftwareGraphBridge().bridge(const SemanticSoftwareGraph());
       expect(update.isEmpty, isTrue);

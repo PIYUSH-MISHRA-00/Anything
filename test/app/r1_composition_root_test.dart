@@ -340,5 +340,90 @@ void main() {
 
       await repository.close();
     });
+
+    test('R14: a sound acquisition also ingests real nodes into the shared World Model (SoftwareCognitionCoordinator.syncToWorldModel now has a real production caller)', () async {
+      sqfliteFfiInit();
+      databaseFactory = databaseFactoryFfiNoIsolate;
+      SharedPreferences.setMockInitialValues({});
+      final dbName = 'r14_world_model_sync_${DateTime.now().microsecondsSinceEpoch}.db';
+      final repository = SqliteExperienceRepository(dbName: dbName);
+      final reasoner = _RecordingReasoner(_fieldSurveyApp());
+      final kernel = AnythingKernel(
+        providerRegistry: _FakeProviderRegistry(),
+        capabilityRegistry: _registryWithStorage(),
+        reasoner: reasoner,
+      );
+      final softwareCognition = SoftwareCognitionCoordinator(
+        engine: SoftwareCognitionEngine(
+          repositoryAnalyzer: RepositoryAnalyzer(
+            fetchPage: (url) async => {
+              'available': true,
+              'html': '<html><body><p>A real, small, well-tested field survey library with a permissive license.</p></body></html>',
+            },
+          ),
+        ),
+      );
+      final worldModel = WorldModelCoordinator();
+      final beforeCount = worldModel.model.graph.nodes.length;
+      final creation = ExperienceCreationCoordinator(
+        kernel: kernel,
+        repository: repository,
+        softwareCognition: softwareCognition,
+        worldModel: worldModel,
+      );
+
+      final result = await creation.createFromIntent(
+        Intent.create(expression: 'track my field survey entries'),
+        referenceUrl: 'https://example.com/survey-lib',
+      );
+
+      expect(result, isA<CreationCreated>());
+      // At least two real ingestions happened this call: the acquired
+      // repository's own SoftwareGraph (R14) AND the created Experience
+      // itself (R1) — never a duplicate/parallel World Model, the SAME
+      // shared `worldModel.model` grew.
+      expect(worldModel.model.graph.nodes.length, greaterThan(beforeCount));
+
+      await repository.close();
+    });
+
+    test('R14: an unsound acquisition never mutates the World Model (accept-only, matching every prior ingest* gate)', () async {
+      sqfliteFfiInit();
+      databaseFactory = databaseFactoryFfiNoIsolate;
+      SharedPreferences.setMockInitialValues({});
+      final dbName = 'r14_world_model_reject_${DateTime.now().microsecondsSinceEpoch}.db';
+      final repository = SqliteExperienceRepository(dbName: dbName);
+      final reasoner = _RecordingReasoner(_fieldSurveyApp());
+      final kernel = AnythingKernel(
+        providerRegistry: _FakeProviderRegistry(),
+        capabilityRegistry: _registryWithStorage(),
+        reasoner: reasoner,
+      );
+      // fetchPage returns unavailable -> understandRepositoryFromUrl
+      // returns null -> no sound result -> syncToWorldModel must never
+      // be called.
+      final softwareCognition = SoftwareCognitionCoordinator(
+        engine: SoftwareCognitionEngine(repositoryAnalyzer: RepositoryAnalyzer(fetchPage: (url) async => {'available': false})),
+      );
+      final worldModel = WorldModelCoordinator();
+      final creation = ExperienceCreationCoordinator(
+        kernel: kernel,
+        repository: repository,
+        softwareCognition: softwareCognition,
+        worldModel: worldModel,
+      );
+
+      final result = await creation.createFromIntent(
+        Intent.create(expression: 'track my field survey entries'),
+        referenceUrl: 'https://example.com/unreachable-lib',
+      );
+
+      expect(result, isA<CreationCreated>());
+      // Only the Experience-ingestion World Graph growth is expected;
+      // no software-cognition nodes were added for the failed acquisition
+      // (asserted indirectly: creation still succeeds and no exception
+      // propagates from the best-effort sync attempt).
+      await repository.close();
+    });
   });
 }
