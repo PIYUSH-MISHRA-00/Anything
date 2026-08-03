@@ -52,6 +52,7 @@ import 'package:anything/evolution/evolution_memory.dart';
 import 'package:anything/backend_engineering/backend_engineering_context.dart';
 import 'package:anything/backend_engineering/backend_engineering_planner.dart';
 import 'package:anything/knowledge/knowledge_resource.dart';
+import 'package:anything/software_cognition/software_reasoner.dart' show SoftwareRecommendation;
 import 'package:anything/world_model/world_model_coordinator.dart';
 import 'package:anything/world_model/world_types.dart' show WorldNodeKind;
 import 'package:anything/implementation_model/canonical_implementation_planner.dart';
@@ -179,9 +180,20 @@ class AnythingKernel {
   /// repository/package understanding via `SoftwareCognitionCoordinator`
   /// passes its `KnowledgeResource` here). Empty/omitted by default —
   /// existing behavior is byte-for-byte unchanged when not supplied.
+  ///
+  /// [corroboratingRecommendations] (Implementation Milestone R15)
+  /// optionally carries real, already-accepted `SoftwareRecommendation`s
+  /// (`SoftwareReasoner.reasonAboutRepositories`/`.reasonAboutPackages`,
+  /// V11) into Step 8.5's `CanonicalImplementationContext` — the hook R14
+  /// built but left unwired here because the only caller at the time
+  /// acquired at most one source, making the reasoner's
+  /// `minSupportingCandidates` acceptance gate permanently vacuous. Empty
+  /// by default; existing behavior is byte-for-byte unchanged when not
+  /// supplied.
   Future<KernelOutcome> processIntent(
     Intent intent, {
     List<KnowledgeResource> seedKnowledge = const [],
+    List<SoftwareRecommendation> corroboratingRecommendations = const [],
   }) async {
     try {
       // Step 1: Classify the intent
@@ -470,6 +482,7 @@ class AnythingKernel {
           engineering: engineeringPlan.finalCandidate,
           backend: backendEngineeringPlan,
           resolvedCapabilities: resolutions.map((r) => r.descriptor).whereType<CapabilityDescriptor>().toList(),
+          corroboratingRecommendations: corroboratingRecommendations,
         ),
       );
       _ingestIntoWorldModelSafely(() => _worldModel?.ingestCanonicalImplementation(canonicalImplementationModel));

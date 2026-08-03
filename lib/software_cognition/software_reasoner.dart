@@ -30,6 +30,39 @@ class SoftwareRecommendation {
   });
 }
 
+/// Real, deterministic aggregate over one `reasonAboutRepositories`/
+/// `reasonAboutPackages` call (Implementation Milestone R15's "Consensus
+/// Metadata") — every field is a plain count already implied by the
+/// `List<SoftwareRecommendation>` the reasoner returned, never a new
+/// inference. `conflicting` is this reasoner's own honest
+/// operationalization of "Conflicts": a claim only one source made that
+/// no other acquired source corroborated (`accepted == false`) — NOT a
+/// detector for two sources actively contradicting each other, since
+/// that would require a concern taxonomy (e.g. "these two frameworks are
+/// alternative choices for state management") this reasoner has no real
+/// signal for. Documented here rather than fabricated.
+class CorroborationSummary {
+  final int sourceCount;
+  final int recommendationsConsidered;
+  final int corroborated;
+  final int conflicting;
+
+  const CorroborationSummary({
+    required this.sourceCount,
+    required this.recommendationsConsidered,
+    required this.corroborated,
+    required this.conflicting,
+  });
+
+  factory CorroborationSummary.of(List<SoftwareRecommendation> recommendations, {required int sourceCount}) =>
+      CorroborationSummary(
+        sourceCount: sourceCount,
+        recommendationsConsidered: recommendations.length,
+        corroborated: recommendations.where((r) => r.accepted).length,
+        conflicting: recommendations.where((r) => !r.accepted).length,
+      );
+}
+
 class SoftwareReasoner {
   final SoftwareSimilarity _similarity;
 

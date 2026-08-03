@@ -40,6 +40,13 @@ class SoftwareCognitionCoordinator {
 
   SoftwareCognitionEngine get engine => _engine;
 
+  /// The shared reasoner (Implementation Milestone R15) — exposed the
+  /// same way [engine] already is, so a caller acquiring multiple
+  /// sources (e.g. `ExperienceCreationCoordinator`) can reuse the EXACT
+  /// same `SoftwareReasoner` instance/config `suggestEvolutionOpportunities`
+  /// already uses, never a second reasoner.
+  SoftwareReasoner get reasoner => _reasoner;
+
   /// Converts a sound (no critical review issues, transformative digest)
   /// repository understanding into a real KnowledgeResource suitable for
   /// inclusion in a KnowledgeBundle — returns null rather than a

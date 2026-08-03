@@ -26,6 +26,8 @@ import 'package:anything/software_architect/requirement_graph.dart';
 import 'package:anything/solution_reasoning/solution_decision.dart';
 import 'package:anything/synthesis/app_blueprint.dart';
 import 'package:anything/software_cognition/software_cognition_coordinator.dart';
+import 'package:anything/software_cognition/software_cognition_engine.dart' show RepositoryCognitionResult;
+import 'package:anything/software_cognition/software_reasoner.dart';
 import 'package:anything/world_model/world_model_coordinator.dart';
 
 /// User-facing creation state.
@@ -142,17 +144,33 @@ class ExperienceCreationCoordinator {
   /// `SoftwareCognitionCoordinator` was injected), real acquired
   /// understanding (never copied source) is fed into reasoning. Omitted
   /// by default; existing callers are unaffected.
+  ///
+  /// [referenceUrls] (Implementation Milestone R15) optionally names
+  /// MULTIPLE such sources in one request — additive to [referenceUrl],
+  /// which still works unchanged as a single-source convenience (both
+  /// may be supplied together; every URL from either is acquired). With
+  /// 2+ real sources, `SoftwareReasoner.reasonAboutRepositories` (V11)
+  /// finally corroborates across genuinely independent candidates instead
+  /// of the single-candidate case where its `minSupportingCandidates`
+  /// gate can never accept anything (see R14's own documented limitation
+  /// in `docs/architecture/SOFTWARE_COGNITION_ENGINE.md`).
   Future<CreationResult> createFromIntent(
     Intent intent, {
     String? referenceUrl,
+    List<String>? referenceUrls,
   }) async {
     _state = CreationState.understanding;
 
     try {
-      final seedKnowledge = await _acquireSoftwareCognitionSeed(referenceUrl);
+      final urls = <String>{
+        if (referenceUrl != null && referenceUrl.isNotEmpty) referenceUrl,
+        ...?referenceUrls?.where((u) => u.isNotEmpty),
+      }.toList();
+      final (seedKnowledge, corroboratingRecommendations) = await _acquireSoftwareCognitionSeeds(urls);
       final kernelOutcome = await _kernel.processIntent(
         intent,
         seedKnowledge: seedKnowledge,
+        corroboratingRecommendations: corroboratingRecommendations,
       );
 
       switch (kernelOutcome) {
@@ -221,51 +239,83 @@ class ExperienceCreationCoordinator {
   Future<CreationResult> createFromExpression(
     String expression, {
     String? referenceUrl,
+    List<String>? referenceUrls,
   }) async {
     return createFromIntent(
       Intent.create(expression: expression),
       referenceUrl: referenceUrl,
+      referenceUrls: referenceUrls,
     );
   }
 
-  /// Acquires real Software Cognition understanding of [referenceUrl] (if
-  /// supplied and a coordinator was injected) and converts a sound result
-  /// into a `KnowledgeResource` seed — never raw source, never a
-  /// fabricated resource from an unsound/unreviewed result (see
-  /// `SoftwareCognitionCoordinator.toKnowledgeResource`). Returns an empty
-  /// list on any failure or when the feature isn't in use — this is
-  /// always an optional enhancement, never a hard dependency of creation.
-  Future<List<KnowledgeResource>> _acquireSoftwareCognitionSeed(
-    String? referenceUrl,
+  /// Acquires real Software Cognition understanding of every URL in
+  /// [urls] (Implementation Milestone R15 — generalizes the single-source
+  /// `_acquireSoftwareCognitionSeed` this replaces) and returns both a
+  /// `KnowledgeResource` seed per sound acquisition AND the real,
+  /// multi-source-corroborated `SoftwareRecommendation`s
+  /// `SoftwareReasoner.reasonAboutRepositories` (V11) produces when given
+  /// every acquired candidate together — never raw source, never a
+  /// fabricated resource/recommendation. Returns empty on any failure or
+  /// when the feature isn't in use — always an optional enhancement,
+  /// never a hard dependency of creation. Every acquired repository's
+  /// software graph is synced into the World Model (not just the first);
+  /// `GraphMerge`'s existing identity-keyed dedup (unchanged, V9) means
+  /// two sources reporting the same real-world framework/dependency
+  /// collapse into one World Model node, never two.
+  Future<(List<KnowledgeResource>, List<SoftwareRecommendation>)> _acquireSoftwareCognitionSeeds(
+    List<String> urls,
   ) async {
-    if (referenceUrl == null || referenceUrl.isEmpty || _softwareCognition == null) {
-      return const [];
+    if (urls.isEmpty || _softwareCognition == null) {
+      return (const <KnowledgeResource>[], const <SoftwareRecommendation>[]);
     }
-    try {
-      final result = await _softwareCognition.engine.understandRepositoryFromUrl(
-        referenceUrl,
-        name: Uri.tryParse(referenceUrl)?.host ?? referenceUrl,
-      );
-      if (result == null || !result.isSound) return const [];
 
-      // World Graph ingestion (Implementation Milestone R14) — best-effort,
-      // never allowed to fail creation itself, same non-blocking contract
-      // as `ingestExperience` below. REALITY before R14:
-      // `SoftwareCognitionCoordinator.syncToWorldModel` existed and was
-      // tested since V11 but had zero production callers (MIS-1 Part 2).
-      if (_worldModel != null) {
+    final soundResults = <RepositoryCognitionResult>[];
+    for (final url in urls) {
+      try {
+        final result = await _softwareCognition.engine.understandRepositoryFromUrl(
+          url,
+          name: Uri.tryParse(url)?.host ?? url,
+        );
+        if (result != null && result.isSound) soundResults.add(result);
+      } catch (_) {
+        // Deliberately swallowed — one failed source must never fail the
+        // whole creation, matching the single-source contract this
+        // replaces.
+      }
+    }
+    if (soundResults.isEmpty) {
+      return (const <KnowledgeResource>[], const <SoftwareRecommendation>[]);
+    }
+
+    // World Graph ingestion (Implementation Milestone R14, generalized to
+    // every acquired source by R15) — best-effort, never allowed to fail
+    // creation itself, same non-blocking contract as `ingestExperience`
+    // below.
+    if (_worldModel != null) {
+      for (final result in soundResults) {
         try {
           _softwareCognition.syncToWorldModel(_worldModel, result.model);
         } catch (_) {
           // Deliberately swallowed — see comment above.
         }
       }
-
-      final resource = _softwareCognition.toKnowledgeResource(result);
-      return resource == null ? const [] : [resource];
-    } catch (_) {
-      return const [];
     }
+
+    final seedKnowledge = <KnowledgeResource>[
+      for (final result in soundResults)
+        if (_softwareCognition.toKnowledgeResource(result) case final resource?) resource,
+    ];
+
+    // Real multi-source corroboration (Implementation Milestone R15) —
+    // reuses SoftwareReasoner.reasonAboutRepositories unchanged (V11).
+    // With a single sound source this still returns recommendations, but
+    // every one is `accepted: false` (minSupportingCandidates defaults to
+    // 2) — filtered out below, matching R14's documented "single source
+    // can never satisfy the acceptance gate" finding exactly.
+    final candidates = soundResults.map((r) => r.model).toList();
+    final corroboratingRecommendations = _softwareCognition.reasoner.reasonAboutRepositories(candidates).where((r) => r.accepted).toList();
+
+    return (seedKnowledge, corroboratingRecommendations);
   }
 
   Future<CreationResult> _createExperience({
