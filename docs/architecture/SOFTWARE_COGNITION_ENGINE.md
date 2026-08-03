@@ -344,3 +344,103 @@ below).
 - `AuthenticationPatternAnalyzer`/`NavigationPatternAnalyzer`'s hint
   lists are small and documented, not exhaustive — same honest
   precedent as `_storageDependencyHints`.
+
+## Implementation Milestone R15 — Multi-Source Software Cognition, Evidence Corroboration Engine (2026-08-03)
+
+R14 left one named gap: `corroboratingRecommendations`/`corroboratedPatterns`
+were real and tested at the `CanonicalImplementationPlanner` boundary but
+never reachable from production, because the only real caller
+(`ExperienceCreationCoordinator.createFromIntent`) acquired at most one
+`referenceUrl` per creation — mathematically unable to satisfy
+`SoftwareReasoner`'s `minSupportingCandidates` (default 2) acceptance
+gate. R15 closes exactly this gap. Re-confirmed directly (grep, not
+assumption) before writing any code: `SoftwareReasoner.reasonAboutRepositories`/
+`.reasonAboutPackages` (V11) already implement real multi-source
+corroboration — grouping by framework/capability name across every
+candidate, accepting only what 2+ independent sources support, tracing
+every recommendation back to real per-source evidence
+(`SoftwareEvidence(sourceUrl, sourceArtifact)`). Nothing about the
+reasoning math needed rebuilding; only the acquisition boundary feeding
+it needed to grow from one source to many.
+
+### What was wired
+
+- `ExperienceCreationCoordinator.createFromIntent`/`createFromExpression`
+  gained an additive `List<String>? referenceUrls` parameter, alongside
+  the existing `String? referenceUrl` (both may be supplied together; the
+  existing single-URL call site in `lib/features/home/home_screen.dart`
+  is unaffected — it passes neither).
+- `_acquireSoftwareCognitionSeed` (single-source) became
+  `_acquireSoftwareCognitionSeeds` (multi-source): every URL is acquired
+  through the SAME, unchanged `SoftwareCognitionEngine.understandRepositoryFromUrl`
+  (still the only acquisition path, still WebWeaveX-gated — one failed
+  source is skipped, never fails the whole creation); every sound
+  acquisition's software graph is synced into the World Model (not just
+  the first — `_worldModel.syncToWorldModel` is now called once per sound
+  source); every sound `RepositoryModel` is collected and passed together
+  to `SoftwareCognitionCoordinator.reasoner.reasonAboutRepositories()` —
+  a new `reasoner` getter on `SoftwareCognitionCoordinator`, mirroring the
+  existing `engine` getter exactly, so the creation path reuses the
+  identical reasoner instance `suggestEvolutionOpportunities` already
+  uses, never a second one.
+- `AnythingKernel.processIntent` gained an additive
+  `List<SoftwareRecommendation> corroboratingRecommendations = const []`
+  parameter, threaded unchanged into Step 8.5's
+  `CanonicalImplementationContext` — the one, single line R14 documented
+  as missing.
+- `CorroborationSummary` (`lib/software_cognition/software_reasoner.dart`)
+  — a new, small, additive aggregate type ("Consensus Metadata" in R15's
+  own requested taxonomy): `sourceCount`/`recommendationsConsidered`/
+  `corroborated`/`conflicting`, computed deterministically from a
+  `List<SoftwareRecommendation>` already returned by the unchanged
+  reasoner. `conflicting` is this reasoner's own honest
+  operationalization of "Conflicts": a claim only one source made that no
+  other acquired source corroborated — not a detector for two sources
+  actively contradicting each other on the same concern, since that
+  would require a concern taxonomy (e.g. "these two frameworks are
+  alternative state-management choices") this reasoner has no real
+  signal for. "Agreements"/"Evidence Chains"/"Source Provenance" from
+  R15's requested taxonomy were already fully real
+  (`accepted`/`tracedTo`/`SoftwareEvidence.sourceUrl`) — not rebuilt.
+
+### World Model — no duplicate nodes, proven not assumed
+
+`GraphMerge`'s existing identity-keyed dedup (V9, unchanged) and
+`SoftwareIdentity.stable(kind, id)`'s deterministic, acquisition-independent
+value (V11, unchanged — e.g. every acquisition that detects the `flutter`
+dependency produces the identical `package:flutter` identity) together
+already guarantee two sources reporting the same real-world package
+collapse into one World Model node. This was verified with a real test
+(two distinct-host sources both declaring `flutter`) rather than assumed
+from reading the merge code alone.
+
+### Engineering Memory — no change needed
+
+`CanonicalImplementationModel.corroboratedPatterns` already round-trips
+through `canonicalImplementationModel.toJson()` (R14) end-to-end, and
+`EngineeringMemoryRepository.save`/`.load` already persist/restore the
+whole model via that same JSON path — confirmed directly, no new column
+or migration was needed. Proven with a real test that creates via the
+Kernel with two sources and reads the persisted record back.
+
+### Known limitations
+
+- `referenceUrls` has no UI entry point yet — `lib/features/home/home_screen.dart`
+  still calls `createFromIntent` with neither `referenceUrl` nor
+  `referenceUrls`; wiring a multi-source UI affordance is a real, named,
+  separate future gap, out of this milestone's scope (the pipeline, not
+  the UI, was R15's objective).
+- `SoftwareCognitionCoordinator.suggestEvolutionOpportunities` (V11)
+  still has zero production callers — unchanged by R15; it is a
+  different pathway (Evolution) from creation and was not in scope here.
+- `CapabilityRegistry` still has zero production callers registering any
+  `CapabilityDescriptor` — the same real, pre-existing structural finding
+  R14 named, unrelated to and unchanged by this milestone.
+- `CorroborationSummary` is computed on demand by a caller from a
+  `List<SoftwareRecommendation>`; it is not itself persisted anywhere —
+  no real reuse case for a stored consensus snapshot was found during
+  investigation (the same restraint R14 applied to Engineering Memory).
+- "Conflicts" (per the Known limitations note above) reports isolated,
+  single-source claims — it does not detect two sources actively
+  disagreeing about the same concern, since no concern taxonomy exists to
+  make that determination honestly.

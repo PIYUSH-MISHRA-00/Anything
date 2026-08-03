@@ -952,3 +952,39 @@ sequentially understanding 50 repositories — ~2.0MB (~42KB/repository).
 **Execution result:** all 18 new tests pass. Full regression:
 **1272/1272** (up from 1254, zero pre-existing test modified).
 `flutter analyze`: 71 issues, 0 errors, unchanged baseline.
+
+## Implementation Milestone R15 — Multi-Source Software Cognition, Evidence Corroboration Engine (2026-08-03)
+
+10 new tests in one file, `test/r15_multi_source_software_cognition_test.dart`
+(5 groups). `CorroborationSummary`: real aggregate math over a mixed
+2-of-3/1-of-3 recommendation list (`sourceCount`/`recommendationsConsidered`/
+`corroborated`/`conflicting` all cross-check); an empty recommendation
+list produces an honest all-zero summary. `SoftwareCognitionCoordinator.reasoner`
+getter: exposes the identical instance passed to the constructor
+(`identical()`), never a second one. `ExperienceCreationCoordinator`
+multi-source acquisition (the centerpiece): two real, independent
+sources (distinct hosts, both declaring `flutter` via mocked
+`fetchPage` HTML — empirically confirmed this fixture shape is
+recognized as real dependencies by the unchanged WebWeaveX/RepositoryAnalyzer
+path) corroborate `flutter` end-to-end through a real `AnythingKernel.processIntent`
+call into a `CanonicalImplementationModel.corroboratedPatterns` entry
+read back from a real `EngineeringMemoryRepository`, with
+`supportingSourceCount == 2`; a single-source call (the pre-R15
+`referenceUrl`-only API, unchanged) still creates successfully and
+produces zero corroborated patterns — the exact gate R14 documented,
+now exercised end-to-end rather than assumed; World Model: two
+distinct-host sources both declaring `flutter` produce exactly ONE
+`softwarePackage` node (real dedup proof) while their two repository
+nodes remain genuinely distinct (proves the merge isn't over-collapsing
+everything).
+
+**Real, measured performance** (`Stopwatch`/`ProcessInfo`, machine-
+dependent, recorded as observed): corroboration + summary over 10/50/100
+synthetic in-memory repositories — all sub-millisecond to ~1ms; process
+RSS delta while corroborating 100 repositories in one call — observed
+negative/near-zero delta (GC-dependent at this scale, not a leak signal;
+recorded as observed, not smoothed).
+
+**Execution result:** all 10 new tests pass. Full regression:
+**1283/1283** (up from 1273, zero pre-existing test modified).
+`flutter analyze`: 71 issues, 0 errors, unchanged baseline.

@@ -743,5 +743,60 @@ R13 `ExperienceHostScreen` detail-cache characteristic and the
 "second, genuinely different generator" recommendation remain open from
 R13.
 
-**DO NOT START R15 — per this milestone's own stop condition, wait for
+## Implementation Milestone R15 — Multi-Source Software Cognition, Evidence Corroboration Engine (2026-08-03)
+
+Closes exactly R14's own named gap: `corroboratingRecommendations`/
+`corroboratedPatterns` were real and tested at the planner boundary but
+unreachable from production because the only real caller acquired at
+most one reference source per creation, permanently failing
+`SoftwareReasoner`'s `minSupportingCandidates: 2` gate. Investigation
+(re-confirmed by reading the reasoner directly, not assumed) found the
+multi-source reasoning math itself — `reasonAboutRepositories`/
+`reasonAboutPackages` — was already fully real and tested since V11;
+only the acquisition boundary needed to grow.
+
+**Wired:** `ExperienceCreationCoordinator.createFromIntent`/
+`createFromExpression` gained an additive `List<String>? referenceUrls`
+(the existing single `referenceUrl` still works unchanged; the one real
+production call site in `lib/features/home/home_screen.dart` passes
+neither and is unaffected). Every URL is acquired through the same,
+unchanged `understandRepositoryFromUrl` (still the only, WebWeaveX-gated
+path); every sound source's graph is synced into the World Model (not
+just the first); every sound `RepositoryModel` is passed together to the
+reasoner (a new `SoftwareCognitionCoordinator.reasoner` getter, mirroring
+the existing `engine` getter, reuses the identical instance
+`suggestEvolutionOpportunities` already uses). `AnythingKernel.processIntent`
+gained an additive `corroboratingRecommendations` parameter, threaded
+into Step 8.5 — the one line R14 documented as missing.
+
+**New:** `CorroborationSummary` (`lib/software_cognition/software_reasoner.dart`)
+— a small, deterministic aggregate ("Consensus Metadata") over an
+already-returned recommendation list. "Conflicts" is honestly
+operationalized as single-source, uncorroborated claims — not a
+contradiction detector, since no concern taxonomy exists to determine
+two sources are really disagreeing rather than just each mentioning
+something different.
+
+**Verified, not assumed:** a real test proves two distinct sources
+reporting the same real-world package collapse into ONE World Model node
+(`GraphMerge`'s existing identity-keyed dedup, V9, unchanged); a real
+test creates via the Kernel with two corroborating sources and reads a
+populated `corroboratedPatterns` back from `EngineeringMemoryRepository`
+— the first genuinely non-vacuous, production, end-to-end proof of R14's
+hook.
+
+10 new tests, full regression **1283/1283** (up from 1273). `flutter
+analyze`: 71/0, unchanged baseline. Zero new LLM calls. `lib/generator_framework/`/
+`lib/build_graph/`/`lib/runtime/` untouched.
+
+**Recommendation for R16 (if resumed)**: (1) a real UI affordance for
+supplying multiple reference sources in `lib/features/home/home_screen.dart`
+— the pipeline is now real end-to-end, only the UI entry point is
+missing; (2) `CapabilityRegistry`'s zero-production-callers finding
+(named by R14, still unaddressed) deserves independent architectural
+review; (3) the R13 `ExperienceHostScreen` detail-cache characteristic
+and R10's "second, genuinely different generator" recommendation remain
+open.
+
+**DO NOT START R16 — per this milestone's own stop condition, wait for
 external architectural review.**
