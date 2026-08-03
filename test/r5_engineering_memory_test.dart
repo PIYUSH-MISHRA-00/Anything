@@ -14,7 +14,6 @@ import 'package:anything/application_engineering/engineering_memory_summary.dart
 import 'package:anything/application_engineering/engineering_plan.dart';
 import 'package:anything/capabilities/registry/capability_descriptor.dart';
 import 'package:anything/capabilities/registry/capability_registry.dart';
-import 'package:anything/core/contracts/intent.dart';
 import 'package:anything/core/contracts/model_provider.dart';
 import 'package:anything/kernel/anything_kernel.dart';
 import 'package:anything/knowledge/knowledge_acquisition_engine.dart';
