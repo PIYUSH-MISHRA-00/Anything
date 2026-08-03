@@ -8,6 +8,7 @@ import '../../application_engineering/engineering_plan.dart';
 import '../../backend_engineering/backend_engineering_plan.dart';
 import '../../implementation_model/canonical_implementation_model.dart';
 import '../../solution_architecture/solution_architecture.dart';
+import '../../execution_planning/execution_strategy.dart';
 import '../../design_review/review_history.dart' show ReviewSession;
 import '../../evolution/evolution_roadmap.dart' show EvolutionRoadmap;
 import '../../feature_discovery/feature_plan.dart';
@@ -129,6 +130,16 @@ class ExecutionPlanReady extends KernelOutcome {
   /// reach this point (there are none on the production path).
   final SemanticSolutionArchitecture? solutionArchitecture;
 
+  /// The Solution Execution Strategy (Implementation Milestone R18) —
+  /// real classification of R18's 12 requested execution targets
+  /// (applicable-with-generator/applicable-no-generator/not-applicable),
+  /// derived from [solutionArchitecture]. Exposed additively; this
+  /// milestone does NOT invoke any generator itself — a future caller
+  /// uses `executionStrategy.actionableTargets` to do so. Null only for
+  /// outcomes that never reach this point (there are none on the
+  /// production path).
+  final ExecutionStrategy? executionStrategy;
+
   const ExecutionPlanReady({
     required this.plan,
     required this.specification,
@@ -142,6 +153,7 @@ class ExecutionPlanReady extends KernelOutcome {
     this.backendEngineeringPlan,
     this.canonicalImplementationModel,
     this.solutionArchitecture,
+    this.executionStrategy,
     required super.message,
     required super.timestamp,
   });

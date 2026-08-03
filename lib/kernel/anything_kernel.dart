@@ -60,6 +60,7 @@ import 'package:anything/world_model/world_model_coordinator.dart';
 import 'package:anything/world_model/world_types.dart' show WorldNodeKind;
 import 'package:anything/implementation_model/canonical_implementation_planner.dart';
 import 'package:anything/solution_architecture/solution_architecture_planner.dart';
+import 'package:anything/execution_planning/solution_execution_planner.dart';
 
 /// Maximum knowledge refinement rounds (trusted limit).
 const int _maxKnowledgeRounds = 2;
@@ -538,6 +539,21 @@ class AnythingKernel {
       );
       _ingestIntoWorldModelSafely(() => _worldModel?.ingestCanonicalImplementation(canonicalImplementationModel));
 
+      // Step 8.6: Solution Execution Planner (Implementation Milestone
+      // R18) — real, deterministic classification of R18's 12 requested
+      // execution targets against the SAME `solutionArchitecture` (R17)
+      // just computed — zero new AI call, zero new upstream dependency.
+      // REALITY: the R9-R13 compiler chain (BuildGraphBuilder ->
+      // GenerationPipeline -> RuntimeExperienceGenerator) has zero
+      // production callers anywhere in this codebase (confirmed by grep)
+      // — this step does NOT change that; it exposes a real plan a future
+      // caller can use to invoke that pipeline, it never invokes it
+      // itself. World Model/Engineering Memory are deliberately NOT
+      // touched here (see docs/architecture/SOLUTION_EXECUTION_PLANNING.md
+      // "Persistence" — cheap, deterministic, recomputed from data already
+      // persisted via ArchitectureCandidate/BackendEngineeringPlan).
+      final executionStrategy = const SolutionExecutionPlanner().plan(solutionArchitecture);
+
       // Step 9: Build ExecutionPlan
       final plan = _buildPlan(spec);
 
@@ -565,6 +581,7 @@ class AnythingKernel {
         backendEngineeringPlan: backendEngineeringPlan,
         canonicalImplementationModel: canonicalImplementationModel,
         solutionArchitecture: solutionArchitecture,
+        executionStrategy: executionStrategy,
         message: 'Ready to create',
         timestamp: DateTime.now(),
       );
