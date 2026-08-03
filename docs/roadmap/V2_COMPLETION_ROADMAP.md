@@ -1027,3 +1027,34 @@ Canonical Experience Enrichment" for the full audit.
 
 **DO NOT START R21 — per this milestone's own stop condition, wait for
 external architectural review.**
+
+## R21 — Canonical Experience Views, Non-CRUD Experience Generation
+
+`CanonicalImplementationModel` gained `views: List<ImplementationView>`
+(dashboard/calendar/settings/empty/summary — legacy's own real
+`BlueprintViewType` names, kept distinct only because legacy picks a
+distinct navigation icon per name; the field content
+calendar/settings/empty/summary render is, and stays, identical, since
+legacy's own `CreationEngine` treats all four as one shared switch-case
+branch, verified by reading it). `RuntimeExperienceGenerator` now
+builds a real `dashboardMetrics` screen (count/sum/average metrics,
+matching legacy's exact derivation) and a real shared generic-fallback
+screen (referenceSelector/input/switch per field, matching legacy's
+exact shared behavior).
+
+Measured, real: "Task Board" fixture (dashboard + settings views)
+scores 10/12 (0.83), with the target `tasks_dashboard`/`tasks_settings`
+screens no longer missing from the compiler side — the real, itemized
+proof. Composite views (`SemanticView.sections`) remain honestly
+unmodeled: `grep -n "\.sections\b" lib/creation/creation_engine.dart`
+returns zero matches — legacy itself never reads that data, so there is
+no real behavior to be equivalent with.
+`lib/runtime/`/`lib/software_cognition/`/`lib/build_graph/`/
+`lib/generation_specification/` all untouched. `useCompilerPipeline`
+remains opt-in, default `false`.
+
+See `docs/architecture/COMPILER_PRODUCTION_INTEGRATION.md`, "R21 —
+Canonical Experience Views" for the full audit.
+
+**DO NOT START R22 — per this milestone's own stop condition, wait for
+external architectural review.**

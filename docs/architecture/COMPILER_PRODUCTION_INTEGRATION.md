@@ -287,3 +287,118 @@ itself doesn't populate them either (not a real gap). R19's condition 1
 remains opt-in, default `false` — this milestone's evidence does not
 support flipping the default; that remains a future, explicit
 product/architecture decision (R19's own condition 5).
+
+---
+
+# R21 — Canonical Experience Views, Non-CRUD Experience Generation
+
+## Reality before this milestone
+
+R20 closed the field-metadata gap and named the view gap explicitly:
+"`Calendar/Settings/Summary` ... these are not data-threading problems"
+— `RuntimeExperienceGenerator` had zero concept of non-CRUD
+`SemanticView`s at all. Reading legacy's `CreationEngine`
+(`lib/creation/creation_engine.dart`, lines ~551-676) precisely, before
+writing any code, surfaced two facts that reshaped what "closing this
+gap" honestly means:
+
+1. **`dashboard` is real and bespoke.** One `dashboardMetrics` node: a
+   `'Total <Entity>'` count metric always, a `<Field> (Sum)`/`(Avg)`
+   pair for every numeric field, plus an Add button when a create action
+   exists. Genuinely worth modeling distinctly.
+2. **`calendar`/`settings`/`empty`/`summary` are NOT distinct in
+   legacy.** All four fall through ONE identical switch-case branch: a
+   `referenceSelector` per reference field, an `input`/`switch` per
+   other field. There is no calendar-grid widget, no settings-toggle
+   panel, no summary-statistics view anywhere in this codebase — legacy
+   itself never differentiates these four. The milestone's own prose
+   names them as if distinct ("Calendar, Summary, Settings, Overview,
+   Analytics"); reality does not support building four different
+   behaviors for something legacy renders identically.
+3. **`SemanticView.sections` (composite views) is real reasoner output
+   legacy itself never reads.** `grep -n "view.sections\|\.sections\b"
+   lib/creation/creation_engine.dart` returns zero matches. Composite-
+   view/section rendering is therefore honestly NOT a verified gap —
+   there is no real legacy behavior to be equivalent with.
+
+## What shipped
+
+`CanonicalImplementationModel` gained `views: List<ImplementationView>`
+(`id`/`name`/`kind`/`sourceEntityId`) and `ImplementationViewKind`
+(`dashboard`/`calendar`/`settings`/`empty`/`summary` — the real,
+reasoner-emitted `BlueprintViewType` names, kept distinct only because
+legacy also picks a distinct navigation icon per name; the FIELD content
+all four non-dashboard kinds render is, and must stay, identical).
+`list`/`detail`/`form` view types are deliberately excluded — those
+screens already come from `ImplementationEntity`/
+`ImplementationOperationKind`; mapping them again would duplicate, not
+enrich. `CanonicalImplementationContext` gained an additive
+`semanticViews: List<SemanticView>` field, wired at the Kernel from the
+same `reasonResult.semanticApp.views` already in scope for
+`semanticEntities`/`derivedValues` (R20) — zero new AI call.
+
+`RuntimeExperienceGenerator` now builds a real screen per
+`ImplementationView`: `_dashboardViewNodes` reproduces legacy's exact
+count/sum/average metric derivation and Add-button logic (reusing this
+generator's own established `create_<entityId>` action-id convention,
+not a new one); `_genericFallbackViewNodes` reproduces legacy's exact
+shared reference-selector/input/switch fallback for the other four
+kinds. Navigation now combines entity-list items with view items
+(capped at 5, matching legacy's own cap), each view getting its real,
+distinct per-kind icon via `_viewKindIcon` (an exact mirror of legacy's
+`_viewTypeToIcon`). `SemanticView.sections` is never read anywhere on
+the compiler side either — the honest, matching absence.
+
+## Equivalence results (real, measured)
+
+"Task Board" fixture (one entity, a real `dashboard` view and a real
+`settings` view, the settings view carrying real but legacy-unread
+`sections` data): **10/12 (0.83)**, with `tasks_dashboard`/
+`tasks_settings` no longer appearing in `missingComponents` — the real,
+itemized proof this milestone closes the gap it targeted. View screen
+ids match exactly between legacy and compiler (both key them by the
+SAME real `SemanticView.id`), unlike CRUD entity screens, whose
+different naming conventions are a separate, pre-existing, unrelated
+difference (`missingComponents=[tasks_list]`,
+`extraComponents=[task_detail, task_form, task_list]` — the compiler's
+own entity-id-based CRUD screen names, not a regression from this
+milestone). Before this milestone, `tasks_dashboard`/`tasks_settings`
+would necessarily have appeared in `missingComponents` too, since
+`ImplementationView` did not exist as a concept at all.
+
+## Known differences (still real, still open)
+
+- `calendar`/`settings`/`empty`/`summary` share one behavior in BOTH
+  pipelines now, by design — matching legacy exactly, not a limitation
+  introduced by this milestone.
+- Composite views/sections remain unmodeled in both pipelines — legacy
+  has no real behavior here to match.
+- CRUD entity-screen naming conventions (`<entityId>_list` vs legacy's
+  blueprint-view-id scheme) remain a separate, pre-existing difference,
+  unrelated to and unaffected by this milestone.
+
+## Generator Framework / Build Graph / Generation Specification
+
+`lib/build_graph/` and `lib/generation_specification/` were NOT
+touched — view screens compose into the same `InterfaceDefinition`/
+`ExperiencePackage` shape the Build Graph already treats opaquely via
+`CanonicalImplementationModel`; no new `BuildNodeKind` or generation
+mapping was genuinely required. `lib/runtime/` and
+`lib/software_cognition/` remain completely unchanged, per this
+milestone's own explicit rule. `useCompilerPipeline` remains opt-in,
+default `false` — unchanged by this milestone.
+
+## World Model / Engineering Memory
+
+Deliberately untouched — `views` already flows into
+`CanonicalImplementationModel`, which `_ingestIntoWorldModelSafely` and
+`EngineeringMemoryRepository` already persist as a whole; no new,
+separate durable-knowledge concept was introduced.
+
+## Migration Strategy update
+
+R19's condition 1 (non-CRUD blueprint views) is now **substantially
+addressed** for dashboard/calendar/settings/empty/summary. Composite
+views remain out of scope because legacy itself has no real behavior
+there. `useCompilerPipeline` remains opt-in — this milestone's evidence
+does not support flipping the default.

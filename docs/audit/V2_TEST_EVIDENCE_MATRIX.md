@@ -1206,3 +1206,26 @@ Full regression: **1359/1359** (up from 1345). `flutter analyze`: 71
 issues, 0 errors, unchanged baseline. `lib/runtime/`,
 `lib/software_cognition/`, `lib/build_graph/`,
 `lib/generation_specification/` completely untouched.
+
+## R21 — Canonical Experience Views
+
+`test/r21_canonical_experience_views_test.dart` (13 tests): real
+`ImplementationView` derivation from `SemanticView` (dashboard/settings
+mapped, list/detail/form correctly excluded since they're already
+CRUD-covered), real `dashboardMetrics` node matching legacy's exact
+count/sum/average metric derivation field-by-field, real generic-
+fallback nodes (referenceSelector/switch/input) matching legacy's
+exact shared behavior, an orphan-sourceEntityId honest-empty-screen
+test (matching legacy's own null-entity guard), a no-views backward-
+compatibility test (no R21 node types leak into pure-CRUD generation),
+serialization round-trip + pre-R21-JSON backward compatibility, real
+navigation-icon-per-kind test, a real equivalence-improvement test
+(the target view screens no longer appear in `missingComponents`), and
+real Stopwatch/RSS performance numbers for a 50-entity/100-view model
+and a 100-view serialization round-trip.
+
+**Execution result:** 13 new tests pass. Full regression: **1372/1372**
+(up from 1359). `flutter analyze`: 71 issues, 0 errors, unchanged
+baseline. `lib/runtime/`, `lib/software_cognition/`, `lib/build_graph/`,
+`lib/generation_specification/`, `lib/creation/creation_engine.dart`
+completely untouched.
