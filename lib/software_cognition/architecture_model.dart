@@ -37,6 +37,18 @@ class NavigationPatternGraph {
   const NavigationPatternGraph(this.graph);
 }
 
+class RealtimePatternGraph {
+  final SemanticSoftwareGraph graph;
+
+  const RealtimePatternGraph(this.graph);
+}
+
+class CachingPatternGraph {
+  final SemanticSoftwareGraph graph;
+
+  const CachingPatternGraph(this.graph);
+}
+
 class DependencyGraph {
   final SemanticSoftwareGraph graph;
 

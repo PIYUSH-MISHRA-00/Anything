@@ -65,6 +65,21 @@ const List<String> _authDependencyHints = [
 /// convention as [_storageDependencyHints].
 const List<String> _navigationDependencyHints = ['go_router', 'auto_route', 'fluro', 'beamer', 'react-router', 'vue-router', 'navigator'];
 
+/// Well-known realtime/live-channel dependency names (Implementation
+/// Milestone R17) — same documented, non-exhaustive substring-match
+/// convention as [_storageDependencyHints]. "Realtime" has zero signal
+/// anywhere in `ArchitectureCandidate`/`BackendEngineeringPlan` (see
+/// `lib/solution_architecture/`), so this dependency-hint analyzer is
+/// its only real source of evidence in this codebase.
+const List<String> _realtimeDependencyHints = ['socket.io', 'websocket', 'pusher', 'ably', 'signalr', 'phoenix_socket', 'firebase_database'];
+
+/// Well-known caching dependency names (Implementation Milestone R17) —
+/// same convention. Overlaps `_storageDependencyHints`' `redis` entry
+/// deliberately: Redis is real-world both a store and a cache; this is
+/// not a duplicate claim, just the same dependency carrying two honest
+/// meanings.
+const List<String> _cachingDependencyHints = ['redis', 'memcached', 'hazelcast', 'ehcache', 'caffeine'];
+
 class ArchitectureAnalyzer {
   const ArchitectureAnalyzer();
 
@@ -146,6 +161,54 @@ class NavigationPatternAnalyzer {
         )
         .toList();
     return NavigationPatternGraph(SemanticSoftwareGraph(nodes: nodes));
+  }
+}
+
+/// RealtimePatternAnalyzer / CachingPatternAnalyzer (Implementation
+/// Milestone R17) — fill two of the nine architecture concepts R17 asked
+/// for that have zero signal anywhere in `ArchitectureCandidate`/
+/// `BackendEngineeringPlan` (see `lib/solution_architecture/`'s own
+/// `SolutionArchitecturePlanner._standingGaps`). Same shape as
+/// [AuthenticationPatternAnalyzer]/[NavigationPatternAnalyzer] exactly.
+/// The other seven gaps (messaging/notifications/observability/
+/// monitoring/configuration/policies/scaling) are NOT given analyzers
+/// here — none of them are typically named, single-package dependencies
+/// the way auth/nav/realtime/caching libraries are, so a dependency-hint
+/// heuristic would not be a real signal for them (see
+/// `docs/architecture/SEMANTIC_SOLUTION_ARCHITECTURE.md`).
+class RealtimePatternAnalyzer {
+  const RealtimePatternAnalyzer();
+
+  RealtimePatternGraph analyze(RepositoryModel model) {
+    final matches = model.dependencies.where((dep) => _realtimeDependencyHints.any((hint) => dep.toLowerCase().contains(hint))).toList();
+    final nodes = matches
+        .map(
+          (dep) => SoftwareNode(
+            identity: SoftwareIdentity.stable(SoftwareNodeKind.realtimePattern, dep),
+            kind: SoftwareNodeKind.realtimePattern,
+            label: dep,
+          ),
+        )
+        .toList();
+    return RealtimePatternGraph(SemanticSoftwareGraph(nodes: nodes));
+  }
+}
+
+class CachingPatternAnalyzer {
+  const CachingPatternAnalyzer();
+
+  CachingPatternGraph analyze(RepositoryModel model) {
+    final matches = model.dependencies.where((dep) => _cachingDependencyHints.any((hint) => dep.toLowerCase().contains(hint))).toList();
+    final nodes = matches
+        .map(
+          (dep) => SoftwareNode(
+            identity: SoftwareIdentity.stable(SoftwareNodeKind.cachingPattern, dep),
+            kind: SoftwareNodeKind.cachingPattern,
+            label: dep,
+          ),
+        )
+        .toList();
+    return CachingPatternGraph(SemanticSoftwareGraph(nodes: nodes));
   }
 }
 

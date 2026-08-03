@@ -59,6 +59,7 @@ import 'package:anything/software_cognition/software_reasoner.dart' show Softwar
 import 'package:anything/world_model/world_model_coordinator.dart';
 import 'package:anything/world_model/world_types.dart' show WorldNodeKind;
 import 'package:anything/implementation_model/canonical_implementation_planner.dart';
+import 'package:anything/solution_architecture/solution_architecture_planner.dart';
 
 /// Maximum knowledge refinement rounds (trusted limit).
 const int _maxKnowledgeRounds = 2;
@@ -483,6 +484,16 @@ class AnythingKernel {
       );
       _ingestIntoWorldModelSafely(() => _worldModel?.ingestBackendEngineering(backendEngineeringPlan));
 
+      // Step 7.9: Semantic Solution Architecture (Implementation Milestone
+      // R17) — real, deterministic composition of the SAME
+      // `selectedSolution.architecture` (frontend) + `backendEngineeringPlan`
+      // (backend) just computed above — zero new AI call, zero new
+      // upstream dependency. REALITY before R17: frontend architecture was
+      // never ingested into the World Graph at all (see
+      // `SolutionArchitectureGraphBridge`'s own doc comment).
+      final solutionArchitecture = const SolutionArchitecturePlanner().plan(selectedSolution.architecture, backendEngineeringPlan);
+      _ingestIntoWorldModelSafely(() => _worldModel?.ingestSolutionArchitecture(solutionArchitecture));
+
       // Step 8: Convert to ExperienceSpec
       final spec = BlueprintToSpecConverter.convert(
         blueprint,
@@ -553,6 +564,7 @@ class AnythingKernel {
         requirementGraph: requirementGraph,
         backendEngineeringPlan: backendEngineeringPlan,
         canonicalImplementationModel: canonicalImplementationModel,
+        solutionArchitecture: solutionArchitecture,
         message: 'Ready to create',
         timestamp: DateTime.now(),
       );

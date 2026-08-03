@@ -7,6 +7,7 @@ library;
 import '../../application_engineering/engineering_plan.dart';
 import '../../backend_engineering/backend_engineering_plan.dart';
 import '../../implementation_model/canonical_implementation_model.dart';
+import '../../solution_architecture/solution_architecture.dart';
 import '../../design_review/review_history.dart' show ReviewSession;
 import '../../evolution/evolution_roadmap.dart' show EvolutionRoadmap;
 import '../../feature_discovery/feature_plan.dart';
@@ -119,6 +120,15 @@ class ExecutionPlanReady extends KernelOutcome {
   /// production path).
   final CanonicalImplementationModel? canonicalImplementationModel;
 
+  /// The Semantic Solution Architecture (Implementation Milestone R17) —
+  /// real, architecture-shaped composition of [backendEngineeringPlan]
+  /// and the frontend `ArchitectureCandidate` (`solutionDecision.selected
+  /// .architecture`), exposed additively for the same reason
+  /// [canonicalImplementationModel] is: a future generator or caller can
+  /// consume it without recomputing it. Null only for outcomes that never
+  /// reach this point (there are none on the production path).
+  final SemanticSolutionArchitecture? solutionArchitecture;
+
   const ExecutionPlanReady({
     required this.plan,
     required this.specification,
@@ -131,6 +141,7 @@ class ExecutionPlanReady extends KernelOutcome {
     this.requirementGraph,
     this.backendEngineeringPlan,
     this.canonicalImplementationModel,
+    this.solutionArchitecture,
     required super.message,
     required super.timestamp,
   });

@@ -25,6 +25,8 @@ enum SoftwareNodeKind {
   architectureLayer,
   authenticationPattern,
   navigationPattern,
+  realtimePattern,
+  cachingPattern,
 }
 
 /// A typed relationship between two software artifacts — never a raw
