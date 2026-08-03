@@ -402,3 +402,118 @@ addressed** for dashboard/calendar/settings/empty/summary. Composite
 views remain out of scope because legacy itself has no real behavior
 there. `useCompilerPipeline` remains opt-in — this milestone's evidence
 does not support flipping the default.
+
+## R22 — Canonical Experience Identity
+
+### Reality
+
+R21's own "Known differences" section named exactly this milestone's
+starting point: "CRUD entity-screen naming conventions... remain a
+separate, pre-existing difference." Investigation (not assumption)
+found this is an identity problem, not a naming problem:
+
+- `BlueprintView.id` (legacy, `lib/synthesis/synthesis_planner.dart`
+  line ~89) is a direct passthrough of `SemanticView.id` — free text
+  the LLM writes into its own JSON response
+  (`lib/synthesis/model_reasoner.dart`:
+  `id: _normalizeId(view['id'] ?? view['name'])`) — never a
+  deterministic `<entityId>_<role>` formula.
+- `sourceEntityId`/`viewType` sit right next to that free-text `id` on
+  `SemanticView` — real, already-structured fields the reasoner always
+  populates. This pair, not `id`, is a screen's true structural
+  identity.
+- The compiler's own screen ids (`RuntimeExperienceGenerator`, R13)
+  ARE a deterministic `entityId`+role formula already — it just
+  projects that pair into a different string convention than legacy's
+  LLM-chosen one. Both pipelines already carry the real identity
+  internally; only the final string differs.
+- Legacy's `BlueprintViewType.form` case (`CreationEngine`, read
+  directly) hardcodes `'mode': 'create'` — legacy has no create/edit
+  distinction at the type level, unlike the compiler's separate `_form`
+  (create) / `_edit` (update) screens.
+
+### Implementation
+
+New `lib/experience_identity/experience_identity.dart`:
+`ScreenIdentity` (`entityId` + `ScreenRole`, mirroring
+`BlueprintViewType`'s real 8 values exactly) and `ActionIdentity`
+(`entityId` + `ActionRole`, only `create`/`update`/`delete` — the
+subset `ImplementationOperationKind` can express;
+`BlueprintActionType`'s other real values —
+toggle/increment/decrement/setValue/clearValue/changeStatus/navigate —
+resolve to `null`, never a fabricated identity). Legacy projection
+(`legacyScreenIdentity`/`legacyActionIdentity`) reads only
+`sourceEntityId`/`viewType`/`targetEntityId`/`actionType` — never
+`.id`. Compiler projection (`compilerScreenIdentities`/
+`compilerActionIdentities`) mirrors `RuntimeExperienceGenerator`'s own
+`hasList`/`hasCreate`/`hasUpdate`/`hasDetail` conditions exactly, so it
+stays a real reflection of what the generator actually produces.
+
+Behavior Identity and Navigation Identity are deliberately NOT separate
+types: a behavior node pair's identity already IS the `ActionIdentity`
+of the action it executes; a `NavigationItem.screenId`'s identity
+already IS the `ScreenIdentity` of the screen it targets. Component
+Identity, Artifact Identity, and Route Identity are honestly NOT
+modeled — neither `AppBlueprint` nor `CanonicalImplementationModel`
+carries a component-boundary, build-artifact, or URL-route concept
+distinct from Screen/Action on both sides to project from.
+
+`EquivalenceComparator.compare()` gained two additive, optional
+parameters (`legacyBlueprint`/`compilerModel`, both `null` by default).
+When supplied, `missingComponents`/`extraComponents` become a real
+multiset comparison by `ScreenIdentity` (counting occurrences, not just
+set presence) instead of raw `InterfaceScreen.id` strings, and a new
+`screenIdentityCoverage` dimension is added to the score. When omitted,
+every existing R19-R21 call site keeps the exact pre-R22 string-based
+behavior, unmodified.
+
+### Equivalence results
+
+Real, measured, on the `_fieldLogApp` fixture (one entity, a list view
+with a deliberately entity-unrelated id `'my_weird_screen_name'`, and a
+dashboard view): before this milestone, `entry:list` and `entry:dashboard`
+both appeared in `missingComponents` (legacy's real ids never matched
+the compiler's). After: neither appears — both are recognized as
+present on both sides via `ScreenIdentity`. The compiler's genuine
+create/edit form split now appears in `extraComponents` as a real,
+honest, quantified difference (`entry:form (compiler 2 more than
+legacy)` when the fixture has no form-type view at all) — not hidden,
+not falsely equated.
+
+### Known differences (still real, still open)
+
+- The compiler's create/edit form split has no legacy counterpart —
+  legacy's `BlueprintViewType` has no edit-mode distinction at all.
+  This now shows as a real, quantified identity-count difference
+  instead of an opaque id mismatch.
+- Component/Artifact/Route Identity remain unmodeled — no real
+  dual-side structural signal exists to project from.
+- Compiler-side field/entity id namespacing (`<entityId>.<fieldId>`)
+  vs. legacy's plain field ids remains a separate, pre-existing,
+  unaffected difference (R20's `sharedFieldMetadataParity` dimension
+  already compares by field name to route around exactly this).
+
+### Generator Framework / Build Graph / Generation Specification
+
+`lib/generator_framework/generator.dart`/`generation_pipeline.dart`
+(the core interface/pipeline) were not touched.
+`RuntimeExperienceGenerator` (the one reference generator) was not
+modified either — identity is computed as a real, separate reflection
+of its existing behavior in `lib/experience_identity/`, not injected
+into the generator itself, since nothing the generator emits needed to
+change. `lib/build_graph/`, `lib/generation_specification/`,
+`lib/runtime/`, `lib/software_cognition/`, `lib/world_model/`,
+`lib/storage/engineering_memory_repository.dart`, and
+`lib/creation/creation_engine.dart` are all completely unchanged.
+`useCompilerPipeline` remains opt-in, default `false`.
+
+### Migration Strategy update
+
+The CRUD screen-naming difference R19-R21 all listed as an open
+migration blocker is now understood to be a solved identity problem,
+not an unsolved behavioral one — the compiler's real output was always
+equivalent to legacy's, it was only being compared incorrectly. This
+strengthens (but does not by itself complete) the case for eventually
+flipping `useCompilerPipeline`'s default; that decision still requires
+broader real-world equivalence evidence than this milestone's fixtures
+provide, and remains explicitly out of scope here.

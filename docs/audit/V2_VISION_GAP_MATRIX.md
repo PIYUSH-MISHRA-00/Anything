@@ -241,3 +241,13 @@ Statuses: VERIFIED (directly confirmed by source/test execution), PARTIAL (real 
 | Composite views (SemanticView.sections) | **HONESTLY UNMODELED** — `grep -n "\.sections\b" lib/creation/creation_engine.dart` returns zero matches; legacy itself never reads this data, so there is no real behavior to be equivalent with. Not a gap, per this milestone's own "only solve verified differences" rule. |
 | Compiler-by-default NOT enabled without evidence | **VERIFIED** — `useCompilerPipeline` remains `false` by default, unchanged by this milestone. |
 | No duplicate CanonicalImplementationModel / ExperiencePackage / Runtime / Generator Framework / Build Graph / Planner / AI Boundary | **VERIFIED** — `lib/runtime/`, `lib/software_cognition/`, `lib/build_graph/`, `lib/generation_specification/`, `lib/creation/creation_engine.dart` completely untouched (`git diff --stat`); zero new LLM calls. |
+
+## R22
+
+| Item | Status |
+|---|---|
+| Canonical Experience Identity exists; Legacy/Compiler each use one projection | **VERIFIED** — `ScreenIdentity`/`ActionIdentity` (`lib/experience_identity/`) computed from `sourceEntityId`/`viewType`/`targetEntityId`/`actionType` on both sides, never from either pipeline's incidental `.id` string. |
+| Equivalence compares Canonical Identity, not projection names | **VERIFIED** — `EquivalenceComparator.compare()`'s optional `legacyBlueprint`/`compilerModel` parameters switch `missingComponents`/`extraComponents` to a real multiset comparison by `ScreenIdentity`. |
+| Equivalence measured again, real before/after | **VERIFIED** — on a deliberately entity-unrelated legacy view id (`'my_weird_screen_name'`), the id-mismatch class of false "missing"/"extra" report is resolved by identity; the compiler's real create/edit form split still honestly appears as an extra. |
+| Legacy remains compatible (zero code changes) | **VERIFIED** — `lib/creation/creation_engine.dart` untouched (`git diff --stat`); identity is derived from `BlueprintView`/`BlueprintAction`'s existing real fields, never by modifying legacy's own conversion logic. |
+| No duplicate ExperiencePackage / Runtime / Generator Framework / Build Graph / Planner / AI Boundary | **VERIFIED** — `lib/runtime/`, `lib/software_cognition/`, `lib/world_model/`, `lib/storage/engineering_memory_repository.dart`, `lib/generator_framework/generator.dart`, `lib/build_graph/`, `lib/generation_specification/` completely untouched (`git diff --stat`); zero new LLM calls. |

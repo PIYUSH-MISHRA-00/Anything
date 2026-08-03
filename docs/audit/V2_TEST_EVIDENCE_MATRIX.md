@@ -1229,3 +1229,32 @@ and a 100-view serialization round-trip.
 baseline. `lib/runtime/`, `lib/software_cognition/`, `lib/build_graph/`,
 `lib/generation_specification/`, `lib/creation/creation_engine.dart`
 completely untouched.
+
+## R22 — Canonical Experience Identity
+
+`test/r22_canonical_experience_identity_test.dart` (11 tests): real
+legacy `ScreenIdentity` projection from `sourceEntityId`/`viewType`
+(including a view whose `id` is deliberately unrelated to its
+entity/role, proving `.id` is never read), every `BlueprintViewType`
+maps to a real distinct `ScreenRole`, a null-entity view produces a
+real null-entity identity, legacy `ActionIdentity` projection (create/
+update/delete resolve, `toggle` honestly resolves to `null`), compiler
+`ScreenIdentity`/`ActionIdentity` projection mirroring
+`RuntimeExperienceGenerator`'s own conditions exactly (including the
+real 2-vs-1 form-role count from the create/edit split), a non-CRUD
+`ImplementationView` resolving through the same role mapping legacy
+uses, the R22 centerpiece equivalence-improvement test (a real Kernel
+run's `entries_list`-vs-`entry_list`-class mismatch resolved by
+identity, with the honest create/edit-split difference still surfaced),
+a backward-compatibility test proving `screenIdentityCoverage` is
+entirely absent (not silently computed) when `legacyBlueprint`/
+`compilerModel` are omitted, and real Stopwatch/RSS performance numbers
+for 100-entity/200-screen identity generation.
+
+**Execution result:** 11 new tests pass. Full regression: **1383/1383**
+(up from 1372). `flutter analyze`: 71 issues, 0 errors, unchanged
+baseline. `lib/runtime/`, `lib/software_cognition/`, `lib/world_model/`,
+`lib/storage/engineering_memory_repository.dart`,
+`lib/generator_framework/generator.dart`, `lib/build_graph/`,
+`lib/generation_specification/`, `lib/creation/creation_engine.dart`
+all completely untouched.

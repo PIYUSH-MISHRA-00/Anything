@@ -1056,5 +1056,50 @@ remains opt-in, default `false`.
 See `docs/architecture/COMPILER_PRODUCTION_INTEGRATION.md`, "R21 —
 Canonical Experience Views" for the full audit.
 
-**DO NOT START R22 — per this milestone's own stop condition, wait for
+## R22 — Canonical Experience Identity
+
+R21's own "Known differences" named the remaining gap plainly: CRUD
+screen naming conventions differ between legacy and compiler. Reading
+the actual conversion code (`lib/synthesis/synthesis_planner.dart`,
+`lib/synthesis/model_reasoner.dart`) found this is an identity problem,
+not a naming one: `BlueprintView.id` is free text the LLM writes
+(`_normalizeId(view['id'] ?? view['name'])`), never a deterministic
+`<entityId>_<role>` formula the way the compiler's own screen ids are.
+`sourceEntityId`/`viewType` — real, already-structured fields sitting
+next to that free-text `id` — are a screen's true identity, and both
+pipelines already implicitly organize their screens around exactly
+this pair.
+
+New `lib/experience_identity/experience_identity.dart`: `ScreenIdentity`
+(entity + role, mirroring `BlueprintViewType`'s real 8 values) and
+`ActionIdentity` (entity + create/update/delete, the subset
+`ImplementationOperationKind` can express). Legacy projection reads
+only `sourceEntityId`/`viewType`, never `.id`. Compiler projection
+mirrors `RuntimeExperienceGenerator`'s own screen-synthesis conditions
+exactly. Behavior/Navigation Identity are not separate types — they
+already reuse Action/Screen Identity structurally. Component/Artifact/
+Route Identity are honestly unmodeled — no real dual-side signal exists
+to project from.
+
+`EquivalenceComparator.compare()` gained two additive, optional
+parameters; when supplied, screen-presence comparison becomes a real
+multiset comparison by `ScreenIdentity` instead of raw id strings.
+Measured, real: on a fixture with a deliberately entity-unrelated
+legacy view id, the `entries_list`-vs-`entry_list` class of mismatch no
+longer appears in `missingComponents` once compared by identity — while
+the compiler's genuine create/edit form split (legacy has no edit-mode
+view type at all) correctly still appears in `extraComponents` as a
+real, quantified, honest difference.
+
+`lib/generator_framework/`, `lib/build_graph/`,
+`lib/generation_specification/`, `lib/runtime/`,
+`lib/software_cognition/`, `lib/world_model/`,
+`lib/storage/engineering_memory_repository.dart`, and
+`lib/creation/creation_engine.dart` all completely untouched.
+`useCompilerPipeline` remains opt-in, default `false`.
+
+See `docs/architecture/COMPILER_PRODUCTION_INTEGRATION.md`, "R22 —
+Canonical Experience Identity" for the full audit.
+
+**DO NOT START R23 — per this milestone's own stop condition, wait for
 external architectural review.**
