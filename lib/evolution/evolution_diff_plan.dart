@@ -26,10 +26,24 @@
 library;
 
 import '../application_engineering/engineering_candidate_diff.dart';
+import '../application_engineering/engineering_memory_summary.dart';
 import '../creation/experience_package_diff.dart';
+import '../software_architect/architecture_candidate.dart';
 import '../software_architect/architecture_candidate_diff.dart';
 import '../software_architect/confidence.dart' show RiskLevel;
+import '../software_architect/requirement_graph.dart';
 import '../software_architect/requirement_graph_diff.dart';
+
+/// Real, persisted engineering history for an Experience (Implementation
+/// Milestone R5), surfaced by [EvolutionDiffPlan.historicalEngineeringMemory]
+/// — see that field's doc comment for why this is history, not a diff.
+class HistoricalEngineeringMemory {
+  final RequirementGraph? requirementGraph;
+  final ArchitectureCandidate? architectureCandidate;
+  final EngineeringMemorySummary? engineeringSummary;
+
+  const HistoricalEngineeringMemory({this.requirementGraph, this.architectureCandidate, this.engineeringSummary});
+}
 
 /// One deterministic mutation in the plan, always traceable to a real
 /// source diff — never a bare instruction with no evidence.
@@ -60,6 +74,22 @@ class EvolutionDiffPlan {
   final List<EvolutionMutation> mutations;
   final DateTime generatedAt;
 
+  /// Persisted "before" engineering memory (Implementation Milestone R5),
+  /// when available — real, historical `RequirementGraph`/
+  /// `ArchitectureCandidate` this Experience was actually engineered
+  /// from. Deliberately NOT a diff: computing [requirementDiff]/
+  /// [architectureDiff] would require re-deriving a genuine "after" state
+  /// by re-running Requirement/Architecture planning against the
+  /// modification, which `ExperienceModificationCoordinator` does not do
+  /// (it patches `ExperiencePackage` directly, never re-invoking the
+  /// Kernel's planning stages) — doing so without a real, non-fabricated
+  /// path would mean inventing data. Exposing the real historical state
+  /// here still closes R5's core objective ("Anything must no longer
+  /// forget how an Experience was engineered") honestly, without
+  /// overclaiming a diff that isn't genuinely computable this milestone
+  /// (see Known Limitations).
+  final HistoricalEngineeringMemory? historicalEngineeringMemory;
+
   const EvolutionDiffPlan({
     required this.experienceId,
     this.requirementDiff,
@@ -68,6 +98,7 @@ class EvolutionDiffPlan {
     required this.experienceDiff,
     required this.mutations,
     required this.generatedAt,
+    this.historicalEngineeringMemory,
   });
 
   bool get isEmpty => mutations.isEmpty;
@@ -95,6 +126,7 @@ class EvolutionDiffPlanBuilder {
     ArchitectureDiff? architectureDiff,
     EngineeringDiff? engineeringDiff,
     required ExperienceDiff experienceDiff,
+    HistoricalEngineeringMemory? historicalEngineeringMemory,
   }) {
     final mutations = <EvolutionMutation>[];
     String? previousStage;
@@ -187,6 +219,7 @@ class EvolutionDiffPlanBuilder {
       experienceDiff: experienceDiff,
       mutations: mutations,
       generatedAt: DateTime.now(),
+      historicalEngineeringMemory: historicalEngineeringMemory,
     );
   }
 

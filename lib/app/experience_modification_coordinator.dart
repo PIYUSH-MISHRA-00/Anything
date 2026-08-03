@@ -7,6 +7,7 @@ import 'package:anything/creation/package_validator.dart';
 import 'package:anything/creation/modification/modification_engine.dart';
 import 'package:anything/creation/modification/experience_modification_spec.dart';
 import 'package:anything/evolution/evolution_diff_plan.dart';
+import 'package:anything/storage/engineering_memory_repository.dart';
 import 'package:anything/storage/sqlite_experience_repository.dart';
 import 'package:anything/storage/activity_repository.dart';
 import 'package:anything/world_model/world_model_coordinator.dart';
@@ -43,6 +44,14 @@ class ExperienceModificationCoordinator {
   final ModificationEngine _engine;
   final WorldModelCoordinator _worldModel;
 
+  /// Optional engineering-memory repository (Implementation Milestone
+  /// R5) — null-by-default, matching `_worldModel`'s pre-R1
+  /// null-unless-explicitly-injected pattern for a genuinely optional
+  /// enrichment: `planEvolution()` degrades gracefully (falls back to
+  /// R4's `ExperienceDiff`-only behavior) when absent or when no
+  /// engineering memory was ever persisted for the target Experience.
+  final EngineeringMemoryRepository? _engineeringMemory;
+
   /// [worldModel] defaults to a real, freshly-constructed
   /// WorldModelCoordinator when not injected — never null, never
   /// optional-out — so the graph-aware pre-check below always runs for
@@ -52,10 +61,12 @@ class ExperienceModificationCoordinator {
     SqliteExperienceRepository? repository,
     ActivityRepository? activity,
     WorldModelCoordinator? worldModel,
+    EngineeringMemoryRepository? engineeringMemory,
   }) : _repository = repository ?? SqliteExperienceRepository(),
        _activity = activity ?? ActivityRepository(),
        _engine = ModificationEngine(),
-       _worldModel = worldModel ?? WorldModelCoordinator();
+       _worldModel = worldModel ?? WorldModelCoordinator(),
+       _engineeringMemory = engineeringMemory;
 
   /// Modify an existing Experience.
   Future<ModificationCoordinatorResult> modifyExperience({
@@ -173,13 +184,18 @@ class ExperienceModificationCoordinator {
   /// candidate modification itself is honestly not computable (mirrors
   /// [modifyExperience]'s own early-return conditions).
   ///
-  /// Known limitation, stated honestly (see this milestone's report):
-  /// only [ExperienceDiff] is populated. `RequirementGraph`/
-  /// `ArchitectureCandidate`/`EngineeringCandidate` are transient,
-  /// Kernel-internal, per-request artifacts — never persisted per
-  /// Experience — so this coordinator has no real "before" instance of
-  /// them to diff against without re-running Kernel-level planning
-  /// (out of this milestone's scope; see Known Limitations).
+  /// Known limitation, stated honestly (see Implementation Milestone
+  /// R5's report): [requirementDiff]/[architectureDiff]/[engineeringDiff]
+  /// remain unpopulated — real historical `RequirementGraph`/
+  /// `ArchitectureCandidate`/engineering-summary ARE now persisted (R5,
+  /// closing R4's "Anything forgets how an Experience was engineered"
+  /// finding) and surfaced via [EvolutionDiffPlan.historicalEngineeringMemory],
+  /// but computing a genuine diff would require re-deriving a real
+  /// "after" state by re-running Requirement/Architecture planning
+  /// against the modification — this coordinator patches
+  /// `ExperiencePackage` directly and never re-invokes the Kernel's
+  /// planning stages, so no non-fabricated "after" exists yet (see
+  /// Known Limitations).
   Future<EvolutionDiffPlan?> planEvolution({
     required String experienceId,
     required String modificationExpression,
@@ -198,7 +214,34 @@ class ExperienceModificationCoordinator {
     if (result is! ModificationReady) return null;
 
     final experienceDiff = const ExperienceDiffer().diff(currentPackage, result.updatedPackage);
-    return const EvolutionDiffPlanBuilder().build(experienceId: experienceId, experienceDiff: experienceDiff);
+
+    // Implementation Milestone R5: surface real, persisted engineering
+    // history when available — never a fabricated diff (see
+    // `HistoricalEngineeringMemory`'s doc comment for why this is
+    // history, not requirement/architecture diffs). Best-effort: a load
+    // failure must never break planning, matching every other
+    // engineering-memory read/write in this codebase.
+    HistoricalEngineeringMemory? historicalMemory;
+    if (_engineeringMemory != null) {
+      try {
+        final record = await _engineeringMemory.load(experienceId);
+        if (record != null) {
+          historicalMemory = HistoricalEngineeringMemory(
+            requirementGraph: record.requirementGraph,
+            architectureCandidate: record.architectureCandidate,
+            engineeringSummary: record.engineeringSummary,
+          );
+        }
+      } catch (_) {
+        // Deliberately swallowed — see comment above.
+      }
+    }
+
+    return const EvolutionDiffPlanBuilder().build(
+      experienceId: experienceId,
+      experienceDiff: experienceDiff,
+      historicalEngineeringMemory: historicalMemory,
+    );
   }
 
   List<ModificationOperation> _parseOperations(String expression) {

@@ -459,6 +459,7 @@ class AnythingKernel {
         solutionDecision: solutionDecision,
         reviewSession: reviewOutcome.session,
         evolutionRoadmap: evolutionResult.roadmap,
+        requirementGraph: requirementGraph,
         message: 'Ready to create',
         timestamp: DateTime.now(),
       );

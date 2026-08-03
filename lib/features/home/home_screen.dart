@@ -77,6 +77,7 @@ class HomeScreenState extends State<HomeScreen> {
       kernel: _composition.kernel,
       worldModel: _composition.worldModel,
       softwareCognition: _composition.softwareCognition,
+      engineeringMemory: _composition.engineeringMemory,
     );
     _openingCoordinator = ExperienceOpeningCoordinator();
     _repository = SqliteExperienceRepository();
@@ -217,6 +218,7 @@ class HomeScreenState extends State<HomeScreen> {
               experienceId: result.experienceId,
               worldModel: _composition.worldModel,
               capabilityPlatform: _composition.capabilityPlatform,
+              engineeringMemory: _composition.engineeringMemory,
             ),
           ),
         ).then((_) => _loadRecent());
@@ -306,6 +308,7 @@ class HomeScreenState extends State<HomeScreen> {
               experienceId: openResult.experienceId,
               worldModel: _composition.worldModel,
               capabilityPlatform: _composition.capabilityPlatform,
+              engineeringMemory: _composition.engineeringMemory,
             ),
           ),
         ).then((_) => _loadRecent());
@@ -359,6 +362,7 @@ class HomeScreenState extends State<HomeScreen> {
               experienceId: openResult.experienceId,
               worldModel: _composition.worldModel,
               capabilityPlatform: _composition.capabilityPlatform,
+              engineeringMemory: _composition.engineeringMemory,
             ),
           ),
         ).then((_) => _loadRecent());

@@ -8,6 +8,7 @@ import '../../application_engineering/engineering_plan.dart';
 import '../../design_review/review_history.dart' show ReviewSession;
 import '../../evolution/evolution_roadmap.dart' show EvolutionRoadmap;
 import '../../feature_discovery/feature_plan.dart';
+import '../../software_architect/requirement_graph.dart';
 import '../../solution_reasoning/solution_decision.dart';
 import '../../synthesis/app_blueprint.dart';
 import '../specification/experience_spec.dart';
@@ -90,6 +91,16 @@ class ExecutionPlanReady extends KernelOutcome {
   /// `evolutionRoadmap` exists).
   final EvolutionRoadmap? evolutionRoadmap;
 
+  /// The Requirement Graph (Vision Milestone V2's RequirementExtractor
+  /// output) this creation was planned from (Implementation Milestone
+  /// R5) — previously computed and immediately discarded after Feature
+  /// Discovery consumed it (MIS-1 Part 2's "Engineering Memory" finding).
+  /// Exposed here, additively, so a caller (the creation coordinator) can
+  /// persist it as real engineering history. Null only for outcomes that
+  /// never reach requirement extraction (there are none on the
+  /// production path).
+  final RequirementGraph? requirementGraph;
+
   const ExecutionPlanReady({
     required this.plan,
     required this.specification,
@@ -99,6 +110,7 @@ class ExecutionPlanReady extends KernelOutcome {
     this.solutionDecision,
     this.reviewSession,
     this.evolutionRoadmap,
+    this.requirementGraph,
     required super.message,
     required super.timestamp,
   });

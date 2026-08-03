@@ -18,6 +18,10 @@ import 'package:anything/creation/package_validator.dart';
 import 'package:anything/kernel/planning/execution_plan.dart';
 import 'package:anything/storage/sqlite_experience_repository.dart';
 import 'package:anything/storage/activity_repository.dart';
+import 'package:anything/storage/engineering_memory_repository.dart';
+import 'package:anything/application_engineering/engineering_memory_summary.dart';
+import 'package:anything/software_architect/requirement_graph.dart';
+import 'package:anything/solution_reasoning/solution_decision.dart';
 import 'package:anything/synthesis/app_blueprint.dart';
 import 'package:anything/software_cognition/software_cognition_coordinator.dart';
 import 'package:anything/world_model/world_model_coordinator.dart';
@@ -102,6 +106,14 @@ class ExperienceCreationCoordinator {
   /// leaves creation byte-for-byte unchanged.
   final SoftwareCognitionCoordinator? _softwareCognition;
 
+  /// Optional shared engineering-memory repository (Implementation
+  /// Milestone R5), matching `_worldModel`/`_softwareCognition`'s exact
+  /// "null unless the composition root explicitly injects one" pattern —
+  /// REALITY before R5: `RequirementGraph`/`ArchitectureCandidate` were
+  /// computed inside the Kernel and immediately discarded (MIS-1 Part 2).
+  /// Null by default, fully backward compatible.
+  final EngineeringMemoryRepository? _engineeringMemory;
+
   CreationState _state = CreationState.idle;
   CreationState get state => _state;
 
@@ -112,12 +124,14 @@ class ExperienceCreationCoordinator {
     ActivityRepository? activity,
     WorldModelCoordinator? worldModel,
     SoftwareCognitionCoordinator? softwareCognition,
+    EngineeringMemoryRepository? engineeringMemory,
   }) : _kernel = kernel,
        _creationEngine = creationEngine ?? CreationEngine(),
        _repository = repository ?? SqliteExperienceRepository(),
        _activity = activity ?? ActivityRepository(),
        _worldModel = worldModel,
-       _softwareCognition = softwareCognition;
+       _softwareCognition = softwareCognition,
+       _engineeringMemory = engineeringMemory;
 
   /// Create from a canonical Intent.
   ///
@@ -156,6 +170,8 @@ class ExperienceCreationCoordinator {
             plan: kernelOutcome.plan,
             blueprint: kernelOutcome.blueprint,
             engineeringPlan: kernelOutcome.engineeringPlan,
+            requirementGraph: kernelOutcome.requirementGraph,
+            solutionDecision: kernelOutcome.solutionDecision,
           );
 
         case ExperienceSpecificationReady():
@@ -240,6 +256,8 @@ class ExperienceCreationCoordinator {
     required ExecutionPlan plan,
     AppBlueprint? blueprint,
     EngineeringPlan? engineeringPlan,
+    RequirementGraph? requirementGraph,
+    SolutionDecision? solutionDecision,
   }) async {
     _state = CreationState.creating;
 
@@ -304,6 +322,26 @@ class ExperienceCreationCoordinator {
         } catch (_) {
           // Deliberately swallowed — World Graph bookkeeping must never
           // block a successful creation from being reported to the user.
+        }
+      }
+
+      // Engineering memory persistence (Implementation Milestone R5) —
+      // best-effort, same non-blocking contract as World Model ingestion
+      // above: a failure here must never fail a successful creation.
+      // Sequential with (not inside the same SQLite transaction as)
+      // `savePackage` — this is real, deliberate scoping, not an
+      // oversight, see `docs/architecture/ENGINEERING_MEMORY.md`
+      // "Atomicity".
+      if (_engineeringMemory != null) {
+        try {
+          await _engineeringMemory.save(
+            experienceId: package.manifest.experienceId,
+            requirementGraph: requirementGraph,
+            architectureCandidate: solutionDecision?.selected.architecture,
+            engineeringSummary: engineeringPlan == null ? null : EngineeringMemorySummary.summarize(engineeringPlan),
+          );
+        } catch (_) {
+          // Deliberately swallowed — see comment above.
         }
       }
 

@@ -8,6 +8,7 @@ import '../app/experience_modification_coordinator.dart';
 import '../capabilities/platform/capability_platform.dart';
 import '../creation/experience_package.dart';
 import '../storage/activity_repository.dart';
+import '../storage/engineering_memory_repository.dart';
 import '../security/protection_service.dart';
 import '../world_model/world_model_coordinator.dart';
 import 'anything_runtime.dart';
@@ -40,6 +41,13 @@ class ExperienceHostScreen extends StatefulWidget {
   final WorldModelCoordinator? worldModel;
   final CapabilityPlatform? capabilityPlatform;
 
+  /// Shared engineering-memory repository (Implementation Milestone R5),
+  /// threaded the same way as [worldModel] — null by default, so
+  /// `ExperienceModificationCoordinator` falls back to its own
+  /// null-`_engineeringMemory` (graceful, `planEvolution()` simply omits
+  /// historical engineering memory) exactly as before R5.
+  final EngineeringMemoryRepository? engineeringMemory;
+
   const ExperienceHostScreen({
     super.key,
     required this.package,
@@ -49,6 +57,7 @@ class ExperienceHostScreen extends StatefulWidget {
     this.runtime,
     this.worldModel,
     this.capabilityPlatform,
+    this.engineeringMemory,
   });
 
   @override
@@ -77,7 +86,10 @@ class _ExperienceHostScreenState extends State<ExperienceHostScreen> {
   void initState() {
     super.initState();
     _runtime = widget.runtime ?? AnythingRuntime(capabilityPlatform: widget.capabilityPlatform);
-    _modificationCoordinator = ExperienceModificationCoordinator(worldModel: widget.worldModel);
+    _modificationCoordinator = ExperienceModificationCoordinator(
+      worldModel: widget.worldModel,
+      engineeringMemory: widget.engineeringMemory,
+    );
     _activity = ActivityRepository();
     _protectionService =
         widget.protectionService ?? ExperienceProtectionService();

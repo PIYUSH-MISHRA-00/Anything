@@ -38,6 +38,7 @@ import 'package:anything/runtime_intelligence/runtime_intelligence_coordinator.d
 import 'package:anything/security/credential_vault.dart';
 import 'package:anything/services/provider_registry.dart';
 import 'package:anything/software_cognition/software_cognition_coordinator.dart';
+import 'package:anything/storage/engineering_memory_repository.dart';
 import 'package:anything/storage/sqlite_experience_repository.dart';
 import 'package:anything/storage/world_model_repository.dart';
 import 'package:anything/world_model/world_model_coordinator.dart';
@@ -64,6 +65,12 @@ class AppComposition {
   final RuntimeIntelligenceCoordinator runtimeIntelligence;
   final AnythingKernel kernel;
 
+  /// The shared engineering-memory repository (Implementation Milestone
+  /// R5) — same physical database connection as [experienceRepository]/
+  /// [worldModel]'s own persistence, per the established
+  /// `WorldModelRepository` sharing pattern.
+  final EngineeringMemoryRepository engineeringMemory;
+
   AppComposition._({
     required this.experienceRepository,
     required this.worldModel,
@@ -74,6 +81,7 @@ class AppComposition {
     required this.softwareCognition,
     required this.runtimeIntelligence,
     required this.kernel,
+    required this.engineeringMemory,
   });
 
   /// Builds the real, production composition graph. Every dependency below
@@ -117,6 +125,7 @@ class AppComposition {
       softwareCognition: SoftwareCognitionCoordinator(),
       runtimeIntelligence: RuntimeIntelligenceCoordinator(),
       kernel: kernel,
+      engineeringMemory: EngineeringMemoryRepository(experienceRepository: experienceRepository),
     );
   }
 }
