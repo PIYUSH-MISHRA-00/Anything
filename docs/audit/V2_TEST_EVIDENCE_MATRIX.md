@@ -737,3 +737,26 @@ before the rollback feedback.
 **Execution result:** all 8 pass. Full regression: **1185/1185** (up
 from 1177, zero pre-existing test modified). `flutter analyze`: 71
 issues, 0 errors, unchanged baseline.
+
+## Implementation Milestone R8 — Full-Stack Autonomous Engineering (2026-08-03)
+
+19 new tests across `test/r8_backend_engineering_test.dart`: Database
+Schema derivation (real columns/types/foreign-keys from a novel-domain
+"Vehicle Fleet Maintenance Log" fixture, zero footprint elsewhere in
+`lib/`), API Specification derivation (real CRUD/search endpoints from
+`InteractionDecision`, honestly empty when no interaction decision
+exists), Authentication/Storage/Background/Deployment (each field's
+real derivation source individually proven), determinism (same context
+twice -> identical plan; same Kernel intent twice -> identical plan
+through the full production path), serialization round-trip, World
+Model ingestion (backend nodes appear, entity/backend-table identity
+unification proven directly), Engineering Memory persistence (full
+round-trip, plus a dedicated test proving an R5-shaped row with no
+`backend_engineering_json` at all still loads correctly post-R8 — the
+real backward-compatibility proof for the deliberately-unchanged
+integrity-hash formula), and a real 200-entity performance measurement
+(~1ms).
+
+**Execution result:** all 19 pass. Full regression: **1204/1204** (up
+from 1185, zero pre-existing test modified). `flutter analyze`: 71
+issues, 0 errors, unchanged baseline.

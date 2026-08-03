@@ -454,3 +454,26 @@ Requirement/Architecture "before" snapshots (R5) alongside the
 Experience-level summary, for a richer per-entry explanation; (3) the
 standing Capability Platform / BYOK-provider-count / localization gaps
 from MIS-1/V10 remain open and unrelated to the R-series' own scope.
+
+## Implementation Milestone R8 — Full-Stack Autonomous Engineering (2026-08-03)
+
+**Closure evidence**: `lib/backend_engineering/` (9 files) extends the
+deterministic engineering pipeline into real Database Schema/API
+Specification (genuine depth) plus honestly-minimal Authentication/
+Storage/Background-Jobs/Deployment specification — never generated SQL,
+backend source, or deployment config, purely typed data. Wired into
+`AnythingKernel.processIntent` (additive Step 7.8, zero new AI call,
+proven deterministic via a real double-run test), `EngineeringMemoryRepository`
+(R5, additive column + migration, integrity-hash formula deliberately
+left unchanged for backward compatibility), and World Model (`WorldNodeKind.backendEndpoint`,
+database tables unify with the existing `entity` kind). 19 new tests,
+full regression 1204/1204 (up from 1185). `flutter analyze`: 71/0,
+unchanged baseline.
+
+**Recommendation for R9**: (1) an actual implementation-generation
+milestone consuming these specifications (still out of scope for R8 by
+design); (2) richer Authentication modeling once/if a real upstream
+signal for end-user identity requirements is introduced elsewhere in
+the pipeline; (3) the standing Capability Platform / BYOK-provider-count
+/ localization gaps from MIS-1/V10 remain open and unrelated to the
+R-series' own scope.

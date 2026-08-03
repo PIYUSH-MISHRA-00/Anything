@@ -61,3 +61,16 @@ Statuses: VERIFIED (directly confirmed by source/test execution), PARTIAL (real 
 | Visible progress | **VERIFIED, structurally** — real `Semantics(liveRegion: true)` announcements at genuine await boundaries; honestly noted this milestone's own test found the underlying operations complete too fast in the FFI-no-isolate test harness to reliably assert on a "mid-flight" frame — a real performance characteristic, not a claim withdrawal. |
 | State preservation | **PARTIAL, honestly scoped** — current tab/screen restored across a reload when still valid; scroll position, focused widget, and in-progress text-field contents are NOT preserved (they live in the widget subtree the reload rebuilds) — not attempted, named as a real limitation. |
 | No duplicate architecture | **VERIFIED** — zero changes to `AnythingRuntime`/`ExperienceRenderer`/`BehaviorInterpreter` (confirmed `git diff`); no second Runtime/Coordinator/Evolution-pipeline/repository; `ExperienceHostScreen` gained one optional DI parameter (`modificationCoordinator`), matching the existing convention, not a new pattern. |
+
+## Implementation Milestone R8 — Full-Stack Autonomous Engineering (2026-08-03)
+
+| Item | Status |
+|---|---|
+| Deterministic pipeline extended to full-stack (Database/API/Auth/Storage/Background/Deployment) | **PARTIAL, honestly depth-graded** — Database Schema and API Specification derived with real, complete-feeling depth from already-computed `SemanticEntity`/`SemanticField`/`InteractionDecision` data; Authentication/Storage/Background-Jobs/Deployment are real but intentionally minimal, since no real upstream signal exists to derive richer data from without fabricating it. |
+| Backend engineering as structured specification, never generated code | **VERIFIED** — zero SQL strings, zero backend source-code templates, zero deployment config files generated anywhere; `lib/backend_engineering/` produces only typed data structures. |
+| Frontend and backend from the SAME Requirement/Architecture/Engineering data | **VERIFIED** — `BackendEngineeringContext` mirrors `EngineeringContext`'s exact shape (same `ArchitectureCandidate`/`SemanticApp`), no new upstream dependency. |
+| Engineering Memory persists backend decisions | **VERIFIED** — `EngineeringMemoryRepository` (R5) extended with a real, additive `backend_engineering_json` column and migration; a dedicated test proves R5-era rows still load correctly (integrity-hash formula deliberately left unchanged for this exact reason). |
+| World Model understands backend concepts | **VERIFIED** — new `WorldNodeKind.backendEndpoint`; database tables deliberately unify with the existing `entity` kind rather than a new one (proven by a real identity-unification test). |
+| WebWeaveX / Kaalka sole-boundary status | **UNCHANGED** — this milestone touches neither. |
+| Single AI reasoning boundary preserved | **VERIFIED** — zero new LLM calls; proven directly by a real test running the same Kernel intent twice and asserting byte-for-byte identical backend plans. |
+| No duplicate architecture | **VERIFIED** — no second Kernel/Engineering-Pipeline/Planner/Runtime/World-Model/Knowledge-Engine/Software-Cognition-Engine/Capability-Platform/Authentication-Framework/Deployment-Engine/Backend-Generator; `BackendGraphBridge` follows the exact same pattern as the other 6 Bridges. |
