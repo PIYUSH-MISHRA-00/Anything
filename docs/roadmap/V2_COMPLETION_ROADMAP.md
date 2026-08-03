@@ -510,3 +510,32 @@ Handling/Logging/Monitoring modeling once/if a real upstream engineering
 decision for any of these appears elsewhere in the pipeline; (4) the
 standing Capability Platform / BYOK-provider-count / localization gaps
 from MIS-1/V10 remain open and unrelated to the R-series' own scope.
+
+## Implementation Milestone R10 — Universal Generator Framework (2026-08-03) — ✅ COMPLETE
+
+**Closure evidence**: `lib/generator_framework/` — a real, language-
+independent `Generator` interface plus one intentionally minimal
+reference generator (`SummaryManifestGenerator`), proving R9's
+`CanonicalImplementationModel` has a real, deterministic, working
+consumer. Investigation confirmed `GenericPackageBuilder` (a test-only,
+Anything-internal, Flutter-`ExperiencePackage`-specific helper explicitly
+marked "DO NOT use in production code") was the only prior candidate and
+is categorically different from a pluggable multi-target generator
+interface — no duplication, genuinely new work. Zero new LLM calls (a
+real double-run determinism test proves it). Engineering Memory and
+World Model integration were both investigated and deliberately declined
+this milestone, with real, documented rationale (generation output is a
+cheap, reproducible function of already-persisted data; nothing durable
+is produced yet to bridge into the World Graph) — see
+`docs/architecture/GENERATOR_FRAMEWORK.md`. 8 new tests, full regression
+1227/1227 (up from 1219). `flutter analyze`: 71/0, unchanged baseline.
+
+**Recommendation for R11**: (1) a real target-language generator — the
+natural next step, and the first real test of whether the `Generator`
+interface's shape holds up under genuine complexity (this may motivate
+extending `Generator.generate()` to async, and giving `GeneratorOptions`
+real typed fields); (2) revisit Engineering Memory/World Model
+integration once a real generator's actual cost/persistence needs are
+known; (3) the standing Capability Platform / BYOK-provider-count /
+localization gaps from MIS-1/V10 remain open and unrelated to the
+R-series' own scope.

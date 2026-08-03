@@ -88,3 +88,18 @@ Statuses: VERIFIED (directly confirmed by source/test execution), PARTIAL (real 
 | Single AI reasoning boundary preserved | **VERIFIED** — zero new LLM calls; proven directly by a real test running the same Kernel intent twice and asserting byte-for-byte identical canonical implementation models. |
 | No duplicate architecture | **VERIFIED** — no second Kernel/Engineering-Pipeline/Planner/Runtime/World-Model/Backend-Pipeline/Capability-Platform/Memory/Serialization-System; `ImplementationGraphBridge` follows the exact same pattern as the other 7 Bridges. |
 | Reusable by future language generators | **PLAUSIBLE, not yet proven** — real, typed, language-independent, serializable, but no actual generator exists yet to consume it; stated honestly as structurally ready, not validated by a real consumer. |
+
+## Implementation Milestone R10 — Universal Generator Framework (2026-08-03)
+
+| Item | Status |
+|---|---|
+| One universal, language-independent Generator Framework | **VERIFIED** — `lib/generator_framework/` (`Generator`/`GeneratorContext`/`GenerationResult`/`Artifact`/`ArtifactGroup`/`GenerationDiagnostics`/`GenerationPipeline`), zero Flutter/Dart/other-language constructs. |
+| One canonical generator interface | **VERIFIED** — `Generator` is a real `abstract interface class`; `SummaryManifestGenerator` is its one real implementor. |
+| One reference generator | **VERIFIED, deliberately minimal** — `SummaryManifestGenerator` emits small text artifacts only; explicitly NOT a production Flutter/backend/web/desktop/mobile generator, per this milestone's own scope boundary. |
+| Language independence preserved | **VERIFIED** — the framework's own types carry zero language-specific constructs; the reference generator emits plain text, never source code in any real target language. |
+| Deterministic generation | **VERIFIED** — a dedicated test runs the same model through the pipeline twice and asserts byte-for-byte identical artifact content and paths. |
+| CanonicalImplementationModel now has a real deterministic consumer | **VERIFIED, narrowly** — a dedicated test derives a real `CanonicalImplementationModel` via the actual `CanonicalImplementationPlanner` (R9) against a real fixture and pushes it through the framework end-to-end; "reusable by future language generators" is now demonstrated by one real (deliberately trivial) consumer, not yet a second, independently-built one. |
+| Engineering Memory / World Model integration | **DELIBERATELY NOT EXTENDED** — investigated and declined with real rationale (generation output is a cheap, reproducible function of already-persisted data, not a new engineering decision; nothing durable is produced yet to bridge into the World Graph) — see `docs/architecture/GENERATOR_FRAMEWORK.md`. |
+| WebWeaveX / Kaalka sole-boundary status | **UNCHANGED** — this milestone touches neither. |
+| Single AI reasoning boundary preserved | **VERIFIED** — zero new LLM calls anywhere; `Generator.generate()` is a pure function of its context. |
+| No duplicate architecture | **VERIFIED** — no second Kernel/Planner/Runtime/World-Model/Capability-Platform/Engineering-Pipeline/Serialization-System/Generator-Framework/AI-Boundary. |

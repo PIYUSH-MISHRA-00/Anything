@@ -787,3 +787,26 @@ through the FULL Kernel path, asserting byte-for-byte identical
 **Execution result:** all 15 pass. Full regression: **1219/1219** (up
 from 1204, zero pre-existing test modified). `flutter analyze`: 71
 issues, 0 errors, unchanged baseline.
+
+## Implementation Milestone R10 — Universal Generator Framework (2026-08-03)
+
+8 new tests across `test/r10_generator_framework_test.dart`, 5 groups:
+interface conformance (`SummaryManifestGenerator` genuinely implements
+the one canonical `Generator` interface with real, non-empty metadata),
+real end-to-end pipeline (a hand-built `CanonicalImplementationModel`
+produces real, correct, inspectable artifacts with content asserted
+directly — never a fabricated placeholder; a SECOND test derives a real
+`CanonicalImplementationModel` via the actual `CanonicalImplementationPlanner`
+against a real "Vehicle Fleet Maintenance Log" fixture chain, reused from
+R9's own precedent, proving genuine end-to-end integration with real R9
+output, not just a hand-built stand-in; an empty model produces a real,
+honest `info`-severity diagnostic, never a crash or fabricated artifact),
+determinism (the same model run through the pipeline twice produces
+byte-for-byte identical artifact content and paths), field fidelity
+(`Artifact`/`ArtifactGroup`/`GenerationResult`/`GenerationDiagnostic`
+construction, `hasErrors` correctly reflects a real error-severity
+diagnostic), and a real 200-entity performance measurement.
+
+**Execution result:** all 8 pass. Full regression: **1227/1227** (up
+from 1219, zero pre-existing test modified). `flutter analyze`: 71
+issues, 0 errors, unchanged baseline.
