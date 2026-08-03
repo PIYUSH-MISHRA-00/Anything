@@ -154,3 +154,136 @@ no durable knowledge of its own to persist.
 Still exactly one. Every pipeline this milestone compares or invokes is
 downstream, deterministic reuse of data the single existing reasoning
 call already produced.
+
+## R20 — Canonical Experience Enrichment
+
+R19 measured a real 9/11 (0.82) compatibility score on its "Field Log"
+fixture, with `dataFieldCountParity`/`screenCountParity` failing. R20
+investigated both, found the real root causes, and closed one of them —
+never by inventing new gaps, only by tracing verified differences to
+their real source.
+
+### Field richness — real root cause and real fix
+
+`SemanticField` (the single reasoning call's own output,
+`lib/synthesis/application_reasoner.dart`) already carries
+`defaultValue`/`minimum`/`maximum`/`minLength`/`maxLength`/
+`allowedValues`/`referenceEntityId`/`description`. Legacy's
+`DataFieldSchema` already reads this data (via
+`SynthesisPlanner.convertToBlueprint`) — but a precise trace of
+`CreationEngine._buildDataSchemaFromBlueprint` found legacy itself only
+ever populates `defaultValue`/`referenceEntityId`/`allowedValues`/`hint`
+(mapped from `description`) onto the served package —
+`minLength`/`maxLength`/`minimum`/`maximum` are declared on
+`DataFieldSchema` but never actually set by legacy. Enriching them on
+the compiler side would therefore have fabricated parity with something
+legacy itself doesn't represent — so only the four fields legacy
+genuinely populates were added to `ImplementationField`
+(`lib/implementation_model/canonical_implementation_model.dart`).
+
+The drop happens because `CanonicalImplementationModel.entities` is
+derived from `BackendEngineeringPlan.database.tables[].columns`
+(`DatabaseColumn`, R8) — itself derived from `ArchitectureCandidate
+.fields` (`FieldDecision`) — and neither intermediate type ever carried
+`SemanticField`'s richness forward. Rather than threading new fields
+through `FieldDecision`/`DatabaseColumn` (touching R3/R8 and their many
+other consumers), `CanonicalImplementationContext` gained two small,
+additive, optional fields — `semanticEntities`/`derivedValues` — passed
+directly from `AnythingKernel`'s already-in-scope
+`reasonResult.semanticApp` at Step 8.5. `CanonicalImplementationPlanner
+._planEntities` matches `SemanticField`s to `DatabaseColumn`s by
+(entityId, fieldId) and enriches `ImplementationField` directly — the
+smaller, lower-blast-radius fix, leaving `ArchitectureCandidate`/
+`BackendEngineeringPlan` and their existing consumers completely
+unaffected. `RuntimeExperienceGenerator` (R13) now reads these
+properties into both `DataFieldSchema` and the generated form's field
+definitions.
+
+**A real bug found and fixed during testing**: an early version of this
+enrichment passed `referenceEntityId` through unconditionally. A test
+with a field referencing an undeclared entity ("person", never declared
+anywhere in the fixture) showed the compiler kept `referenceEntityId:
+'person'` while legacy correctly dropped it to `null`. Fixed by only
+keeping `referenceEntityId` when it names a real entity present in
+`context.backend.database.tables` — verified by a dedicated regression
+test.
+
+`dataFieldCountParity` (a raw field COUNT) still fails, honestly, and
+this milestone does not attempt to fix it: the compiler's
+`BackendEngineeringPlanner` always adds a real, deliberate auto
+primary-key column (`DatabaseColumn(id: '${entity.id}.id', ...)`) that
+legacy's blueprint-driven `DataFieldSchema` never exposes as a schema
+field. Removing that column would be removing real, correct backend
+modeling to force a superficial count match — not something this
+milestone does. Instead, a new, separate `EquivalenceComparator`
+dimension, `sharedFieldMetadataParity`, was added: for fields present on
+BOTH sides (matched by name), it checks whether the real metadata now
+threaded through actually agrees — proving the genuine richness win
+without conflating it with the count difference.
+
+### View/derived-value richness — one closed, one honestly left open
+
+`BlueprintViewType` (dashboard/calendar/settings/summary) has no
+representation anywhere in `CanonicalImplementationModel`, and rendering
+these would require genuinely new UI-generation semantics
+`RuntimeExperienceGenerator` has no vocabulary for today (a dashboard
+aggregates multiple entities; a calendar needs date-aware layout; these
+are not data-threading problems). Investigated and left **honestly
+open** — inventing this generation logic under this milestone's "only
+solve verified differences" mandate would itself be inventing a new gap,
+not closing one.
+
+`SemanticDerivedValue`, in contrast, had a real, closeable gap: legacy's
+`CreationEngine` already turns it into `dataQuery`+`calculation`
+behavior nodes and `${id}`/`${id}_raw_data` state variables — both node
+types are already real, already-handled `BehaviorInterpreter` cases
+(confirmed by grep), so the compiler needed to emit the SAME shape, not
+invent a new runtime concept. `CanonicalImplementationModel` gained a
+real, deterministic-pass-through `derivedValues: List<ImplementationDerivedValue>`
+(mirroring `SemanticDerivedValue` exactly, sourced from the same
+`reasonResult.semanticApp.derivedValues`), and
+`RuntimeExperienceGenerator._buildBehavior`/`_buildState` now emit the
+identical node/edge/state shape legacy already does — verified by a
+test that asserts BOTH packages, for the same derived value, produce the
+same node ids/types/config.
+
+### Measured before/after (real, not invented)
+
+Before (R19, "Field Log" fixture, one plain field, no rich metadata):
+**9/11 (0.82)**. After (R20, "Field Log Rich" fixture — three fields
+with real defaultValue/allowedValues/referenceEntityId, one derived
+value, run through the real Kernel and both pipelines): **10/12
+(0.83)** — `sharedFieldMetadataParity` (the new dimension) passes;
+`dataFieldCountParity`/`screenCountParity` remain real, open,
+structurally-explained differences. The dimension count grew from 11 to
+12 because `sharedFieldMetadataParity` is additive, not a replacement.
+
+### Generator Framework / Build Graph / Generation Specification
+
+`lib/build_graph/` and `lib/generation_specification/` were NOT touched
+— derived-value/field enrichment flowed entirely through the existing
+`BehaviorNode`/`BehaviorEdge`/`StateVariable`/`DataFieldSchema`
+vocabulary already exposed by `ExperiencePackage`; no new `BuildNodeKind`
+or generation mapping was genuinely required. `lib/runtime/` and
+`lib/software_cognition/` remain completely unchanged, per this
+milestone's own explicit rule.
+
+### World Model / Engineering Memory
+
+Deliberately untouched. `derivedValues`/enriched fields already flow
+into `CanonicalImplementationModel`, which `_ingestIntoWorldModelSafely`
+and `EngineeringMemoryRepository` already persist as a whole — no new,
+separate durable-knowledge concept was introduced that needs its own
+ingestion/persistence path.
+
+### Migration Strategy update
+
+R19's condition 2 ("richer field metadata... currently silently dropped
+by the compiler path") is now **partially resolved** —
+defaultValue/referenceEntityId/allowedValues/hint are threaded through;
+minLength/maxLength/minimum/maximum remain unaddressed because legacy
+itself doesn't populate them either (not a real gap). R19's condition 1
+(non-CRUD blueprint views) remains fully unmet. `useCompilerPipeline`
+remains opt-in, default `false` — this milestone's evidence does not
+support flipping the default; that remains a future, explicit
+product/architecture decision (R19's own condition 5).

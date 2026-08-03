@@ -978,5 +978,52 @@ Legacy was NOT removed or disabled — per the milestone's own mandate.
 See `docs/architecture/COMPILER_PRODUCTION_INTEGRATION.md` for the full
 audit, known differences, and migration strategy.
 
-**DO NOT START R20 — per this milestone's own stop condition, wait for
+## Implementation Milestone R20 — Canonical Experience Enrichment (COMPLETE)
+
+Traced R19's two documented gaps to their real root causes rather than
+inventing new ones. Field richness: `SemanticField` already carries
+`defaultValue`/`allowedValues`/`referenceEntityId`/`description`, the
+SAME source legacy's `DataFieldSchema` already reads — but
+`ImplementationField` (R9) dropped it. Threaded through via two new,
+additive, optional `CanonicalImplementationContext` fields
+(`semanticEntities`/`derivedValues`), sourced from the Kernel's
+already-in-scope `reasonResult.semanticApp`, enriching
+`ImplementationField` at the last mile rather than touching
+`FieldDecision`/`DatabaseColumn` and their many other consumers. A real
+bug was found and fixed during testing: `referenceEntityId` pointing to
+an undeclared entity leaked through unchecked in an early version;
+fixed by only keeping it when the target entity actually exists.
+`minLength`/`maxLength`/`minimum`/`maximum` deliberately NOT enriched —
+legacy itself never populates them either (verified by reading
+`CreationEngine`).
+
+Derived values: `SemanticDerivedValue` gets real `dataQuery`+
+`calculation` behavior nodes in legacy — both already real,
+already-handled `BehaviorInterpreter` node types. `CanonicalImplementationModel`
+gained a real, deterministic `derivedValues` list; `RuntimeExperienceGenerator`
+now emits the identical node/edge/state shape legacy already does.
+
+View enrichment (dashboard/calendar/settings/summary) was investigated
+and left honestly open — rendering these would require genuinely new
+UI-generation semantics `RuntimeExperienceGenerator` has no vocabulary
+for, which this milestone's "only solve verified differences" mandate
+does not license inventing.
+
+Measured, real before/after: R19's "Field Log" fixture scored 9/11
+(0.82). A new `sharedFieldMetadataParity` `EquivalenceComparator`
+dimension was added (separate from the count-based
+`dataFieldCountParity`, which legitimately still differs because of the
+compiler's real auto primary-key column) — the enriched "Field Log Rich"
+fixture scores 10/12 (0.83). `dataFieldCountParity`/`screenCountParity`
+remain real, open, structurally-explained differences.
+`lib/runtime/`, `lib/software_cognition/`, `lib/build_graph/`, and
+`lib/generation_specification/` are all untouched — no new semantic
+node/mapping was genuinely required. `useCompilerPipeline` remains
+opt-in, default `false` — this milestone's evidence does not support
+flipping the default.
+
+See `docs/architecture/COMPILER_PRODUCTION_INTEGRATION.md`, "R20 —
+Canonical Experience Enrichment" for the full audit.
+
+**DO NOT START R21 — per this milestone's own stop condition, wait for
 external architectural review.**

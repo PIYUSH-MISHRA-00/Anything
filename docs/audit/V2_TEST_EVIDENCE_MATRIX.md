@@ -1162,3 +1162,47 @@ legacy-vs-compiler latency, real RSS delta over 50 compiler runs).
 **Execution result:** all 13 new tests pass. Full regression:
 **1345/1345** (up from 1332, zero pre-existing test modified).
 `flutter analyze`: 71 issues, 0 errors, unchanged baseline.
+
+## Implementation Milestone R20 — Canonical Experience Enrichment
+
+Field enrichment tests prove: a real Kernel run enriches
+`ImplementationField` with `defaultValue`/`allowedValues`/
+`referenceEntityId`/`hint` from the SAME `SemanticField` legacy already
+reads; the enrichment survives into the compiler-generated
+`ExperiencePackage`'s `DataFieldSchema` AND its form-field properties;
+omitting the new, optional context fields leaves `ImplementationField`
+byte-for-byte unenriched (backward compatible); a real, honest
+regression test proves a `referenceEntityId` naming an undeclared entity
+is correctly dropped (a real bug found and fixed during this milestone
+— an early version leaked it through unchecked).
+
+Derived value tests prove: a real Kernel run produces a real
+`ImplementationDerivedValue` mirroring `SemanticDerivedValue`; the
+compiler package emits the identical `dataQuery`+`calculation` node
+pair/state variables legacy already does for the SAME derived value (a
+direct, node-by-node comparison against the real legacy package, not an
+isolated assertion); no derived values means no derived-value nodes are
+fabricated.
+
+Serialization tests prove full round-trip fidelity for every new field,
+and backward compatibility (JSON persisted before R20, missing the new
+keys, deserializes to null/empty rather than throwing). Generator
+compatibility: a plain, unenriched `CanonicalImplementationModel`
+(matching R13's own original test shape) still generates and validates
+identically. Equivalence improvement: a new `sharedFieldMetadataParity`
+`EquivalenceComparator` dimension, run on a real, richly-enriched
+fixture through the real Kernel and both pipelines, produces a real,
+measured score of 10/12 (0.83) — up from R19's 9/11 (0.82) on a plain
+fixture — with `dataFieldCountParity`/`screenCountParity` remaining
+real, open, structurally-explained (not silently patched) differences.
+Performance: real Stopwatch/RSS numbers for a 50-field/20-derived-value
+model, a 100-field serialization round-trip, and 50 sequential Kernel
+runs.
+
+**Execution result:** 14 new tests pass (R20's own file) + 1 existing
+R19 test updated (dimension count 11->12, passed count 9->10, reflecting
+the new `sharedFieldMetadataParity` dimension — same 2 real failures).
+Full regression: **1359/1359** (up from 1345). `flutter analyze`: 71
+issues, 0 errors, unchanged baseline. `lib/runtime/`,
+`lib/software_cognition/`, `lib/build_graph/`,
+`lib/generation_specification/` completely untouched.
