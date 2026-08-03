@@ -12,6 +12,8 @@ import '../backend_engineering/backend_engineering_plan.dart';
 import '../backend_engineering/database_schema.dart';
 import '../capabilities/registry/capability_descriptor.dart';
 import '../software_cognition/software_reasoner.dart' show SoftwareRecommendation;
+import '../synthesis/app_blueprint.dart' show DerivedOperation;
+import '../synthesis/application_reasoner.dart' show SemanticEntity, SemanticDerivedValue;
 import 'canonical_implementation_model.dart';
 
 class CanonicalImplementationContext {
@@ -29,13 +31,49 @@ class CanonicalImplementationContext {
   /// tested end-to-end at this planner boundary.
   final List<SoftwareRecommendation> corroboratingRecommendations;
 
+  /// Real, already-reasoned per-entity field metadata (Implementation
+  /// Milestone R20) — `SemanticApp.entities`, the SAME single reasoning
+  /// call's own output legacy's `CreationEngine` pipeline already reads
+  /// (via `SynthesisPlanner.convertToBlueprint`) to populate
+  /// `DataFieldSchema.defaultValue`/`referenceEntityId`/`allowedValues`/
+  /// `hint`. Optional/additive: when omitted, `ImplementationField`'s new
+  /// properties simply stay null/empty, matching pre-R20 behavior
+  /// byte-for-byte. Deliberately NOT threaded through `FieldDecision`/
+  /// `DatabaseColumn` (the intermediate architecture/backend stages) —
+  /// this planner already receives `SemanticApp` transitively via the
+  /// Kernel, so matching by (entityId, fieldId) directly here is the
+  /// smaller, lower-blast-radius fix; `ArchitectureCandidate`/
+  /// `BackendEngineeringPlan` and their many other consumers are
+  /// unaffected.
+  final List<SemanticEntity> semanticEntities;
+
+  /// Real derived-value definitions (Implementation Milestone R20) — the
+  /// SAME `SemanticApp.derivedValues` legacy's `CreationEngine` already
+  /// turns into `dataQuery`+`calculation` behavior nodes. Optional/
+  /// additive.
+  final List<SemanticDerivedValue> derivedValues;
+
   const CanonicalImplementationContext({
     required this.engineering,
     required this.backend,
     this.resolvedCapabilities = const [],
     this.corroboratingRecommendations = const [],
+    this.semanticEntities = const [],
+    this.derivedValues = const [],
   });
 }
+
+ImplementationDerivedOperation _mapDerivedOperation(DerivedOperation op) => switch (op) {
+  DerivedOperation.count => ImplementationDerivedOperation.count,
+  DerivedOperation.sum => ImplementationDerivedOperation.sum,
+  DerivedOperation.average => ImplementationDerivedOperation.average,
+  DerivedOperation.minimum => ImplementationDerivedOperation.minimum,
+  DerivedOperation.maximum => ImplementationDerivedOperation.maximum,
+  DerivedOperation.consecutiveDateCount => ImplementationDerivedOperation.consecutiveDateCount,
+  DerivedOperation.percentage => ImplementationDerivedOperation.percentage,
+  DerivedOperation.daysRemaining => ImplementationDerivedOperation.daysRemaining,
+  DerivedOperation.difference => ImplementationDerivedOperation.difference,
+};
 
 ImplementationDataType _mapColumnType(DatabaseColumnType type) => switch (type) {
   DatabaseColumnType.text => ImplementationDataType.text,
@@ -90,18 +128,65 @@ class CanonicalImplementationPlanner {
       ],
       backgroundWorker: BackgroundWorkerSpec(requiresBackgroundSync: context.backend.backgroundJobs.requiresBackgroundSync),
       corroboratedPatterns: _planCorroboratedPatterns(context),
+      derivedValues: _planDerivedValues(context),
     );
   }
 
-  List<ImplementationEntity> _planEntities(CanonicalImplementationContext context) => [
-    for (final table in context.backend.database.tables)
-      ImplementationEntity(
-        id: table.id,
-        name: table.name,
-        fields: [
-          for (final col in table.columns)
-            ImplementationField(id: col.id, name: col.name, type: _mapColumnType(col.type), required: col.required),
-        ],
+  List<ImplementationEntity> _planEntities(CanonicalImplementationContext context) {
+    final semanticFieldsByEntity = {
+      for (final e in context.semanticEntities) e.id: {for (final f in e.fields) f.id: f},
+    };
+    // Real, existing entity ids only (Implementation Milestone R20) — a
+    // `SemanticField.referenceEntityId` naming an entity that was never
+    // declared (or was pruned before architecture planning finished) must
+    // NOT be carried through: legacy's `ArchitectureToBlueprintConverter
+    // ._droppedReferenceFields` already drops exactly these, confirmed by
+    // a real test finding (a field referencing an undeclared entity had
+    // `referenceEntityId: null` on the legacy side but leaked through
+    // un-checked on a first version of this enrichment).
+    final realEntityIds = context.backend.database.tables.map((t) => t.id).toSet();
+    return [
+      for (final table in context.backend.database.tables)
+        ImplementationEntity(
+          id: table.id,
+          name: table.name,
+          fields: [
+            for (final col in table.columns)
+              () {
+                // DatabaseColumn.id is '${table.id}.${fieldId}' (see
+                // BackendEngineeringPlanner._planDatabase) — recover the
+                // plain fieldId to match against SemanticField.id.
+                final prefix = '${table.id}.';
+                final fieldId = col.id.startsWith(prefix) ? col.id.substring(prefix.length) : col.id;
+                final semanticField = semanticFieldsByEntity[table.id]?[fieldId];
+                final referenceEntityId = semanticField?.referenceEntityId;
+                return ImplementationField(
+                  id: col.id,
+                  name: col.name,
+                  type: _mapColumnType(col.type),
+                  required: col.required,
+                  defaultValue: semanticField?.defaultValue,
+                  referenceEntityId: (referenceEntityId != null && realEntityIds.contains(referenceEntityId)) ? referenceEntityId : null,
+                  allowedValues: semanticField?.allowedValues ?? const [],
+                  hint: (semanticField?.description.isNotEmpty ?? false) ? semanticField!.description : null,
+                );
+              }(),
+          ],
+        ),
+    ];
+  }
+
+  /// Deterministic pass-through — never invents calculation semantics
+  /// beyond what `SemanticDerivedValue` already names.
+  List<ImplementationDerivedValue> _planDerivedValues(CanonicalImplementationContext context) => [
+    for (final dv in context.derivedValues)
+      ImplementationDerivedValue(
+        id: dv.id,
+        name: dv.name,
+        sourceEntityId: dv.sourceEntityId,
+        operation: _mapDerivedOperation(dv.operation),
+        fieldId: dv.fieldId,
+        description: dv.description,
       ),
   ];
 

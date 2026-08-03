@@ -535,6 +535,15 @@ class AnythingKernel {
           // with whatever Step 5.5's autonomous discovery found (R16,
           // opt-in) — both compose, neither replaces the other.
           corroboratingRecommendations: [...corroboratingRecommendations, ...autoDiscoveredRecommendations],
+          // Real, already-reasoned field/derived-value metadata
+          // (Implementation Milestone R20) — `reasonResult.semanticApp` is
+          // the SAME single reasoning call's output already used above
+          // (Step 7.8); passing it through here lets
+          // `CanonicalImplementationPlanner` enrich `ImplementationField`/
+          // `derivedValues` with data legacy's `CreationEngine` pipeline
+          // already reads from this exact object.
+          semanticEntities: reasonResult.semanticApp.entities,
+          derivedValues: reasonResult.semanticApp.derivedValues,
         ),
       );
       _ingestIntoWorldModelSafely(() => _worldModel?.ingestCanonicalImplementation(canonicalImplementationModel));

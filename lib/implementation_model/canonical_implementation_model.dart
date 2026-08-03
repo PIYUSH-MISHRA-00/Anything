@@ -46,7 +46,59 @@ class ImplementationField {
   final ImplementationDataType type;
   final bool required;
 
-  const ImplementationField({required this.id, required this.name, required this.type, this.required = false});
+  /// Real field metadata (Implementation Milestone R20) — sourced from
+  /// `SemanticField` (the single reasoning call's own output), the SAME
+  /// source legacy's `DataFieldSchema` already reads via
+  /// `SynthesisPlanner.convertToBlueprint`. `minLength`/`maxLength`/
+  /// `minimum`/`maximum` are deliberately NOT modeled here: legacy's own
+  /// `CreationEngine._buildDataSchemaFromBlueprint` declares but never
+  /// populates them on the served `DataFieldSchema` either (verified by
+  /// reading it), so adding them here would fabricate parity with
+  /// something legacy itself doesn't represent.
+  final String? defaultValue;
+  final String? referenceEntityId;
+  final List<String> allowedValues;
+  final String? hint;
+
+  const ImplementationField({
+    required this.id,
+    required this.name,
+    required this.type,
+    this.required = false,
+    this.defaultValue,
+    this.referenceEntityId,
+    this.allowedValues = const [],
+    this.hint,
+  });
+}
+
+/// Mirrors `DerivedOperation` (`lib/synthesis/app_blueprint.dart`) exactly
+/// — same values, kept as an independent enum (not imported) so this
+/// language-independent model stays free of a `synthesis/` dependency,
+/// matching `ImplementationDataType`'s own established mirror-not-import
+/// convention relative to `DatabaseColumnType`.
+enum ImplementationDerivedOperation { count, sum, average, minimum, maximum, consecutiveDateCount, percentage, daysRemaining, difference }
+
+/// A real, deterministic pass-through of `SemanticDerivedValue`
+/// (Implementation Milestone R20) — the SAME reasoner output legacy's
+/// `CreationEngine` already turns into `dataQuery`+`calculation` behavior
+/// nodes. Never a new calculation semantic invented here.
+class ImplementationDerivedValue {
+  final String id;
+  final String name;
+  final String sourceEntityId;
+  final ImplementationDerivedOperation operation;
+  final String? fieldId;
+  final String description;
+
+  const ImplementationDerivedValue({
+    required this.id,
+    required this.name,
+    required this.sourceEntityId,
+    required this.operation,
+    this.fieldId,
+    this.description = '',
+  });
 }
 
 // ── Entity / Repository / Controller / DTO / Validator / Service (real depth, from BackendEngineeringPlan) ──
@@ -254,6 +306,12 @@ class CanonicalImplementationModel {
   /// Additive; every existing construction site is unaffected.
   final List<CorroboratedPattern> corroboratedPatterns;
 
+  /// Real derived-value definitions (Implementation Milestone R20) —
+  /// empty unless a caller supplied
+  /// `CanonicalImplementationContext.derivedValues`. Additive; every
+  /// existing construction site is unaffected.
+  final List<ImplementationDerivedValue> derivedValues;
+
   const CanonicalImplementationModel({
     this.entities = const [],
     this.repositories = const [],
@@ -269,6 +327,7 @@ class CanonicalImplementationModel {
     this.storageAdapters = const [],
     required this.backgroundWorker,
     this.corroboratedPatterns = const [],
+    this.derivedValues = const [],
   });
 
   bool get isEmpty => entities.isEmpty && controllers.isEmpty;

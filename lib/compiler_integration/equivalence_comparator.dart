@@ -92,7 +92,35 @@ class EquivalenceComparator {
       // blueprint used a view type (dashboard/calendar/settings/summary)
       // the compiler pipeline does not generate at all.
       'screenCountParity': legacy.interface.screens.length == compiler.interface.screens.length,
+      // Implementation Milestone R20 — a SEPARATE dimension from
+      // `dataFieldCountParity`: that check is a raw field COUNT, which
+      // genuinely (and correctly) still differs whenever the compiler's
+      // real, deliberate auto primary-key column
+      // (`BackendEngineeringPlanner._planDatabase`) has no legacy
+      // counterpart — that is real backend modeling, not a defect to
+      // patch here. This dimension instead checks, for fields that exist
+      // on BOTH sides (matched by name, since the two pipelines use
+      // different id-namespacing schemes), whether the real metadata R20
+      // threads through (defaultValue/referenceEntityId/allowedValues/
+      // hint) actually agrees.
+      'sharedFieldMetadataParity': _sharedFieldMetadataMatches(legacy, compiler, legacyEntityIds.intersection(compilerEntityIds)),
     };
+  }
+
+  bool _sharedFieldMetadataMatches(ExperiencePackage legacy, ExperiencePackage compiler, Set<String> sharedEntityIds) {
+    for (final id in sharedEntityIds) {
+      final legacyFields = {for (final f in legacy.data!.entities.firstWhere((e) => e.id == id).fields) f.name: f};
+      final compilerFields = {for (final f in compiler.data!.entities.firstWhere((e) => e.id == id).fields) f.name: f};
+      for (final name in legacyFields.keys.toSet().intersection(compilerFields.keys.toSet())) {
+        final lf = legacyFields[name]!;
+        final cf = compilerFields[name]!;
+        if (lf.defaultValue != cf.defaultValue) return false;
+        if (lf.referenceEntityId != cf.referenceEntityId) return false;
+        if (!_setEquals(lf.allowedValues.toSet(), cf.allowedValues.toSet())) return false;
+        if (lf.hint != cf.hint) return false;
+      }
+    }
+    return true;
   }
 
   bool _fieldCountsMatch(ExperiencePackage legacy, ExperiencePackage compiler, Set<String> sharedEntityIds) {

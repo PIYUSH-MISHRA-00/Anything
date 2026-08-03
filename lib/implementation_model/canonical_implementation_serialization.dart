@@ -8,10 +8,30 @@ library;
 import '../application_engineering/engineering_types.dart' show GenericState;
 import 'canonical_implementation_model.dart';
 
-Map<String, dynamic> _fieldToJson(ImplementationField f) => {'id': f.id, 'name': f.name, 'type': f.type.name, 'required': f.required};
+Map<String, dynamic> _fieldToJson(ImplementationField f) => {
+  'id': f.id,
+  'name': f.name,
+  'type': f.type.name,
+  'required': f.required,
+  'defaultValue': f.defaultValue,
+  'referenceEntityId': f.referenceEntityId,
+  'allowedValues': f.allowedValues,
+  'hint': f.hint,
+};
 
-ImplementationField _fieldFromJson(Map<String, dynamic> j) =>
-    ImplementationField(id: j['id'] as String, name: j['name'] as String, type: ImplementationDataType.values.byName(j['type'] as String), required: j['required'] as bool);
+ImplementationField _fieldFromJson(Map<String, dynamic> j) => ImplementationField(
+  id: j['id'] as String,
+  name: j['name'] as String,
+  type: ImplementationDataType.values.byName(j['type'] as String),
+  required: j['required'] as bool,
+  // Additive (Implementation Milestone R20) — absent on any
+  // CanonicalImplementationModel persisted before this milestone;
+  // defaults to null/empty rather than throwing.
+  defaultValue: j['defaultValue'] as String?,
+  referenceEntityId: j['referenceEntityId'] as String?,
+  allowedValues: (j['allowedValues'] as List?)?.cast<String>() ?? const [],
+  hint: j['hint'] as String?,
+);
 
 extension CanonicalImplementationModelJson on CanonicalImplementationModel {
   Map<String, dynamic> toJson() => {
@@ -63,6 +83,9 @@ extension CanonicalImplementationModelJson on CanonicalImplementationModel {
     'backgroundWorker': {'requiresBackgroundSync': backgroundWorker.requiresBackgroundSync},
     'corroboratedPatterns': corroboratedPatterns
         .map((p) => {'name': p.name, 'description': p.description, 'confidenceScore': p.confidenceScore, 'supportingSourceCount': p.supportingSourceCount})
+        .toList(),
+    'derivedValues': derivedValues
+        .map((d) => {'id': d.id, 'name': d.name, 'sourceEntityId': d.sourceEntityId, 'operation': d.operation.name, 'fieldId': d.fieldId, 'description': d.description})
         .toList(),
   };
 }
@@ -183,6 +206,22 @@ CanonicalImplementationModel canonicalImplementationModelFromJson(Map<String, dy
                 description: pj['description'] as String,
                 confidenceScore: (pj['confidenceScore'] as num).toDouble(),
                 supportingSourceCount: pj['supportingSourceCount'] as int,
+              );
+            })
+            .toList() ??
+        const [],
+    // Additive (Implementation Milestone R20) — same absent-key-defaults-
+    // to-empty convention as corroboratedPatterns above (R14).
+    derivedValues: (json['derivedValues'] as List?)
+            ?.map((d) {
+              final dj = d as Map<String, dynamic>;
+              return ImplementationDerivedValue(
+                id: dj['id'] as String,
+                name: dj['name'] as String,
+                sourceEntityId: dj['sourceEntityId'] as String,
+                operation: ImplementationDerivedOperation.values.byName(dj['operation'] as String),
+                fieldId: dj['fieldId'] as String?,
+                description: dj['description'] as String? ?? '',
               );
             })
             .toList() ??

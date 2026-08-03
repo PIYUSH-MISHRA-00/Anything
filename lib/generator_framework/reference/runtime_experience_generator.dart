@@ -98,7 +98,7 @@ class RuntimeExperienceGenerator implements Generator {
     final entitiesWithListScreen = <String>{};
     final interface = _buildInterface(model, entitiesWithListScreen, diagnostics);
     final behavior = _buildBehavior(model);
-    final state = _buildState(entitiesWithListScreen.isNotEmpty);
+    final state = _buildState(entitiesWithListScreen.isNotEmpty, model.derivedValues);
     final data = _buildData(model);
 
     _reportUnrepresentedConcepts(model, diagnostics);
@@ -292,7 +292,19 @@ class RuntimeExperienceGenerator implements Generator {
 
   List<Map<String, dynamic>> _fieldDefs(ImplementationEntity entity) => [
     for (final field in entity.fields)
-      {'id': field.id, 'name': field.name, 'type': _mapDataType(field.type), 'required': field.required},
+      {
+        'id': field.id,
+        'name': field.name,
+        'type': _mapDataType(field.type),
+        'required': field.required,
+        // Real field metadata (Implementation Milestone R20) — only
+        // included when present, mirroring CreationEngine's own
+        // conditional (never a fabricated empty value).
+        if (field.defaultValue != null) 'defaultValue': field.defaultValue,
+        if (field.referenceEntityId != null) 'referenceEntityId': field.referenceEntityId,
+        if (field.allowedValues.isNotEmpty) 'allowedValues': field.allowedValues,
+        if (field.hint != null) 'hint': field.hint,
+      },
   ];
 
   // ── Behavior ─────────────────────────────────────────────────────────
@@ -334,15 +346,44 @@ class RuntimeExperienceGenerator implements Generator {
       }
     }
 
+    // Derived-value behavior nodes (Implementation Milestone R20) — the
+    // SAME dataQuery+calculation node pair/naming/config shape legacy's
+    // `CreationEngine._buildBehaviorFromBlueprint` already emits for
+    // `blueprint.derivedValues`.
+    for (final dv in model.derivedValues) {
+      final queryNodeId = 'derived_${dv.id}_query';
+      final queryStateId = '${dv.id}_raw_data';
+      nodes.add(
+        BehaviorNode(id: queryNodeId, type: 'dataQuery', config: {'entity': dv.sourceEntityId, 'operation': 'query', 'resultStateId': queryStateId}),
+      );
+
+      final calcNodeId = 'derived_${dv.id}_calc';
+      nodes.add(
+        BehaviorNode(
+          id: calcNodeId,
+          type: 'calculation',
+          config: {'operation': dv.operation.name, 'sourceStateId': queryStateId, 'fieldId': dv.fieldId ?? '', 'targetStateId': dv.id},
+        ),
+      );
+      edges.add(BehaviorEdge(from: queryNodeId, to: calcNodeId));
+    }
+
     return BehaviorGraph(nodes: nodes, edges: edges);
   }
 
   // ── State ────────────────────────────────────────────────────────────
 
-  StateSchema _buildState(bool hasAnyListScreen) => StateSchema(
-    variables: hasAnyListScreen
-        ? const [StateVariable(id: 'searchTerm', type: 'string', defaultValue: '', persistence: 'session')]
-        : const [],
+  StateSchema _buildState(bool hasAnyListScreen, List<ImplementationDerivedValue> derivedValues) => StateSchema(
+    variables: [
+      if (hasAnyListScreen) const StateVariable(id: 'searchTerm', type: 'string', defaultValue: '', persistence: 'session'),
+      // Derived-value state variables (Implementation Milestone R20) —
+      // same id/type/defaultValue shape as
+      // CreationEngine._buildStateFromBlueprint.
+      for (final dv in derivedValues) ...[
+        StateVariable(id: dv.id, type: 'string', defaultValue: '0', persistence: 'session'),
+        StateVariable(id: '${dv.id}_raw_data', type: 'list', defaultValue: const <dynamic>[], persistence: 'session'),
+      ],
+    ],
   );
 
   // ── Data ─────────────────────────────────────────────────────────────
@@ -355,7 +396,20 @@ class RuntimeExperienceGenerator implements Generator {
           name: entity.name,
           fields: [
             for (final field in entity.fields)
-              DataFieldSchema(id: field.id, name: field.name, type: _mapDataType(field.type), required: field.required),
+              DataFieldSchema(
+                id: field.id,
+                name: field.name,
+                type: _mapDataType(field.type),
+                required: field.required,
+                // Real field metadata (Implementation Milestone R20) —
+                // the same properties legacy's DataFieldSchema already
+                // carries (minLength/maxLength/minimum/maximum excluded:
+                // legacy itself never populates them either).
+                defaultValue: field.defaultValue,
+                referenceEntityId: field.referenceEntityId,
+                allowedValues: field.allowedValues,
+                hint: field.hint,
+              ),
           ],
         ),
     ],
