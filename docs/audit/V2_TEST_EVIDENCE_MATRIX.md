@@ -1096,3 +1096,37 @@ RSS delta while planning 50 solution architectures — 232-368KB.
 **Execution result:** all 20 new tests pass. Full regression:
 **1320/1320** (up from 1300, zero pre-existing test modified).
 `flutter analyze`: 71 issues, 0 errors, unchanged baseline.
+
+## Implementation Milestone R18 — Solution Execution Planner
+
+`test/r18_solution_execution_planner_test.dart` (12 tests): target
+classification for all 12 requested Execution Targets against real
+`SemanticSolutionArchitecture` fixtures — the 9 genuinely-missing
+targets (Flutter Application/GraphQL API/Website/Desktop Application/
+Mobile Application/CLI Tool/Library/Plugin/Agent) are `notApplicable`
+with 9 pairwise-DISTINCT real reasons (a real bug — Desktop and Mobile
+Application were given identical reason text in the first draft — was
+caught by this exact test and fixed); Runtime Experience/Backend
+Service/REST API classification across no-entities/no-backend/
+backend-with-REST-endpoints fixtures; a real bug this test suite found
+and fixed — `ApiSpecificationModel.endpoints` is computed unconditionally
+from CRUD interaction flags regardless of `deployment.requiresBackend`,
+so REST API's real applicability signal needed both conditions, not
+endpoints alone (a fully-offline fixture with CRUD interactions was
+initially, incorrectly classified `applicableNoGenerator` for REST API);
+the named `requiredGenerators` id resolves to the real, existing
+`RuntimeExperienceGenerator.metadata.id`; dependency ordering
+(Backend Service -> REST API -> Runtime Experience, applicable targets
+only, never a dependency on a `notApplicable` target); determinism (same
+input twice, byte-for-byte identical classification/order/generators);
+Kernel wiring (`AnythingKernel.processIntent` populates
+`ExecutionPlanReady.executionStrategy`, derived from the same
+`solutionArchitecture` already on that outcome); a structural
+backward-compatibility check that `lib/generator_framework/`/
+`lib/build_graph/`/`lib/generation_specification/` are never imported by
+this planner; performance (200-entity system planning — 0ms observed;
+RSS delta while planning 50 strategies — ~128KB observed).
+
+**Execution result:** all 12 new tests pass. Full regression:
+**1332/1332** (up from 1320, zero pre-existing test modified).
+`flutter analyze`: 71 issues, 0 errors, unchanged baseline.

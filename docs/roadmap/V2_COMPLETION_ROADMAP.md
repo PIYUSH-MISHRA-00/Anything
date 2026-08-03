@@ -915,3 +915,39 @@ prompt-richness recommendations remain open.
 
 **DO NOT START R18 — per this milestone's own stop condition, wait for
 external architectural review.**
+
+## R18 — Solution Execution Planner, Universal Execution Strategy
+
+New `lib/execution_planning/` (`ExecutionStrategy`/`ExecutionTargetPlan`,
+`SolutionExecutionPlanner`) — real, deterministic classification of
+R18's 12 requested Execution Targets against `SemanticSolutionArchitecture`
+(R17). REALITY: the R9-R13 compiler chain (`BuildGraphBuilder` ->
+`GenerationPipeline` -> `RuntimeExperienceGenerator`) has zero production
+callers anywhere in this codebase (confirmed by grep) — the live
+creation path still runs entirely through `CreationEngine`'s original
+V3-era blueprint conversion. Only 3 of 12 targets have real signal
+(Runtime Experience, Backend Service, REST API); only Runtime Experience
+has a real generator (`reference.runtime-experience`, R13). The other 9
+are honestly, permanently `notApplicable`, each with a distinct, real
+reason. A real bug was found and fixed via testing: `ApiSpecificationModel`
+computes REST endpoints unconditionally from CRUD interaction flags,
+independent of whether a backend is actually needed — REST API's real
+applicability signal required both `endpoints.isNotEmpty` AND
+`deployment.requiresBackend`, not endpoints alone.
+
+Wired additively into `AnythingKernel.processIntent` (Step 8.6,
+`ExecutionPlanReady.executionStrategy`) — zero risk, since it only
+computes a plan, never invokes a generator. Deliberately did NOT wire
+the compiler chain into the live creation path this milestone (two
+structurally different `ExperiencePackage`-producing routes have never
+been proven equivalent for a real request — that's real future-milestone
+scope, not this one's). `lib/generator_framework/`, `lib/build_graph/`,
+`lib/generation_specification/` completely untouched. World
+Model/Engineering Memory deliberately not touched (cheap, deterministic,
+recomputed from already-persisted data).
+
+See `docs/architecture/SOLUTION_EXECUTION_PLANNING.md` for the full
+audit.
+
+**DO NOT START R19 — per this milestone's own stop condition, wait for
+external architectural review.**
