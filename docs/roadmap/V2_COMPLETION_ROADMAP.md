@@ -859,3 +859,59 @@ genuinely different generator" recommendation remain open.
 
 **DO NOT START R17 — per this milestone's own stop condition, wait for
 external architectural review.**
+
+## Implementation Milestone R17 — Semantic Solution Architecture, Full-Stack Architecture Synthesis (2026-08-03)
+
+Of R17's 20 requested representation categories, 11 were already real
+(`ArchitectureCandidate`, V2/V5; `BackendEngineeringPlan`'s 6 sub-models,
+R8). New `SemanticSolutionArchitecture` (`lib/solution_architecture/`)
+composes both BY REFERENCE, never duplicating their data, and adds real
+architecture-shaped `SolutionComponent`s (Components/Services/
+Interfaces/Dependencies/Responsibilities/Boundaries/Contracts/Lifecycle/
+Ownership, derived per entity) plus one genuinely new signal —
+`CachingModel`, an honest restatement of `BackendEngineeringPlan
+.backgroundJobs.sourceStrategy` (already real since R8). The other 8
+requested concepts (Realtime/Messaging/Notifications/Observability/
+Monitoring/Configuration/Policies/Scaling) have zero real signal
+anywhere in this codebase's engineering models and are honestly named
+in `unmodeledConcepts`, never fabricated — continuous with
+`CanonicalImplementationModel`'s own identical, pre-existing (R9)
+honesty call.
+
+`CanonicalImplementationModel`/`CanonicalImplementationPlanner` were
+deliberately NOT extended — `SemanticSolutionArchitecture` composes the
+SAME two inputs `CanonicalImplementationContext` already requires, so a
+third parameter would add no real information; `SemanticSolutionArchitecture`
+is exposed additively on `ExecutionPlanReady.solutionArchitecture`
+instead. `lib/generator_framework/`/`lib/build_graph/`/`lib/runtime/`
+are completely untouched — `BuildGraphBuilder` only ever reads
+`entities`/`controllers`/`capabilities` from the unmodified
+`CanonicalImplementationModel`, so the Build Graph's consumption chain
+is satisfied transitively, proven by a real regression test against the
+existing `RuntimeExperienceGenerator`.
+
+Two new Software Cognition pattern analyzers (`RealtimePatternAnalyzer`/
+`CachingPatternAnalyzer`, mirroring R14's exact shape) give real
+dependency-hint-based grounding for 2 of the 9 gaps. New
+`SolutionArchitectureGraphBridge` ingests frontend entities into the
+World Graph for the first time ever (confirmed by grep: zero
+`ArchitectureCandidate` references in `world_model_coordinator.dart`
+before this milestone) — unifying with `BackendGraphBridge`'s existing
+entity nodes via the same `stableId` convention, plus real
+permission-capability edges and a real caching signal node.
+
+20 new tests, full regression **1320/1320** (up from 1300, zero
+regressions). `flutter analyze`: 71/0, unchanged baseline. Zero new LLM
+calls.
+
+**Recommendation for R18 (if resumed)**: (1) extend
+`RealtimePatternAnalyzer`/`CachingPatternAnalyzer`'s findings into
+`SemanticSolutionArchitecture` itself (today they only reach the World
+Graph, not the architecture model); (2) `CapabilityRegistry`'s
+zero-production-callers finding (R14/R15, still unaddressed) deserves
+independent architectural review; (3) the R13 `ExperienceHostScreen`
+detail-cache characteristic, R10's "second generator," and R16's UI-toggle/
+prompt-richness recommendations remain open.
+
+**DO NOT START R18 — per this milestone's own stop condition, wait for
+external architectural review.**

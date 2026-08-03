@@ -1035,3 +1035,64 @@ signal at this scale).
 **Execution result:** all 17 new tests pass. Full regression:
 **1300/1300** (up from 1283, zero pre-existing test modified).
 `flutter analyze`: 71 issues, 0 errors, unchanged baseline.
+
+## Implementation Milestone R17 — Semantic Solution Architecture (2026-08-03)
+
+**What the 20 new tests prove** (`test/r17_semantic_solution_architecture_test.dart`):
+
+`SolutionArchitecturePlanner` (6 tests): every frontend entity becomes a
+real `SolutionComponent` with FK-derived `dependsOnComponentIds` and
+API-endpoint-derived `contractIds`; `frontend`/`backend` are held by
+`same()` object identity, never copied; an entity with no backend
+endpoints reports `hasBackendPresence: false`, never fabricated;
+`cacheFirst` produces `employsCaching: true`, every other
+`SyncStrategy` produces `false` — never a guessed default; exactly the
+8 genuinely unmodeled concepts are named, each with a real, non-empty
+reason, and `caching` is explicitly confirmed absent from that list
+(since it IS modeled).
+
+Determinism + serialization (2 tests): the same inputs planned twice
+produce byte-for-byte identical JSON; `toJson()`/`fromJson()`
+round-trips with full fidelity including the composed frontend/backend
+and the honest gap list.
+
+Software Cognition (4 tests): `RealtimePatternAnalyzer`/
+`CachingPatternAnalyzer` detect real, known dependency names
+(`websocket`, `memcached`) and produce zero nodes for repositories with
+none — never a fabricated pattern, mirroring R14's exact analyzer shape
+and test style.
+
+World Model (3 tests): frontend entities ingested via the new
+`SolutionArchitectureGraphBridge` unify into the SAME node
+`BackendGraphBridge` already resolves for a shared entity — proven by a
+real single-node assertion after ingesting both, not inferred; a real
+permission produces a real permission-depends-on-capability edge; a
+real caching signal produces a real node, and its absence produces no
+such node — never fabricated either way.
+
+Kernel wiring (2 tests): a real Kernel run populates
+`ExecutionPlanReady.solutionArchitecture`, and its `frontend`/`backend`
+fields are the SAME objects (`same()`) as `solutionDecision.selected
+.architecture`/`backendEngineeringPlan` already on that outcome — never
+independently recomputed; running the same intent twice produces
+identical `components`/`caching`/`unmodeledConcepts` JSON (the
+top-level `ArchitectureCandidate.id` is excluded from this comparison —
+a real, pre-existing, unrelated per-run UUID `ArchitecturePlanner`
+already generates, not something R17 introduced or should suppress).
+
+Backward compatibility + generator compatibility (2 tests):
+`CanonicalImplementationContext` construction with the exact pre-R17
+argument list still compiles and produces a valid model — proof
+`CanonicalImplementationModel` was genuinely not extended; the existing,
+unmodified `BuildGraphBuilder`/`RuntimeExperienceGenerator`/
+`GenerationPipeline` still produce a valid `ExperiencePackage` from a
+hand-built `CanonicalImplementationModel` — proof the Build Graph's
+consumption chain needed zero changes.
+
+Performance (2 tests, real `Stopwatch`/`ProcessInfo`, machine-dependent,
+recorded as observed): synthesis over 200 entities — 9-10ms; process
+RSS delta while planning 50 solution architectures — 232-368KB.
+
+**Execution result:** all 20 new tests pass. Full regression:
+**1320/1320** (up from 1300, zero pre-existing test modified).
+`flutter analyze`: 71 issues, 0 errors, unchanged baseline.
