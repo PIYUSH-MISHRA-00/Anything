@@ -252,6 +252,19 @@ class RuntimeExperienceGenerator implements Generator {
       }
     }
 
+    // Non-CRUD experience views (Implementation Milestone R21) — additive:
+    // entity-driven CRUD screens above are completely unaffected.
+    for (final view in model.views) {
+      final entity = view.sourceEntityId != null ? model.entities.where((e) => e.id == view.sourceEntityId).firstOrNull : null;
+      final nodes = view.kind == ImplementationViewKind.dashboard
+          ? _dashboardViewNodes(model, view, entity)
+          : _genericFallbackViewNodes(view, entity);
+      if (nodes.isNotEmpty) {
+        nodes.insert(0, InterfaceNode(type: 'heading', id: '${view.id}_title', properties: {'content': view.name, 'level': 2}));
+      }
+      screens.add(InterfaceScreen(id: view.id, title: view.name, appBarTitle: view.name, children: nodes));
+    }
+
     if (screens.isEmpty) {
       screens.add(
         const InterfaceScreen(
@@ -262,18 +275,91 @@ class RuntimeExperienceGenerator implements Generator {
       );
     }
 
-    final navigation = entitiesWithListScreen.length > 1
-        ? NavigationDefinition(
-            type: 'bottomNavigation',
-            items: [
-              for (final entity in model.entities.where((e) => entitiesWithListScreen.contains(e.id)).take(5))
-                NavigationItem(label: entity.name, icon: 'list', screenId: '${entity.id}_list'),
-            ],
-          )
-        : null;
+    // Real navigation destinations (Implementation Milestone R21 —
+    // extends the existing entity-list items with view items, matching
+    // legacy's own "every non-form view becomes a bottom-nav destination"
+    // shape, `CreationEngine._buildInterfaceFromBlueprint` line ~761).
+    final navItems = <NavigationItem>[
+      for (final entity in model.entities.where((e) => entitiesWithListScreen.contains(e.id)))
+        NavigationItem(label: entity.name, icon: 'list', screenId: '${entity.id}_list'),
+      for (final view in model.views) NavigationItem(label: view.name, icon: _viewKindIcon(view.kind), screenId: view.id),
+    ];
+    final navigation = navItems.length > 1 ? NavigationDefinition(type: 'bottomNavigation', items: navItems.take(5).toList()) : null;
 
     return InterfaceDefinition(screens: screens, navigation: navigation);
   }
+
+  /// Real, bespoke dashboard rendering (Implementation Milestone R21) —
+  /// matches `CreationEngine`'s own dashboard case exactly (lines
+  /// ~551-604): a count metric always, a Sum/Avg pair per numeric field,
+  /// and an Add button reusing this generator's own established
+  /// `create_<entityId>` action-id convention (already used by the CRUD
+  /// list screen's Add button above — not a new convention).
+  List<InterfaceNode> _dashboardViewNodes(CanonicalImplementationModel model, ImplementationView view, ImplementationEntity? entity) {
+    if (entity == null) return [];
+    final metrics = <Map<String, dynamic>>[
+      {'label': 'Total ${entity.name}', 'operation': 'count', 'entityId': entity.id},
+    ];
+    for (final field in entity.fields) {
+      if (field.type == ImplementationDataType.integer || field.type == ImplementationDataType.decimal) {
+        metrics.add({'label': '${field.name} (Sum)', 'operation': 'sum', 'entityId': entity.id, 'fieldId': field.id});
+        metrics.add({'label': '${field.name} (Avg)', 'operation': 'average', 'entityId': entity.id, 'fieldId': field.id});
+      }
+    }
+    final nodes = <InterfaceNode>[
+      InterfaceNode(type: 'dashboardMetrics', id: '${view.id}_dashboard', properties: {'title': view.name, 'metrics': metrics}),
+    ];
+    final hasCreate = model.controllers.any(
+      (c) => c.entityId == entity.id && c.operations.any((o) => o.kind == ImplementationOperationKind.create),
+    );
+    if (hasCreate) {
+      nodes.add(
+        InterfaceNode(
+          type: 'button',
+          id: '${view.id}_add_button',
+          properties: {'label': 'Add ${entity.name}', 'primary': true},
+          actionBinding: ActionBinding(actionId: 'create_${entity.id}'),
+        ),
+      );
+    }
+    return nodes;
+  }
+
+  /// Real, shared fallback rendering for calendar/settings/empty/summary
+  /// (Implementation Milestone R21) — legacy's `CreationEngine` treats
+  /// these four identically (lines ~641-676: one shared switch-case
+  /// branch, never four distinct behaviors), so this generator does too:
+  /// a `referenceSelector` per reference field, an `input`/`switch` per
+  /// other field.
+  List<InterfaceNode> _genericFallbackViewNodes(ImplementationView view, ImplementationEntity? entity) {
+    if (entity == null) return [];
+    return [
+      for (final field in entity.fields)
+        if (field.type == ImplementationDataType.reference && field.referenceEntityId != null)
+          InterfaceNode(
+            type: 'referenceSelector',
+            id: '${view.id}_${field.id}_ref',
+            properties: {'entityId': field.referenceEntityId, 'label': 'Select ${field.name}'},
+          )
+        else
+          InterfaceNode(
+            type: field.type == ImplementationDataType.boolean ? 'switch' : 'input',
+            id: '${view.id}_${field.id}',
+            properties: {'label': field.name, 'hint': 'Enter ${field.name.toLowerCase()}'},
+            stateBinding: '${entity.id}_${field.id}_input',
+          ),
+    ];
+  }
+
+  /// Real per-kind icon (Implementation Milestone R21) — matches legacy's
+  /// own `_viewTypeToIcon` exactly.
+  String _viewKindIcon(ImplementationViewKind kind) => switch (kind) {
+    ImplementationViewKind.dashboard => 'dashboard',
+    ImplementationViewKind.calendar => 'calendar',
+    ImplementationViewKind.settings => 'settings',
+    ImplementationViewKind.empty => 'inbox',
+    ImplementationViewKind.summary => 'bar_chart',
+  };
 
   String _displayField(ImplementationEntity entity) {
     for (final field in entity.fields) {

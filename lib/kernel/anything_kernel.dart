@@ -544,6 +544,9 @@ class AnythingKernel {
           // already reads from this exact object.
           semanticEntities: reasonResult.semanticApp.entities,
           derivedValues: reasonResult.semanticApp.derivedValues,
+          // Real non-CRUD experience views (Implementation Milestone
+          // R21) — same `reasonResult.semanticApp`, already in scope.
+          semanticViews: reasonResult.semanticApp.views,
         ),
       );
       _ingestIntoWorldModelSafely(() => _worldModel?.ingestCanonicalImplementation(canonicalImplementationModel));

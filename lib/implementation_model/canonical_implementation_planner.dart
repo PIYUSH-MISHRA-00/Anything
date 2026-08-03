@@ -12,8 +12,8 @@ import '../backend_engineering/backend_engineering_plan.dart';
 import '../backend_engineering/database_schema.dart';
 import '../capabilities/registry/capability_descriptor.dart';
 import '../software_cognition/software_reasoner.dart' show SoftwareRecommendation;
-import '../synthesis/app_blueprint.dart' show DerivedOperation;
-import '../synthesis/application_reasoner.dart' show SemanticEntity, SemanticDerivedValue;
+import '../synthesis/app_blueprint.dart' show DerivedOperation, BlueprintViewType;
+import '../synthesis/application_reasoner.dart' show SemanticEntity, SemanticDerivedValue, SemanticView;
 import 'canonical_implementation_model.dart';
 
 class CanonicalImplementationContext {
@@ -53,6 +53,14 @@ class CanonicalImplementationContext {
   /// additive.
   final List<SemanticDerivedValue> derivedValues;
 
+  /// Real, already-reasoned non-CRUD experience views (Implementation
+  /// Milestone R21) — `SemanticApp.views`, the SAME single reasoning
+  /// call's output legacy's `CreationEngine` already reads to build
+  /// dashboard/calendar/settings/summary/empty screens. Optional/
+  /// additive: when omitted, `CanonicalImplementationModel.views` stays
+  /// empty, matching pre-R21 behavior byte-for-byte.
+  final List<SemanticView> semanticViews;
+
   const CanonicalImplementationContext({
     required this.engineering,
     required this.backend,
@@ -60,8 +68,21 @@ class CanonicalImplementationContext {
     this.corroboratingRecommendations = const [],
     this.semanticEntities = const [],
     this.derivedValues = const [],
+    this.semanticViews = const [],
   });
 }
+
+/// `null` for `list`/`detail`/`form` — those screens are already produced
+/// from `ImplementationEntity`/`ImplementationOperationKind`; mapping them
+/// again here would duplicate, not enrich (Implementation Milestone R21).
+ImplementationViewKind? _mapViewKind(BlueprintViewType type) => switch (type) {
+  BlueprintViewType.dashboard => ImplementationViewKind.dashboard,
+  BlueprintViewType.calendar => ImplementationViewKind.calendar,
+  BlueprintViewType.settings => ImplementationViewKind.settings,
+  BlueprintViewType.empty => ImplementationViewKind.empty,
+  BlueprintViewType.summary => ImplementationViewKind.summary,
+  BlueprintViewType.list || BlueprintViewType.detail || BlueprintViewType.form => null,
+};
 
 ImplementationDerivedOperation _mapDerivedOperation(DerivedOperation op) => switch (op) {
   DerivedOperation.count => ImplementationDerivedOperation.count,
@@ -129,8 +150,18 @@ class CanonicalImplementationPlanner {
       backgroundWorker: BackgroundWorkerSpec(requiresBackgroundSync: context.backend.backgroundJobs.requiresBackgroundSync),
       corroboratedPatterns: _planCorroboratedPatterns(context),
       derivedValues: _planDerivedValues(context),
+      views: _planViews(context),
     );
   }
+
+  /// Deterministic pass-through — never invents Layout Intent/
+  /// Presentation Semantics/Grouping metadata beyond what `SemanticView`
+  /// already names (Implementation Milestone R21).
+  List<ImplementationView> _planViews(CanonicalImplementationContext context) => [
+    for (final v in context.semanticViews)
+      if (_mapViewKind(v.viewType) case final kind?)
+        ImplementationView(id: v.id, name: v.name, kind: kind, sourceEntityId: v.sourceEntityId),
+  ];
 
   List<ImplementationEntity> _planEntities(CanonicalImplementationContext context) {
     final semanticFieldsByEntity = {

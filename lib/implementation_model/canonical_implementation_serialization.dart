@@ -87,6 +87,7 @@ extension CanonicalImplementationModelJson on CanonicalImplementationModel {
     'derivedValues': derivedValues
         .map((d) => {'id': d.id, 'name': d.name, 'sourceEntityId': d.sourceEntityId, 'operation': d.operation.name, 'fieldId': d.fieldId, 'description': d.description})
         .toList(),
+    'views': views.map((v) => {'id': v.id, 'name': v.name, 'kind': v.kind.name, 'sourceEntityId': v.sourceEntityId}).toList(),
   };
 }
 
@@ -222,6 +223,20 @@ CanonicalImplementationModel canonicalImplementationModelFromJson(Map<String, dy
                 operation: ImplementationDerivedOperation.values.byName(dj['operation'] as String),
                 fieldId: dj['fieldId'] as String?,
                 description: dj['description'] as String? ?? '',
+              );
+            })
+            .toList() ??
+        const [],
+    // Additive (Implementation Milestone R21) — same absent-key-defaults-
+    // to-empty convention as corroboratedPatterns/derivedValues above.
+    views: (json['views'] as List?)
+            ?.map((v) {
+              final vj = v as Map<String, dynamic>;
+              return ImplementationView(
+                id: vj['id'] as String,
+                name: vj['name'] as String,
+                kind: ImplementationViewKind.values.byName(vj['kind'] as String),
+                sourceEntityId: vj['sourceEntityId'] as String?,
               );
             })
             .toList() ??

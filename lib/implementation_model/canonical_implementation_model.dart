@@ -101,6 +101,36 @@ class ImplementationDerivedValue {
   });
 }
 
+/// Real view classification (Implementation Milestone R21) — mirrors
+/// `BlueprintViewType`'s own non-CRUD values exactly (real reasoner
+/// output, never invented categories). `list`/`detail`/`form` are
+/// deliberately excluded: those screens already come from
+/// `ImplementationEntity`/`ImplementationOperationKind` — mapping them
+/// again here would duplicate, not enrich. `calendar`/`settings`/`empty`/
+/// `summary` render through ONE identical shared code path in
+/// `RuntimeExperienceGenerator` (a real, verified fact about legacy's own
+/// `CreationEngine`, lines 641-676: it never differentiates these four
+/// either) — this enum keeps their real, distinct names only because
+/// legacy also picks a distinct navigation icon per name; the FIELD
+/// content they render is, and must stay, identical.
+enum ImplementationViewKind { dashboard, calendar, settings, empty, summary }
+
+/// A real, non-CRUD experience view (Implementation Milestone R21) —
+/// sourced from `SemanticView`, the SAME single reasoning call's output
+/// legacy's `CreationEngine` already reads. Only `id`/`name`/`kind`/
+/// `sourceEntityId` are modeled: legacy computes no Layout Intent/
+/// Presentation Semantics/Grouping/Visibility metadata either (verified
+/// by reading its view-building switch) — modeling those here would
+/// fabricate parity with fields legacy itself never populates.
+class ImplementationView {
+  final String id;
+  final String name;
+  final ImplementationViewKind kind;
+  final String? sourceEntityId;
+
+  const ImplementationView({required this.id, required this.name, required this.kind, this.sourceEntityId});
+}
+
 // ── Entity / Repository / Controller / DTO / Validator / Service (real depth, from BackendEngineeringPlan) ──
 
 class ImplementationEntity {
@@ -312,6 +342,12 @@ class CanonicalImplementationModel {
   /// existing construction site is unaffected.
   final List<ImplementationDerivedValue> derivedValues;
 
+  /// Real non-CRUD experience views (Implementation Milestone R21) —
+  /// empty unless a caller supplied
+  /// `CanonicalImplementationContext.semanticViews`. Additive; every
+  /// existing construction site is unaffected.
+  final List<ImplementationView> views;
+
   const CanonicalImplementationModel({
     this.entities = const [],
     this.repositories = const [],
@@ -328,6 +364,7 @@ class CanonicalImplementationModel {
     required this.backgroundWorker,
     this.corroboratedPatterns = const [],
     this.derivedValues = const [],
+    this.views = const [],
   });
 
   bool get isEmpty => entities.isEmpty && controllers.isEmpty;
