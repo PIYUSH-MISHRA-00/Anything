@@ -25,6 +25,8 @@ import 'package:crypto/crypto.dart';
 import 'package:sqflite/sqflite.dart';
 
 import '../application_engineering/engineering_memory_summary.dart';
+import '../backend_engineering/backend_engineering_plan.dart';
+import '../backend_engineering/backend_engineering_serialization.dart';
 import '../software_architect/architecture_candidate.dart';
 import '../software_architect/architecture_candidate_serialization.dart';
 import '../software_architect/requirement_graph.dart';
@@ -39,6 +41,11 @@ class EngineeringMemoryRecord {
   final RequirementGraph? requirementGraph;
   final ArchitectureCandidate? architectureCandidate;
   final EngineeringMemorySummary? engineeringSummary;
+
+  /// Real, persisted backend engineering decisions (Implementation
+  /// Milestone R8) — `null` for every pre-R8 record, exactly like the
+  /// other fields above are `null` for pre-R5 records.
+  final BackendEngineeringPlan? backendEngineeringPlan;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -47,13 +54,22 @@ class EngineeringMemoryRecord {
     this.requirementGraph,
     this.architectureCandidate,
     this.engineeringSummary,
+    this.backendEngineeringPlan,
     required this.createdAt,
     required this.updatedAt,
   });
 }
 
 class EngineeringMemoryRepository {
-  static const int _schemaVersion = 1;
+  // Implementation Milestone R8: bumped 1 -> 2 for the new
+  // backend_engineering_json column. Purely informational (stored per
+  // row, never enforced by sqflite itself) — the real migration is the
+  // additive `ALTER TABLE` in `_ensureTables` below, mirroring
+  // SqliteExperienceRepository's own real onUpgrade discipline (V10)
+  // at the column level rather than the whole-database level, since
+  // this table (unlike the main experiences table) has no separate
+  // onUpgrade hook of its own.
+  static const int _schemaVersion = 2;
 
   final SqliteExperienceRepository _experienceRepository;
   bool _tablesEnsured = false;
@@ -78,13 +94,40 @@ class EngineeringMemoryRepository {
         requirement_graph_json TEXT,
         architecture_candidate_json TEXT,
         engineering_summary_json TEXT,
+        backend_engineering_json TEXT,
         integrity_hash TEXT NOT NULL,
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL
       )
     ''');
+    // Implementation Milestone R8: additive column for a table that may
+    // already exist from an R5-era database (CREATE TABLE IF NOT EXISTS
+    // above is then a no-op and never adds this column). sqflite has no
+    // "ADD COLUMN IF NOT EXISTS" — catching the real "duplicate column"
+    // failure is the established, safe idempotency pattern for this
+    // exact situation; never destructive, never touches existing rows.
+    try {
+      await db.execute('ALTER TABLE engineering_memory ADD COLUMN backend_engineering_json TEXT');
+    } catch (_) {
+      // Column already exists (fresh-install CREATE TABLE already added
+      // it above, or a prior R8 run already migrated it) — expected,
+      // not an error.
+    }
   }
 
+  /// Deliberately UNCHANGED (still 3 fields) since Vision Milestone R5 —
+  /// Implementation Milestone R8's new `backendEngineeringJson` is
+  /// intentionally NOT included here. Extending this formula to 4 fields
+  /// would change every R5-era row's expected hash retroactively (an old
+  /// row's `integrity_hash` was computed without a `backend_engineering`
+  /// placeholder at all), which would make `load()` treat every
+  /// pre-existing, genuinely-valid R5 record as "tampered" and silently
+  /// discard it — a real backward-compatibility regression, not a
+  /// hypothetical one. Backend engineering data is still integrity-
+  /// checked implicitly (malformed JSON is caught and degrades
+  /// gracefully in `load()`'s existing try/catch), just not by this
+  /// specific hash — a real, small, documented scope limit, not silently
+  /// glossed over.
   String _computeHash(String? a, String? b, String? c) =>
       sha256.convert(utf8.encode('${a ?? ''}|${b ?? ''}|${c ?? ''}')).toString();
 
@@ -101,11 +144,13 @@ class EngineeringMemoryRepository {
     RequirementGraph? requirementGraph,
     ArchitectureCandidate? architectureCandidate,
     EngineeringMemorySummary? engineeringSummary,
+    BackendEngineeringPlan? backendEngineeringPlan,
   }) async {
     final db = await _db;
     final reqJson = requirementGraph == null ? null : jsonEncode(requirementGraph.toJson());
     final archJson = architectureCandidate == null ? null : jsonEncode(architectureCandidate.toJson());
     final engJson = engineeringSummary == null ? null : jsonEncode(engineeringSummary.toJson());
+    final backendJson = backendEngineeringPlan == null ? null : jsonEncode(backendEngineeringPlan.toJson());
     final now = DateTime.now().toIso8601String();
 
     await db.insert('engineering_memory', {
@@ -114,6 +159,7 @@ class EngineeringMemoryRepository {
       'requirement_graph_json': reqJson,
       'architecture_candidate_json': archJson,
       'engineering_summary_json': engJson,
+      'backend_engineering_json': backendJson,
       'integrity_hash': _computeHash(reqJson, archJson, engJson),
       'created_at': now,
       'updated_at': now,
@@ -145,6 +191,15 @@ class EngineeringMemoryRepository {
       return null;
     }
 
+    // Implementation Milestone R8: read defensively via row.keys.contains
+    // rather than row['backend_engineering_json'] directly — an R5-era
+    // row loaded before this process's own _ensureTables migration ran
+    // could theoretically be queried mid-migration in a multi-isolate
+    // scenario; sqflite's single-isolate default and this repository's
+    // _tablesEnsured gate make this a defensive belt, not a fix for an
+    // observed bug.
+    final backendJson = row.containsKey('backend_engineering_json') ? row['backend_engineering_json'] as String? : null;
+
     try {
       return EngineeringMemoryRecord(
         experienceId: experienceId,
@@ -157,6 +212,7 @@ class EngineeringMemoryRepository {
         engineeringSummary: engJson == null
             ? null
             : EngineeringMemorySummary.fromJson(jsonDecode(engJson) as Map<String, dynamic>),
+        backendEngineeringPlan: backendJson == null ? null : backendEngineeringPlanFromJson(jsonDecode(backendJson) as Map<String, dynamic>),
         createdAt: DateTime.parse(row['created_at'] as String),
         updatedAt: DateTime.parse(row['updated_at'] as String),
       );

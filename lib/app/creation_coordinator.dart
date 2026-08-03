@@ -6,6 +6,7 @@ library;
 import 'dart:async';
 
 import 'package:anything/application_engineering/engineering_plan.dart';
+import 'package:anything/backend_engineering/backend_engineering_plan.dart';
 import 'package:anything/core/contracts/intent.dart';
 import 'package:anything/kernel/anything_kernel.dart';
 import 'package:anything/kernel/outcomes/kernel_outcome.dart';
@@ -172,6 +173,7 @@ class ExperienceCreationCoordinator {
             engineeringPlan: kernelOutcome.engineeringPlan,
             requirementGraph: kernelOutcome.requirementGraph,
             solutionDecision: kernelOutcome.solutionDecision,
+            backendEngineeringPlan: kernelOutcome.backendEngineeringPlan,
           );
 
         case ExperienceSpecificationReady():
@@ -258,6 +260,7 @@ class ExperienceCreationCoordinator {
     EngineeringPlan? engineeringPlan,
     RequirementGraph? requirementGraph,
     SolutionDecision? solutionDecision,
+    BackendEngineeringPlan? backendEngineeringPlan,
   }) async {
     _state = CreationState.creating;
 
@@ -339,6 +342,7 @@ class ExperienceCreationCoordinator {
             requirementGraph: requirementGraph,
             architectureCandidate: solutionDecision?.selected.architecture,
             engineeringSummary: engineeringPlan == null ? null : EngineeringMemorySummary.summarize(engineeringPlan),
+            backendEngineeringPlan: backendEngineeringPlan,
           );
         } catch (_) {
           // Deliberately swallowed — see comment above.

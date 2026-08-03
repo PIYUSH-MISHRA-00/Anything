@@ -26,6 +26,13 @@ enum WorldNodeKind {
   repository,
   softwarePackage,
   softwareComponent,
+
+  /// A backend API endpoint (Implementation Milestone R8) — database
+  /// tables deliberately reuse the existing `entity` kind (a backend
+  /// table and its frontend entity are the SAME real-world concept,
+  /// viewed from a different engineering angle), so this is the one
+  /// genuinely new concept the backend engineering vocabulary needs.
+  backendEndpoint,
 }
 
 /// Every typed relationship the World Graph supports — never a raw

@@ -48,6 +48,8 @@ import 'package:anything/evolution/evolution_context.dart';
 import 'package:anything/evolution/evolution_engine.dart';
 import 'package:anything/evolution/evolution_history.dart';
 import 'package:anything/evolution/evolution_memory.dart';
+import 'package:anything/backend_engineering/backend_engineering_context.dart';
+import 'package:anything/backend_engineering/backend_engineering_planner.dart';
 import 'package:anything/knowledge/knowledge_resource.dart';
 import 'package:anything/world_model/world_model_coordinator.dart';
 import 'package:anything/world_model/world_types.dart' show WorldNodeKind;
@@ -93,6 +95,7 @@ class AnythingKernel {
   final DesignReviewEngine _designReviewEngine;
   final EvolutionEngine _evolutionEngine;
   final ArchitectureToBlueprintConverter _architectureToBlueprint;
+  final BackendEngineeringPlanner _backendEngineeringPlanner;
 
   /// Optional shared World Graph (Implementation Milestone R1). REALITY
   /// before R1: the Kernel held no World Model reference at all, so
@@ -141,6 +144,7 @@ class AnythingKernel {
     EvolutionEngine? evolutionEngine,
     ArchitectureToBlueprintConverter? architectureToBlueprint,
     WorldModelCoordinator? worldModel,
+    BackendEngineeringPlanner? backendEngineeringPlanner,
   }) : _worldModel = worldModel,
        _requirementExtractor =
            requirementExtractor ?? const RequirementExtractor(),
@@ -152,6 +156,7 @@ class AnythingKernel {
        _evolutionEngine = evolutionEngine ?? const EvolutionEngine(),
        _architectureToBlueprint =
            architectureToBlueprint ?? const ArchitectureToBlueprintConverter(),
+       _backendEngineeringPlanner = backendEngineeringPlanner ?? const BackendEngineeringPlanner(),
        _experienceResolver = experienceResolver ?? ExperienceResolver(),
        _capabilityRegistry = capabilityRegistry ?? CapabilityRegistry(),
        _understandingService = ModelUnderstandingService(providerRegistry),
@@ -413,6 +418,17 @@ class AnythingKernel {
         () => _worldModel?.ingestEvolutionRoadmap(evolutionResult.roadmap, blueprint: blueprint),
       );
 
+      // Step 7.8: Backend Engineering Planner (Implementation Milestone
+      // R8) — deterministic Database/API/Authentication/Storage/
+      // Background-Jobs/Deployment specification, derived from the SAME
+      // already-computed `selectedSolution.architecture`/
+      // `reasonResult.semanticApp` frontend Engineering already consumed
+      // at Step 7.6 — zero new AI call, zero new upstream dependency.
+      final backendEngineeringPlan = _backendEngineeringPlanner.plan(
+        BackendEngineeringContext(architecture: selectedSolution.architecture, app: reasonResult.semanticApp),
+      );
+      _ingestIntoWorldModelSafely(() => _worldModel?.ingestBackendEngineering(backendEngineeringPlan));
+
       // Step 8: Convert to ExperienceSpec
       final spec = BlueprintToSpecConverter.convert(
         blueprint,
@@ -460,6 +476,7 @@ class AnythingKernel {
         reviewSession: reviewOutcome.session,
         evolutionRoadmap: evolutionResult.roadmap,
         requirementGraph: requirementGraph,
+        backendEngineeringPlan: backendEngineeringPlan,
         message: 'Ready to create',
         timestamp: DateTime.now(),
       );

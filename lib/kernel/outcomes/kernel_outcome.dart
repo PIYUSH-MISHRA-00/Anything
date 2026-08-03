@@ -5,6 +5,7 @@
 library;
 
 import '../../application_engineering/engineering_plan.dart';
+import '../../backend_engineering/backend_engineering_plan.dart';
 import '../../design_review/review_history.dart' show ReviewSession;
 import '../../evolution/evolution_roadmap.dart' show EvolutionRoadmap;
 import '../../feature_discovery/feature_plan.dart';
@@ -101,6 +102,14 @@ class ExecutionPlanReady extends KernelOutcome {
   /// production path).
   final RequirementGraph? requirementGraph;
 
+  /// The Backend Engineering Plan (Implementation Milestone R8) —
+  /// deterministic Database/API/Authentication/Storage/Background-Jobs/
+  /// Deployment specification derived from the same, already-computed
+  /// `ArchitectureCandidate`/`SemanticApp` frontend Engineering already
+  /// consumes. Null only for outcomes that never reach this point (there
+  /// are none on the production path).
+  final BackendEngineeringPlan? backendEngineeringPlan;
+
   const ExecutionPlanReady({
     required this.plan,
     required this.specification,
@@ -111,6 +120,7 @@ class ExecutionPlanReady extends KernelOutcome {
     this.reviewSession,
     this.evolutionRoadmap,
     this.requirementGraph,
+    this.backendEngineeringPlan,
     required super.message,
     required super.timestamp,
   });
