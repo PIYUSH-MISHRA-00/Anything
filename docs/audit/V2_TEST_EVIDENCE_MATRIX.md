@@ -760,3 +760,30 @@ integrity-hash formula), and a real 200-entity performance measurement
 **Execution result:** all 19 pass. Full regression: **1204/1204** (up
 from 1185, zero pre-existing test modified). `flutter analyze`: 71
 issues, 0 errors, unchanged baseline.
+
+## Implementation Milestone R9 — Canonical Implementation Model (2026-08-03)
+
+15 new tests across `test/r9_canonical_implementation_model_test.dart`,
+6 groups, reusing R8's own "Vehicle Fleet Maintenance Log" fixture
+(zero footprint elsewhere in `lib/`): construction (entity/repository/
+controller/DTO/validator/service derivation, foreign-key dependency,
+capability dependency + adapter, state container reuses `GenericState`
+directly, honestly-empty navigation when none exists, real auth/
+storage/background wrappers), language independence (mechanical scan
+of every type/enum name and full serialized JSON for a forbidden
+Flutter/Dart/Java/Kotlin/Swift/TypeScript/Python/Node/React/Express/
+FastAPI/Spring term list), serialization round-trip (full fidelity,
+every field), Engineering Memory persistence (round-trip, plus a
+dedicated test proving an R8-shaped row with no
+`canonical_implementation_json` at all still loads correctly post-R9,
+plus Kernel/Creation graceful degradation), World Model integration
+(real nodes + edges land in a fresh `WorldModelCoordinator`, the fix
+for a dangling-edge bug caught by this exact test), determinism (same
+context twice via direct planner call, and the same intent twice
+through the FULL Kernel path, asserting byte-for-byte identical
+`toJson()` output), and a real 200-entity performance measurement
+(~11-13ms).
+
+**Execution result:** all 15 pass. Full regression: **1219/1219** (up
+from 1204, zero pre-existing test modified). `flutter analyze`: 71
+issues, 0 errors, unchanged baseline.

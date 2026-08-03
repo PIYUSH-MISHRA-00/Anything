@@ -477,3 +477,36 @@ signal for end-user identity requirements is introduced elsewhere in
 the pipeline; (3) the standing Capability Platform / BYOK-provider-count
 / localization gaps from MIS-1/V10 remain open and unrelated to the
 R-series' own scope.
+
+## Implementation Milestone R9 — Canonical Implementation Model — ✅ COMPLETE (2026-08-03)
+
+**Closure evidence**: `lib/implementation_model/` (3 files) unifies
+frontend Engineering (`EngineeringCandidate`, R3) and backend
+Engineering (`BackendEngineeringPlan`, R8) into one real, typed,
+mechanically-verified LANGUAGE-INDEPENDENT `CanonicalImplementationModel`
+covering 20 implementation concepts with honestly-uneven depth (real
+depth for Entity/Repository/Controller/DTO/Validator/Service/
+StateContainer/NavigationHandler/CapabilityAdapter; thin real wrappers
+for Authentication/Storage/BackgroundWorker; Realtime/Configuration/
+Serialization/Error-Handling/Logging/Monitoring deliberately not
+modeled). Wired into `AnythingKernel.processIntent` (additive Step 8.5,
+zero new AI call, proven deterministic via a real double-run test
+through the full Kernel path), `EngineeringMemoryRepository` (additive
+column + migration, integrity-hash formula deliberately left
+unchanged), and World Model (`ImplementationGraphBridge`, narrowly
+contributing entity-to-capability dependency edges only — a
+dangling-edge bug was found and fixed by this milestone's own test).
+15 new tests, full regression 1219/1219 (up from 1204). `flutter
+analyze`: 71/0, unchanged baseline.
+
+**Recommendation for R10**: (1) an actual language generator consuming
+`CanonicalImplementationModel` to produce real target-language source
+(still out of scope for R9 by design — the model is structurally ready
+but not yet validated by a real consumer); (2) per-entity capability
+dependency attribution once/if a real upstream signal ties a resolved
+capability to one specific entity, replacing the current `'app'`
+pseudo-node; (3) Realtime Channel/Configuration/Serialization/Error-
+Handling/Logging/Monitoring modeling once/if a real upstream engineering
+decision for any of these appears elsewhere in the pipeline; (4) the
+standing Capability Platform / BYOK-provider-count / localization gaps
+from MIS-1/V10 remain open and unrelated to the R-series' own scope.

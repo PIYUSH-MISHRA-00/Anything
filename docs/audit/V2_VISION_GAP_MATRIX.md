@@ -74,3 +74,17 @@ Statuses: VERIFIED (directly confirmed by source/test execution), PARTIAL (real 
 | WebWeaveX / Kaalka sole-boundary status | **UNCHANGED** — this milestone touches neither. |
 | Single AI reasoning boundary preserved | **VERIFIED** — zero new LLM calls; proven directly by a real test running the same Kernel intent twice and asserting byte-for-byte identical backend plans. |
 | No duplicate architecture | **VERIFIED** — no second Kernel/Engineering-Pipeline/Planner/Runtime/World-Model/Knowledge-Engine/Software-Cognition-Engine/Capability-Platform/Authentication-Framework/Deployment-Engine/Backend-Generator; `BackendGraphBridge` follows the exact same pattern as the other 6 Bridges. |
+
+## Implementation Milestone R9 — Canonical Implementation Model (2026-08-03)
+
+| Item | Status |
+|---|---|
+| One canonical, language-independent implementation representation unifying frontend + backend Engineering | **PARTIAL, honestly depth-graded** — Entity/Repository/Controller/DTO/Validator/Service (from `BackendEngineeringPlan`) and StateContainer/NavigationHandler/CapabilityAdapter (from `EngineeringCandidate`/`CapabilityRegistry`) get real depth; Authentication/Storage/Background-Worker are thin, real wrappers; Realtime Channel/Configuration/Serialization/Error-Handling/Logging/Monitoring are NOT modeled — no upstream signal exists to derive them from without fabricating data. |
+| Language independence | **VERIFIED, mechanically** — a dedicated test scans every exported type/enum name and the full serialized JSON for a forbidden Flutter/Dart/Java/Kotlin/Swift/TypeScript/Python/Node/React/Express/FastAPI/Spring term list; zero hits. |
+| Frontend and backend unified from the SAME already-computed Engineering data | **VERIFIED** — `CanonicalImplementationContext` consumes only `EngineeringCandidate` (R3)/`BackendEngineeringPlan` (R8)/resolved `CapabilityDescriptor`s, no new upstream dependency. |
+| Engineering Memory persists the canonical model | **VERIFIED** — `EngineeringMemoryRepository` extended with a real, additive `canonical_implementation_json` column and migration; a dedicated test proves R8-era rows still load correctly (integrity-hash formula deliberately left unchanged, same precedent as R8). |
+| World Model understands implementation concepts | **VERIFIED, narrowly** — no new `WorldNodeKind`; `ImplementationGraphBridge` contributes only entity-to-capability dependency edges (the one genuinely new fact CIM has), with real nodes emitted for both endpoints (a dangling-edge bug found and fixed by this milestone's own test). |
+| WebWeaveX / Kaalka sole-boundary status | **UNCHANGED** — this milestone touches neither. |
+| Single AI reasoning boundary preserved | **VERIFIED** — zero new LLM calls; proven directly by a real test running the same Kernel intent twice and asserting byte-for-byte identical canonical implementation models. |
+| No duplicate architecture | **VERIFIED** — no second Kernel/Engineering-Pipeline/Planner/Runtime/World-Model/Backend-Pipeline/Capability-Platform/Memory/Serialization-System; `ImplementationGraphBridge` follows the exact same pattern as the other 7 Bridges. |
+| Reusable by future language generators | **PLAUSIBLE, not yet proven** — real, typed, language-independent, serializable, but no actual generator exists yet to consume it; stated honestly as structurally ready, not validated by a real consumer. |
