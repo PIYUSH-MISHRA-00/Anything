@@ -29,6 +29,7 @@ import 'package:anything/software_cognition/software_cognition_coordinator.dart'
 import 'package:anything/software_cognition/software_cognition_engine.dart' show RepositoryCognitionResult;
 import 'package:anything/software_cognition/software_reasoner.dart';
 import 'package:anything/world_model/world_model_coordinator.dart';
+import 'package:anything/compiler_integration/compiler_pipeline_runner.dart';
 
 /// User-facing creation state.
 enum CreationState {
@@ -159,11 +160,26 @@ class ExperienceCreationCoordinator {
   /// already-emitted `knowledgeNeeds` — no reference URL required. `false`
   /// by default; composes with (does not replace) [referenceUrl]/
   /// [referenceUrls] when both are supplied.
+  ///
+  /// [useCompilerPipeline] (Implementation Milestone R19) — the ONE
+  /// production switch selecting the real, existing compiler pipeline
+  /// (`BuildGraphBuilder`->`GenerationPipeline`->`RuntimeExperienceGenerator`,
+  /// R9-R13) instead of the legacy `CreationEngine` (V3) for the
+  /// `ExperiencePackage` this creation actually validates/persists/serves.
+  /// `false` by default — REALITY: the compiler pipeline had ZERO
+  /// production callers before this milestone (confirmed by grep); every
+  /// existing call site keeps getting the legacy-produced package
+  /// byte-for-byte unchanged unless this is explicitly set `true`. When
+  /// `true` and the compiler pipeline cannot produce a valid package for
+  /// this request (e.g. no entities, or fails
+  /// `ExperiencePackageValidator`), creation falls back to the legacy
+  /// pipeline rather than failing — see `_createExperience`.
   Future<CreationResult> createFromIntent(
     Intent intent, {
     String? referenceUrl,
     List<String>? referenceUrls,
     bool autoDiscoverKnowledge = false,
+    bool useCompilerPipeline = false,
   }) async {
     _state = CreationState.understanding;
 
@@ -201,6 +217,7 @@ class ExperienceCreationCoordinator {
             solutionDecision: kernelOutcome.solutionDecision,
             backendEngineeringPlan: kernelOutcome.backendEngineeringPlan,
             canonicalImplementationModel: kernelOutcome.canonicalImplementationModel,
+            useCompilerPipeline: useCompilerPipeline,
           );
 
         case ExperienceSpecificationReady():
@@ -248,12 +265,14 @@ class ExperienceCreationCoordinator {
     String? referenceUrl,
     List<String>? referenceUrls,
     bool autoDiscoverKnowledge = false,
+    bool useCompilerPipeline = false,
   }) async {
     return createFromIntent(
       Intent.create(expression: expression),
       referenceUrl: referenceUrl,
       referenceUrls: referenceUrls,
       autoDiscoverKnowledge: autoDiscoverKnowledge,
+      useCompilerPipeline: useCompilerPipeline,
     );
   }
 
@@ -337,49 +356,65 @@ class ExperienceCreationCoordinator {
     SolutionDecision? solutionDecision,
     BackendEngineeringPlan? backendEngineeringPlan,
     CanonicalImplementationModel? canonicalImplementationModel,
+    bool useCompilerPipeline = false,
   }) async {
     _state = CreationState.creating;
 
     try {
-      final creationResult = await _creationEngine.create(
-        CreationContext(
-          intent: intent,
-          specification: specification,
-          plan: plan,
-          blueprint: blueprint,
-          engineeringPlan: engineeringPlan,
-          platformContext: const PlatformContext(
-            platform: 'android',
-            sdkVersion: 34,
-          ),
-          securityPolicy: const CreationSecurityPolicy(),
-        ),
-      );
-
-      if (creationResult is! CreationReady) {
-        _state = CreationState.failed;
-        return CreationFailed(
-          error: creationResult.message,
-          message: creationResult.message,
-        );
+      // Compiler Pipeline (Implementation Milestone R19) — opt-in only.
+      // Falls back to the legacy path below whenever the compiler pipeline
+      // has nothing to generate or its output fails the SAME
+      // ExperiencePackageValidator the legacy package must also pass —
+      // the flag can never silently break creation.
+      ExperiencePackage? package;
+      if (useCompilerPipeline && canonicalImplementationModel != null && canonicalImplementationModel.entities.isNotEmpty) {
+        final outcome = runCompilerPipeline(canonicalImplementationModel, id: specification.id, name: specification.name);
+        if (outcome.succeeded && ExperiencePackageValidator.validate(outcome.package!).isValid) {
+          package = outcome.package;
+        }
       }
 
-      // Validate with production validator
-      _state = CreationState.validating;
-      final validation = ExperiencePackageValidator.validate(
-        creationResult.package,
-      );
-      if (!validation.isValid) {
-        _state = CreationState.failed;
-        return CreationFailed(
-          error: validation.errors.join('; '),
-          message: 'Could not complete this app',
+      if (package == null) {
+        final creationResult = await _creationEngine.create(
+          CreationContext(
+            intent: intent,
+            specification: specification,
+            plan: plan,
+            blueprint: blueprint,
+            engineeringPlan: engineeringPlan,
+            platformContext: const PlatformContext(
+              platform: 'android',
+              sdkVersion: 34,
+            ),
+            securityPolicy: const CreationSecurityPolicy(),
+          ),
         );
+
+        if (creationResult is! CreationReady) {
+          _state = CreationState.failed;
+          return CreationFailed(
+            error: creationResult.message,
+            message: creationResult.message,
+          );
+        }
+
+        // Validate with production validator
+        _state = CreationState.validating;
+        final validation = ExperiencePackageValidator.validate(
+          creationResult.package,
+        );
+        if (!validation.isValid) {
+          _state = CreationState.failed;
+          return CreationFailed(
+            error: validation.errors.join('; '),
+            message: 'Could not complete this app',
+          );
+        }
+        package = creationResult.package;
       }
 
       // Persist
       _state = CreationState.persisting;
-      final package = creationResult.package;
       final metadata = ExperienceMetadataRecord(
         id: package.manifest.experienceId,
         name: package.manifest.name,
