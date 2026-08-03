@@ -16,12 +16,14 @@
 /// a pluggable, language-neutral generator interface. No duplication
 /// exists; this is genuinely new, sanctioned work.
 ///
-/// Consumes `CanonicalImplementationModel` (Implementation Milestone R9)
-/// exclusively — zero knowledge of Flutter/Dart/React/Angular/Vue/Node/
-/// Python/Java/Go/Swift/Kotlin/C# anywhere in this file.
+/// Consumes `UniversalBuildGraph` (Implementation Milestone R11 — itself a
+/// real, deterministic derivation of `CanonicalImplementationModel`,
+/// Implementation Milestone R9) exclusively — zero knowledge of
+/// Flutter/Dart/React/Angular/Vue/Node/Python/Java/Go/Swift/Kotlin/C#
+/// anywhere in this file.
 library;
 
-import '../implementation_model/canonical_implementation_model.dart';
+import '../build_graph/universal_build_graph.dart';
 import 'generation_result.dart';
 
 /// Semantic version for a generator implementation — real, small, never
@@ -82,15 +84,16 @@ class GeneratorOptions {
 }
 
 /// Everything one [Generator.generate] call needs — the real,
-/// already-computed `CanonicalImplementationModel` (R9), the target
-/// being generated for, and real options. Never carries anything
-/// language-specific.
+/// already-computed `UniversalBuildGraph` (R11, wrapping
+/// `CanonicalImplementationModel` via [UniversalBuildGraph.sourceModel]),
+/// the target being generated for, and real options. Never carries
+/// anything language-specific.
 class GeneratorContext {
-  final CanonicalImplementationModel model;
+  final UniversalBuildGraph buildGraph;
   final GeneratorTarget target;
   final GeneratorOptions options;
 
-  const GeneratorContext({required this.model, required this.target, this.options = GeneratorOptions.empty});
+  const GeneratorContext({required this.buildGraph, required this.target, this.options = GeneratorOptions.empty});
 }
 
 /// The ONE canonical interface. Every real, future language generator

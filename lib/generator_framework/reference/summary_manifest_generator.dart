@@ -32,7 +32,12 @@ class SummaryManifestGenerator implements Generator {
 
   @override
   GenerationResult generate(GeneratorContext context) {
-    final model = context.model;
+    // Implementation Milestone R11: reads the retained source model off
+    // the build graph — this generator's own entity/field-level logic is
+    // unchanged, it just reaches the same data through
+    // `UniversalBuildGraph.sourceModel` instead of a bare
+    // `CanonicalImplementationModel` parameter.
+    final model = context.buildGraph.sourceModel;
     final diagnostics = <GenerationDiagnostic>[];
 
     if (model.entities.isEmpty) {
