@@ -23,11 +23,20 @@ class ModificationCoordinatorSucceeded extends ModificationCoordinatorResult {
   final String experienceId;
   final String experienceName;
   final String newVersion;
+
+  /// The package that was active immediately before this change was
+  /// persisted (Implementation Milestone R6) — `null` for the pre-R6
+  /// [modifyExperience] call path (unchanged, backward compatible).
+  /// [applyEvolutionPlan] always populates this, since real rollback
+  /// requires the exact prior state, not a re-derived one.
+  final ExperiencePackage? previousPackage;
+
   const ModificationCoordinatorSucceeded({
     required this.newPackage,
     required this.experienceId,
     required this.experienceName,
     required this.newVersion,
+    this.previousPackage,
   });
 }
 
@@ -241,6 +250,127 @@ class ExperienceModificationCoordinator {
       experienceId: experienceId,
       experienceDiff: experienceDiff,
       historicalEngineeringMemory: historicalMemory,
+      candidatePackage: result.updatedPackage,
+    );
+  }
+
+  /// Applies a previously-computed [plan] (Implementation Milestone R6:
+  /// "Deterministic Runtime Patching") — validates, persists, ingests
+  /// into the World Graph on success only, and returns the prior package
+  /// so a caller can reload the live `AnythingRuntime`/`ExperienceRenderer`
+  /// (the SAME `closeSession()` -> `openExperience()` sequence this
+  /// codebase has used for every modification since before Vision
+  /// Milestone V1 — see `ExperienceHostScreen._submitModification`; this
+  /// method deliberately does NOT touch `AnythingRuntime`/
+  /// `ExperienceRenderer` itself, since that existing reload mechanism
+  /// already does exactly what's needed) or call [rollback].
+  ///
+  /// REALITY: [planEvolution] itself only checks `result is ModificationReady`
+  /// — it never runs [ExperiencePackageValidator]. Applying a plan without
+  /// re-validating here would be a real security gap (a plan computed
+  /// against stale state could persist an invalid package). This method
+  /// re-validates [EvolutionDiffPlan.candidatePackage] through the exact
+  /// same boundary [modifyExperience] already uses — never a bypass.
+  Future<ModificationCoordinatorResult> applyEvolutionPlan(EvolutionDiffPlan plan) async {
+    final candidate = plan.candidatePackage;
+    if (candidate == null) {
+      return const ModificationCoordinatorFailed(message: "This plan has no candidate to apply.");
+    }
+
+    final metadata = await _repository.getMetadata(plan.experienceId);
+    if (metadata == null) {
+      return const ModificationCoordinatorFailed(message: 'App not found');
+    }
+    final previousPackage = await _repository.getPackage(plan.experienceId);
+    if (previousPackage == null) {
+      return const ModificationCoordinatorFailed(message: 'App data not found');
+    }
+
+    final validation = ExperiencePackageValidator.validate(candidate);
+    if (!validation.isValid) {
+      return const ModificationCoordinatorFailed(message: "I couldn't apply that change.");
+    }
+
+    await _repository.savePackage(candidate);
+
+    // World Model ingestion on ACCEPTED evolution only — a rejected plan
+    // returns above, before this line is ever reached, so World state is
+    // never mutated on failure (mirrors R4's identical, already-tested
+    // contract for `modifyExperience`).
+    try {
+      _worldModel.ingestExperience(metadata, candidate);
+    } catch (_) {
+      // Deliberately swallowed — a bookkeeping failure must never surface
+      // as an evolution failure.
+    }
+
+    await _activity.record(
+      ActivityEvent(
+        id: 'evt-${DateTime.now().millisecondsSinceEpoch}',
+        type: 'updated',
+        experienceId: plan.experienceId,
+        experienceName: metadata.name,
+        message: 'Evolved ${metadata.name}',
+        timestamp: DateTime.now(),
+      ),
+    );
+
+    return ModificationCoordinatorSucceeded(
+      newPackage: candidate,
+      experienceId: plan.experienceId,
+      experienceName: metadata.name,
+      newVersion: candidate.manifest.version,
+      previousPackage: previousPackage,
+    );
+  }
+
+  /// Deterministic rollback (Implementation Milestone R6): restores
+  /// [previousPackage] — real prior state already returned by
+  /// [applyEvolutionPlan] as `ModificationCoordinatorSucceeded.previousPackage`,
+  /// never an arbitrary caller-supplied blob (Security: this cannot be
+  /// abused to persist a package that was never actually valid, since
+  /// [previousPackage] only ever originates from this coordinator's own
+  /// prior, already-validated, already-persisted state). Re-validates
+  /// defensively before persisting — cheap, since the package was valid
+  /// before, but never assumed. `SqliteExperienceRepository.savePackage()`
+  /// has no version history (confirmed by direct source read: `INSERT ...
+  /// ConflictAlgorithm.replace` keyed on `experience_id`) — this is why
+  /// the caller must hold [previousPackage] rather than this coordinator
+  /// attempting to look up "the version before this one" itself.
+  Future<ModificationCoordinatorResult> rollback({
+    required String experienceId,
+    required ExperiencePackage previousPackage,
+  }) async {
+    final metadata = await _repository.getMetadata(experienceId);
+    if (metadata == null) {
+      return const ModificationCoordinatorFailed(message: 'App not found');
+    }
+
+    final validation = ExperiencePackageValidator.validate(previousPackage);
+    if (!validation.isValid) {
+      return const ModificationCoordinatorFailed(message: "I couldn't roll back that change.");
+    }
+
+    final currentPackage = await _repository.getPackage(experienceId);
+    await _repository.savePackage(previousPackage);
+
+    await _activity.record(
+      ActivityEvent(
+        id: 'evt-${DateTime.now().millisecondsSinceEpoch}',
+        type: 'updated',
+        experienceId: experienceId,
+        experienceName: metadata.name,
+        message: 'Rolled back ${metadata.name}',
+        timestamp: DateTime.now(),
+      ),
+    );
+
+    return ModificationCoordinatorSucceeded(
+      newPackage: previousPackage,
+      experienceId: experienceId,
+      experienceName: metadata.name,
+      newVersion: previousPackage.manifest.version,
+      previousPackage: currentPackage,
     );
   }
 

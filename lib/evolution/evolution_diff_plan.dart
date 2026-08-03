@@ -27,6 +27,7 @@ library;
 
 import '../application_engineering/engineering_candidate_diff.dart';
 import '../application_engineering/engineering_memory_summary.dart';
+import '../creation/experience_package.dart';
 import '../creation/experience_package_diff.dart';
 import '../software_architect/architecture_candidate.dart';
 import '../software_architect/architecture_candidate_diff.dart';
@@ -90,6 +91,21 @@ class EvolutionDiffPlan {
   /// (see Known Limitations).
   final HistoricalEngineeringMemory? historicalEngineeringMemory;
 
+  /// The already-computed, not-yet-validated-or-persisted candidate
+  /// package this plan was derived from (Implementation Milestone R6).
+  /// REALITY: `planEvolution()` already computes this via
+  /// `ModificationEngine.modify()` — R4/R5 simply discarded it after
+  /// building the plan, forcing any "apply" caller to hypothetically
+  /// re-run modification logic a second time. Carrying it here lets
+  /// `ExperienceModificationCoordinator.applyEvolutionPlan()` validate and
+  /// persist the SAME candidate the plan already describes — never a
+  /// second modification computation, never silently re-deriving a
+  /// possibly-different candidate from a stale expression string.
+  /// Nullable so pre-R6 callers/tests that build a plan directly (without
+  /// going through `planEvolution()`) are unaffected — `applyEvolutionPlan()`
+  /// honestly rejects a plan with no candidate rather than crashing.
+  final ExperiencePackage? candidatePackage;
+
   const EvolutionDiffPlan({
     required this.experienceId,
     this.requirementDiff,
@@ -99,6 +115,7 @@ class EvolutionDiffPlan {
     required this.mutations,
     required this.generatedAt,
     this.historicalEngineeringMemory,
+    this.candidatePackage,
   });
 
   bool get isEmpty => mutations.isEmpty;
@@ -127,6 +144,7 @@ class EvolutionDiffPlanBuilder {
     EngineeringDiff? engineeringDiff,
     required ExperienceDiff experienceDiff,
     HistoricalEngineeringMemory? historicalEngineeringMemory,
+    ExperiencePackage? candidatePackage,
   }) {
     final mutations = <EvolutionMutation>[];
     String? previousStage;
@@ -220,6 +238,7 @@ class EvolutionDiffPlanBuilder {
       mutations: mutations,
       generatedAt: DateTime.now(),
       historicalEngineeringMemory: historicalEngineeringMemory,
+      candidatePackage: candidatePackage,
     );
   }
 
