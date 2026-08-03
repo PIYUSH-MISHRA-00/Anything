@@ -1,5 +1,17 @@
 # Generator Framework — Implementation Milestone R10
 
+**Updated Implementation Milestone R12**: `SummaryManifestGenerator` no
+longer hardcodes artifact paths/naming in Dart code — it now reads them
+from an injected `GenerationSpecification`
+(`lib/generation_specification/`, R12), defaulting to
+`GenerationSpecification.defaultReference` (the exact pre-R12 path
+shape, so default construction's observable behavior is unchanged). See
+`docs/architecture/GENERATION_SPECIFICATION.md` for the full account.
+`Generator`/`GeneratorContext`/`GenerationPipeline`/`GenerationResult`/
+`Artifact` themselves are unmodified this milestone — only the reference
+generator's own internal logic changed, to genuinely consume the new
+specification instead of deciding paths itself.
+
 **Updated Implementation Milestone R11**: `GeneratorContext`/
 `GenerationPipeline.run()` now consume `UniversalBuildGraph`
 (`lib/build_graph/`, R11) instead of `CanonicalImplementationModel`

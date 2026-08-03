@@ -118,3 +118,18 @@ Statuses: VERIFIED (directly confirmed by source/test execution), PARTIAL (real 
 | WebWeaveX / Kaalka sole-boundary status | **UNCHANGED** — this milestone touches neither. |
 | Single AI reasoning boundary preserved | **VERIFIED** — zero new LLM calls anywhere. |
 | No duplicate architecture | **VERIFIED** — no second Kernel/Runtime/Planner/World-Model/Capability-Platform/Engineering-Pipeline/Generator-Framework/Build-System/AI-Boundary. |
+
+## Implementation Milestone R12 — Canonical Generation Specification (2026-08-03)
+
+| Item | Status |
+|---|---|
+| Language-independent generation contract (path/naming) | **VERIFIED** — `lib/generation_specification/` (`PathTemplate`/`ArtifactMapping`/`GenerationRule`/`GenerationSpecification`), a real, typed, closed rule set consumed by a `Generator` instead of hardcoded in one. |
+| Generator Framework consumes the specification, not hardcoded paths | **VERIFIED** — `SummaryManifestGenerator` (R10) genuinely refactored: entity-artifact emission and all paths now resolve through an injected `GenerationSpecification`; proven by a dedicated test showing a CUSTOM specification measurably changes real output paths while content stays generator-derived (genuine consumption, not decoration). |
+| Backward compatibility | **VERIFIED** — `GenerationSpecification.defaultReference` reproduces the exact pre-R12 hardcoded paths; a dedicated regression-equivalence test proves default-constructed behavior is byte-for-byte unchanged. |
+| Content assembly stays real generator logic | **VERIFIED, honestly scoped** — turning entity fields into summary text is genuine data-shaping behavior, deliberately not folded into the specification (would require fabricating a template engine, explicitly out of scope); named as a real, defensible boundary, not a silent gap. |
+| Language independence preserved | **VERIFIED** — `lib/generation_specification/` carries zero Flutter/Dart/other-language constructs. |
+| Deterministic | **VERIFIED** — a dedicated test runs the same graph/specification through `GenerationPipeline.run()` twice and asserts byte-for-byte identical artifacts. |
+| Engineering Memory / World Model integration | **DELIBERATELY NOT EXTENDED** — investigated and declined, mirroring R10/R11: a `GenerationSpecification` is architecturally closer to CODE (a generator-owned, fixed, `const` ruleset) than to per-Experience durable knowledge — see `docs/architecture/GENERATION_SPECIFICATION.md`. |
+| WebWeaveX / Kaalka sole-boundary status | **UNCHANGED** — this milestone touches neither. |
+| Single AI reasoning boundary preserved | **VERIFIED** — zero new LLM calls anywhere; `PathTemplate.resolve()`/`SummaryManifestGenerator.generate()` are pure functions of their inputs. |
+| No duplicate architecture | **VERIFIED** — no second Kernel/Runtime/Planner/World-Model/Capability-Platform/Engineering-Pipeline/Generator-Framework/Build-Graph/AI-Boundary; `Generator`/`GeneratorContext`/`GenerationPipeline`/`UniversalBuildGraph` themselves are unmodified this milestone. |

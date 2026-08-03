@@ -569,3 +569,43 @@ incremental/partial-build support once a real, measurably-expensive
 generator exists with real numbers to justify it; (3) the standing
 Capability Platform / BYOK-provider-count / localization gaps from
 MIS-1/V10 remain open and unrelated to the R-series' own scope.
+
+## Implementation Milestone R12 — Canonical Generation Specification (2026-08-03)
+
+`lib/generation_specification/` (`PathTemplate`/`ArtifactMapping`/
+`GenerationRule`/`GenerationSpecification`) closes R10's own "generators
+hardcode their own path/naming decisions" gap: a real, typed,
+language-independent contract for how a `BuildGraphNode` (R11) becomes a
+generated `Artifact` (R10), moving that decision out of generator code
+and into real, inspectable rule data. `SummaryManifestGenerator` (R10)
+was genuinely refactored — not given new, unused sibling types — to
+resolve its entity-artifact and manifest paths through an injected
+specification, defaulting to `GenerationSpecification.defaultReference`
+(proven byte-for-byte equivalent to the exact pre-R12 hardcoded paths by
+a dedicated regression-equivalence test). A second test proves a
+genuinely different specification measurably changes real output paths
+while content assembly — deliberately left as real generator logic,
+since forcing it into "specification" data would mean fabricating a
+template engine — stays correctly field-derived. Investigation found no
+reusable mapping/template concept anywhere in the codebase;
+`RuntimeComponentRegistry` informed only the DESIGN shape (closed,
+typed, kind-to-output), never reused directly. Engineering Memory and
+World Model integration were investigated and declined again, for a new
+reason specific to this milestone: a `GenerationSpecification` is a
+fixed, `const`, generator-owned ruleset — architecturally CODE, not
+per-Experience durable knowledge. 8 new tests, full regression 1247/1247
+(up from 1239). `flutter analyze`: 71/0, unchanged baseline.
+
+**Recommendation for R13**: (1) a real target-language generator remains
+the highest-value next step — the first real pressure-test of whether
+`GenerationSpecification`'s current path/naming-only rule shape is
+sufficient, or whether genuine content-template needs motivate extending
+it with real, justified depth; (2) revisit the deferred mapping types
+(Module/Package/Resource/Capability/Dependency/Lifecycle/Configuration/
+Build/Validation Mapping, named in R12's own spec but not modeled) once
+a real generator actually needs them — never speculatively; (3) the
+standing Capability Platform / BYOK-provider-count / localization gaps
+from MIS-1/V10 remain open and unrelated to the R-series' own scope.
+
+**DO NOT START R13 — per this milestone's own stop condition, wait for
+external architectural review.**

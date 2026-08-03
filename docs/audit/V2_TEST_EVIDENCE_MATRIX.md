@@ -837,3 +837,25 @@ shape and re-verified passing unchanged in substance.
 against the new API. Full regression: **1239/1239** (up from 1227, zero
 pre-existing test weakened — only updated to the new, real API shape).
 `flutter analyze`: 71 issues, 0 errors, unchanged baseline.
+
+## Implementation Milestone R12 — Canonical Generation Specification (2026-08-03)
+
+8 new tests across `test/r12_generation_specification_test.dart`, 3
+groups: `PathTemplate` (deterministic `{id}`/`{label}` substitution,
+no-placeholder passthrough), `GenerationSpecification` (`ruleFor`
+lookup returns the real matching rule or honestly `null`), and
+`SummaryManifestGenerator genuinely consumes GenerationSpecification`
+(regression-equivalence — the DEFAULT specification reproduces
+`SummaryManifestGenerator`'s exact pre-R12 hardcoded paths
+`summary/task.txt`/`summary/tag.txt`/`summary/manifest.txt`; a CUSTOM
+specification measurably changes real output to
+`custom/Task/entity.txt`/`custom/Tag/entity.txt`/`custom/index.txt`
+while content stays field-derived — the core genuine-consumption proof;
+an empty-rules specification honestly emits zero entity artifacts plus
+a real `skippedFeature` diagnostic while still emitting the manifest;
+determinism via `GenerationPipeline.run()` called twice; a real
+200-entity performance measurement).
+
+**Execution result:** all 8 pass. Full regression: **1247/1247** (up
+from 1239, zero pre-existing test modified). `flutter analyze`: 71
+issues, 0 errors, unchanged baseline.
