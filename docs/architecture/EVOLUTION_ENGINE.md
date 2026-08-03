@@ -265,3 +265,78 @@ model.
   migration of its own. `EvolutionCoordinator` today only handles
   applying an already-known roadmap proposal, not re-deriving one from
   scratch for an old package.
+
+## Implementation Milestone R6 — Deterministic Runtime Patching (2026-08-03)
+
+Closes R4's own deferred scope ("runtime application belongs to a later
+milestone") by adding `ExperienceModificationCoordinator.applyEvolutionPlan()`
+and `.rollback()`. Both are new METHODS on the existing coordinator —
+no second Evolution Coordinator, no second Runtime, no second Renderer.
+
+**REALITY confirmed by direct source read before implementing**:
+`ExperienceHostScreen._submitModification` already reloads the live
+`AnythingRuntime` after a modification via `closeSession()` ->
+`openExperience(newPackage)` — this exact mechanism predates Vision
+Milestone V1. R6 does not invent a new reload path; it extends
+`EvolutionDiffPlan` (R4) with an optional `candidatePackage` field (the
+already-computed, previously-discarded modification result) so
+`applyEvolutionPlan()` can validate and persist it without recomputing,
+then a caller reloads the SAME runtime the same way modification already
+has for years.
+
+**Patch model**: no new patch-operation vocabulary was introduced. The
+existing `ModificationType`/`ModificationOperation` enum (addUiNode,
+modifyUiNode, removeUiNode, addBehavior, modifyBehavior, removeBehavior,
+addState, modifySchema, addEntity, addService, addCapability,
+addPermission, updateMetadata) already covers the patch categories R6's
+own spec named — `ModificationEngine.modify()` remains the sole compiler
+from operations to a candidate `ExperiencePackage`, unchanged.
+
+**Validation**: `applyEvolutionPlan()` runs `ExperiencePackageValidator.validate()`
+on the candidate — the exact same boundary `modifyExperience()` already
+uses. `planEvolution()` itself does NOT validate (it only checks
+`ModificationReady`); skipping validation at apply time would have been
+a real security gap, so `applyEvolutionPlan()` re-validates rather than
+trusting a plan computed against possibly-stale state.
+
+**Rollback model**: `SqliteExperienceRepository.savePackage()` has no
+version history (`INSERT ... ConflictAlgorithm.replace` keyed on
+`experience_id`, confirmed by direct source read) — real, deterministic
+rollback is achieved by the coordinator returning the pre-apply package
+as `ModificationCoordinatorSucceeded.previousPackage`, which the caller
+holds and can pass to `rollback()` to restore. `rollback()` never
+accepts an arbitrary caller-supplied package as ground truth without
+re-validating it, but the package itself always originates from this
+coordinator's own prior, already-validated, already-persisted state —
+never a foreign blob. Undo-of-undo works: `rollback()` itself returns a
+`previousPackage` (the state just replaced).
+
+**World Model**: `applyEvolutionPlan()` ingests into the shared World
+Graph on success only, via the exact `ingestExperience` call R1/R4
+already established — never on a rejected plan (proven directly by
+test: an invalid candidate leaves the World Graph's experience-node
+count unchanged).
+
+**Runtime patching level achieved**: full, fast reload through the
+existing, UNMODIFIED `AnythingRuntime`/`ExperienceRenderer` — not
+granular in-place widget patching. MIS-1 Part 3's own Runtime
+Modification RFC already flagged true zero-regeneration/surgical
+patching as the highest-risk item across all of MIS-1, explicitly not
+recommended near-term; this milestone's "without regenerating the
+Experience" is satisfied in the sense that matters most — no
+Intent-to-Kernel-to-AI-synthesis re-run occurs, only a sub-second
+validate-persist-reload of an already-computed candidate. Navigation
+position, scroll position, and in-progress form input are NOT preserved
+across the reload — this is a pre-existing limitation of the reload
+mechanism itself (unchanged since before V1), not something this
+milestone introduces or claims to fix.
+
+**AI boundary**: confirmed unchanged — zero `ModelProvider`/reasoner
+references anywhere in the modification/evolution-application path.
+
+**Known limitations**: no granular in-place patching (see above,
+honestly out of scope per MIS-1's own risk assessment); state
+(navigation/scroll/form input) is lost on reload, matching the
+pre-existing reload mechanism's behavior; `rollback()` requires the
+caller to hold `previousPackage` explicitly (no server-side history
+lookup) since the repository itself retains no version history.

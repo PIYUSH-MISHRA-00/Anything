@@ -43,3 +43,10 @@ Statuses: VERIFIED (directly confirmed by source/test execution), PARTIAL (real 
 **Read honestly:** several rows above were originally UNKNOWN rather than VERIFIED or MISSING because the parallel research agents assigned to those areas were terminated mid-task by an account-level rate limit (see Current State Audit §1) before they reported. Treating UNKNOWN as "probably fine" would be exactly the optimism bias this audit is supposed to avoid — they were open items, not passing grades.
 
 **M2 update (2026-08-01):** every security/runtime-scoped UNKNOWN row above is now VERIFIED — see `docs/audit/V2_SECURITY_AUDIT.md` for the full account. Design/accessibility (M3), Android (M5), and OSS readiness (M6) rows are intentionally left unchanged; M2 did not touch them.
+
+## Implementation Milestone R6 update (2026-08-03)
+
+| Capability | Status |
+|---|---|
+| Runtime patching (apply an EvolutionDiffPlan to a live Experience) | **VERIFIED** — `ExperienceModificationCoordinator.applyEvolutionPlan()`/`.rollback()`, real validate-before-persist, real deterministic rollback via pre-apply package snapshot, real World Model accept-only ingestion, a real widget-level test proving the live `AnythingRuntime`/`ExperienceRenderer` reflect an applied patch after reload. No second Runtime/Renderer/Coordinator/Planner introduced. |
+| Zero-regeneration / granular in-place patching | Honestly NOT achieved — MIS-1 Part 3 already flagged this as high-risk/not-recommended-near-term; R6 achieves full-reload-through-the-existing-runtime instead (sub-second, no AI call, no re-synthesis), a real and much safer scope. |

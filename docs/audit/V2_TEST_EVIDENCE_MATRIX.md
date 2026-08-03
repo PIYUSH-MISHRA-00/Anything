@@ -680,3 +680,26 @@ was touched this milestone, confirming no runtime-patching scope crept in.
 ## Documentation vs. reality
 
 `docs/progress/V2_STAGE_11.md` (last touched at commit `68bf60f`, 2026-07-29) claims `Status: COMPLETE` and "119/All passing" — this predates all three untracked Stage 11 test files and the uncommitted production-code DI changes, and does not reflect the 194/199 result measured in this audit. It should be treated as historical, not current, until Stage 11 closure (Roadmap M1) actually lands and this doc is updated with a fresh, dated, execution-verified count.
+
+## Implementation Milestone R6 — Deterministic Runtime Patching (2026-08-03)
+
+9 new tests (`test/r6_runtime_patching_test.dart`): `applyEvolutionPlan()`
+validate-before-persist (valid candidate persists + returns real
+`previousPackage`; an oversized/invalid candidate is rejected with old
+package and World Graph both untouched; a plan with no `candidatePackage`
+is honestly rejected, never crashes); World Graph gains an experience
+node on success; `rollback()` restores the exact pre-apply package
+(byte-identical `toJson()`) and itself returns a `previousPackage` so an
+undo can be undone; a REAL widget-level proof (`testWidgets`, wrapped in
+`tester.runAsync()` per this project's own established
+FakeAsync/real-SQLite convention) that the live `AnythingRuntime`/
+`ExperienceRenderer` — completely unmodified — genuinely render the
+patched content after the existing `closeSession()`/`openExperience()`
+reload; determinism (two independently-seeded repositories produce
+byte-identical persisted packages from the same plan); a real
+`Stopwatch`-measured performance test (50x apply+rollback cycles, ~840-
+860ms observed across runs).
+
+**Execution result:** all 9 pass. Full regression: **1177/1177** (up
+from 1168, zero pre-existing test modified). `flutter analyze`: 71
+issues, 0 errors, unchanged baseline.

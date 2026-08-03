@@ -393,3 +393,27 @@ call or new inference machinery, both out of scope); real historical
 **Objective:** All of M1-M6 acceptance gates met; `flutter analyze` clean; full `flutter test` suite passes (not just the subsets exercised in this audit); `flutter build apk --debug` succeeds and release build succeeds where a signing environment is available; no UNKNOWN rows remain in `V2_VISION_GAP_MATRIX.md` for anything in v2.0.0 scope; `docs/progress/V2_STAGE_11.md` and other stage docs reflect actual, dated, execution-verified state; CI is green on the release branch.
 
 **Acceptance gate:** this document's own checklist, re-run and all green, immediately before tagging.
+
+## Implementation Milestone R6 — Deterministic Runtime Patching — COMPLETE (2026-08-03)
+
+Closes R4's deferred "runtime application" scope. `ExperienceModificationCoordinator`
+gained `applyEvolutionPlan()`/`rollback()` — real validate-persist-reload
+through the existing, unmodified `AnythingRuntime`/`ExperienceRenderer`,
+real deterministic rollback via a held pre-apply package snapshot (no
+repository version history exists, confirmed by source read), World
+Model ingestion on accepted evolution only. No new patch-operation
+vocabulary — the existing `ModificationType` enum already covered it.
+No granular in-place widget patching (MIS-1 already flagged this as
+high-risk/not-recommended-near-term) — full reload through the existing
+renderer is the real, honest, low-risk scope achieved instead.
+Regression: 1177/1177 (+9). Analyzer: 71/0, unchanged.
+
+**Recommendation for R7**: (1) wire `applyEvolutionPlan()`/`rollback()`
+into the actual `ExperienceHostScreen` UI (currently only
+`modifyExperience()` is UI-wired; the richer plan-based path is real,
+tested, and available but not yet the UI's default) — mirrors the same
+"real, available, not yet composition-root-wired" pattern several prior
+milestones' new coordinators started with; (2) decide whether
+navigation/scroll/form-state preservation across a patch-triggered
+reload is worth pursuing, given it's a real, named, pre-existing
+limitation this milestone did not attempt to fix.
