@@ -13,6 +13,7 @@ import 'package:anything/application_engineering/engineering_context.dart';
 import 'package:anything/application_engineering/engineering_planner.dart';
 import 'package:anything/backend_engineering/backend_engineering_context.dart';
 import 'package:anything/backend_engineering/backend_engineering_planner.dart';
+import 'package:anything/build_graph/universal_build_graph.dart';
 import 'package:anything/capabilities/registry/capability_descriptor.dart';
 import 'package:anything/generator_framework/artifact.dart';
 import 'package:anything/generator_framework/generation_pipeline.dart';
@@ -133,7 +134,7 @@ void main() {
     test('a real CanonicalImplementationModel produces real, correct, inspectable artifacts — never a fabricated placeholder', () {
       const pipeline = GenerationPipeline();
       final result = pipeline.run(
-        model: _twoEntityModel(),
+        buildGraph: const BuildGraphBuilder().build(_twoEntityModel()),
         generator: const SummaryManifestGenerator(),
         target: const GeneratorTarget(id: 'reference', name: 'Reference'),
       );
@@ -152,7 +153,7 @@ void main() {
       final model = _realFleetModel();
       expect(model.entities, isNotEmpty, reason: 'sanity: the real fixture chain actually produced entities');
 
-      final result = pipeline.run(model: model, generator: const SummaryManifestGenerator(), target: const GeneratorTarget(id: 'reference', name: 'Reference'));
+      final result = pipeline.run(buildGraph: const BuildGraphBuilder().build(model), generator: const SummaryManifestGenerator(), target: const GeneratorTarget(id: 'reference', name: 'Reference'));
 
       expect(result.hasErrors, isFalse);
       expect(result.allArtifacts, isNotEmpty);
@@ -161,7 +162,7 @@ void main() {
 
     test('an empty model produces an honest diagnostic, never a crash or a fabricated artifact', () {
       const pipeline = GenerationPipeline();
-      final result = pipeline.run(model: _emptyModel(), generator: const SummaryManifestGenerator(), target: const GeneratorTarget(id: 'reference', name: 'Reference'));
+      final result = pipeline.run(buildGraph: const BuildGraphBuilder().build(_emptyModel()), generator: const SummaryManifestGenerator(), target: const GeneratorTarget(id: 'reference', name: 'Reference'));
 
       expect(result.allArtifacts, isEmpty);
       expect(result.diagnostics, isNotEmpty);
@@ -174,9 +175,10 @@ void main() {
       const pipeline = GenerationPipeline();
       const target = GeneratorTarget(id: 'reference', name: 'Reference');
       final model = _twoEntityModel();
+      final buildGraph = const BuildGraphBuilder().build(model);
 
-      final r1 = pipeline.run(model: model, generator: const SummaryManifestGenerator(), target: target);
-      final r2 = pipeline.run(model: model, generator: const SummaryManifestGenerator(), target: target);
+      final r1 = pipeline.run(buildGraph: buildGraph, generator: const SummaryManifestGenerator(), target: target);
+      final r2 = pipeline.run(buildGraph: buildGraph, generator: const SummaryManifestGenerator(), target: target);
 
       expect(r1.allArtifacts.length, r2.allArtifacts.length);
       for (var i = 0; i < r1.allArtifacts.length; i++) {
@@ -222,7 +224,7 @@ void main() {
       const pipeline = GenerationPipeline();
 
       final stopwatch = Stopwatch()..start();
-      final result = pipeline.run(model: model, generator: const SummaryManifestGenerator(), target: const GeneratorTarget(id: 'reference', name: 'Reference'));
+      final result = pipeline.run(buildGraph: const BuildGraphBuilder().build(model), generator: const SummaryManifestGenerator(), target: const GeneratorTarget(id: 'reference', name: 'Reference'));
       stopwatch.stop();
 
       expect(result.allArtifacts, hasLength(201)); // 200 entity summaries + 1 manifest
