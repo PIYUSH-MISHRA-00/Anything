@@ -332,6 +332,30 @@ learned patterns" ambition.
 
 ---
 
+## Implementation Milestone R4 — Incremental Software Evolution — ✅ COMPLETE (2026-08-03)
+
+**Closure evidence:** `ArchitectureDiff`/`EngineeringDiff`/`ExperienceDiff`
+(new) extend R3's `RequirementGraphDiff` pattern; composed into
+`EvolutionDiffPlan`, deliberately not a duplicate of V7's
+`EvolutionRoadmap`/`EvolutionProposal` after direct investigation (see
+`docs/architecture/INCREMENTAL_EVOLUTION_DIFFING.md` for the full
+rationale). `ExperienceModificationCoordinator.planEvolution()` is real,
+planning-only, and never persists; World Model ingestion on acceptance
+(closing MIS-1 Part 2's `ingestExperience` finding) is proven never to
+fire on rejection. 17 new tests, full suite 1153/1153 (up from 1136),
+`flutter analyze` 71/0 unchanged. Runtime patching remains explicitly
+out of scope, confirmed via `git diff` showing zero changes to
+`AnythingRuntime`/`ExperienceRenderer`.
+
+**Known limitation carried to R5+:** `planEvolution` only populates
+`ExperienceDiff` in practice, since `RequirementGraph`/
+`ArchitectureCandidate`/`EngineeringCandidate` are transient,
+Kernel-internal artifacts never persisted per Experience —
+`EvolutionDiffPlanBuilder` accepts the other three diffs when a future
+caller has both instances, but no such caller exists yet.
+
+---
+
 ## v2.0.0 Release Candidate
 
 **Objective:** All of M1-M6 acceptance gates met; `flutter analyze` clean; full `flutter test` suite passes (not just the subsets exercised in this audit); `flutter build apk --debug` succeeds and release build succeeds where a signing environment is available; no UNKNOWN rows remain in `V2_VISION_GAP_MATRIX.md` for anything in v2.0.0 scope; `docs/progress/V2_STAGE_11.md` and other stage docs reflect actual, dated, execution-verified state; CI is green on the release branch.

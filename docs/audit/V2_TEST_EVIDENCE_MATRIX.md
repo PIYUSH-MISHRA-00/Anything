@@ -657,6 +657,26 @@ immediately after: full suite (**1136 tests, all green — up from 1121
 pre-R3**), `flutter analyze` (71 issues, 0 errors, 0 new — identical to
 the pre-R3 baseline). Zero pre-existing test modified or weakened.
 
+## Implementation Milestone R4 — Incremental Software Evolution (2026-08-03)
+
+17 new tests (`test/r4_incremental_evolution_test.dart`): `ArchitectureDiff`/
+`EngineeringDiff`/`ExperienceDiff` each proven empty for identical input,
+correct on add/remove/changed cases, and deterministic (same input twice
+-> same output); `EvolutionDiffPlan` composition proven ordered and
+dependency-linked across stages; `ExperienceModificationCoordinator`
+integration proven against a real SQLite-backed repository — `planEvolution`
+computes a real plan without ever persisting (checked directly: the stored
+package is unchanged after the call), and a real accept/reject pair proves
+the World Graph gains an experience node on acceptance and is provably
+unmutated after a rejected call. One real performance measurement (500/501
+screen packages, ExperienceDiff, ~6ms observed).
+
+**Execution result:** all 17 pass. Full regression re-run immediately
+after: full suite (1153 tests, all green — up from 1136 pre-R4), `flutter
+analyze` (71 issues, 0 errors — identical to the pre-R4 baseline). Neither
+`lib/runtime/anything_runtime.dart` nor `lib/runtime/experience_renderer.dart`
+was touched this milestone, confirming no runtime-patching scope crept in.
+
 ## Documentation vs. reality
 
 `docs/progress/V2_STAGE_11.md` (last touched at commit `68bf60f`, 2026-07-29) claims `Status: COMPLETE` and "119/All passing" — this predates all three untracked Stage 11 test files and the uncommitted production-code DI changes, and does not reflect the 194/199 result measured in this audit. It should be treated as historical, not current, until Stage 11 closure (Roadmap M1) actually lands and this doc is updated with a fresh, dated, execution-verified count.
