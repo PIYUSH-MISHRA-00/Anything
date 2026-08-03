@@ -1130,3 +1130,35 @@ RSS delta while planning 50 strategies — ~128KB observed).
 **Execution result:** all 12 new tests pass. Full regression:
 **1332/1332** (up from 1320, zero pre-existing test modified).
 `flutter analyze`: 71 issues, 0 errors, unchanged baseline.
+
+## Implementation Milestone R19 — Compiler Production Integration
+
+`test/r19_compiler_production_integration_test.dart` (13 tests) —
+`runCompilerPipeline()` on a real Kernel-derived `CanonicalImplementationModel`
+produces a real, validator-passing `ExperiencePackage`; an empty model
+honestly fails rather than fabricating one; real dimension-by-dimension
+comparison on a real legacy-vs-compiler pair from the SAME Kernel run
+(score 9/11 — `dataFieldCountParity`/`screenCountParity` genuinely fail,
+documented, not hidden); a real bug this suite found and fixed —
+`EquivalenceComparator`'s Set-based checks originally used Dart's default
+(identity) `==` instead of content equality, silently failing
+`crudCreateCoverage`/`crudUpdateCoverage`/`crudDeleteCoverage`/
+`capabilityCoverage` even when the underlying sets matched; determinism
+re-verified by a real second run of each pipeline (not assumed from
+R13/R17/R18's own separate suites); the `useCompilerPipeline` flag
+proven default-`false` via a hard `PackageProvenance.creationEngineVersion`
+check (`'1.0.0'` legacy vs. `'reference.runtime-experience-1.0.0'`
+compiler); a real fallback test (compiler selected but no entities ->
+still succeeds via legacy, never fails creation); a real end-to-end
+widget test drives a create action through the compiler-selected
+package against real SQLite via the real, unmodified
+`ExperienceHostScreen`/`BehaviorInterpreter` — this test also surfaced
+two real, honest fixture realities: a real Kernel-derived entity's form
+carries a required 'id' field a hand-built fixture (like R13's own test)
+never showed, and `ExperienceDataRuntime.query()` namespaces result
+columns as `"<entity>.<field>"`; performance (real Stopwatch
+legacy-vs-compiler latency, real RSS delta over 50 compiler runs).
+
+**Execution result:** all 13 new tests pass. Full regression:
+**1345/1345** (up from 1332, zero pre-existing test modified).
+`flutter analyze`: 71 issues, 0 errors, unchanged baseline.

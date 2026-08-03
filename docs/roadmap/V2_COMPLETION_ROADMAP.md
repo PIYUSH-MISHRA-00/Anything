@@ -951,3 +951,32 @@ audit.
 
 **DO NOT START R19 — per this milestone's own stop condition, wait for
 external architectural review.**
+
+## Implementation Milestone R19 — Compiler Production Integration
+
+REALITY (re-confirmed by grep before writing any code): the R9-R13
+compiler chain still had zero production callers. Built a real
+equivalence harness (`lib/compiler_integration/`) comparing legacy vs.
+compiler `ExperiencePackage`s from the SAME real Kernel run across 11
+real dimensions — for the "Field Log" fixture, compatibility score
+9/11 (0.82), never a fabricated 100%; both pipelines independently
+re-verified deterministic. Added ONE production feature flag,
+`useCompilerPipeline` (default `false`), threaded through
+`ExperienceCreationCoordinator` — every existing call site keeps
+getting the legacy package byte-for-byte unchanged; when opted in, the
+compiler package is served only if it passes the exact same
+`ExperiencePackageValidator`, falling back to legacy otherwise. Proven
+end-to-end: a real widget test drives a create action through the
+compiler-selected package against real SQLite via the real,
+unmodified `ExperienceHostScreen`/`BehaviorInterpreter`.
+`lib/runtime/`, `lib/generator_framework/`, `lib/build_graph/`,
+`lib/generation_specification/`, `lib/software_cognition/`,
+`lib/world_model/`, `lib/storage/engineering_memory_repository.dart`,
+and `lib/creation/creation_engine.dart` are all completely untouched.
+Legacy was NOT removed or disabled — per the milestone's own mandate.
+
+See `docs/architecture/COMPILER_PRODUCTION_INTEGRATION.md` for the full
+audit, known differences, and migration strategy.
+
+**DO NOT START R20 — per this milestone's own stop condition, wait for
+external architectural review.**
