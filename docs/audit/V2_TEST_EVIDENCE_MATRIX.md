@@ -859,3 +859,52 @@ determinism via `GenerationPipeline.run()` called twice; a real
 **Execution result:** all 8 pass. Full regression: **1247/1247** (up
 from 1239, zero pre-existing test modified). `flutter analyze`: 71
 issues, 0 errors, unchanged baseline.
+
+## Implementation Milestone R13 — Runtime Experience Generator (2026-08-03)
+
+7 new tests across `test/r13_runtime_experience_generator_test.dart`,
+5 groups: `Generator` interface conformance; real end-to-end generation
+(a full-CRUD single-entity model produces exactly one valid
+`ExperiencePackage` artifact at `experience/note-tracker.json`, with
+the correct 4 screen IDs, correct `create_note_event` ->
+`create_note_data` behavior wiring, and zero behavior nodes for
+list/get/search operations; an empty model produces an honest
+info-severity diagnostic and zero artifacts; an entity with no
+controller is honestly skipped with a `skippedFeature` diagnostic
+naming it, while the overall package remains valid via its fallback
+`main` screen); determinism (two runs of the same model produce
+structurally identical interface/behavior/state/data, verified field-
+by-field since `BehaviorEdge` has no value equality); a real
+`CanonicalImplementationModel` with `StateContainerSpec`/
+`AuthenticationAdapterSpec.requiresCredentials`/
+`BackgroundWorkerSpec.requiresBackgroundSync` set produces the
+corresponding honest `skippedFeature` diagnostics naming each
+unrepresented concept.
+
+**Centerpiece test** (`Stage 11-style production certification`):
+real `CanonicalImplementationModel` -> real `BuildGraphBuilder` ->
+real `GenerationPipeline.run()` with `RuntimeExperienceGenerator` ->
+decoded `ExperiencePackage` -> re-validated through the real,
+unmodified `ExperiencePackageValidator` -> mounted in the real,
+unmodified `ExperienceHostScreen` with a real `AnythingRuntime` over
+real SQLite (`databaseFactoryFfiNoIsolate`, same NoIsolate rationale as
+Stage 11 — isolate IPC deadlocks under `flutter_test`'s FakeAsync zone).
+Real widget taps drive: Create (generated form, real validation, real
+insert) -> Search (real filtering, both a non-matching and a matching
+term) -> Detail (generated record view) -> Edit (loads the real
+existing record, saves an update to the SAME record ID, not a
+duplicate insert — verified directly against SQLite) -> Delete (real
+confirmation dialog, real delete). A real, pre-existing
+`ExperienceHostScreen` characteristic was found while writing this
+test (a single-entity app's detail screen caches its record by screen
+ID and does not re-fetch after an edit-then-pop-back to the same
+screen ID) — named in code comments and
+`docs/architecture/RUNTIME_EXPERIENCE_GENERATOR.md`, deliberately not
+fixed (out of scope: the milestone's own "existing, unmodified Runtime"
+framing), with the test instead asserting the edit's correctness
+directly against SQLite rather than against that specific stale screen
+instance.
+
+**Execution result:** all 7 pass. Full regression: **1254/1254** (up
+from 1247, zero pre-existing test modified). `flutter analyze`: 71
+issues, 0 errors, unchanged baseline.

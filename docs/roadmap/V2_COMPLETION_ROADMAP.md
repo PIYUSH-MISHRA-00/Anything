@@ -609,3 +609,57 @@ from MIS-1/V10 remain open and unrelated to the R-series' own scope.
 
 **DO NOT START R13 — per this milestone's own stop condition, wait for
 external architectural review.**
+
+## Implementation Milestone R13 — Runtime Experience Generator (2026-08-03)
+
+`RuntimeExperienceGenerator`
+(`lib/generator_framework/reference/runtime_experience_generator.dart`)
+is R13's real generator recommendation, delivered: the first
+substantial `Generator` (R10) implementation, consuming a real
+`CanonicalImplementationModel` (via `UniversalBuildGraph.sourceModel`,
+R9/R11) and producing a real, valid `ExperiencePackage` that the
+EXISTING, unmodified `ExperienceRenderer`/`BehaviorInterpreter`/
+`AnythingRuntime`/`ExperienceHostScreen` render and execute
+immediately — not Flutter/Dart source generation, not recompilation.
+Screen/behavior/state shape deliberately mirrors `CreationEngine`'s own
+blueprint-driven conversion (same screen-id/event-id conventions the
+Runtime already parses), sourced from `CanonicalImplementationModel`'s
+entities/controller-operations instead of `AppBlueprint`'s
+entities/views. `list`/`get`/`search` operations produce no behavior
+node (the renderer already queries live); only `create`/`update`/
+`delete` do, matching `CreationEngine`'s own scope. The generator's own
+`GenerationSpecification` (R12) supplies only a `manifestPathTemplate`
+— `rules` stay genuinely unused, a structural consequence of emitting
+one aggregate artifact rather than per-node files. DTOs/Validators/
+Services/`StateContainerSpec`/`NavigationHandlerSpec` routes/
+authentication/background-worker requirements are honestly reported as
+`skippedFeature` diagnostics, never fabricated into package structure.
+
+The centerpiece test proves the full loop for real: a hand-built
+`CanonicalImplementationModel` -> real `BuildGraphBuilder` -> real
+`GenerationPipeline` -> decoded `ExperiencePackage` -> the real
+`ExperiencePackageValidator` -> the real `ExperienceHostScreen` mounted
+over real SQLite -> a full create/search/detail/edit/delete cycle
+driven by real widget taps, verified against real SQLite state
+throughout (same discipline as Stage 11's own certification test).
+Writing this test surfaced one real, pre-existing `ExperienceHostScreen`
+characteristic (a single-entity app's detail screen does not re-fetch
+its cached record after an edit-then-pop-back to the same screen ID) —
+named, documented, deliberately not fixed (out of scope: this
+milestone's own "existing, unmodified Runtime" framing). 7 new tests,
+full regression 1254/1254 (up from 1247). `flutter analyze`: 71/0,
+unchanged baseline.
+
+**Recommendation for R14 (if resumed)**: (1) fix the
+`ExperienceHostScreen` detail-cache characteristic named above, as its
+own, independently-scoped, honestly justified change — not silently
+folded into a future generator milestone; (2) a second, genuinely
+different real generator would be the strongest remaining test of
+`Generator`'s "one interface, many implementations" claim (today proven
+by exactly `SummaryManifestGenerator` + `RuntimeExperienceGenerator`);
+(3) the standing Capability Platform / BYOK-provider-count /
+localization gaps from MIS-1/V10 remain open and unrelated to the
+R-series' own scope.
+
+**DO NOT START R14 — per this milestone's own stop condition, wait for
+external architectural review.**
