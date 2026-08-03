@@ -247,6 +247,20 @@ class ExperienceCreationCoordinator {
         name: Uri.tryParse(referenceUrl)?.host ?? referenceUrl,
       );
       if (result == null || !result.isSound) return const [];
+
+      // World Graph ingestion (Implementation Milestone R14) — best-effort,
+      // never allowed to fail creation itself, same non-blocking contract
+      // as `ingestExperience` below. REALITY before R14:
+      // `SoftwareCognitionCoordinator.syncToWorldModel` existed and was
+      // tested since V11 but had zero production callers (MIS-1 Part 2).
+      if (_worldModel != null) {
+        try {
+          _softwareCognition.syncToWorldModel(_worldModel, result.model);
+        } catch (_) {
+          // Deliberately swallowed — see comment above.
+        }
+      }
+
       final resource = _softwareCognition.toKnowledgeResource(result);
       return resource == null ? const [] : [resource];
     } catch (_) {

@@ -25,6 +25,18 @@ class DatabaseGraph {
   const DatabaseGraph(this.graph);
 }
 
+class AuthenticationPatternGraph {
+  final SemanticSoftwareGraph graph;
+
+  const AuthenticationPatternGraph(this.graph);
+}
+
+class NavigationPatternGraph {
+  final SemanticSoftwareGraph graph;
+
+  const NavigationPatternGraph(this.graph);
+}
+
 class DependencyGraph {
   final SemanticSoftwareGraph graph;
 

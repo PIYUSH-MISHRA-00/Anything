@@ -30,7 +30,9 @@ WorldNodeKind _mapNodeKind(sc.SoftwareNodeKind kind) => switch (kind) {
   sc.SoftwareNodeKind.endpoint ||
   sc.SoftwareNodeKind.schema ||
   sc.SoftwareNodeKind.database ||
-  sc.SoftwareNodeKind.architectureLayer => WorldNodeKind.softwareComponent,
+  sc.SoftwareNodeKind.architectureLayer ||
+  sc.SoftwareNodeKind.authenticationPattern ||
+  sc.SoftwareNodeKind.navigationPattern => WorldNodeKind.softwareComponent,
 };
 
 RelationshipKind _mapEdgeKind(sc.SoftwareRelationshipKind kind) => switch (kind) {

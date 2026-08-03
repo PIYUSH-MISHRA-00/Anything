@@ -23,6 +23,8 @@ enum SoftwareNodeKind {
   schema,
   database,
   architectureLayer,
+  authenticationPattern,
+  navigationPattern,
 }
 
 /// A typed relationship between two software artifacts — never a raw

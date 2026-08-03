@@ -61,6 +61,9 @@ extension CanonicalImplementationModelJson on CanonicalImplementationModel {
     'authentication': {'requiresCredentials': authentication.requiresCredentials, 'providerIndependent': authentication.providerIndependent},
     'storageAdapters': storageAdapters.map((s) => {'entityId': s.entityId, 'isFileStorage': s.isFileStorage}).toList(),
     'backgroundWorker': {'requiresBackgroundSync': backgroundWorker.requiresBackgroundSync},
+    'corroboratedPatterns': corroboratedPatterns
+        .map((p) => {'name': p.name, 'description': p.description, 'confidenceScore': p.confidenceScore, 'supportingSourceCount': p.supportingSourceCount})
+        .toList(),
   };
 }
 
@@ -167,5 +170,22 @@ CanonicalImplementationModel canonicalImplementationModelFromJson(Map<String, dy
         })
         .toList(),
     backgroundWorker: BackgroundWorkerSpec(requiresBackgroundSync: (json['backgroundWorker'] as Map<String, dynamic>)['requiresBackgroundSync'] as bool),
+    // Additive (Implementation Milestone R14) — absent on any
+    // CanonicalImplementationModel persisted before this milestone;
+    // defaults to empty rather than throwing, so old Engineering Memory
+    // rows still deserialize (matches R8/R9's own additive-column
+    // convention).
+    corroboratedPatterns: (json['corroboratedPatterns'] as List?)
+            ?.map((p) {
+              final pj = p as Map<String, dynamic>;
+              return CorroboratedPattern(
+                name: pj['name'] as String,
+                description: pj['description'] as String,
+                confidenceScore: (pj['confidenceScore'] as num).toDouble(),
+                supportingSourceCount: pj['supportingSourceCount'] as int,
+              );
+            })
+            .toList() ??
+        const [],
   );
 }

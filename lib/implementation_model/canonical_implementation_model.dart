@@ -208,6 +208,29 @@ class BackgroundWorkerSpec {
   const BackgroundWorkerSpec({required this.requiresBackgroundSync});
 }
 
+// ── Software Cognition corroboration (Implementation Milestone R14) ────
+
+/// One piece of real, multi-source-corroborated evidence carried forward
+/// verbatim from Software Cognition's `SoftwareRecommendation` (never
+/// re-derived or fuzzy-matched here — see
+/// `docs/architecture/SOFTWARE_COGNITION_ENGINE.md` "R14: Canonical
+/// Implementation Model enrichment" for why this planner deliberately
+/// does NOT invent its own name-matching heuristic between acquired
+/// software facts and this generation's own entities/capabilities).
+class CorroboratedPattern {
+  final String name;
+  final String description;
+  final double confidenceScore;
+  final int supportingSourceCount;
+
+  const CorroboratedPattern({
+    required this.name,
+    required this.description,
+    required this.confidenceScore,
+    required this.supportingSourceCount,
+  });
+}
+
 // ── The top-level composition ───────────────────────────────────────────
 
 class CanonicalImplementationModel {
@@ -225,6 +248,12 @@ class CanonicalImplementationModel {
   final List<StorageAdapterSpec> storageAdapters;
   final BackgroundWorkerSpec backgroundWorker;
 
+  /// Real, multi-source-corroborated Software Cognition evidence
+  /// (Implementation Milestone R14) — empty unless a caller supplied
+  /// `CanonicalImplementationContext.corroboratingRecommendations`.
+  /// Additive; every existing construction site is unaffected.
+  final List<CorroboratedPattern> corroboratedPatterns;
+
   const CanonicalImplementationModel({
     this.entities = const [],
     this.repositories = const [],
@@ -239,6 +268,7 @@ class CanonicalImplementationModel {
     required this.authentication,
     this.storageAdapters = const [],
     required this.backgroundWorker,
+    this.corroboratedPatterns = const [],
   });
 
   bool get isEmpty => entities.isEmpty && controllers.isEmpty;

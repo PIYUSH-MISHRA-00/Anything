@@ -11,6 +11,7 @@ import '../backend_engineering/api_specification.dart';
 import '../backend_engineering/backend_engineering_plan.dart';
 import '../backend_engineering/database_schema.dart';
 import '../capabilities/registry/capability_descriptor.dart';
+import '../software_cognition/software_reasoner.dart' show SoftwareRecommendation;
 import 'canonical_implementation_model.dart';
 
 class CanonicalImplementationContext {
@@ -18,10 +19,21 @@ class CanonicalImplementationContext {
   final BackendEngineeringPlan backend;
   final List<CapabilityDescriptor> resolvedCapabilities;
 
+  /// Real, multi-source-corroborated Software Cognition recommendations
+  /// (Implementation Milestone R14) — a caller passes ONLY recommendations
+  /// it already accepted (`SoftwareRecommendation.accepted`); the planner
+  /// never re-derives acceptance, it only carries evidence forward.
+  /// Deliberately not yet populated by `AnythingKernel.processIntent`
+  /// (see `docs/architecture/SOFTWARE_COGNITION_ENGINE.md`, "R14:
+  /// Canonical Implementation Model enrichment") — the hook is real and
+  /// tested end-to-end at this planner boundary.
+  final List<SoftwareRecommendation> corroboratingRecommendations;
+
   const CanonicalImplementationContext({
     required this.engineering,
     required this.backend,
     this.resolvedCapabilities = const [],
+    this.corroboratingRecommendations = const [],
   });
 }
 
@@ -77,6 +89,7 @@ class CanonicalImplementationPlanner {
           StorageAdapterSpec(entityId: r.entityId, isFileStorage: r.kind.name == 'file'),
       ],
       backgroundWorker: BackgroundWorkerSpec(requiresBackgroundSync: context.backend.backgroundJobs.requiresBackgroundSync),
+      corroboratedPatterns: _planCorroboratedPatterns(context),
     );
   }
 
@@ -197,4 +210,19 @@ class CanonicalImplementationPlanner {
     ],
     deepLinkableRouteIds: context.engineering.navigation.deepLinkableScreenIds,
   );
+
+  /// Deterministic pass-through — never re-derives acceptance, never
+  /// fuzzy-matches recommendation names against this model's own
+  /// entities/capabilities (Implementation Milestone R14; see the
+  /// `corroboratingRecommendations` doc comment above for why).
+  List<CorroboratedPattern> _planCorroboratedPatterns(CanonicalImplementationContext context) => [
+    for (final r in context.corroboratingRecommendations)
+      if (r.accepted)
+        CorroboratedPattern(
+          name: r.tracedTo.isNotEmpty ? r.tracedTo.first.sourceArtifact : r.description,
+          description: r.description,
+          confidenceScore: r.confidence.score,
+          supportingSourceCount: r.tracedTo.length,
+        ),
+  ];
 }
