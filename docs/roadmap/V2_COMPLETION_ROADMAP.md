@@ -539,3 +539,33 @@ integration once a real generator's actual cost/persistence needs are
 known; (3) the standing Capability Platform / BYOK-provider-count /
 localization gaps from MIS-1/V10 remain open and unrelated to the
 R-series' own scope.
+
+## Implementation Milestone R11 — Universal Build Graph (2026-08-03)
+
+`UniversalBuildGraph` (`lib/build_graph/`) closes R10's own "no real
+dependency ordering yet" gap: a real, deterministic, language-independent
+graph derived from `CanonicalImplementationModel`, mirroring — never
+reusing directly — the World Graph's proven `{id, kind, label}` node
+shape (World Graph's own vocabulary is whole-application-scoped;
+Build Graph's is generation-scoped). Real DFS cycle detection and real
+Kahn's-algorithm topological ordering were both genuinely new,
+necessary algorithmic work (`GraphTraversal`'s existing bounded BFS
+answers a different question and cannot itself distinguish "fully
+explored" from "mid-exploration," which cycle detection requires).
+`GeneratorContext`/`GenerationPipeline` (R10) were updated to consume
+the graph instead of the model directly, retaining `sourceModel` so
+`SummaryManifestGenerator`'s real logic needed only a one-line read-path
+change. Engineering Memory and World Model integration were both
+investigated and declined again, for the same real reason R10 already
+established: the graph is a free, deterministic re-derivation of
+already-persisted, already-ingested data, not new durable knowledge.
+12 new tests, full regression 1239/1239 (up from 1227, R10's own 8 tests
+updated to the new API and re-verified, not weakened). `flutter analyze`:
+71/0, unchanged baseline.
+
+**Recommendation for R12**: (1) a real target-language generator now has
+both a typed model AND a dependency-ordered graph to consume; (2) revisit
+incremental/partial-build support once a real, measurably-expensive
+generator exists with real numbers to justify it; (3) the standing
+Capability Platform / BYOK-provider-count / localization gaps from
+MIS-1/V10 remain open and unrelated to the R-series' own scope.

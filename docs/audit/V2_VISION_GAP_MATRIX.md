@@ -103,3 +103,18 @@ Statuses: VERIFIED (directly confirmed by source/test execution), PARTIAL (real 
 | WebWeaveX / Kaalka sole-boundary status | **UNCHANGED** — this milestone touches neither. |
 | Single AI reasoning boundary preserved | **VERIFIED** — zero new LLM calls anywhere; `Generator.generate()` is a pure function of its context. |
 | No duplicate architecture | **VERIFIED** — no second Kernel/Planner/Runtime/World-Model/Capability-Platform/Engineering-Pipeline/Serialization-System/Generator-Framework/AI-Boundary. |
+
+## Implementation Milestone R11 — Universal Build Graph (2026-08-03)
+
+| Item | Status |
+|---|---|
+| One Universal Build Graph | **VERIFIED** — `lib/build_graph/` (`UniversalBuildGraph`/`BuildGraphNode`/`BuildGraphEdge`/`BuildGraphBuilder`), real, deterministic derivation from `CanonicalImplementationModel` (R9). |
+| Generator Framework consumes Build Graph, not CanonicalImplementationModel directly | **VERIFIED** — `GeneratorContext.buildGraph`/`GenerationPipeline.run(buildGraph: ...)` (R10, updated), `SummaryManifestGenerator` reads `context.buildGraph.sourceModel`; R10's own test suite updated and re-verified passing against the new shape. |
+| Cycle detection | **VERIFIED** — real DFS-based `BuildGraphCycleDetector`; a real 3-node artificial cycle is caught with exact membership, a real diamond dependency is correctly not flagged. |
+| Topological build ordering | **VERIFIED** — real Kahn's-algorithm `BuildGraphOrderer`; dependencies genuinely ordered before dependents; a cyclic graph honestly reports an incomplete order, never fabricated. |
+| Language independence preserved | **VERIFIED** — `BuildNodeKind`/`BuildRelationshipKind` map 1:1 onto `CanonicalImplementationModel`'s own real categories, zero language-specific constructs. |
+| Deterministic | **VERIFIED** — dedicated tests prove the same model produces a structurally identical graph, and the same graph produces the same topological order, on repeated runs. |
+| Engineering Memory / World Model integration | **DELIBERATELY NOT EXTENDED** — `CanonicalImplementationModel` is already persisted/ingested; `UniversalBuildGraph` is a free, deterministic re-derivation of already-durable data, not new durable knowledge — see `docs/architecture/UNIVERSAL_BUILD_GRAPH.md`. |
+| WebWeaveX / Kaalka sole-boundary status | **UNCHANGED** — this milestone touches neither. |
+| Single AI reasoning boundary preserved | **VERIFIED** — zero new LLM calls anywhere. |
+| No duplicate architecture | **VERIFIED** — no second Kernel/Runtime/Planner/World-Model/Capability-Platform/Engineering-Pipeline/Generator-Framework/Build-System/AI-Boundary. |

@@ -810,3 +810,30 @@ diagnostic), and a real 200-entity performance measurement.
 **Execution result:** all 8 pass. Full regression: **1227/1227** (up
 from 1219, zero pre-existing test modified). `flutter analyze`: 71
 issues, 0 errors, unchanged baseline.
+
+## Implementation Milestone R11 — Universal Build Graph (2026-08-03)
+
+12 new tests across `test/r11_universal_build_graph_test.dart`, 4 groups:
+`BuildGraphBuilder` (real entity/repository/controller/capability nodes;
+real `dependsOn`/repository→entity/controller→entity edges; a dedicated
+test proving an edge referencing a non-existent node — the coarse `'app'`
+pseudo-node case R9 already documented — is never emitted, never a
+dangling edge; `sourceModel` retains the exact original instance;
+determinism), `BuildGraphCycleDetector` (a real acyclic graph correctly
+clears; a real, artificially-constructed 3-node cycle is correctly
+caught with the exact cycle membership; a diamond dependency — two nodes
+sharing one common dependency — is correctly NOT flagged as a cycle),
+`BuildGraphOrderer` (a real dependency chain produces a correct, complete
+topological order with dependencies genuinely ordered before dependents;
+a cyclic graph honestly reports `isComplete: false` with a real partial
+order, never a fabricated complete one; determinism), and a real
+200-entity/199-dependency chain performance measurement (build + cycle-
+detect + topological-order, ~7ms). `test/r10_generator_framework_test.dart`
+was updated in place (not duplicated) for the new
+`GeneratorContext.buildGraph`/`GenerationPipeline.run(buildGraph: ...)`
+shape and re-verified passing unchanged in substance.
+
+**Execution result:** all 12 pass, plus R10's own 8 re-verified passing
+against the new API. Full regression: **1239/1239** (up from 1227, zero
+pre-existing test weakened — only updated to the new, real API shape).
+`flutter analyze`: 71 issues, 0 errors, unchanged baseline.

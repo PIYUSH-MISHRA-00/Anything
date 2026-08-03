@@ -1,5 +1,14 @@
 # Generator Framework — Implementation Milestone R10
 
+**Updated Implementation Milestone R11**: `GeneratorContext`/
+`GenerationPipeline.run()` now consume `UniversalBuildGraph`
+(`lib/build_graph/`, R11) instead of `CanonicalImplementationModel`
+directly — see `docs/architecture/UNIVERSAL_BUILD_GRAPH.md` for the full
+account. `UniversalBuildGraph.sourceModel` retains the original model, so
+every real-depth field `SummaryManifestGenerator` already used is still
+reachable unchanged; only the field name it reads through changed
+(`context.model` → `context.buildGraph.sourceModel`).
+
 ## Overview
 
 R9's `CanonicalImplementationModel` unified frontend `EngineeringCandidate`
