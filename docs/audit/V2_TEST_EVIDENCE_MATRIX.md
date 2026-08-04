@@ -1332,3 +1332,49 @@ additive change (a new ingestion call and a new bridge/method,
 respectively) — every other change is new files.
 `useCompilerPipeline` unaffected (never referenced by this milestone's
 code).
+
+## IS-R25 — Universal Solution Orchestrator
+
+`test/r25_solution_orchestrator_test.dart` proves: `ExecutionTargetOrderer`
+correctly partitions synthetic multi-target `ExecutionStrategy` fixtures
+into real dependency-respecting levels (two independent targets sharing
+one level; a real 3-stage dependency chain producing 3 ordered levels; a
+real dependency cycle honestly reported as an incomplete order rather
+than papered over; a dependency on a `notApplicable` target correctly
+ignored rather than treated as unsatisfiable); `SolutionExecutionOrchestrator`
+executes a real `ExecutionStrategy` (from `SolutionExecutionPlanner`, R18)
+against a real, hand-built `CanonicalImplementationModel`, producing a
+`StageStatus.succeeded` outcome with real completion criteria (package
+present, compiler diagnostics clean, `ExperiencePackageValidator`-valid)
+for Runtime Experience, while every one of the other 11 targets is
+recorded with its real, specific `ExecutionTargetPlan.reason` and zero
+attempts — all 12 targets appear exactly once, never silently dropped;
+supplying real, entity-matching `AffectedEntities` dispatches through the
+EXISTING, unmodified `IncrementalCompilerSynthesizer` (R24) instead of a
+full `runCompilerPipeline` (R19) run, still producing a valid, correctly
+scoped package; `AffectedEntities` matching no real entity produces a
+real, deterministic no-package failure retried exactly `maxAttempts`
+times (never fewer, never an infinite loop) before a real, structured
+`StageStatus.failed` outcome; `maxAttempts` defaults to 1 (no retry) when
+a caller doesn't specify one; a real `AnythingKernel.processIntent()` run's
+own `ExecutionPlanReady.executionStrategy` (R18) and
+`.canonicalImplementationModel` (R9) — the SAME real request's two
+already-coexisting outputs — compose end-to-end through the orchestrator
+without any new Kernel wiring; a real orchestration failure followed by a
+real `ExperienceModificationCoordinator.rollback()` call (R6, unmodified)
+correctly restores the real prior package in the real repository; and
+real Stopwatch/`ProcessInfo.currentRss` performance numbers over 500
+level-ordering runs on a 12-target chain, one real end-to-end orchestration
+execution, and 100 repeated real orchestration runs.
+
+**Execution result:** 15 new tests pass. Full regression: **1444/1444**
+(up from 1429). `flutter analyze`: 71 issues, 0 errors, unchanged
+baseline. `lib/generator_framework/`, `lib/build_graph/`,
+`lib/generation_specification/`, `lib/runtime/`,
+`lib/software_cognition/`, `lib/execution_planning/`, `lib/world_model/`,
+`lib/storage/engineering_memory_repository.dart`,
+`lib/creation/creation_engine.dart`, `lib/kernel/anything_kernel.dart`,
+`lib/app/creation_coordinator.dart` all completely untouched — every
+change is new files under `lib/solution_orchestration/`.
+`useCompilerPipeline` unaffected (never referenced by this milestone's
+code).

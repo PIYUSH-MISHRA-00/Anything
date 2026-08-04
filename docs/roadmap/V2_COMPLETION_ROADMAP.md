@@ -1174,5 +1174,54 @@ completely untouched. `useCompilerPipeline` remains opt-in, default
 See `docs/architecture/ENGINEERING_INTELLIGENCE.md` for the full audit
 and the requested-vs-existing mapping table.
 
-**DO NOT START R25 — per this milestone's own stop condition, wait for
+## IS-R25 — Universal Solution Orchestrator (COMPLETE)
+
+`SolutionExecutionPlanner` (R18) already produces a real `ExecutionStrategy`
+— target/dependencies/executionOrder/requiredGenerators/validationRequirements/
+buildRequirements/deploymentRequirements — roughly 8 of R25's 9 requested
+Orchestration Model fields, already real, already tested. It deliberately
+never executes that strategy. Nothing in this codebase, before this
+specification, ever walked `ExecutionStrategy.actionableTargets` and
+actually ran a stage — that is the one, real, novel contribution R25
+makes.
+
+New `lib/solution_orchestration/` (3 files): `ExecutionTargetOrderer` (a
+real Kahn's-algorithm-style level-partitioning scheduler over
+`ExecutionTargetKind`/`ExecutionTargetPlan.dependencies`, mirroring
+`BuildGraphOrderer`'s R11 honesty precedent), `StageOutcome`/
+`OrchestrationReport` (real, structured per-stage completion criteria —
+package produced AND compiler diagnostics clean AND
+`ExperiencePackageValidator`-valid), and `SolutionExecutionOrchestrator`
+(dispatches through the EXISTING, UNMODIFIED `runCompilerPipeline` (R19)/
+`IncrementalCompilerSynthesizer` (R24), never embedding generator logic).
+
+Of R18's 12 execution targets, only Runtime Experience ever reaches
+`applicableWithGenerator` — real production strategies produce exactly
+one actionable stage today. The level/parallel-partitioning algorithm is
+proven correct on synthetic multi-target fixtures instead, stated
+honestly rather than overclaiming real multi-generator parallelism.
+`Future.wait`-based dispatch provides dependency-safe ordering, not
+genuine CPU parallelism under Dart's single-isolate model for today's
+synchronous generator primitives — named as a real, honest limitation.
+Retry (bounded, default off) is real, tested infrastructure, honestly
+documented as unlikely to change a deterministic pipeline's outcome.
+Rollback reuses `ExperienceModificationCoordinator.rollback()` (R6)
+unmodified, invoked by a caller (never the orchestrator itself, respecting
+the established `lib/app/` → `lib/` layering direction) — proven
+end-to-end.
+
+World Model and Engineering Memory: no changes — both confirmed to have
+no genuine new information to contribute beyond what R9/R17 already
+provide.
+
+`lib/generator_framework/`, `lib/build_graph/`,
+`lib/generation_specification/`, `lib/runtime/`,
+`lib/software_cognition/`, `lib/execution_planning/`, `lib/world_model/`,
+`lib/storage/engineering_memory_repository.dart` all completely
+untouched. `useCompilerPipeline` remains opt-in, default `false` — this
+specification is not wired into live creation.
+
+See `docs/architecture/SOLUTION_ORCHESTRATION.md` for the full audit.
+
+**DO NOT START R26 — per this milestone's own stop condition, wait for
 external architectural review.**
