@@ -332,6 +332,12 @@ class AnythingKernel {
         understanding: understanding,
       );
       _constraintPlanner.plan(requirementGraph);
+      // Implementation Specification IS-R24: the same, already-computed
+      // RequirementGraph is ingested into the shared World Graph — closing
+      // the "RequirementGraph is never ingested anywhere" finding (see
+      // `RequirementGraphBridge`'s own doc comment). Reuses the existing
+      // R1 defensive-ingestion pattern exactly.
+      _ingestIntoWorldModelSafely(() => _worldModel?.ingestRequirementGraph(requirementGraph));
       final knowledgeGraph = _lastAcquiredKnowledge != null
           ? KnowledgeGraphBuilder.build(_lastAcquiredKnowledge!)
           : null;

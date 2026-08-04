@@ -27,12 +27,14 @@ import '../storage/sqlite_experience_repository.dart';
 import '../storage/world_model_repository.dart';
 import '../synthesis/app_blueprint.dart' show AppBlueprint;
 import '../implementation_model/canonical_implementation_model.dart';
+import '../software_architect/requirement_graph.dart';
 import '../solution_architecture/solution_architecture.dart';
 import 'bridges/backend_graph_bridge.dart';
 import 'bridges/evolution_graph_bridge.dart';
 import 'bridges/experience_graph_bridge.dart';
 import 'bridges/implementation_graph_bridge.dart';
 import 'bridges/knowledge_graph_bridge.dart';
+import 'bridges/requirement_graph_bridge.dart';
 import 'bridges/review_graph_bridge.dart';
 import 'bridges/runtime_graph_bridge.dart';
 import 'bridges/software_graph_bridge.dart';
@@ -71,6 +73,7 @@ class WorldModelCoordinator {
   final BackendGraphBridge _backendBridge;
   final ImplementationGraphBridge _implementationBridge;
   final SolutionArchitectureGraphBridge _solutionArchitectureBridge;
+  final RequirementGraphBridge _requirementBridge;
   final WorldModelEngine _engine;
   final ImpactAnalyzer _impactAnalyzer;
   final GraphConsistency _consistency;
@@ -100,6 +103,7 @@ class WorldModelCoordinator {
     BackendGraphBridge? backendBridge,
     ImplementationGraphBridge? implementationBridge,
     SolutionArchitectureGraphBridge? solutionArchitectureBridge,
+    RequirementGraphBridge? requirementBridge,
     WorldModelEngine engine = const WorldModelEngine(),
     ImpactAnalyzer impactAnalyzer = const ImpactAnalyzer(),
     GraphConsistency consistency = const GraphConsistency(),
@@ -116,6 +120,7 @@ class WorldModelCoordinator {
        _backendBridge = backendBridge ?? BackendGraphBridge(resolver: resolver),
        _implementationBridge = implementationBridge ?? ImplementationGraphBridge(resolver: resolver),
        _solutionArchitectureBridge = solutionArchitectureBridge ?? SolutionArchitectureGraphBridge(resolver: resolver),
+       _requirementBridge = requirementBridge ?? RequirementGraphBridge(resolver: resolver),
        _engine = engine,
        _impactAnalyzer = impactAnalyzer,
        _consistency = consistency,
@@ -185,6 +190,14 @@ class WorldModelCoordinator {
   /// caching signal when present.
   void ingestSolutionArchitecture(SemanticSolutionArchitecture architecture) {
     _model = _engine.apply(_model, _solutionArchitectureBridge.bridge(architecture), history: history, memory: memory);
+  }
+
+  /// Ingests a real `RequirementGraph` (Implementation Specification
+  /// IS-R24) — capability-requirement nodes and view/action-to-entity
+  /// traceability edges, the two real contributions no other bridge
+  /// covers (see `RequirementGraphBridge`'s own doc comment).
+  void ingestRequirementGraph(RequirementGraph graph) {
+    _model = _engine.apply(_model, _requirementBridge.bridge(graph), history: history, memory: memory);
   }
 
   /// Ingests every real, already-persisted Experience via the existing,
