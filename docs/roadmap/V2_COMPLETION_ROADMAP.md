@@ -1225,3 +1225,50 @@ See `docs/architecture/SOLUTION_ORCHESTRATION.md` for the full audit.
 
 **DO NOT START R26 — per this milestone's own stop condition, wait for
 external architectural review.**
+
+## Implementation Specification IS-R26 — Backend Service Generator, First Multi-Generator Production Target
+
+R25's orchestrator could only ever dispatch ONE real generator
+(`RuntimeExperienceGenerator`). R26 built the second:
+`BackendServiceGenerator` (`lib/generator_framework/reference/`),
+transforming the already-real `CanonicalImplementationModel` +
+`BackendEngineeringPlan` into real, typed backend specification
+artifacts — never SQL, never source code (Milestone R8's standing
+constraint, still in force).
+
+Four precise structural gaps were fixed: `runCompilerPipeline`'s
+hardcoded `RuntimeExperienceGenerator` (generalized via a new,
+backward-compatible `runGeneratorPipeline` primitive);
+`SolutionExecutionPlanner._backendService()`'s hardcoded
+`applicableNoGenerator` (flipped to `applicableWithGenerator` now that a
+real generator exists); `StageOutcome.package`'s Runtime-Experience-only
+shape (a new, additive `backendArtifacts` field); and
+`GeneratorContext`'s lack of an extension point for
+`BackendEngineeringPlan` (threaded through the existing, generic
+`GeneratorOptions.values`, never a new required interface field).
+
+Mandatory vision validation proven end-to-end: one real
+`ExecutionStrategy` with BOTH `backendService` and `runtimeExperience` as
+`applicableWithGenerator` runs through the real, unmodified
+`SolutionExecutionOrchestrator`, both stages succeed, and real
+dependency-safe ordering places Backend Service strictly before Runtime
+Experience.
+
+Two real, pre-existing test assertions (R18, R25) that specifically
+tested the OLD "no generator exists yet" state were updated to reflect
+the deliberate, milestone-mandated change — every other test passes
+unmodified.
+
+**Execution result:** 20 new tests pass. Full regression: **1464/1464**
+(up from 1444). `flutter analyze`: 71 issues, 0 errors, unchanged
+baseline. `lib/runtime/`, `lib/software_cognition/`, `lib/world_model/`,
+`lib/storage/engineering_memory_repository.dart`,
+`lib/engineering_intelligence/`, `lib/backend_engineering/`,
+`lib/creation/creation_engine.dart`, `RuntimeExperienceGenerator` itself
+all completely untouched. `useCompilerPipeline` unaffected, still
+defaults `false`.
+
+See `docs/architecture/BACKEND_SERVICE_GENERATOR.md` for the full audit.
+
+**DO NOT START R27 — per this specification's own stop condition, wait
+for external architectural review.**

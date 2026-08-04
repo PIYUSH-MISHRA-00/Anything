@@ -1378,3 +1378,45 @@ baseline. `lib/generator_framework/`, `lib/build_graph/`,
 change is new files under `lib/solution_orchestration/`.
 `useCompilerPipeline` unaffected (never referenced by this milestone's
 code).
+
+## Implementation Specification IS-R26 — Backend Service Generator, First Multi-Generator Production Target
+
+**Test evidence:** `test/r26_backend_service_generator_test.dart` (20
+tests) proves: `BackendServiceGenerator` produces real, typed,
+non-fabricated artifacts from a real `BackendEngineeringPlan`
+(database/api/authentication/storage/backgroundJobs/deployment sections,
+real repository/service name-signature data, real structural migration
+definitions); secret references stay name-only; an absent/empty/malformed
+plan is honestly reported, never a crash; a dedicated grep proves zero
+SQL DDL/server-source-code/deployment-config syntax anywhere in the
+generated content (Milestone R8's standing constraint, still enforced);
+generator determinism; `SolutionExecutionPlanner` now classifies
+`backendService` as `applicableWithGenerator` when backend need is real,
+`notApplicable` unaffected when it isn't; **the mandatory multi-generator
+vision validation** — one real `ExecutionStrategy` with BOTH
+`backendService` and `runtimeExperience` as `applicableWithGenerator`
+runs through the real, unmodified `SolutionExecutionOrchestrator`, both
+succeed, `.backendArtifacts`/`.package` never cross-populate, and real
+dependency-safe level ordering places Backend Service strictly before
+Runtime Experience; a missing `backendPlan` is a real, immediate,
+never-retried failure; `runCompilerPipeline` (R19) is proven completely
+unchanged in behavior; a Runtime-Experience-only strategy still runs
+exactly as R25 built it; and real Stopwatch/`ProcessInfo.currentRss`
+performance numbers for a 200-table backend generation, JSON round-trip
+serialization, and 50 repeated generations.
+
+Two pre-existing tests (`test/r18_solution_execution_planner_test.dart`,
+`test/r25_solution_orchestrator_test.dart`) had ONE assertion each
+updated — both specifically tested the OLD "no generator exists for
+backendService yet" state R26 deliberately changes; every other
+assertion in both files, and every other test in the suite, passes
+unmodified.
+
+**Execution result:** 20 new tests pass. Full regression: **1464/1464**
+(up from 1444). `flutter analyze`: 71 issues, 0 errors, unchanged
+baseline. `lib/runtime/`, `lib/software_cognition/`, `lib/world_model/`,
+`lib/storage/engineering_memory_repository.dart`,
+`lib/engineering_intelligence/`, `lib/backend_engineering/`,
+`lib/creation/creation_engine.dart` all completely untouched;
+`RuntimeExperienceGenerator` itself unmodified. `useCompilerPipeline`
+unaffected, still defaults `false`.
