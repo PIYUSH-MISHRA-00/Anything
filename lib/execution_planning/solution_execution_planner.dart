@@ -29,6 +29,14 @@ class SolutionExecutionPlanner {
   /// invokes it.
   static const String runtimeExperienceGeneratorId = 'reference.runtime-experience';
 
+  /// The real `GeneratorMetadata.id` of `BackendServiceGenerator`
+  /// (Implementation Specification IS-R26, Anything's second real
+  /// generator) — named as a plain string constant here for the SAME
+  /// reason as [runtimeExperienceGeneratorId]: `lib/execution_planning/`
+  /// stays a pure planning layer with zero dependency on
+  /// `lib/generator_framework/`.
+  static const String backendServiceGeneratorId = 'reference.backend-service';
+
   /// The 9 R18 targets with zero real signal anywhere in
   /// `SemanticSolutionArchitecture` today — a static, honest fact about
   /// this codebase's current architecture models, not a per-request
@@ -66,13 +74,21 @@ class SolutionExecutionPlanner {
     return ExecutionStrategy(targets: _assignExecutionOrder(targets));
   }
 
+  /// Implementation Specification IS-R26: `BackendServiceGenerator` now
+  /// exists, so `requiresBackend` correctly reaches `applicableWithGenerator`
+  /// — the exact "R18 deliberately never invokes a generator, R26 finally
+  /// gives Backend Service one" transition this planner's own R18 doc
+  /// comment named as the real, deferred gap.
   ExecutionTargetPlan _backendService(bool requiresBackend, List<String> secretNames) => requiresBackend
       ? ExecutionTargetPlan(
           target: ExecutionTargetKind.backendService,
-          classification: ExecutionTargetClassification.applicableNoGenerator,
-          reason: 'BackendEngineeringPlan.deployment.requiresBackend is true — a real semantic need, but no Generator implementation '
-              'exists to fulfill a backend-service target yet (R10-R12 explicitly deferred this).',
+          classification: ExecutionTargetClassification.applicableWithGenerator,
+          reason: 'BackendEngineeringPlan.deployment.requiresBackend is true — a real, existing Generator '
+              '(BackendServiceGenerator, Implementation Specification IS-R26) produces real, typed backend '
+              'specification artifacts.',
           priority: 0,
+          requiredGenerators: const [backendServiceGeneratorId],
+          validationRequirements: const ['Real JSON round-trip of every emitted Artifact (Backend Service artifacts are not an ExperiencePackage, so ExperiencePackageValidator does not apply)'],
           buildRequirements: const ['BackendEngineeringPlan (already computed, Implementation Milestone R8)'],
           deploymentRequirements: secretNames,
         )

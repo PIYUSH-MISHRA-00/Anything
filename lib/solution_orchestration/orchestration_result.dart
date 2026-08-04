@@ -1,8 +1,10 @@
-/// Orchestration result types — Implementation Specification IS-R25.
+/// Orchestration result types — Implementation Specification IS-R25,
+/// extended IS-R26.
 library;
 
 import '../creation/experience_package.dart';
 import '../execution_planning/execution_strategy.dart';
+import '../generator_framework/artifact.dart';
 
 /// Real, checked completion — `succeeded` requires the underlying
 /// pipeline to have produced a package, the compiler's own diagnostics to
@@ -31,6 +33,14 @@ class StageOutcome {
 
   final ExperiencePackage? package;
 
+  /// Real, additive (Implementation Specification IS-R26): a Backend
+  /// Service stage's real, typed output — never an `ExperiencePackage`
+  /// (structurally different artifact shape), so this stays a SEPARATE,
+  /// nullable field rather than overloading [package]. A Runtime
+  /// Experience stage always leaves this `null`; a Backend Service stage
+  /// always leaves [package] `null`.
+  final List<Artifact>? backendArtifacts;
+
   /// Real, named reasons this stage did not reach `succeeded` — validator
   /// errors, compiler diagnostics, or (for skipped stages) the real
   /// `ExecutionTargetPlan.reason` this milestone's own `SolutionExecutionPlanner`
@@ -44,6 +54,7 @@ class StageOutcome {
     required this.status,
     required this.attempts,
     this.package,
+    this.backendArtifacts,
     this.errors = const [],
     this.latency = Duration.zero,
   });

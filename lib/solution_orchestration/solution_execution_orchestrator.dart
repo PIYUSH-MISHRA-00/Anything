@@ -47,6 +47,21 @@
 /// file says so rather than fabricating retry/backoff sophistication with
 /// no real failure signal behind it.
 ///
+/// DISPATCH, generalized (Implementation Specification IS-R26): a
+/// Backend Service stage produces structurally different output than a
+/// Runtime Experience stage (typed `Artifact`s, never an
+/// `ExperiencePackage`) and needs a real, additional input
+/// (`BackendEngineeringPlan`) neither `runCompilerPipeline`/
+/// `IncrementalCompilerSynthesizer` accept. `_runStage` below dispatches
+/// on `target` to the correct handler — this is real dispatch, not
+/// hard-coded execution: WHICH targets are even attempted still comes
+/// entirely from `ExecutionStrategy` (only `applicableWithGenerator`
+/// targets reach `_runStage` at all, R25's own unchanged filter in
+/// [execute]); this switch only decides HOW to run a target ExecutionStrategy
+/// already approved, exactly as R18's own `requiredGenerators` field
+/// anticipated ("a caller invokes the compiler using this plan's
+/// requiredGenerators/actionableTargets").
+///
 /// ROLLBACK: the real, existing `ExperienceModificationCoordinator.rollback()`
 /// (R6) is reused, never reimplemented — but this orchestrator lives
 /// beneath `lib/app/`, and `ExperienceModificationCoordinator` lives
@@ -61,6 +76,10 @@
 /// request's prior package.
 library;
 
+import 'dart:convert';
+
+import '../backend_engineering/backend_engineering_plan.dart';
+import '../backend_engineering/backend_engineering_serialization.dart';
 import '../compiler_integration/compiler_pipeline_runner.dart';
 import '../creation/experience_package.dart';
 import '../creation/package_validator.dart';
@@ -68,6 +87,8 @@ import '../engineering_intelligence/affected_entities.dart';
 import '../engineering_intelligence/incremental_compiler_synthesis.dart';
 import '../execution_planning/execution_strategy.dart';
 import '../generator_framework/generation_result.dart';
+import '../generator_framework/generator.dart' show GeneratorOptions;
+import '../generator_framework/reference/backend_service_generator.dart';
 import '../implementation_model/canonical_implementation_model.dart';
 import 'execution_ordering.dart';
 import 'orchestration_result.dart';
@@ -75,10 +96,17 @@ import 'orchestration_result.dart';
 class SolutionExecutionOrchestrator {
   const SolutionExecutionOrchestrator();
 
-  /// [affected]: when supplied and non-empty, every stage dispatches
-  /// through the real, existing `IncrementalCompilerSynthesizer` (R24)
-  /// instead of a full `runCompilerPipeline` (R19) run — a real,
-  /// observable dispatch choice, never a heuristic guess.
+  /// [affected]: when supplied and non-empty, a Runtime Experience stage
+  /// dispatches through the real, existing `IncrementalCompilerSynthesizer`
+  /// (R24) instead of a full `runCompilerPipeline` (R19) run — a real,
+  /// observable dispatch choice, never a heuristic guess. Backend Service
+  /// stages (R26) have no incremental-synthesis path yet (named honestly
+  /// in `docs/architecture/BACKEND_SERVICE_GENERATOR.md`) — `affected` is
+  /// simply not consulted for them.
+  /// [backendPlan]: real `BackendEngineeringPlan` (R8), required only for
+  /// a `backendService` stage — `null` by default, matching every
+  /// existing caller/test, which never had a backend-shaped target to
+  /// run before this specification.
   /// [maxAttempts]: bounded retry count per stage, default 1 (no retry) —
   /// see this file's own top-level doc comment on why retry is honestly
   /// unlikely to change a deterministic pipeline's outcome; a caller with
@@ -89,6 +117,7 @@ class SolutionExecutionOrchestrator {
     required String id,
     required String name,
     AffectedEntities? affected,
+    BackendEngineeringPlan? backendPlan,
     int maxAttempts = 1,
   }) async {
     final levels = const ExecutionTargetOrderer().order(strategy);
@@ -108,14 +137,40 @@ class SolutionExecutionOrchestrator {
 
     for (final level in levels.levels) {
       final actionable = level.where((t) => strategy.forTarget(t).classification == ExecutionTargetClassification.applicableWithGenerator);
-      final results = await Future.wait(actionable.map((target) => _runStage(target: target, model: model, id: id, name: name, affected: affected, maxAttempts: maxAttempts)));
+      final results = await Future.wait(
+        actionable.map(
+          (target) => _runStage(target: target, model: model, id: id, name: name, affected: affected, backendPlan: backendPlan, maxAttempts: maxAttempts),
+        ),
+      );
       stages.addAll(results);
     }
 
     return OrchestrationReport(levels: levels.levels, levelOrderingComplete: levels.isComplete, stages: stages);
   }
 
+  /// Real dispatch (Implementation Specification IS-R26) — see this
+  /// file's own top-level "DISPATCH, generalized" doc comment. WHICH
+  /// targets are attempted is entirely `ExecutionStrategy`'s decision
+  /// (only `applicableWithGenerator` targets reach here, unchanged since
+  /// R25); this only decides HOW to run one already-approved target.
   Future<StageOutcome> _runStage({
+    required ExecutionTargetKind target,
+    required CanonicalImplementationModel model,
+    required String id,
+    required String name,
+    required AffectedEntities? affected,
+    required BackendEngineeringPlan? backendPlan,
+    required int maxAttempts,
+  }) {
+    if (target == ExecutionTargetKind.backendService) {
+      return _runBackendServiceStage(model: model, id: id, name: name, backendPlan: backendPlan, maxAttempts: maxAttempts);
+    }
+    return _runRuntimeExperienceStage(target: target, model: model, id: id, name: name, affected: affected, maxAttempts: maxAttempts);
+  }
+
+  /// Unchanged since R25 (renamed from `_runStage`) — byte-for-byte
+  /// identical behavior for every existing caller.
+  Future<StageOutcome> _runRuntimeExperienceStage({
     required ExecutionTargetKind target,
     required CanonicalImplementationModel model,
     required String id,
@@ -154,6 +209,69 @@ class SolutionExecutionOrchestrator {
       }
       // Real bounded retry — see this file's own doc comment on why this
       // rarely changes a deterministic pipeline's outcome.
+    }
+  }
+
+  /// New in Implementation Specification IS-R26. Dispatches through the
+  /// real, generic `runGeneratorPipeline` (R26) against the real, existing
+  /// `BackendServiceGenerator` — never `ExperiencePackageValidator` (a
+  /// Backend Service artifact is not an `ExperiencePackage`); Completion
+  /// Criteria here is real: zero compiler-diagnostic errors, at least one
+  /// artifact produced, and every artifact's `content` a real, valid,
+  /// parseable JSON document (never a rubber-stamped boolean).
+  Future<StageOutcome> _runBackendServiceStage({
+    required CanonicalImplementationModel model,
+    required String id,
+    required String name,
+    required BackendEngineeringPlan? backendPlan,
+    required int maxAttempts,
+  }) async {
+    const target = ExecutionTargetKind.backendService;
+    final stopwatch = Stopwatch()..start();
+
+    if (backendPlan == null) {
+      stopwatch.stop();
+      return StageOutcome(
+        target: target,
+        status: StageStatus.failed,
+        attempts: 1,
+        errors: const ['No BackendEngineeringPlan supplied to SolutionExecutionOrchestrator.execute() — required for a backendService stage.'],
+        latency: stopwatch.elapsed,
+      );
+    }
+
+    final options = GeneratorOptions(values: {'backendEngineeringPlan': jsonEncode(backendPlan.toJson())});
+
+    var attempt = 0;
+    while (true) {
+      attempt++;
+      final outcome = runGeneratorPipeline(model, generator: const BackendServiceGenerator(), id: id, name: name, options: options);
+      final compilerErrors = outcome.result.diagnostics.where((d) => d.severity == DiagnosticSeverity.error).map((d) => d.message).toList();
+      final artifacts = outcome.result.allArtifacts;
+      final invalidJson = artifacts.where((a) => a.content != null && !_isValidJson(a.content!)).map((a) => 'Artifact ${a.id} is not valid JSON');
+
+      final errors = [...compilerErrors, ...invalidJson];
+      final succeeded = artifacts.isNotEmpty && errors.isEmpty;
+
+      if (succeeded) {
+        stopwatch.stop();
+        return StageOutcome(target: target, status: StageStatus.succeeded, attempts: attempt, backendArtifacts: artifacts, latency: stopwatch.elapsed);
+      }
+      if (attempt >= maxAttempts) {
+        stopwatch.stop();
+        final allErrors = [...errors, if (artifacts.isEmpty && compilerErrors.isEmpty) 'Backend Service Generator produced no artifacts for this target.'];
+        return StageOutcome(target: target, status: StageStatus.failed, attempts: attempt, errors: allErrors, latency: stopwatch.elapsed);
+      }
+      // Real bounded retry — same rationale as `_runRuntimeExperienceStage`.
+    }
+  }
+
+  bool _isValidJson(String content) {
+    try {
+      jsonDecode(content);
+      return true;
+    } catch (_) {
+      return false;
     }
   }
 }
