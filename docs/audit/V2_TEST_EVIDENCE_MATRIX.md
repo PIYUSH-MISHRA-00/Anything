@@ -1462,3 +1462,37 @@ issues, 0 errors, unchanged baseline. `lib/runtime/`,
 untouched; `RuntimeExperienceGenerator`/`BackendServiceGenerator`
 themselves unmodified. `useCompilerPipeline` unaffected, still defaults
 `false`.
+
+## R28 — Artifact Intelligence Engine, Semantic Generated Software Understanding
+
+`test/r28_artifact_intelligence_test.dart` proves: identity/type/provenance
+(real `GeneratorMetadata.id`s read off `ExecutionStrategy.requiredGenerators`,
+never fabricated), dependency analysis (`dependsOn`/`consumedBy` exactly
+mirror `ExecutionTargetPlan.dependencies`), validation (a direct,
+unmodified read of `StageOutcome.completionCriteriaMet`/`.errors`),
+compatibility (a real, passing authentication-consistency check on one
+real 3-generator run, AND a deliberately-constructed failing case using
+two different `BackendEngineeringPlan`s), the mandatory deployment-readiness
+proof (a synthetic, succeeded-but-dependency-only-skipped scenario where
+`OrchestrationReport.succeeded` is `true` but `ArtifactIntelligenceReport.deploymentReady`
+correctly reports `false` with a real, named blocker — plus a second
+scenario confirming a real dependency FAILURE is caught by both the
+coarse and rich signals), backward compatibility
+(`SolutionExecutionOrchestrator.execute()` behaves byte-for-byte as
+R25-R27 built it with Artifact Intelligence never invoked), and real
+Stopwatch/`ProcessInfo.currentRss` performance numbers for a
+100-target synthetic `OrchestrationReport` and 200 repeated `analyze()`
+calls.
+
+No pre-existing test files required any changes — `ArtifactIntelligenceEngine`
+is purely additive, consuming already-completed orchestration output.
+
+**Execution result:** 12 new tests pass. Full regression: **1498/1498**
+(up from 1486), run TWICE with zero flakiness. `flutter analyze`: 71
+issues, 0 errors, unchanged baseline. `lib/generator_framework/` (all
+files), `lib/runtime/`, `lib/software_cognition/`, `lib/world_model/`,
+`lib/storage/engineering_memory_repository.dart`,
+`lib/engineering_intelligence/`, `lib/backend_engineering/`,
+`lib/creation/creation_engine.dart`, and all 3 real generators
+completely untouched; `SolutionExecutionOrchestrator.execute()` itself
+unmodified. `useCompilerPipeline` unaffected, still defaults `false`.

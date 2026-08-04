@@ -1326,5 +1326,60 @@ themselves unmodified. `useCompilerPipeline` unaffected, still defaults
 See `docs/architecture/INTERFACE_GENERATOR_FRAMEWORK.md` for the full
 audit.
 
-**DO NOT START R28 — per this specification's own stop condition, wait
+## R28 — Artifact Intelligence Engine, Semantic Generated Software Understanding
+
+R28 adds a real, pure, POST-hoc analysis layer —
+`ArtifactIntelligenceEngine` (`lib/artifact_intelligence/`) — over an
+ALREADY-COMPLETED `OrchestrationReport` + the `ExecutionStrategy` that
+produced it. Two real, pre-existing facts grounded the milestone:
+`OrchestrationReport.succeeded` (R25) is coarse (no failed stages, never
+checking that a succeeded stage's real dependencies were themselves
+fulfilled — a skipped-but-required dependency slips through); and
+`GenerationResult.dependencyManifest` (R10) is a real, orphaned
+"artifact dependency" concept never populated by any of the 3 real
+generators, investigated and correctly NOT used (it models ecosystem-package
+dependencies, a different concern than the real, already-populated
+`ExecutionTargetPlan.dependencies` execution-dependency data this
+milestone builds on instead).
+
+`ArtifactIntelligenceEngine.analyze()` produces real `ArtifactKnowledge`
+(identity/type/provenance — the real `GeneratorMetadata.id` read straight
+off `ExecutionStrategy.forTarget(target).requiredGenerators`, never a new
+`StageOutcome` field — /dependencies/consumers/validation, all direct
+reads or joins of already-real data), one real, checkable
+`CompatibilityCheck` (Backend Service's and REST API's serialized
+`authentication` sections must agree, since both derive from the SAME
+`BackendEngineeringPlan` for one run — proven both passing and, via a
+deliberately-constructed inconsistent fixture, failing), and a real,
+RICHER `deploymentReady` signal than `OrchestrationReport.succeeded`
+alone.
+
+**Mandatory proof**: a synthetic `ExecutionStrategy`/`OrchestrationReport`
+where REST API succeeded but its real, declared dependency (Backend
+Service) was only `skippedNoGenerator` (never `failed`) —
+`OrchestrationReport.succeeded` reports `true`, but
+`ArtifactIntelligenceReport.deploymentReady` correctly reports `false`
+with a real, named blocker. `SolutionExecutionOrchestrator.execute()`
+itself is completely unmodified — Artifact Intelligence is invoked
+separately, after execution, never inside it.
+
+"Future Flutter/GraphQL/Deployment/Documentation" semantic understanding
+is explicitly out of scope per the specification's own text (named as
+FUTURE, no such generator exists yet).
+
+**Execution result:** 12 new tests, all passing. Full regression:
+**1498/1498** (up from 1486), run TWICE with zero flakiness. `flutter
+analyze`: 71 issues, 0 errors, unchanged baseline. `lib/generator_framework/` (all files, including
+`generator.dart`/`generation_pipeline.dart`/`artifact.dart`),
+`lib/runtime/`, `lib/software_cognition/`, `lib/world_model/`,
+`lib/storage/engineering_memory_repository.dart`,
+`lib/engineering_intelligence/`, `lib/backend_engineering/`,
+`lib/creation/creation_engine.dart`, and all 3 real generators
+(`RuntimeExperienceGenerator`/`BackendServiceGenerator`/`RestApiGenerator`)
+completely untouched; `SolutionExecutionOrchestrator.execute()` itself
+unmodified. `useCompilerPipeline` unaffected, still defaults `false`.
+
+See `docs/architecture/ARTIFACT_INTELLIGENCE.md` for the full audit.
+
+**DO NOT START R29 — per this specification's own stop condition, wait
 for external architectural review.**

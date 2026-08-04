@@ -309,3 +309,13 @@ Statuses: VERIFIED (directly confirmed by source/test execution), PARTIAL (real 
 | No duplicate architecture | **VERIFIED** — `lib/runtime/`, `lib/software_cognition/`, `lib/world_model/`, `lib/storage/engineering_memory_repository.dart`, `lib/engineering_intelligence/`, `lib/backend_engineering/`, `lib/creation/creation_engine.dart`, `lib/generator_framework/generator.dart`, `lib/generator_framework/generation_pipeline.dart` all completely untouched (`git diff --stat`); `RuntimeExperienceGenerator`/`BackendServiceGenerator` never modified; no new `InterfaceGenerator` abstraction built (one real implementation does not justify one). |
 | No duplicate AI Boundary | **VERIFIED** — zero new LLM calls anywhere; `RestApiGenerator` is a deterministic transform of already-computed `BackendEngineeringPlan`/`CanonicalImplementationModel` data. |
 | No duplicate compiler | **VERIFIED** — `RestApiGenerator` dispatches through the SAME, unmodified `BuildGraphBuilder`/`GenerationPipeline`/`runGeneratorPipeline` (R10/R11/R26) every other generator uses; `useCompilerPipeline` still defaults `false`. |
+
+## R28
+
+| Item | Status |
+|---|---|
+| Artifact Intelligence understands every generated artifact | **VERIFIED** — `ArtifactIntelligenceEngine.analyze()` produces real `ArtifactKnowledge` (identity/type/provenance/dependencies/consumers/validation) for every stage in a real, completed `OrchestrationReport`, covering all 3 real generators. |
+| SolutionExecutionOrchestrator uses Artifact Intelligence for validation | **VERIFIED** — a real, deterministic `deploymentReady` check (richer than `OrchestrationReport.succeeded` alone) is invoked by a caller AFTER `execute()` returns; `execute()` itself is completely unmodified — Artifact Intelligence consumes its output, never alters its execution. |
+| No duplicate architecture | **VERIFIED** — `lib/generator_framework/` (all files), `lib/runtime/`, `lib/software_cognition/`, `lib/world_model/`, `lib/storage/engineering_memory_repository.dart`, `lib/engineering_intelligence/`, `lib/backend_engineering/`, `lib/creation/creation_engine.dart` all completely untouched (`git diff --stat`); all 3 real generators and `SolutionExecutionOrchestrator.execute()` never modified; no second Artifact model — `Artifact`/`ArtifactGroup`/`ArtifactKind` (R10) reused exactly as-is. |
+| No duplicate AI Boundary | **VERIFIED** — zero new LLM calls anywhere; `ArtifactIntelligenceEngine` is a deterministic analysis of already-real, already-deterministic orchestration output. |
+| No duplicate compiler | **VERIFIED** — `ArtifactIntelligenceEngine` never invokes `BuildGraphBuilder`/`GenerationPipeline`/any `Generator` — it analyzes results a completed run already produced; `useCompilerPipeline` still defaults `false`. |
