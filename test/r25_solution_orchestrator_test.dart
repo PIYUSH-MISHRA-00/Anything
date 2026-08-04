@@ -270,24 +270,30 @@ void main() {
       expect(ExperiencePackageValidator.validate(runtimeOutcome.package!).isValid, isTrue);
     });
 
-    test('notApplicable and applicableNoGenerator targets are recorded with a real, specific reason, never silently dropped', () async {
+    test('notApplicable targets are recorded with a real, specific reason, never silently dropped — and no real target is applicableNoGenerator anymore (Implementation Specification IS-R27)', () async {
       final strategy = const SolutionExecutionPlanner().plan(_solution(backendNeeded: true));
-      final report = await const SolutionExecutionOrchestrator().execute(strategy: strategy, model: _tripModel(), id: 'trip-tracker', name: 'Trip Tracker');
+      final report = await const SolutionExecutionOrchestrator().execute(
+        strategy: strategy,
+        model: _tripModel(),
+        id: 'trip-tracker',
+        name: 'Trip Tracker',
+        backendPlan: _solution(backendNeeded: true).backend,
+      );
 
       expect(report.stages, hasLength(12), reason: 'every one of the 12 R18 execution targets must appear exactly once');
-      // BackendServiceGenerator now exists (Implementation Specification
-      // IS-R26) — backendService is applicableWithGenerator, not
-      // applicableNoGenerator, once requiresBackend is true (see the
-      // dedicated R26 multi-generator test group below). REST API is the
-      // real, still-current applicableNoGenerator example in this
-      // fixture: R26 built a Backend Service generator, not a REST API
-      // one.
-      final restApi = report.outcomeFor(ExecutionTargetKind.restApi)!;
-      expect(restApi.status, StageStatus.skippedNoGenerator);
-      expect(restApi.attempts, 0);
-      expect(restApi.errors.single, contains('no Generator implementation exists to fulfill a REST API target'));
       final website = report.outcomeFor(ExecutionTargetKind.website)!;
       expect(website.status, StageStatus.skippedNotApplicable);
+      expect(website.errors, isNotEmpty);
+
+      // REALITY (Implementation Specification IS-R27): BackendServiceGenerator
+      // (R26) and RestApiGenerator (R27) together mean every one of the 3
+      // backend-shaped targets `SolutionExecutionPlanner` (R18) can ever
+      // mark applicable now has a real generator — `skippedNoGenerator`
+      // is no longer reachable anywhere in this fixture. This is a real,
+      // structural fact worth asserting explicitly, not silently losing
+      // as prior milestones' own dedicated examples (this test's own R18/
+      // R26 history) get superseded.
+      expect(report.stages.where((s) => s.status == StageStatus.skippedNoGenerator), isEmpty);
     });
 
     test('supplying real, matching AffectedEntities dispatches through IncrementalCompilerSynthesizer, still producing a valid package', () async {

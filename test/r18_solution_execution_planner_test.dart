@@ -170,22 +170,23 @@ void main() {
       expect(strategy.forTarget(ExecutionTargetKind.restApi).classification, ExecutionTargetClassification.notApplicable);
     });
 
-    test('backend needed with real REST endpoints: Backend Service is applicableWithGenerator (Implementation Specification IS-R26), REST API stays applicableNoGenerator, Runtime Experience keeps its real generator', () {
+    test('backend needed with real REST endpoints: all three real generators now report applicableWithGenerator (Implementation Specifications IS-R26/IS-R27)', () {
       final strategy = const SolutionExecutionPlanner().plan(_solution(backendNeeded: true, hasEntities: true));
 
-      // BackendServiceGenerator now exists (R26) — REALITY before R26,
-      // this assertion was `applicableNoGenerator`; R26 deliberately
-      // flipped it, the exact "R18 deliberately never invokes a
-      // generator, R26 finally gives Backend Service one" transition
-      // this planner's own doc comment named as the real, deferred gap.
+      // BackendServiceGenerator (R26) and RestApiGenerator (R27) now both
+      // exist — REALITY before R26/R27, backendService/restApi asserted
+      // `applicableNoGenerator`; each milestone deliberately flipped its
+      // own target, the exact "R18 deliberately never invokes a
+      // generator" transition this planner's own doc comment named as
+      // the real, deferred gap for each.
       final backend = strategy.forTarget(ExecutionTargetKind.backendService);
       expect(backend.classification, ExecutionTargetClassification.applicableWithGenerator);
       expect(backend.requiredGenerators, [SolutionExecutionPlanner.backendServiceGeneratorId]);
       expect(backend.deploymentRequirements, contains('BACKEND_API_CREDENTIALS'));
 
       final rest = strategy.forTarget(ExecutionTargetKind.restApi);
-      expect(rest.classification, ExecutionTargetClassification.applicableNoGenerator);
-      expect(rest.requiredGenerators, isEmpty);
+      expect(rest.classification, ExecutionTargetClassification.applicableWithGenerator);
+      expect(rest.requiredGenerators, [SolutionExecutionPlanner.restApiGeneratorId]);
       expect(rest.dependencies, contains(ExecutionTargetKind.backendService));
 
       final runtime = strategy.forTarget(ExecutionTargetKind.runtimeExperience);
