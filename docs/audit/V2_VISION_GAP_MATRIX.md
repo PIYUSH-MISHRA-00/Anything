@@ -298,3 +298,14 @@ Statuses: VERIFIED (directly confirmed by source/test execution), PARTIAL (real 
 | No duplicate architecture | **VERIFIED** — `lib/runtime/`, `lib/software_cognition/`, `lib/world_model/`, `lib/storage/engineering_memory_repository.dart`, `lib/engineering_intelligence/`, `lib/backend_engineering/`, `lib/creation/creation_engine.dart` completely untouched (`git diff --stat`); `RuntimeExperienceGenerator` itself never modified; `runCompilerPipeline`'s existing behavior proven byte-for-byte unchanged. |
 | No duplicate AI Boundary | **VERIFIED** — zero new LLM calls anywhere; `BackendServiceGenerator` is a deterministic transform of already-computed `BackendEngineeringPlan` data. |
 | No duplicate compiler | **VERIFIED** — `BackendServiceGenerator` dispatches through the SAME, unmodified `BuildGraphBuilder`/`GenerationPipeline` (R10/R11) every other generator uses; `useCompilerPipeline` still defaults `false`. |
+
+## R27
+
+| Item | Status |
+|---|---|
+| REST API Generator is registered | **VERIFIED** — `SolutionExecutionPlanner.restApiGeneratorId` (`'reference.rest-api'`), `_restApi()` classifies `applicableWithGenerator` with real `requiredGenerators`, dispatched by the orchestrator's `_runRestApiStage`. |
+| SolutionExecutionOrchestrator executes three real generators using one ExecutionStrategy | **VERIFIED** — a real backend-required, API-bearing `SemanticSolutionArchitecture` produces ONE `ExecutionStrategy` with Backend Service, REST API, AND Runtime Experience all `applicableWithGenerator`; all three succeed in one `execute()` call, proven end-to-end. |
+| Execution ordering remains deterministic | **VERIFIED** — `ExecutionTargetOrderer` (R25) completely unmodified; a dedicated test asserts exactly three distinct levels in the order Backend Service → REST API → Runtime Experience. |
+| No duplicate architecture | **VERIFIED** — `lib/runtime/`, `lib/software_cognition/`, `lib/world_model/`, `lib/storage/engineering_memory_repository.dart`, `lib/engineering_intelligence/`, `lib/backend_engineering/`, `lib/creation/creation_engine.dart`, `lib/generator_framework/generator.dart`, `lib/generator_framework/generation_pipeline.dart` all completely untouched (`git diff --stat`); `RuntimeExperienceGenerator`/`BackendServiceGenerator` never modified; no new `InterfaceGenerator` abstraction built (one real implementation does not justify one). |
+| No duplicate AI Boundary | **VERIFIED** — zero new LLM calls anywhere; `RestApiGenerator` is a deterministic transform of already-computed `BackendEngineeringPlan`/`CanonicalImplementationModel` data. |
+| No duplicate compiler | **VERIFIED** — `RestApiGenerator` dispatches through the SAME, unmodified `BuildGraphBuilder`/`GenerationPipeline`/`runGeneratorPipeline` (R10/R11/R26) every other generator uses; `useCompilerPipeline` still defaults `false`. |

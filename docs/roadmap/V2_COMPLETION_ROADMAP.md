@@ -1270,5 +1270,61 @@ defaults `false`.
 
 See `docs/architecture/BACKEND_SERVICE_GENERATOR.md` for the full audit.
 
-**DO NOT START R27 — per this specification's own stop condition, wait
+## R27 — Interface Generator Framework, First API Generator Target
+
+R27 adds the third real `Generator`, `RestApiGenerator`, and gives
+`SolutionExecutionOrchestrator` its first genuine THREE-generator run.
+Unlike R26's four structural gaps, R27 found only ONE: `_restApi()`
+(`lib/execution_planning/solution_execution_planner.dart`) hardcoded
+`applicableNoGenerator`, exactly mirroring `_backendService()`'s pre-R26
+state — the dependency chain (Backend Service → REST API → Runtime
+Experience) and the `GeneratorOptions`-JSON threading convention were
+both already wired generically by R18/R26 and needed zero changes.
+
+`RestApiGenerator` produces output deliberately DISTINCT from
+`BackendServiceGenerator`'s existing raw `api` dump: real request/response
+models (a real join of `ApiEndpoint.requestFields[].name` against
+`ImplementationEntity.fields[].name` — identical by construction, both
+trace to the same `entity.fields` iteration in `BackendEngineeringPlanner`)
+and a real OpenAPI-3.0-*shaped* JSON reorganization of the same real
+endpoint data. Authorization Rules and Error Models are honestly reported
+as unrepresented — neither has real per-endpoint signal anywhere
+upstream, and fabricating a generic RESTful-convention error shape would
+be invented convention, not derivation.
+
+No new `InterfaceGenerator` abstraction was built — R27 is explicitly
+named "the first implementation," with no second (GraphQL) in scope; an
+abstraction with exactly one real implementation is the precise
+anti-pattern R18/R21/R23/R24/R25/R26 each declined. `StageOutcome
+.backendArtifacts` (R26) is reused unmodified for REST API output too —
+same real `List<Artifact>` shape, no reason for a second field.
+
+Mandatory vision validation proven end-to-end: one real `ExecutionStrategy`
+with Backend Service, REST API, AND Runtime Experience all
+`applicableWithGenerator` runs through the real, unmodified
+`SolutionExecutionOrchestrator`; all three succeed; real dependency-safe
+ordering places the three targets in exactly three levels, in order.
+
+Two real, pre-existing test assertions (R18, R25) that specifically
+tested REST API's OLD "no generator exists yet" state were updated to
+reflect the deliberate, milestone-mandated change — every other
+assertion in both files, and every other test in the suite, passes
+unmodified.
+
+**Execution result:** 22 new tests pass. Full regression: **1486/1486**
+(up from 1464), run TWICE with zero flakiness. `flutter analyze`: 71
+issues, 0 errors, unchanged baseline. `lib/runtime/`,
+`lib/software_cognition/`, `lib/world_model/`,
+`lib/storage/engineering_memory_repository.dart`,
+`lib/engineering_intelligence/`, `lib/backend_engineering/`,
+`lib/creation/creation_engine.dart`, `lib/generator_framework/generator.dart`,
+`lib/generator_framework/generation_pipeline.dart` all completely
+untouched; `RuntimeExperienceGenerator`/`BackendServiceGenerator`
+themselves unmodified. `useCompilerPipeline` unaffected, still defaults
+`false`.
+
+See `docs/architecture/INTERFACE_GENERATOR_FRAMEWORK.md` for the full
+audit.
+
+**DO NOT START R28 — per this specification's own stop condition, wait
 for external architectural review.**

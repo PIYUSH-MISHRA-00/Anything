@@ -1420,3 +1420,45 @@ baseline. `lib/runtime/`, `lib/software_cognition/`, `lib/world_model/`,
 `lib/creation/creation_engine.dart` all completely untouched;
 `RuntimeExperienceGenerator` itself unmodified. `useCompilerPipeline`
 unaffected, still defaults `false`.
+
+## R27 — Interface Generator Framework, First API Generator Target
+
+`test/r27_rest_api_generator_test.dart` (22 tests): real request/response
+model derivation (a real join of `ApiEndpoint.requestFields` against
+`ImplementationEntity.fields`, real types, never fabricated), list/search
+`body:array` vs. get `body:object` response shapes, no response body for
+create/update/delete, a real OpenAPI-shaped `paths` object matching every
+`ApiEndpoint` one-to-one, real (unmodified) `AuthenticationModel` values,
+Authorization Rules/Error Models honestly reported as unrepresented, an
+honest empty result with no plan/no endpoints, a real reported error for
+malformed JSON, zero SQL/server-source/routing-implementation patterns
+(grep-verified), a real distinct `GeneratorMetadata.id`, determinism
+(same plan generated twice, byte-for-byte identical), the
+`SolutionExecutionPlanner` classification flip (`applicableWithGenerator`
+now, `notApplicable` unaffected), the mandatory THREE-real-generator
+`SolutionExecutionOrchestrator` end-to-end proof (Backend Service → REST
+API → Runtime Experience, real dependency-safe ordering across exactly
+three levels), a real honest failure when `backendPlan` is omitted (never
+retried — a precondition failure, not transient), a Runtime-Experience-only
+strategy proven unaffected, `BackendServiceGenerator` proven unaffected,
+and real Stopwatch/`ProcessInfo.currentRss` performance numbers for a
+400-endpoint/200-entity generation, JSON round-trip serialization, and 50
+repeated generations.
+
+Two pre-existing tests (`test/r18_solution_execution_planner_test.dart`,
+`test/r25_solution_orchestrator_test.dart`) had assertions updated — both
+specifically tested REST API's OLD "no generator exists yet" state R27
+deliberately changes; every other assertion in both files, and every
+other test in the suite, passes unmodified.
+
+**Execution result:** 22 new tests pass. Full regression: **1486/1486**
+(up from 1464), run TWICE with zero flakiness. `flutter analyze`: 71
+issues, 0 errors, unchanged baseline. `lib/runtime/`,
+`lib/software_cognition/`, `lib/world_model/`,
+`lib/storage/engineering_memory_repository.dart`,
+`lib/engineering_intelligence/`, `lib/backend_engineering/`,
+`lib/creation/creation_engine.dart`, `lib/generator_framework/generator.dart`,
+`lib/generator_framework/generation_pipeline.dart` all completely
+untouched; `RuntimeExperienceGenerator`/`BackendServiceGenerator`
+themselves unmodified. `useCompilerPipeline` unaffected, still defaults
+`false`.
