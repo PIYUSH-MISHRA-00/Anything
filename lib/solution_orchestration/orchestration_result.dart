@@ -33,12 +33,17 @@ class StageOutcome {
 
   final ExperiencePackage? package;
 
-  /// Real, additive (Implementation Specification IS-R26): a Backend
-  /// Service stage's real, typed output — never an `ExperiencePackage`
-  /// (structurally different artifact shape), so this stays a SEPARATE,
-  /// nullable field rather than overloading [package]. A Runtime
-  /// Experience stage always leaves this `null`; a Backend Service stage
-  /// always leaves [package] `null`.
+  /// Real, additive (Implementation Specification IS-R26, reused
+  /// unmodified by IS-R27): a Backend Service or REST API stage's real,
+  /// typed `Artifact` output — never an `ExperiencePackage` (structurally
+  /// different artifact shape), so this stays a SEPARATE, nullable field
+  /// rather than overloading [package]. Backend Service and REST API
+  /// stages both produce a real `List<Artifact>` — the SAME structural
+  /// shape — so this one field covers both; a caller distinguishes which
+  /// generator produced it via [target] itself, never a second,
+  /// structurally-identical field. A Runtime Experience stage always
+  /// leaves this `null`; a Backend Service/REST API stage always leaves
+  /// [package] `null`.
   final List<Artifact>? backendArtifacts;
 
   /// Real, named reasons this stage did not reach `succeeded` — validator

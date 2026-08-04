@@ -89,6 +89,7 @@ import '../execution_planning/execution_strategy.dart';
 import '../generator_framework/generation_result.dart';
 import '../generator_framework/generator.dart' show GeneratorOptions;
 import '../generator_framework/reference/backend_service_generator.dart';
+import '../generator_framework/reference/rest_api_generator.dart';
 import '../implementation_model/canonical_implementation_model.dart';
 import 'execution_ordering.dart';
 import 'orchestration_result.dart';
@@ -148,11 +149,12 @@ class SolutionExecutionOrchestrator {
     return OrchestrationReport(levels: levels.levels, levelOrderingComplete: levels.isComplete, stages: stages);
   }
 
-  /// Real dispatch (Implementation Specification IS-R26) — see this
-  /// file's own top-level "DISPATCH, generalized" doc comment. WHICH
-  /// targets are attempted is entirely `ExecutionStrategy`'s decision
-  /// (only `applicableWithGenerator` targets reach here, unchanged since
-  /// R25); this only decides HOW to run one already-approved target.
+  /// Real dispatch (Implementation Specification IS-R26, extended IS-R27)
+  /// — see this file's own top-level "DISPATCH, generalized" doc comment.
+  /// WHICH targets are attempted is entirely `ExecutionStrategy`'s
+  /// decision (only `applicableWithGenerator` targets reach here,
+  /// unchanged since R25); this only decides HOW to run one
+  /// already-approved target.
   Future<StageOutcome> _runStage({
     required ExecutionTargetKind target,
     required CanonicalImplementationModel model,
@@ -164,6 +166,9 @@ class SolutionExecutionOrchestrator {
   }) {
     if (target == ExecutionTargetKind.backendService) {
       return _runBackendServiceStage(model: model, id: id, name: name, backendPlan: backendPlan, maxAttempts: maxAttempts);
+    }
+    if (target == ExecutionTargetKind.restApi) {
+      return _runRestApiStage(model: model, id: id, name: name, backendPlan: backendPlan, maxAttempts: maxAttempts);
     }
     return _runRuntimeExperienceStage(target: target, model: model, id: id, name: name, affected: affected, maxAttempts: maxAttempts);
   }
@@ -260,6 +265,58 @@ class SolutionExecutionOrchestrator {
       if (attempt >= maxAttempts) {
         stopwatch.stop();
         final allErrors = [...errors, if (artifacts.isEmpty && compilerErrors.isEmpty) 'Backend Service Generator produced no artifacts for this target.'];
+        return StageOutcome(target: target, status: StageStatus.failed, attempts: attempt, errors: allErrors, latency: stopwatch.elapsed);
+      }
+      // Real bounded retry — same rationale as `_runRuntimeExperienceStage`.
+    }
+  }
+
+  /// New in Implementation Specification IS-R27. Mirrors
+  /// `_runBackendServiceStage` exactly — same `backendPlan`-required
+  /// precondition, same completion criteria (zero diagnostic errors, at
+  /// least one artifact, every artifact real valid JSON) — dispatched
+  /// against the real, existing `RestApiGenerator` instead.
+  Future<StageOutcome> _runRestApiStage({
+    required CanonicalImplementationModel model,
+    required String id,
+    required String name,
+    required BackendEngineeringPlan? backendPlan,
+    required int maxAttempts,
+  }) async {
+    const target = ExecutionTargetKind.restApi;
+    final stopwatch = Stopwatch()..start();
+
+    if (backendPlan == null) {
+      stopwatch.stop();
+      return StageOutcome(
+        target: target,
+        status: StageStatus.failed,
+        attempts: 1,
+        errors: const ['No BackendEngineeringPlan supplied to SolutionExecutionOrchestrator.execute() — required for a restApi stage.'],
+        latency: stopwatch.elapsed,
+      );
+    }
+
+    final options = GeneratorOptions(values: {'backendEngineeringPlan': jsonEncode(backendPlan.toJson())});
+
+    var attempt = 0;
+    while (true) {
+      attempt++;
+      final outcome = runGeneratorPipeline(model, generator: const RestApiGenerator(), id: id, name: name, options: options);
+      final compilerErrors = outcome.result.diagnostics.where((d) => d.severity == DiagnosticSeverity.error).map((d) => d.message).toList();
+      final artifacts = outcome.result.allArtifacts;
+      final invalidJson = artifacts.where((a) => a.content != null && !_isValidJson(a.content!)).map((a) => 'Artifact ${a.id} is not valid JSON');
+
+      final errors = [...compilerErrors, ...invalidJson];
+      final succeeded = artifacts.isNotEmpty && errors.isEmpty;
+
+      if (succeeded) {
+        stopwatch.stop();
+        return StageOutcome(target: target, status: StageStatus.succeeded, attempts: attempt, backendArtifacts: artifacts, latency: stopwatch.elapsed);
+      }
+      if (attempt >= maxAttempts) {
+        stopwatch.stop();
+        final allErrors = [...errors, if (artifacts.isEmpty && compilerErrors.isEmpty) 'REST API Generator produced no artifacts for this target.'];
         return StageOutcome(target: target, status: StageStatus.failed, attempts: attempt, errors: allErrors, latency: stopwatch.elapsed);
       }
       // Real bounded retry — same rationale as `_runRuntimeExperienceStage`.

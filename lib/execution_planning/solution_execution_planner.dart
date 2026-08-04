@@ -37,6 +37,11 @@ class SolutionExecutionPlanner {
   /// `lib/generator_framework/`.
   static const String backendServiceGeneratorId = 'reference.backend-service';
 
+  /// The real `GeneratorMetadata.id` of `RestApiGenerator` (Implementation
+  /// Specification IS-R27, Anything's third real generator) — same naming
+  /// convention as the two constants above.
+  static const String restApiGeneratorId = 'reference.rest-api';
+
   /// The 9 R18 targets with zero real signal anywhere in
   /// `SemanticSolutionArchitecture` today — a static, honest fact about
   /// this codebase's current architecture models, not a per-request
@@ -105,14 +110,23 @@ class SolutionExecutionPlanner {
   /// execution-relevant signal is therefore BOTH real endpoints AND a
   /// real backend need (`requiresBackend`) — endpoints alone are not
   /// enough to honestly call this target applicable.
+  /// Implementation Specification IS-R27: `RestApiGenerator` now exists,
+  /// so `hasApi && requiresBackend` correctly reaches `applicableWithGenerator`
+  /// — the exact "R18 deliberately never invokes a generator, R27 finally
+  /// gives REST API one" transition this method's own R18 doc comment
+  /// named as the real, deferred gap (mirrors R26's identical transition
+  /// for `_backendService`).
   ExecutionTargetPlan _restApi(bool hasApi, bool requiresBackend) => hasApi && requiresBackend
       ? ExecutionTargetPlan(
           target: ExecutionTargetKind.restApi,
-          classification: ExecutionTargetClassification.applicableNoGenerator,
-          reason: 'BackendEngineeringPlan.api.endpoints is non-empty AND deployment.requiresBackend is true — a real semantic '
-              'need, but no Generator implementation exists to fulfill a REST API target yet (R10-R12 explicitly deferred this).',
+          classification: ExecutionTargetClassification.applicableWithGenerator,
+          reason: 'BackendEngineeringPlan.api.endpoints is non-empty AND deployment.requiresBackend is true — a real, existing '
+              'Generator (RestApiGenerator, Implementation Specification IS-R27) produces real, typed REST API specification '
+              'artifacts.',
           priority: 1,
           dependencies: const [ExecutionTargetKind.backendService],
+          requiredGenerators: const [restApiGeneratorId],
+          validationRequirements: const ['Real JSON round-trip of every emitted Artifact (REST API artifacts are not an ExperiencePackage, so ExperiencePackageValidator does not apply)'],
           buildRequirements: const ['ApiSpecificationModel (already computed, Implementation Milestone R8)'],
         )
       : ExecutionTargetPlan(
