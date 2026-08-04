@@ -170,12 +170,17 @@ void main() {
       expect(strategy.forTarget(ExecutionTargetKind.restApi).classification, ExecutionTargetClassification.notApplicable);
     });
 
-    test('backend needed with real REST endpoints: Backend Service + REST API are applicableNoGenerator, Runtime Experience keeps its real generator', () {
+    test('backend needed with real REST endpoints: Backend Service is applicableWithGenerator (Implementation Specification IS-R26), REST API stays applicableNoGenerator, Runtime Experience keeps its real generator', () {
       final strategy = const SolutionExecutionPlanner().plan(_solution(backendNeeded: true, hasEntities: true));
 
+      // BackendServiceGenerator now exists (R26) — REALITY before R26,
+      // this assertion was `applicableNoGenerator`; R26 deliberately
+      // flipped it, the exact "R18 deliberately never invokes a
+      // generator, R26 finally gives Backend Service one" transition
+      // this planner's own doc comment named as the real, deferred gap.
       final backend = strategy.forTarget(ExecutionTargetKind.backendService);
-      expect(backend.classification, ExecutionTargetClassification.applicableNoGenerator);
-      expect(backend.requiredGenerators, isEmpty, reason: 'no Generator implementation exists for a backend-service target');
+      expect(backend.classification, ExecutionTargetClassification.applicableWithGenerator);
+      expect(backend.requiredGenerators, [SolutionExecutionPlanner.backendServiceGeneratorId]);
       expect(backend.deploymentRequirements, contains('BACKEND_API_CREDENTIALS'));
 
       final rest = strategy.forTarget(ExecutionTargetKind.restApi);

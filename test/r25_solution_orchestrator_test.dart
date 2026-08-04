@@ -275,10 +275,17 @@ void main() {
       final report = await const SolutionExecutionOrchestrator().execute(strategy: strategy, model: _tripModel(), id: 'trip-tracker', name: 'Trip Tracker');
 
       expect(report.stages, hasLength(12), reason: 'every one of the 12 R18 execution targets must appear exactly once');
-      final backend = report.outcomeFor(ExecutionTargetKind.backendService)!;
-      expect(backend.status, StageStatus.skippedNoGenerator);
-      expect(backend.attempts, 0);
-      expect(backend.errors.single, contains('requiresBackend is true'));
+      // BackendServiceGenerator now exists (Implementation Specification
+      // IS-R26) — backendService is applicableWithGenerator, not
+      // applicableNoGenerator, once requiresBackend is true (see the
+      // dedicated R26 multi-generator test group below). REST API is the
+      // real, still-current applicableNoGenerator example in this
+      // fixture: R26 built a Backend Service generator, not a REST API
+      // one.
+      final restApi = report.outcomeFor(ExecutionTargetKind.restApi)!;
+      expect(restApi.status, StageStatus.skippedNoGenerator);
+      expect(restApi.attempts, 0);
+      expect(restApi.errors.single, contains('no Generator implementation exists to fulfill a REST API target'));
       final website = report.outcomeFor(ExecutionTargetKind.website)!;
       expect(website.status, StageStatus.skippedNotApplicable);
     });
