@@ -1290,3 +1290,45 @@ baseline. `lib/runtime/`, `lib/generator_framework/`, `lib/build_graph/`,
 files modified this milestone — every change is a new file).
 `useCompilerPipeline` unaffected (never referenced by this milestone's
 code at all).
+
+## R24 — Engineering Intelligence Layer
+
+`test/r24_engineering_intelligence_test.dart` (24 tests) proves: the
+`EngineeringIntelligence` facade holds the SAME `requirementGraph`/
+`architectureCandidate`/`backendEngineeringPlan` references a real
+Kernel run produced (`identical()` checks, never a deep-copy check);
+`AffectedEntityAnalyzer` correctly resolves entity ids from both
+`RequirementGraphDiff` (id-prefix parsing, honestly excluding
+capability/navigation nodes with no single owning entity) and
+`ArchitectureDiff` (direct field reads, both relationship endpoints);
+`IncrementalCompilerSynthesizer` produces a real, measurably SCOPED
+compiler package (asserted directly against `result.package!.data!.entities`,
+not just a label) via the EXISTING, unmodified `runCompilerPipeline`
+(R19); an empty `AffectedEntities` honestly no-ops rather than
+fabricating a package; `buildEvolutionPlan()` composes the EXISTING,
+unmodified `EvolutionDiffPlanBuilder`/`ExperienceDiffer` (R4); a
+compiler-produced `candidatePackage` flows through the REAL, unmodified
+`ExperienceModificationCoordinator.applyEvolutionPlan()` hot-reload path
+end-to-end (validated, persisted, retrievable) with zero changes to that
+machinery; `RequirementGraphBridge` grows the World Graph by real
+capability nodes and view/action→entity `references` edges, while
+correctly declining to ingest a relation whose target isn't an entity
+node and correctly declining to ingest field/constraint/storage/state
+nodes at all; a real Kernel run with an injected `WorldModelCoordinator`
+demonstrates the wiring end-to-end; `RequirementGraphDiffer`/
+`ArchitectureDiffer` remain byte-for-byte reproducible (regression, R3/R4
+unmodified); and real Stopwatch/`ProcessInfo.currentRss` performance
+numbers over a 500-node diff, a 200-vs-1-entity incremental/full
+regeneration comparison, and 100 architecture diffs.
+
+**Execution result:** 24 new tests pass. Full regression: **1429/1429**
+(up from 1405). `flutter analyze`: 71 issues, 0 errors, unchanged
+baseline. `lib/generator_framework/`, `lib/build_graph/`,
+`lib/generation_specification/`, `lib/runtime/`,
+`lib/software_cognition/`, `lib/creation/creation_engine.dart` all
+completely untouched. `lib/kernel/anything_kernel.dart` and
+`lib/world_model/world_model_coordinator.dart` each received one small,
+additive change (a new ingestion call and a new bridge/method,
+respectively) — every other change is new files.
+`useCompilerPipeline` unaffected (never referenced by this milestone's
+code).

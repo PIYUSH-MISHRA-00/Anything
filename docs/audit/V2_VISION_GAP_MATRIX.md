@@ -262,3 +262,16 @@ Statuses: VERIFIED (directly confirmed by source/test execution), PARTIAL (real 
 | Equivalence reused, never replaced | **VERIFIED** — `EquivalenceComparator`/`equivalence_report.dart` (R19-R22) imported and called unmodified; zero new comparison logic. |
 | Identity reused | **VERIFIED** — `legacyBlueprint`/`compilerModel` passed to `compare()` on every fixture; `identityCoverage` measured at 1.0. |
 | No duplicate Compiler / Comparator / Runtime / Generator Framework / Validation System / AI Boundary | **VERIFIED** — `lib/runtime/`, `lib/generator_framework/`, `lib/build_graph/`, `lib/generation_specification/`, `lib/software_cognition/`, `lib/world_model/`, `lib/storage/engineering_memory_repository.dart`, `lib/creation/creation_engine.dart` completely untouched (`git diff --stat` — zero existing files modified, only new files added); zero new LLM calls. |
+
+## R24
+
+| Item | Status |
+|---|---|
+| Engineering Intelligence Layer exists | **VERIFIED** — `lib/engineering_intelligence/` (`EngineeringIntelligence` facade, `AffectedEntityAnalyzer`, `IncrementalCompilerSynthesizer`), composing the already-real `RequirementGraph`/`ArchitectureCandidate`/`BackendEngineeringPlan`, never a new parallel model. |
+| Requirement Graph / Architecture Graph exist | **VERIFIED (already existed)** — `RequirementGraph` (V2), `ArchitectureCandidate`+`BackendEngineeringPlan` (V2/R8, unified by `SemanticSolutionArchitecture`, R17). 11 of R24's 14 requested graph types map to real, pre-existing types (see `docs/architecture/ENGINEERING_INTELLIGENCE.md`'s mapping table); Workflow Graph honestly unmodeled — no real, distinct signal. |
+| Graph Diff Engine exists | **VERIFIED (already existed)** — `RequirementGraphDiffer` (R3), `ArchitectureDiffer` (R4), reused unmodified. |
+| Incremental synthesis exists | **VERIFIED, real granularity stated honestly** — `IncrementalCompilerSynthesizer` scopes `CanonicalImplementationModel` to affected entities and re-runs the real, unmodified compiler pipeline; a real ~22x measured speedup (200 vs. 1 entity). Affected-entity-scoped, not per-node compiler surgery. |
+| World Model consumes Engineering Intelligence | **VERIFIED** — new `RequirementGraphBridge`/`ingestRequirementGraph()`, wired into the Kernel at the point `RequirementGraph` was already computed; `ArchitectureCandidate`'s core content was already reachable via `ingestSolutionArchitecture` (R17). |
+| CanonicalImplementationModel consumes Engineering Intelligence | **VERIFIED (already true)** — `CanonicalImplementationPlanner` already derives from `ArchitectureCandidate`/`BackendEngineeringPlan` since R9; this milestone's real, new contribution is scoping that same derivation to an affected subset, not a new consumption path. |
+| Compiler remains deterministic | **VERIFIED** — zero new LLM calls anywhere in this milestone (confirmed by grep); every graph/diff/incremental-synthesis operation is a deterministic function of already-reasoned data. |
+| No duplicate architecture / AI boundary / graphs | **VERIFIED** — `lib/generator_framework/`, `lib/build_graph/`, `lib/generation_specification/`, `lib/runtime/`, `lib/software_cognition/`, `lib/creation/creation_engine.dart` completely untouched (`git diff --stat`); no second `RequirementGraph`/`ArchitectureCandidate`/diff type created. |

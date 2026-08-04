@@ -1140,5 +1140,39 @@ newly discovered pipeline defect.
 See `docs/architecture/COMPILER_PRODUCTION_INTEGRATION.md`, "R23 —
 Compiler Certification Framework" for the full audit.
 
-**DO NOT START R24 — per this milestone's own stop condition, wait for
+## IS-R24 — Engineering Intelligence Layer (COMPLETE)
+
+Audited R24's 14 requested graph types against the codebase before
+writing any code: 11 already existed under real names
+(`RequirementGraph`/V2, `ArchitectureCandidate`+`BackendEngineeringPlan`
+unified by `SemanticSolutionArchitecture`/R17, existing diff engines
+`RequirementGraphDiffer`/`ArchitectureDiffer` from R3/R4). Workflow
+Graph has no real, distinct signal and stays honestly unmodeled.
+
+The one genuinely novel contribution: `lib/engineering_intelligence/`
+(3 files) — a real `EngineeringIntelligence` facade, an
+`AffectedEntityAnalyzer` translating R3/R4's existing diffs into real
+affected entity ids, and an `IncrementalCompilerSynthesizer` that scopes
+a full `CanonicalImplementationModel` to only the affected entities and
+re-runs the EXISTING, UNMODIFIED `runCompilerPipeline` (R19) — reaching
+diff-driven incremental regeneration into the compiler chain for the
+first time. The resulting package flows into the EXISTING, UNMODIFIED
+`EvolutionDiffPlan`/`applyEvolutionPlan()` hot-reload mechanism (R4-R7)
+with zero code changes to that machinery, proven by a real test. A
+narrow, real `RequirementGraphBridge` closes the "`RequirementGraph` is
+never ingested into World Model" finding.
+
+Real, measured incremental-vs-full compiler latency (200-entity model,
+1 affected entity): ~22ms full, ~1ms incremental.
+
+`lib/generator_framework/`, `lib/build_graph/`,
+`lib/generation_specification/`, `lib/runtime/`,
+`lib/software_cognition/`, and `lib/creation/creation_engine.dart` all
+completely untouched. `useCompilerPipeline` remains opt-in, default
+`false` — this specification never touches live creation.
+
+See `docs/architecture/ENGINEERING_INTELLIGENCE.md` for the full audit
+and the requested-vs-existing mapping table.
+
+**DO NOT START R25 — per this milestone's own stop condition, wait for
 external architectural review.**
