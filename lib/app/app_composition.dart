@@ -20,6 +20,13 @@
 /// reached from every wired subsystem.
 library;
 
+import 'package:anything/app/autonomous_workspace_runtime.dart';
+import 'package:anything/app/creation_coordinator.dart';
+import 'package:anything/app/engineering_lifecycle_coordinator.dart';
+import 'package:anything/app/experience_workspace_manager.dart';
+import 'package:anything/app/intent_session_manager.dart';
+import 'package:anything/app/universal_intent_router.dart';
+import 'package:anything/app/workspace_event_publisher.dart';
 import 'package:anything/capabilities/adapters/http_transport_adapter.dart';
 import 'package:anything/capabilities/adapters/knowledge_acquisition_provider_adapter.dart';
 import 'package:anything/capabilities/adapters/model_provider_ai_adapter.dart';
@@ -30,6 +37,7 @@ import 'package:anything/capabilities/builtin/http_capability.dart';
 import 'package:anything/capabilities/builtin/knowledge_capability.dart';
 import 'package:anything/capabilities/builtin/notification_capability.dart';
 import 'package:anything/capabilities/platform/capability_platform.dart';
+import 'package:anything/core/events/events.dart';
 import 'package:anything/kernel/anything_kernel.dart';
 import 'package:anything/knowledge/knowledge_acquisition_engine.dart';
 import 'package:anything/knowledge/search_provider.dart';
@@ -71,6 +79,52 @@ class AppComposition {
   /// `WorldModelRepository` sharing pattern.
   final EngineeringMemoryRepository engineeringMemory;
 
+  /// The shared Experience Creation Coordinator (Implementation
+  /// Specification IS-R36) — REALITY before R36: `HomeScreen.initState()`
+  /// constructed its own, local `ExperienceCreationCoordinator`, never
+  /// reachable from `AppComposition` (confirmed by grep before this
+  /// milestone). Moved here so the SAME instance composes into
+  /// [intentSessionManager] below, matching R1's own original precedent of
+  /// fixing an "independently constructed, disconnected graph" problem.
+  final ExperienceCreationCoordinator experienceCreationCoordinator;
+
+  /// The shared Engineering Lifecycle Coordinator (Implementation
+  /// Specification IS-R30/R36) — newly constructed here; R30 itself never
+  /// had a shared composition-root instance (its own production callers,
+  /// where any existed, constructed one locally).
+  final EngineeringLifecycleCoordinator engineeringLifecycleCoordinator;
+
+  /// The shared Intent Session Manager (Implementation Specification
+  /// IS-R31/R36), composed from [experienceCreationCoordinator] and
+  /// [engineeringLifecycleCoordinator] above — never a second, independent
+  /// pair of coordinators.
+  final IntentSessionManager intentSessionManager;
+
+  /// The shared Experience Workspace Manager (Implementation Specification
+  /// IS-R32/R36). Reuses the exact `workspaceManager` name already used on
+  /// `HomeScreen`/`ExperienceHostScreen`'s optional constructor parameters.
+  final ExperienceWorkspaceManager workspaceManager;
+
+  /// The shared Universal Intent Router (Implementation Specification
+  /// IS-R33/R36). Reuses the exact `intentRouter` name already used on
+  /// `HomeScreen`'s optional constructor parameter.
+  final UniversalIntentRouter intentRouter;
+
+  /// The shared Autonomous Workspace Runtime (Implementation Specification
+  /// IS-R34/R36). Reuses the exact `workspaceRuntime` name already used on
+  /// `HomeScreen`/`ExperienceHostScreen`'s optional constructor parameters.
+  final AutonomousWorkspaceRuntime workspaceRuntime;
+
+  /// The shared Event Bus (Implementation Specification IS-R35/R36).
+  /// Reuses the exact `eventBus` name already used on `HomeScreen`/
+  /// `ExperienceHostScreen`'s optional constructor parameters.
+  final EventBus eventBus;
+
+  /// The shared Workspace Event Publisher (Implementation Specification
+  /// IS-R35/R36), bound to [eventBus] above — never a second, independent
+  /// bus.
+  final WorkspaceEventPublisher eventPublisher;
+
   AppComposition._({
     required this.experienceRepository,
     required this.worldModel,
@@ -82,6 +136,14 @@ class AppComposition {
     required this.runtimeIntelligence,
     required this.kernel,
     required this.engineeringMemory,
+    required this.experienceCreationCoordinator,
+    required this.engineeringLifecycleCoordinator,
+    required this.intentSessionManager,
+    required this.workspaceManager,
+    required this.intentRouter,
+    required this.workspaceRuntime,
+    required this.eventBus,
+    required this.eventPublisher,
   });
 
   /// Builds the real, production composition graph. Every dependency below
@@ -125,6 +187,34 @@ class AppComposition {
       softwareCognition: softwareCognition,
     );
 
+    final engineeringMemory = EngineeringMemoryRepository(experienceRepository: experienceRepository);
+
+    // Implementation Specification IS-R36: the real "AI Operating System"
+    // service graph (R31-R35), constructed here — the single production
+    // composition root — in real dependency order. REALITY before R36:
+    // none of these 8 services was reachable from `AppComposition`;
+    // `ExperienceCreationCoordinator` was instead constructed locally,
+    // disconnected, inside `HomeScreen.initState()` (confirmed by grep
+    // before this milestone). See `docs/architecture/OPERATING_SYSTEM_COMPOSITION.md`
+    // for the full real service graph and dependency-lifetime analysis.
+    final experienceCreationCoordinator = ExperienceCreationCoordinator(
+      kernel: kernel,
+      worldModel: worldModel,
+      softwareCognition: softwareCognition,
+      engineeringMemory: engineeringMemory,
+    );
+    final engineeringLifecycleCoordinator = EngineeringLifecycleCoordinator(kernel: kernel, engineeringMemory: engineeringMemory);
+    final intentSessionManager = IntentSessionManager(
+      creationCoordinator: experienceCreationCoordinator,
+      lifecycleCoordinator: engineeringLifecycleCoordinator,
+      engineeringMemory: engineeringMemory,
+    );
+    final workspaceManager = ExperienceWorkspaceManager(sessionManager: intentSessionManager);
+    final intentRouter = UniversalIntentRouter(workspace: workspaceManager);
+    final workspaceRuntime = AutonomousWorkspaceRuntime(workspace: workspaceManager);
+    final eventBus = EventBus();
+    final eventPublisher = WorkspaceEventPublisher(bus: eventBus);
+
     return AppComposition._(
       experienceRepository: experienceRepository,
       worldModel: worldModel,
@@ -135,7 +225,15 @@ class AppComposition {
       softwareCognition: softwareCognition,
       runtimeIntelligence: RuntimeIntelligenceCoordinator(),
       kernel: kernel,
-      engineeringMemory: EngineeringMemoryRepository(experienceRepository: experienceRepository),
+      engineeringMemory: engineeringMemory,
+      experienceCreationCoordinator: experienceCreationCoordinator,
+      engineeringLifecycleCoordinator: engineeringLifecycleCoordinator,
+      intentSessionManager: intentSessionManager,
+      workspaceManager: workspaceManager,
+      intentRouter: intentRouter,
+      workspaceRuntime: workspaceRuntime,
+      eventBus: eventBus,
+      eventPublisher: eventPublisher,
     );
   }
 }

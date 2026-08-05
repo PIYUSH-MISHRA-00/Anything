@@ -82,6 +82,18 @@ class HomeScreen extends StatefulWidget {
 class HomeScreenState extends State<HomeScreen> {
   late final AppComposition _composition;
   late final ExperienceCreationCoordinator _coordinator;
+
+  /// Real, resolved AI Operating System services (Implementation
+  /// Specification IS-R36) — an explicit, caller-supplied [widget] instance
+  /// wins (preserves every existing test's ability to inject a fake/double,
+  /// e.g. for identity checks), otherwise the shared instance from
+  /// [_composition] (Implementation Specification IS-R36 extended
+  /// `AppComposition` to hold these). Threaded into `ExperienceHostScreen`
+  /// at every real navigation call site below.
+  late final ExperienceWorkspaceManager _workspaceManager;
+  late final UniversalIntentRouter _intentRouter;
+  late final AutonomousWorkspaceRuntime _workspaceRuntime;
+  late final EventBus _eventBus;
   late final ExperienceOpeningCoordinator _openingCoordinator;
   late final SqliteExperienceRepository _repository;
   late final IntentRepository _intentRepository;
@@ -101,6 +113,15 @@ class HomeScreenState extends State<HomeScreen> {
     _focusNode.requestFocus();
   }
 
+  /// Real, resolved Universal Intent Router (Implementation Specification
+  /// IS-R36) — exposed for identity/dependency-injection tests. Unlike
+  /// [_workspaceManager]/[_workspaceRuntime]/[_eventBus], this screen has no
+  /// safe forwarding point for it yet (`ExperienceHostScreen` has no
+  /// `intentRouter` parameter — matches R33's own documented, honest
+  /// "accept-and-store" limit); this getter is the real way a caller/test
+  /// observes the resolved instance.
+  UniversalIntentRouter get intentRouterInUse => _intentRouter;
+
   bool _isListening = false;
   bool _showBirth = false;
   String _birthName = '';
@@ -116,12 +137,16 @@ class HomeScreenState extends State<HomeScreen> {
     // write the SAME World Graph and provider registry (MIS-1 Part 2's
     // ownership finding).
     _composition = widget.composition ?? AppComposition.production();
-    _coordinator = ExperienceCreationCoordinator(
-      kernel: _composition.kernel,
-      worldModel: _composition.worldModel,
-      softwareCognition: _composition.softwareCognition,
-      engineeringMemory: _composition.engineeringMemory,
-    );
+    // Implementation Specification IS-R36: sourced from the shared
+    // `AppComposition` instead of constructed locally here — REALITY before
+    // R36 (confirmed by grep): this was the ONE, disconnected,
+    // `AppComposition`-unreachable `ExperienceCreationCoordinator` instance
+    // in the whole app. See `docs/architecture/OPERATING_SYSTEM_COMPOSITION.md`.
+    _coordinator = _composition.experienceCreationCoordinator;
+    _workspaceManager = widget.workspaceManager ?? _composition.workspaceManager;
+    _intentRouter = widget.intentRouter ?? _composition.intentRouter;
+    _workspaceRuntime = widget.workspaceRuntime ?? _composition.workspaceRuntime;
+    _eventBus = widget.eventBus ?? _composition.eventBus;
     _openingCoordinator = ExperienceOpeningCoordinator();
     _repository = SqliteExperienceRepository();
     _intentRepository = IntentRepository();
@@ -262,6 +287,9 @@ class HomeScreenState extends State<HomeScreen> {
               worldModel: _composition.worldModel,
               capabilityPlatform: _composition.capabilityPlatform,
               engineeringMemory: _composition.engineeringMemory,
+              workspaceManager: _workspaceManager,
+              workspaceRuntime: _workspaceRuntime,
+              eventBus: _eventBus,
             ),
           ),
         ).then((_) => _loadRecent());
@@ -352,6 +380,9 @@ class HomeScreenState extends State<HomeScreen> {
               worldModel: _composition.worldModel,
               capabilityPlatform: _composition.capabilityPlatform,
               engineeringMemory: _composition.engineeringMemory,
+              workspaceManager: _workspaceManager,
+              workspaceRuntime: _workspaceRuntime,
+              eventBus: _eventBus,
             ),
           ),
         ).then((_) => _loadRecent());
@@ -406,6 +437,9 @@ class HomeScreenState extends State<HomeScreen> {
               worldModel: _composition.worldModel,
               capabilityPlatform: _composition.capabilityPlatform,
               engineeringMemory: _composition.engineeringMemory,
+              workspaceManager: _workspaceManager,
+              workspaceRuntime: _workspaceRuntime,
+              eventBus: _eventBus,
             ),
           ),
         ).then((_) => _loadRecent());
