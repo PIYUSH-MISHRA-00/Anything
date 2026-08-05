@@ -8,6 +8,7 @@ import '../app/autonomous_workspace_runtime.dart';
 import '../app/experience_modification_coordinator.dart';
 import '../app/experience_workspace_manager.dart';
 import '../app/workspace_event_publisher.dart';
+import '../app/workspace_lifecycle_policy_engine.dart';
 import '../capabilities/platform/capability_platform.dart';
 import '../core/events/events.dart';
 import '../creation/experience_package.dart';
@@ -133,9 +134,10 @@ class ExperienceHostScreen extends StatefulWidget {
   State<ExperienceHostScreen> createState() => _ExperienceHostScreenState();
 }
 
-class _ExperienceHostScreenState extends State<ExperienceHostScreen> {
+class _ExperienceHostScreenState extends State<ExperienceHostScreen> with WidgetsBindingObserver {
   late final AnythingRuntime _runtime;
   late final ExperienceRuntimeController _runtimeController;
+  late final WorkspaceLifecyclePolicyEngine _policyEngine;
   late final ExperienceModificationCoordinator _modificationCoordinator;
   late final ActivityRepository _activity;
   late final ExperienceProtectionService _protectionService;
@@ -186,6 +188,16 @@ class _ExperienceHostScreenState extends State<ExperienceHostScreen> {
           eventPublisher: widget.eventBus == null ? null : WorkspaceEventPublisher(bus: widget.eventBus!, source: 'experience-host-screen'),
           experienceId: widget.experienceId,
         );
+    // Implementation Specification IS-R39: real, additive owner of THIS
+    // runtime's lifecycle POLICY decisions — reuses `_runtimeController`'s
+    // own event publisher (never constructs a second one). Observing
+    // `AppLifecycleState` costs nothing when it never fires (every
+    // pre-R39 test — none of them trigger an app-lifecycle change — is
+    // therefore completely unaffected); real app usage now genuinely
+    // pauses/resumes this runtime when the OS backgrounds/foregrounds the
+    // app. See `docs/architecture/WORKSPACE_LIFECYCLE_POLICY_ENGINE.md`.
+    _policyEngine = WorkspaceLifecyclePolicyEngine(eventPublisher: _runtimeController.eventPublisher);
+    WidgetsBinding.instance.addObserver(this);
     _modificationCoordinator = widget.modificationCoordinator ??
         ExperienceModificationCoordinator(
           worldModel: widget.worldModel,
@@ -291,8 +303,25 @@ class _ExperienceHostScreenState extends State<ExperienceHostScreen> {
     WorkspaceEventPublisher(bus: eventBus, source: 'experience-host-screen').publishWorkspaceUpdated('runtime_loaded', sessionId);
   }
 
+  /// Implementation Specification IS-R39: real Background Pause / Foreground
+  /// Resume policy — a real, deterministic decision from the real, current
+  /// `RuntimeStatus` (never pausing an already-idle/error runtime, never
+  /// resuming a runtime that was never paused by this same policy), applied
+  /// through the existing `_runtimeController`. Never fires outside a real
+  /// OS-level transition (or an explicit test call to
+  /// `tester.binding.handleAppLifecycleStateChanged(...)`).
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    final decision = _policyEngine.evaluateAppLifecycle(state);
+    if (decision.action == RuntimePolicyAction.pause && _runtime.status != RuntimeStatus.running) return;
+    if (decision.action == RuntimePolicyAction.resume && _runtime.status != RuntimeStatus.paused) return;
+    unawaited(_policyEngine.apply(decision, _runtimeController));
+  }
+
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     // Only close runtime if WE created it (not injected).
     // When runtime is injected via DI, the caller owns its lifecycle.
     // Implementation Specification IS-R38: routed through the controller's
