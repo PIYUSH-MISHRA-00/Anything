@@ -413,3 +413,17 @@ Statuses: VERIFIED (directly confirmed by source/test execution), PARTIAL (real 
 | AnythingKernel/World Model/Engineering Memory/Generator Framework/AnythingRuntime remain unchanged | **VERIFIED** — `git diff --stat` confirms zero changes. |
 | No duplicate composition root/Kernel/Workspace/Runtime/EventBus | **VERIFIED** — exactly one `AppComposition` class, one factory (`production()`); no second composition root/DI framework introduced anywhere. |
 | No duplicate AI boundary | **VERIFIED** — zero new LLM calls; every new field is a plain composition of already-real services. |
+
+## R37
+
+| Item | Status |
+|---|---|
+| Intent Execution Pipeline is the canonical production path from intent to engineering execution | **VERIFIED** — `HomeScreen._createExperience()`, the ONE real, live production intent-entry point, now calls `IntentExecutionPipeline.execute()` instead of `ExperienceCreationCoordinator.createFromIntent()` directly; proven end-to-end (including the real session-registration side effect) in `test/r37_intent_execution_pipeline_test.dart`. |
+| UniversalIntentRouter becomes the live production decision point | **VERIFIED** — every real intent submitted from Home now reaches `UniversalIntentRouter.route()`, not just tests; `RouteTarget.newExperience()` is the real, explicit structural signal used, never intent-text inference. |
+| HomeScreen no longer decides engineering execution | **VERIFIED, honestly scoped** — `HomeScreen` no longer constructs/calls `ExperienceCreationCoordinator` directly; it still imports `creation_coordinator.dart` for the `CreationResult` subtype TYPES its birth-sequence UI switches on (response handling, not engineering execution ownership). |
+| UniversalIntentRouter/ExperienceWorkspaceManager/IntentSessionManager/EngineeringLifecycleCoordinator/AnythingKernel remain unchanged | **VERIFIED** — `git diff --stat` confirms zero changes to any of the 5 files. |
+| EventBus publishes real execution events through WorkspaceEventPublisher | **VERIFIED** — `IntentExecutionPipeline.execute()` calls the existing, unmodified `WorkspaceEventPublisher.publishIntentRouted()` for every routed intent; proven with a real subscriber test. |
+| No duplicate router/coordinator/pipeline/kernel/workspace | **VERIFIED** — exactly one new file (`lib/app/intent_execution_pipeline.dart`), one new class, a pure composition over `UniversalIntentRouter`/`WorkspaceEventPublisher`; no second decision layer, no new result type (`RoutingResult` reused unmodified). |
+| No duplicate AI boundary | **VERIFIED** — zero new LLM calls; `IntentExecutionPipeline` never touches `AnythingKernel`, `Intent` text, or reasoning — pure delegation plus event publication. |
+| `ExperienceHostScreen`'s `ExperienceModificationCoordinator` flow investigated | **HONEST, DEFERRED** — confirmed a distinct, pre-R30, canonical in-runtime modification subsystem, not a duplicate of anything R37 builds and not rerouted through the pipeline this milestone; see `docs/architecture/INTENT_EXECUTION_PIPELINE.md`'s "Out of scope" section. |
+| `flutter test`/`flutter analyze` independently re-run | **PARTIAL, HONESTLY** — the Flutter SDK was unavailable in the implementing environment; `dart analyze` substituted (71/0, unchanged baseline, zero new issues). `flutter test` could not be run and is not confirmed by this milestone's own report — recommended as the coordinating session's first verification step. |

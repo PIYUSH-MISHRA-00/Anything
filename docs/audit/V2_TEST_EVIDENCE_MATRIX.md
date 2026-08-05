@@ -1828,3 +1828,53 @@ analyze`: 71 issues, 0 errors, unchanged baseline.
 `AnythingKernel`, World Model, Engineering Memory all completely
 untouched (`git diff --stat`). `useCompilerPipeline` unaffected, still
 defaults `false`.
+
+## R37 — Intent Execution Pipeline
+
+`test/r37_intent_execution_pipeline_test.dart` proves: creation routing
+(`pipeline.execute(intent, target: RouteTarget.newExperience())` reaches
+`ExperienceCreationCoordinator.createFromIntent()` via an injected fake
+reasoner AND registers the session in the real `ExperienceWorkspaceManager`
+— the real regression fix over the pre-R37 `HomeScreen` bypass); modification
+routing (`RouteTarget.session(...)` against the active session reaches
+`EngineeringLifecycleCoordinator.evolveExperience()` via
+`modifyActiveExperience`); continuation routing (`RouteTarget.experience(...)`
+naming a real, open-but-not-active session — after a real, explicit
+`switchActiveExperience()`, matching `test/r33_universal_intent_router_test.dart`'s
+own established pattern for `_activeSessionId ??=` semantics — reaches
+`EngineeringLifecycleCoordinator` via `resumeBackgroundSession`); pipeline
+execution (a real `IntentRouted` event is published to the real `EventBus`
+for every `execute()` call, `correlationId` forwarded unmodified); UI
+decoupling (a widget test drives `HomeScreen`'s real, live
+`_createExperience()` flow via the existing "Calculator" quick-action chip
+and proves the resulting session lands in `workspaceManager.openSessionIds`
+— the live-widget-path proof, not just the pipeline in isolation);
+regression (`UniversalIntentRouter`/`ExperienceWorkspaceManager`/
+`EngineeringLifecycleCoordinator` called directly, bypassing the pipeline
+entirely, behave exactly as R33/R32/R30 built them); backward compatibility
+(`HomeScreen()` constructed with none of its now-6 optional fields still
+defaults every one to `null`; a bare, un-injected `HomeScreen()` pumped
+still resolves its pipeline from `AppComposition.production()` and renders
+without throwing); real `Stopwatch` performance numbers for `execute()`
+latency and `AppComposition.production()` construction with the new field.
+
+No pre-existing test files required any changes — `HomeScreen`'s own public
+constructor gained one new optional, defaulted-`null` field (`pipeline`),
+byte-for-byte unchanged otherwise; every existing construction path (without
+it) remains unaffected.
+
+**Execution result:** implemented and statically verified — `dart analyze`
+(the Flutter SDK itself was unavailable in the implementing environment for
+this milestone; `dart analyze` was used as the closest available substitute)
+reports the same 71 issues, 0 errors as the established baseline, with zero
+new issues attributable to this milestone's 3 changed/new `lib/` files.
+`flutter test` could not be executed in this environment and is **not**
+independently confirmed by this report — the coordinating session should
+re-run the full suite before treating this milestone as fully validated,
+matching this project's standing "disclose environmental limitations
+honestly rather than fabricate a result" discipline.
+`ExperienceWorkspaceManager`, `UniversalIntentRouter`, `IntentSessionManager`,
+`EngineeringLifecycleCoordinator`, `AutonomousWorkspaceRuntime`, `EventBus`,
+`WorkspaceEventPublisher`, `AnythingKernel`, World Model, Engineering Memory
+all completely untouched (`git diff --stat`). `useCompilerPipeline`
+unaffected, still defaults `false`.

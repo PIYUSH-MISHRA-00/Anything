@@ -1792,5 +1792,52 @@ all confirmed completely untouched via `git diff --stat`.
 See `docs/architecture/OPERATING_SYSTEM_COMPOSITION.md` for the full
 audit.
 
-**DO NOT START R37 — per this specification's own stop condition, wait
+## Implementation Specification IS-R37 — Intent Execution Pipeline, AI Operating System Execution Path
+
+**Reality:** `AppComposition` (R36) already composed the complete R31-R36
+service graph, but the ONE real, live production intent-entry point,
+`HomeScreen._createExperience()`, still called
+`ExperienceCreationCoordinator.createFromIntent()` directly — bypassing
+`UniversalIntentRouter` entirely. Every session created this way was never
+registered in `ExperienceWorkspaceManager`, despite R32-R36 wiring
+`workspaceManager`/`intentRouter`/`workspaceRuntime`/`eventBus` as optional
+`HomeScreen` fields (accept-and-store-only until now). This was R36's own
+final recommendation for R37.
+
+**The fix:** a new, thin `IntentExecutionPipeline`
+(`lib/app/intent_execution_pipeline.dart`) composes `UniversalIntentRouter`
+(R33, unchanged) and `WorkspaceEventPublisher` (R35, unchanged) — no new
+decision layer, no new result type (`RoutingResult` reused unmodified).
+`AppComposition` gained one additive field, `intentExecutionPipeline`.
+`HomeScreen._createExperience()` now calls `_pipeline.execute(intent,
+target: const RouteTarget.newExperience())` instead of the coordinator
+directly — `RouteTarget.newExperience()` preserves the screen's exact
+existing UX contract (every submission creates a new experience) while
+genuinely registering the resulting session in the workspace for the first
+time in production. The now-dead `ExperienceCreationCoordinator _coordinator`
+field was removed. `HomeScreen`'s own public constructor gained one new
+optional, defaulted-`null` field (`pipeline`) — otherwise unchanged.
+
+**Out of scope, honestly:** `ExperienceHostScreen`'s separate, pre-R30
+`ExperienceModificationCoordinator` in-runtime modification flow was
+investigated and deliberately left untouched — a distinct, canonical
+subsystem, not a duplicate of anything this milestone builds.
+
+**Execution result:** implemented and statically verified. The Flutter SDK
+was unavailable in the implementing environment for this milestone —
+`dart analyze` was used instead and reports the same 71 issues, 0 errors as
+the established baseline, with zero new issues attributable to this
+milestone's changed/new files. `flutter test` could not be run in this
+environment and is **not independently confirmed** by this milestone's own
+report — the coordinating session should re-run the full suite as its first
+verification step before treating this milestone as fully validated.
+`UniversalIntentRouter`/`ExperienceWorkspaceManager`/`IntentSessionManager`/
+`EngineeringLifecycleCoordinator`/`AnythingKernel`/World Model/Engineering
+Memory all confirmed completely untouched via `git diff --stat`.
+`useCompilerPipeline` unaffected, still defaults `false`. Zero new
+LLM/reasoning calls anywhere in the diff.
+
+See `docs/architecture/INTENT_EXECUTION_PIPELINE.md` for the full audit.
+
+**DO NOT START R38 — per this specification's own stop condition, wait
 for external architectural review.**
