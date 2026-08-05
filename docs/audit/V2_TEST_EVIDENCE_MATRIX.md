@@ -1674,3 +1674,54 @@ unaffected.
 `EngineeringLifecycleCoordinator`, `AnythingKernel`, World Model,
 Engineering Memory, Generator Framework all completely untouched.
 `useCompilerPipeline` unaffected, still defaults `false`.
+
+## R34 — Autonomous Workspace Runtime
+
+`test/r34_autonomous_workspace_runtime_test.dart` (15 tests) proves:
+workspace runtime startup (an empty workspace captures a real, empty
+snapshot; a real, identity-checked proof the captured session is the
+SAME `SessionState` `ExperienceWorkspaceManager` itself tracks — no
+bypass, no duplicate state); runtime supervision / multiple runtime
+instances (two open sessions, one active one background, correctly
+aggregated and distinguished; two genuinely distinct real
+`ExperienceSession`/`SessionStatus` values — one `running`, one
+`paused` — correctly reflected per-session, never conflated); background
+engineering tracking (`hasPendingEvolution` honestly reports `false` at
+rest, never a fabricated in-flight signal); notification generation
+(a background session reaching a real terminal `LifecycleOutcome`
+produces exactly one real `WorkspaceNotification`; the SAME outcome is
+never re-notified on a second capture; the ACTIVE session never
+generates a notification regardless of its own outcome); backward
+compatibility (real constructor-level tests: `HomeScreen()`/
+`ExperienceHostScreen()` constructed WITHOUT `workspaceRuntime` default
+to `null` and never throw — the same honest, constructor-level proof
+style R33 established for `HomeScreen`, since a full widget pump of
+either live screen remains fragile/unverified territory); regression
+(`ExperienceWorkspaceManager.openExperience()` called directly, bypassing
+the runtime entirely, behaves exactly as R32 built it); real
+`Stopwatch`/`ProcessInfo.currentRss` performance numbers for startup,
+20-session snapshot-capture latency, and a 100-capture memory delta.
+
+**Real finding during test-writing:** a session created via the default
+creation path and evolved through the incremental path reaches
+`commitFailed`, not `deployed`, in this project's own fixtures (a real,
+pre-existing property of `applyEvolutionPlan()`'s defensive
+re-validation against a legacy-created previous package) — `commitFailed`
+was added to the runtime's notifiable-outcome set specifically because
+this proved to be a real, reachable terminal state, not a hypothetical
+one; see `docs/architecture/AUTONOMOUS_WORKSPACE_RUNTIME.md`.
+
+No pre-existing test files required any changes — `AutonomousWorkspaceRuntime`
+is purely additive, and both UI screens' new constructor parameters
+default to `null`, leaving every existing test's construction path
+byte-for-byte unaffected.
+
+**Execution result:** 15 new tests pass. Full regression: **1583/1583**
+(up from 1568), run twice, zero flakiness. `flutter analyze`: 71 issues,
+0 errors, unchanged baseline. `ExperienceWorkspaceManager`,
+`UniversalIntentRouter`, `IntentSessionManager`,
+`EngineeringLifecycleCoordinator`, `ArtifactIntelligenceEngine`,
+`SolutionEvolutionEngine`, `AnythingRuntime`, World Model, Engineering
+Memory, Generator Framework all completely untouched (`git diff --stat`).
+No new background `Timer`/polling machinery introduced anywhere.
+`useCompilerPipeline` unaffected, still defaults `false`.

@@ -374,3 +374,15 @@ Statuses: VERIFIED (directly confirmed by source/test execution), PARTIAL (real 
 | EngineeringLifecycleCoordinator remains unchanged | **VERIFIED** — `git diff --stat` confirms zero changes to `lib/app/engineering_lifecycle_coordinator.dart`. |
 | No duplicate architecture | **VERIFIED** — `lib/app/experience_workspace_manager.dart`, `lib/app/intent_session_manager.dart`, `lib/app/engineering_lifecycle_coordinator.dart`, `lib/kernel/`, `lib/world_model/`, `lib/storage/engineering_memory_repository.dart`, `lib/generator_framework/` all completely untouched (`git diff --stat`); `UniversalIntentRouter` never calls `IntentSessionManager`/`EngineeringLifecycleCoordinator`/`AnythingKernel` directly. |
 | No duplicate AI boundary | **VERIFIED** — zero new LLM calls; routing is pure structural dispatch, never intent-text interpretation. |
+
+## R34
+
+| Item | Status |
+|---|---|
+| Autonomous Workspace Runtime owns runtime supervision | **VERIFIED, as a pull-based snapshot** — `AutonomousWorkspaceRuntime.captureRuntimeState()` deterministically aggregates real per-session `ExperienceSession`/`LifecycleOutcome`/`ArtifactIntelligenceReport`/pending-modification state from `ExperienceWorkspaceManager.openSessions`, plus real, de-duplicated notifications; proven end-to-end in `test/r34_autonomous_workspace_runtime_test.dart`. |
+| ExperienceWorkspaceManager remains unchanged | **VERIFIED** — `git diff --stat` confirms zero changes to `lib/app/experience_workspace_manager.dart`. |
+| UniversalIntentRouter remains unchanged | **VERIFIED** — `git diff --stat` confirms zero changes to `lib/app/universal_intent_router.dart`. |
+| EngineeringLifecycleCoordinator remains unchanged | **VERIFIED** — `git diff --stat` confirms zero changes to `lib/app/engineering_lifecycle_coordinator.dart`. |
+| AnythingRuntime remains unchanged | **VERIFIED** — `git diff --stat` confirms zero changes to `lib/runtime/anything_runtime.dart`. |
+| No duplicate architecture | **VERIFIED** — `lib/app/experience_workspace_manager.dart`, `lib/app/intent_session_manager.dart`, `lib/app/engineering_lifecycle_coordinator.dart`, `lib/app/universal_intent_router.dart`, `lib/artifact_intelligence/`, `lib/solution_evolution/`, `lib/runtime/`, `lib/world_model/`, `lib/storage/engineering_memory_repository.dart`, `lib/generator_framework/` all completely untouched (`git diff --stat`); no new background `Timer`/polling machinery introduced anywhere. |
+| No duplicate AI boundary | **VERIFIED** — zero new LLM calls; `captureRuntimeState()` is a pure function over already-real, already-computed state. |

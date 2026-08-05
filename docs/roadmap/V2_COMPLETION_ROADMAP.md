@@ -1621,3 +1621,73 @@ See `docs/architecture/UNIVERSAL_INTENT_ROUTER.md` for the full audit.
 
 **DO NOT START R34 — per this specification's own stop condition, wait
 for external architectural review.**
+
+## Implementation Specification IS-R34 — Autonomous Workspace Runtime, AI Operating System Runtime Supervisor
+
+**Reality:** R34's own "RESPONSIBILITIES" list ("track active runtime
+instances," "runtime health," "deployment status," "artifact status,"
+"pending evolution," "background engineering") reads as if these are new
+concepts. Confirmed by reading every real type before writing any code:
+they almost entirely already exist as real fields —
+`SessionState.currentRuntimeState`/`.currentLifecycleResult`/
+`.pendingModification` (R31), `ExperienceSession.status` (`SessionStatus`),
+`LifecycleResult.artifactIntelligenceReport` (R28/R30), and
+`ExperienceWorkspaceManager.openSessions`/`.activeSessionId` (R32)
+already distinguish "active" from "background." R34's real, honest
+contribution is a pure snapshot/aggregation layer over this already-real
+data, plus one genuinely new concept: derived notifications.
+
+**"Autonomous" resolved deliberately, no new background execution:**
+confirmed by grep (`Timer.periodic`/`Stream.periodic` across `lib/`) that
+this codebase has no background-timer/polling machinery anywhere in its
+coordinator layer. Introducing new continuously-running execution
+machinery would be architecturally novel and unverifiable without live
+observation. `AutonomousWorkspaceRuntime.captureRuntimeState()` is
+honestly PULL-based — a pure, real, always-correct-when-called function
+of already-real state, never a live poll loop.
+
+**Implementation:** `AutonomousWorkspaceRuntime`
+(`lib/app/autonomous_workspace_runtime.dart`) owns exactly ONE real
+`ExperienceWorkspaceManager` reference. `captureRuntimeState()` produces
+a real `WorkspaceRuntimeSnapshot` — a per-open-session `SessionRuntimeStatus`
+(runtime state, deployment status, artifact status, pending-evolution
+flag, active/background) read directly off `SessionState`, never
+duplicated. Notifications are real and derived: a background session
+whose `LifecycleOutcome` reaches a real TERMINAL state
+(`deployed`/`blocked`/`commitFailed`) that this runtime has not yet
+reported for that session becomes one real `WorkspaceNotification`, with
+a real per-session "last-notified outcome" map preventing re-notification
+of the same real outcome.
+
+**A real finding surfaced while writing the end-to-end test**: a session
+created via the default (legacy) creation path, then evolved through the
+real incremental path, reaches `commitFailed` rather than `deployed` in
+this project's own fixtures — a genuine, pre-existing property of
+`applyEvolutionPlan()`'s defensive re-validation, not a defect introduced
+here. `commitFailed` was added to the notifiable-outcome set specifically
+because this proved to be a real, reachable terminal state.
+
+**UI wiring:** `HomeScreen` and `ExperienceHostScreen` each gain one
+additive, optional, defaulted-`null` `workspaceRuntime` constructor
+parameter. Unlike R32's `workspaceManager` (which `ExperienceHostScreen`
+could safely go one step further with, reporting real runtime state
+through it), `AutonomousWorkspaceRuntime` exposes no mutation/report
+method — it is a pure, read-only aggregator, so accept-and-store is the
+honest limit for both screens this milestone.
+
+**Execution result:** 15 new tests, all passing, run twice with zero
+flakiness. Full regression: **1583/1583** (up from 1568). `flutter
+analyze`: 71 issues, 0 errors, unchanged baseline.
+`ExperienceWorkspaceManager`, `UniversalIntentRouter`,
+`IntentSessionManager`, `EngineeringLifecycleCoordinator`,
+`ArtifactIntelligenceEngine`, `SolutionEvolutionEngine`, `AnythingRuntime`,
+World Model, Engineering Memory, Generator Framework all completely
+untouched (confirmed via `git diff --stat`). No new background
+`Timer`/polling machinery introduced anywhere. `useCompilerPipeline`
+unaffected, still defaults `false`.
+
+See `docs/architecture/AUTONOMOUS_WORKSPACE_RUNTIME.md` for the full
+audit.
+
+**DO NOT START R35 — per this specification's own stop condition, wait
+for external architectural review.**
