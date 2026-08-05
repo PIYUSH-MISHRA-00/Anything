@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:anything/app/app_composition.dart';
 import 'package:anything/app/creation_coordinator.dart';
 import 'package:anything/app/experience_opening_coordinator.dart';
+import 'package:anything/app/experience_workspace_manager.dart';
 import 'package:anything/design_system/components/birth_sequence.dart';
 import 'package:anything/design_system/components/anything_chip.dart';
 import 'package:anything/design_system/components/anything_empty_state.dart';
@@ -30,7 +31,17 @@ class HomeScreen extends StatefulWidget {
   /// own single shared instance.
   final AppComposition? composition;
 
-  const HomeScreen({super.key, this.composition});
+  /// Optional, additive workspace manager (Implementation Specification
+  /// IS-R32) — `null` by default, so every existing caller/test that
+  /// constructs `HomeScreen()` without one keeps identical behavior. Stored
+  /// for a future caller to use; this milestone deliberately does NOT
+  /// reroute `_createExperience`'s existing creation flow (its own
+  /// `_showBirth`/`_creationReady` state machine) through it — real UI
+  /// wiring deeper than accept-and-store is out of this milestone's honest,
+  /// verifiable scope (see `docs/architecture/EXPERIENCE_WORKSPACE_MANAGER.md`).
+  final ExperienceWorkspaceManager? workspaceManager;
+
+  const HomeScreen({super.key, this.composition, this.workspaceManager});
 
   @override
   HomeScreenState createState() => HomeScreenState();

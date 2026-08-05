@@ -5,6 +5,7 @@ import 'dart:async' show unawaited;
 import 'package:flutter/material.dart';
 
 import '../app/experience_modification_coordinator.dart';
+import '../app/experience_workspace_manager.dart';
 import '../capabilities/platform/capability_platform.dart';
 import '../creation/experience_package.dart';
 import '../storage/activity_repository.dart';
@@ -14,6 +15,7 @@ import '../world_model/world_model_coordinator.dart';
 import 'anything_runtime.dart';
 import 'experience_renderer.dart';
 import 'experience_router.dart';
+import 'experience_session.dart';
 
 /// Hosts a running Experience inside Anything.
 class ExperienceHostScreen extends StatefulWidget {
@@ -61,6 +63,20 @@ class ExperienceHostScreen extends StatefulWidget {
   /// identical behavior.
   final ExperienceModificationCoordinator? modificationCoordinator;
 
+  /// Optional, additive workspace manager (Implementation Specification
+  /// IS-R32) — `null` by default, so every existing caller/test that
+  /// constructs `ExperienceHostScreen` without one keeps identical
+  /// behavior. When supplied AND [experienceId] is known, this screen
+  /// reports its real, current `ExperienceSession` to the workspace once
+  /// the runtime finishes loading (see `_loadExperience`) — a real, safe,
+  /// additive report; a no-op when no matching open workspace session
+  /// exists. This milestone deliberately does NOT reroute this screen's
+  /// existing `planEvolution()`/`applyEvolutionPlan()`/`rollback()` flow
+  /// through the workspace manager — that remains `ExperienceModificationCoordinator`'s
+  /// own, unmodified responsibility (see
+  /// `docs/architecture/EXPERIENCE_WORKSPACE_MANAGER.md`).
+  final ExperienceWorkspaceManager? workspaceManager;
+
   const ExperienceHostScreen({
     super.key,
     required this.package,
@@ -72,6 +88,7 @@ class ExperienceHostScreen extends StatefulWidget {
     this.capabilityPlatform,
     this.engineeringMemory,
     this.modificationCoordinator,
+    this.workspaceManager,
   });
 
   @override
@@ -135,6 +152,7 @@ class _ExperienceHostScreenState extends State<ExperienceHostScreen> {
           _router = _runtime.router;
         });
         _seedDefaultScreen();
+        _reportRuntimeStateToWorkspace();
       }
     } catch (e) {
       if (mounted) {
@@ -175,6 +193,29 @@ class _ExperienceHostScreenState extends State<ExperienceHostScreen> {
         ),
       );
     }
+  }
+
+  /// Real, additive, safe report (Implementation Specification IS-R32) —
+  /// a harmless no-op when [widget.workspaceManager] is null or
+  /// [widget.experienceId] is unknown, or when no open workspace session
+  /// matches this experience (e.g. this screen was opened outside a
+  /// workspace-managed flow, the only path that exists today, honestly —
+  /// see this file's own `workspaceManager` doc comment).
+  void _reportRuntimeStateToWorkspace() {
+    final workspaceManager = widget.workspaceManager;
+    final experienceId = widget.experienceId;
+    if (workspaceManager == null || experienceId == null) return;
+    workspaceManager.reportRuntimeStateForExperience(
+      experienceId,
+      ExperienceSession(
+        id: 'runtime-$experienceId',
+        experienceId: experienceId,
+        package: _currentPackage,
+        status: SessionStatus.running,
+        startedAt: DateTime.now(),
+        lastActiveAt: DateTime.now(),
+      ),
+    );
   }
 
   @override
