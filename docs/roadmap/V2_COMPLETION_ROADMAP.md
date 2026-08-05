@@ -1381,5 +1381,57 @@ unmodified. `useCompilerPipeline` unaffected, still defaults `false`.
 
 See `docs/architecture/ARTIFACT_INTELLIGENCE.md` for the full audit.
 
-**DO NOT START R29 — per this specification's own stop condition, wait
+## IS-R29 — Autonomous Solution Evolution Engine (Closed-Loop Engineering)
+
+**Reality:** `RequirementGraphDiffer`(R3)/`ArchitectureDiffer`(R4)/
+`AffectedEntityAnalyzer`(R24)/`IncrementalCompilerSynthesizer`(R24)/
+`SolutionExecutionOrchestrator`(R25-R27)/`ArtifactIntelligenceEngine`(R28)
+each already existed, individually real and tested, but nothing composed
+them into one "what should happen next" decision. `IncrementalCompilerSynthesizer`
+only ever supports Runtime Experience (`runCompilerPipeline` remains
+hardcoded to `RuntimeExperienceGenerator`, R19, unchanged through R26/R27)
+— confirmed by reading the source, never assumed.
+
+**Implementation:** New `lib/solution_evolution/solution_evolution.dart` —
+`SolutionEvolutionEngine`, a pure, synchronous, non-executing decision
+layer. `planRegeneration()` reuses `RequirementGraphDiffer`/`ArchitectureDiffer`/
+`AffectedEntityAnalyzer` unmodified to compute real diffs and affected
+entities, then reads the caller-supplied, already-real `ExecutionStrategy`
+(R18) to recommend `EvolutionAction`s (`noAction`/`validate`/
+`regenerateRuntime`/`regenerateBackend`/`regenerateRestApi`) and a
+`CompilationMode` (`none`/`incremental`/`full`) — `full` is forced whenever
+Backend Service/REST API are affected, since neither has an incremental
+path; only a Runtime-Experience-only change may use `.incremental`.
+`decideDeployment()` is a thin, honest restatement of
+`ArtifactIntelligenceReport.deploymentReady` (R28) as a named
+`DeploymentDecision`, never new readiness logic.
+
+`SolutionExecutionOrchestrator.execute()` was never touched (confirmed via
+`git diff --stat`) — per this specification's own explicit rule, the new
+engine is externally invoked, never wired into `execute()`'s own call
+graph. World Model/Engineering Memory both declined — a `RegenerationPlan`/
+`DeploymentDecision` is cheap to recompute from already-persisted state,
+matching the established R10-R12/R14/R15/R24/R28 precedent.
+
+**Proof:** three real, distinguishing scenarios in
+`test/r29_solution_evolution_test.dart` — a frontend-only change
+(`regenerateRuntime` + `validate`, `CompilationMode.incremental`), a
+backend-affecting change (`regenerateBackend`/`regenerateRestApi` included,
+`CompilationMode.full`, never incremental), and no change at all
+(`noAction`, `CompilationMode.none`) — plus a real edge case (a non-empty
+diff with zero applicable generator targets correctly produces
+`{validate}`/`CompilationMode.none`, never a fabricated regenerate action).
+
+**Execution result:** 15 new tests, all passing. Full regression:
+**1513/1513** (up from 1498). `flutter analyze`: 71 issues, 0 errors,
+unchanged baseline. `lib/generator_framework/`, `lib/runtime/`,
+`lib/software_cognition/`, `lib/world_model/`,
+`lib/storage/engineering_memory_repository.dart`,
+`lib/engineering_intelligence/`, `lib/artifact_intelligence/`, and
+`SolutionExecutionOrchestrator.execute()` itself all completely
+untouched. `useCompilerPipeline` unaffected, still defaults `false`.
+
+See `docs/architecture/SOLUTION_EVOLUTION.md` for the full audit.
+
+**DO NOT START R30 — per this specification's own stop condition, wait
 for external architectural review.**

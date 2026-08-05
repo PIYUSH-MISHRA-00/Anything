@@ -1496,3 +1496,41 @@ files), `lib/runtime/`, `lib/software_cognition/`, `lib/world_model/`,
 `lib/creation/creation_engine.dart`, and all 3 real generators
 completely untouched; `SolutionExecutionOrchestrator.execute()` itself
 unmodified. `useCompilerPipeline` unaffected, still defaults `false`.
+
+## R29 — Autonomous Solution Evolution Engine, Closed-Loop Engineering
+
+New `test/r29_solution_evolution_test.dart` proves: solution state analysis
+(real `RequirementGraphDiff`/`ArchitectureDiff` correctly identify what
+changed), the three mandatory, distinguishing regeneration-planning
+scenarios (frontend-only change → `regenerateRuntime` + `validate`,
+`CompilationMode.incremental`; backend-affecting change →
+`regenerateBackend`/`regenerateRestApi` included, `CompilationMode.full`,
+never incremental; no change at all → `noAction`, `CompilationMode.none`),
+plus a real edge case (a non-empty diff with zero applicable generator
+targets correctly produces `{validate}`/`CompilationMode.none`, never a
+fabricated regenerate action), incremental reuse (a caller following
+`CompilationMode.incremental` advice successfully uses
+`IncrementalCompilerSynthesizer`; a caller following `.full` advice
+dispatches the real, unmodified `runCompilerPipeline`), deployment
+decisions (`ArtifactIntelligenceReport.deploymentReady`
+true/false/end-to-end all correctly restate as `DeploymentDecision`),
+validation decisions (`validate` present whenever any `regenerate*` action
+is present, absent on `noAction`), purity (both engine methods are
+synchronous, non-`Future`-returning), regression
+(`IncrementalCompilerSynthesizer` called directly, bypassing
+`SolutionEvolutionEngine` entirely, behaves exactly as R24 built it), and
+real Stopwatch/`ProcessInfo.currentRss` performance numbers for a
+200-entity synthetic before/after pair and 100 repeated `planRegeneration()`
+calls.
+
+No pre-existing test files required any changes — `SolutionEvolutionEngine`
+is purely additive, never wired into `SolutionExecutionOrchestrator.execute()`.
+
+**Execution result:** 15 new tests pass. Full regression: **1513/1513**
+(up from 1498), run TWICE with zero flakiness. `flutter analyze`: 71
+issues, 0 errors, unchanged baseline. `lib/generator_framework/`,
+`lib/runtime/`, `lib/software_cognition/`, `lib/world_model/`,
+`lib/storage/engineering_memory_repository.dart`,
+`lib/engineering_intelligence/`, `lib/artifact_intelligence/` all
+completely untouched; `SolutionExecutionOrchestrator.execute()` itself
+unmodified. `useCompilerPipeline` unaffected, still defaults `false`.

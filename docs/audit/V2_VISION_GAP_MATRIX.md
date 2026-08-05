@@ -319,3 +319,16 @@ Statuses: VERIFIED (directly confirmed by source/test execution), PARTIAL (real 
 | No duplicate architecture | **VERIFIED** — `lib/generator_framework/` (all files), `lib/runtime/`, `lib/software_cognition/`, `lib/world_model/`, `lib/storage/engineering_memory_repository.dart`, `lib/engineering_intelligence/`, `lib/backend_engineering/`, `lib/creation/creation_engine.dart` all completely untouched (`git diff --stat`); all 3 real generators and `SolutionExecutionOrchestrator.execute()` never modified; no second Artifact model — `Artifact`/`ArtifactGroup`/`ArtifactKind` (R10) reused exactly as-is. |
 | No duplicate AI Boundary | **VERIFIED** — zero new LLM calls anywhere; `ArtifactIntelligenceEngine` is a deterministic analysis of already-real, already-deterministic orchestration output. |
 | No duplicate compiler | **VERIFIED** — `ArtifactIntelligenceEngine` never invokes `BuildGraphBuilder`/`GenerationPipeline`/any `Generator` — it analyzes results a completed run already produced; `useCompilerPipeline` still defaults `false`. |
+
+## R29
+
+| Item | Status |
+|---|---|
+| Autonomous Solution Evolution uses Engineering Intelligence | **VERIFIED** — `planRegeneration()` computes diffs and affected entities via `RequirementGraphDiffer`(R3)/`ArchitectureDiffer`(R4)/`AffectedEntityAnalyzer`(R24) unmodified. |
+| ...uses Incremental Compiler | **VERIFIED** — `CompilationMode.incremental` is recommended exactly when `IncrementalCompilerSynthesizer` (R24) can actually be used (Runtime-Experience-only changes); a real test proves a caller following that advice succeeds. |
+| ...uses Artifact Intelligence | **VERIFIED** — `decideDeployment()` is a real, thin restatement of `ArtifactIntelligenceReport.deploymentReady` (R28), proven with a real `ArtifactIntelligenceEngine.analyze()` output flowing straight into a `DeploymentDecision`. |
+| ...uses Execution Strategy | **VERIFIED** — `planRegeneration()` reads `ExecutionTargetPlan.classification` directly off the caller-supplied `ExecutionStrategy` (R18) rather than re-deriving target applicability. |
+| No duplicate architecture | **VERIFIED** — `lib/generator_framework/`, `lib/runtime/`, `lib/software_cognition/`, `lib/world_model/`, `lib/storage/engineering_memory_repository.dart`, `lib/engineering_intelligence/`, `lib/artifact_intelligence/` all completely untouched (`git diff --stat`); `SolutionExecutionOrchestrator.execute()` never modified — the new engine is externally invoked only. |
+| No duplicate AI boundary | **VERIFIED** — zero new LLM calls anywhere; both `SolutionEvolutionEngine` methods are pure, synchronous, deterministic functions. |
+| No duplicate generators | **VERIFIED** — `SolutionEvolutionEngine` never calls any `Generator`/`runCompilerPipeline`/`runGeneratorPipeline` — it only recommends, never executes. |
+| No duplicate orchestration | **VERIFIED** — `SolutionExecutionOrchestrator.execute()`'s own logic and every existing test for it are completely unaffected. |
