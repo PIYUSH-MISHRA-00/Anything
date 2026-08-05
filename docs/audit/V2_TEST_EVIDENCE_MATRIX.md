@@ -1982,3 +1982,61 @@ environment.
 `UniversalIntentRouter`, `EngineeringLifecycleCoordinator`, `AnythingKernel`,
 World Model, Engineering Memory all completely untouched (`git diff --stat`).
 `useCompilerPipeline` unaffected, still defaults `false`.
+
+## R40 — Workspace Runtime Supervisor
+
+`test/r40_workspace_runtime_supervisor_test.dart` (17 tests) proves:
+controller registration (`register()` then `lookup()` returns the identical
+controller via `same()`; `registrations` carries the correct
+`sessionId`/`experienceId`/`registrationTime`/live `currentStatus`; a real
+`controller_registered` `WorkspaceUpdated` event is published); duplicate
+prevention (registering the same `sessionId` twice throws a real
+`StateError`, and the FIRST registration is proven still `lookup()`-able
+afterward — the rejected duplicate never disturbs it); controller removal
+(`unregister()` removes it; unregistering an unknown id never throws);
+session lookup (unknown id returns `null`, never throws); workspace-wide
+pause/resume (3 real, independently-started `ExperienceRuntimeController`s
+registered under 3 sessionIds; `applyAppLifecyclePolicy(paused, engine)`
+pauses every one of their real `AnythingRuntime`s; `.resumed` resumes every
+one); Inactive Runtime policy application across MULTIPLE runtime
+controllers (3 real controllers — one matching an "active" session, two
+matching "background/running" sessions in a real multi-session
+`WorkspaceRuntimeSnapshot` — registered under matching sessionIds;
+`applyInactiveRuntimePolicy()` pauses only the two background controllers'
+real runtimes, the active one is proven to stay running; a second test
+proves a decision naming an unregistered session is silently skipped, never
+throws — the concrete proof R40's own Mandatory Vision Validation requires);
+disposed controller cleanup (`removeDisposed()` sweeps a registration whose
+controller was genuinely `terminate()`-d, i.e. `RuntimeStatus.idle`; a
+still-running registration is proven untouched; the returned count is
+asserted correct); regression (`ExperienceRuntimeController`/
+`ExperienceWorkspaceManager` used directly, bypassing the supervisor
+entirely, behave exactly as R38/R32 built them); backward compatibility
+(`ExperienceHostScreen()` without `runtimeSupervisor` still defaults it to
+`null`, a real widget test proves load/dispose unaffected; a second real
+widget test proves a real, injected supervisor genuinely receives a
+registration once the live screen loads, keyed by the SAME real workspace
+`sessionId` the screen itself resolves, and an unregistration on dispose);
+real `Stopwatch`/`ProcessInfo.currentRss` performance numbers, including the
+spec's own explicit 100-controller registration+lookup measurement.
+
+No pre-existing test files required any changes — `ExperienceHostScreen`'s
+own public constructor gained one new optional, defaulted-`null` field
+(`runtimeSupervisor`), otherwise unchanged; every existing construction path
+(without it) remains unaffected.
+
+**Execution result:** implemented and fully, independently validated in the
+implementing environment. Flutter SDK reachable at
+`D:\flutter\bin\flutter.bat`. `flutter analyze`: 74 issues, 0 errors — the 3
+issues above the previously-stated 71 baseline are pre-existing warnings in
+untouched `test/stage11/` files (confirmed zero diff there via
+`git diff --stat`), zero issues attributable to this milestone's 2
+changed/new `lib/` files. `flutter test`: see this milestone's own
+Validation Report for the exact full-suite count observed directly in this
+environment.
+`ExperienceRuntimeController`, `WorkspaceLifecyclePolicyEngine`,
+`AnythingRuntime`, `ExperienceWorkspaceManager`, `AutonomousWorkspaceRuntime`,
+`IntentExecutionPipeline`, `UniversalIntentRouter`,
+`EngineeringLifecycleCoordinator`, `AnythingKernel`, World Model, Engineering
+Memory all completely untouched (`git diff --stat`). `useCompilerPipeline`
+unaffected, still defaults `false`.

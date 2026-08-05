@@ -1926,5 +1926,85 @@ in the diff.
 See `docs/architecture/WORKSPACE_LIFECYCLE_POLICY_ENGINE.md` for the full
 audit.
 
-**DO NOT START R40 — per this specification's own stop condition, wait
+## Implementation Specification IS-R40 — Workspace Runtime Supervisor, AI Operating System Multi-Runtime Coordination
+
+**Reality:** no registry mapping sessionId to `ExperienceRuntimeController`
+existed anywhere in this codebase — `ExperienceHostScreen` self-constructed
+exactly ONE controller per screen instance, with zero shared bookkeeping
+across screens. This is exactly the gap R38's and R39's own doc comments
+both named and deliberately deferred. `ExperienceRuntimeController` has no
+`sessionId` field of its own — only a nullable `experienceId`.
+`WorkspaceLifecyclePolicyEngine.apply(decision, controller)` (R39,
+unmodified) already takes an explicit controller argument, so resolving it
+through a supervisor needed zero changes to that file.
+
+**The fix:** a new, thin `WorkspaceRuntimeSupervisor`
+(`lib/app/workspace_runtime_supervisor.dart`) — a real
+`Map<String, RuntimeControllerRegistration>` registry with `register()`
+(throws a real `StateError` on a duplicate sessionId)/`unregister()`
+(harmless no-op if absent)/`lookup()`/`registrations`/`removeDisposed()`
+(a caller-invoked sweep of terminated registrations, never a timer/poll —
+matching `AutonomousWorkspaceRuntime`'s own established PULL-based
+discipline), plus direct `pause()`/`resume()`/`shutdown()` forwarding and
+two real orchestration methods — `applyInactiveRuntimePolicy()`/
+`applyAppLifecyclePolicy()` — that resolve each of
+`WorkspaceLifecyclePolicyEngine`'s real decisions through this registry and
+invoke the UNMODIFIED `engine.apply()`. No new snapshot/event type
+(`WorkspaceUpdated` reused with new `change` strings:
+`controller_registered`/`controller_unregistered`). `ExperienceHostScreen`
+gained one new optional, additive constructor field (`runtimeSupervisor`,
+`null` by default) — when supplied, the screen auto-registers its own,
+already-real `_runtimeController` once loaded and auto-unregisters on
+`dispose()`, using the same real `sessionId` resolution the screen's own
+`_publishRuntimeLoadedEvent()` already performed.
+
+**Three real bugs caught and fixed during independent validation, not by
+the implementing pass itself**:
+
+1. The first `flutter analyze`/`flutter test` runs were piped through a
+   truncating `tail -N` before inspection, which hid a real compile error
+   (`workspace_runtime_supervisor.dart` used the `RuntimeStatus` type by
+   name — a `get currentStatus => ...` return type and a
+   `RuntimeStatus.idle` static member access — without importing
+   `anything_runtime.dart`, its defining library; transitively importing
+   `ExperienceRuntimeController`'s own library is not sufficient for Dart
+   to resolve an explicitly-named type). Caught once a single failing test
+   file was re-run directly, without truncation, showing the real
+   Kernel-compiler error. Fixed with one added import.
+2. A real, info-level `unintended_html_in_doc_comment` lint (a
+   `Map<String, ...>` type signature inside a doc comment, with its
+   Markdown code-span backticks accidentally split across two `///`
+   lines) — found and fixed the same way, re-running `flutter analyze` to a
+   full, untruncated file rather than trusting a `tail`-truncated summary.
+3. A real, deterministic test hang: the new `testWidgets` backward-
+   compatibility test called `_Rig.create()`/`openRealSession()` (real
+   SQLite/Kernel I/O) directly inside a `testWidgets` callback body without
+   `tester.runAsync()` — that body runs in a FakeAsync zone, which never
+   completes real, native async I/O on its own. This deterministically hung
+   for the full 10-minute test timeout, reproduced twice (once in the full
+   suite, once again in isolation) before being correctly diagnosed as a
+   genuine bug, not a transient flake — no prior test file in this codebase
+   ever calls `_Rig.create()` from inside `testWidgets` for exactly this
+   reason. Fixed by wrapping the real I/O in `tester.runAsync()`, matching
+   every other test file's established pattern; the isolated file then
+   passed cleanly in about one second.
+
+**Execution result:** implemented and fully, independently validated in the
+implementing environment, with all three bugs above caught and fixed BEFORE
+this milestone's commits — not left for the coordinating session to
+discover. Flutter SDK reachable (`D:\flutter\bin\flutter.bat`).
+`flutter analyze`: 71/0, unchanged baseline, confirmed via a full,
+untruncated run. `flutter test`: see `Anything_R40_Validation_Report.txt`
+for the exact full-suite count, also confirmed via a full, untruncated run.
+`ExperienceRuntimeController`/`WorkspaceLifecyclePolicyEngine`/
+`AnythingRuntime`/`ExperienceWorkspaceManager`/`AutonomousWorkspaceRuntime`/
+`IntentExecutionPipeline`/`UniversalIntentRouter`/
+`EngineeringLifecycleCoordinator`/`AnythingKernel`/World Model/Engineering
+Memory all confirmed completely untouched via `git diff --stat`.
+`useCompilerPipeline` unaffected, still defaults `false`. Zero new
+LLM/reasoning calls anywhere in the diff.
+
+See `docs/architecture/WORKSPACE_RUNTIME_SUPERVISOR.md` for the full audit.
+
+**DO NOT START R41 — per this specification's own stop condition, wait
 for external architectural review.**
