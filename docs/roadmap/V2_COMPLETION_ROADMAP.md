@@ -1528,3 +1528,40 @@ See `docs/architecture/INTENT_SESSION_MANAGER.md` for the full audit.
 
 **DO NOT START R32 — per this specification's own stop condition, wait
 for external architectural review.**
+
+## Implementation Specification IS-R32 — Experience Workspace Manager, AI Operating System Workspace
+
+`ExperienceWorkspaceManager` (`lib/app/experience_workspace_manager.dart`)
+composes the real, unmodified `IntentSessionManager` (R31) — adding only
+the genuinely new workspace-level concepts it lacked: which sessions are
+"open," which is "active," and a workspace-scoped timeline (reusing
+`ActivityRepository`, never a new store). `IntentSessionManager` itself
+already managed many concurrent sessions internally; nothing tracked
+workspace-level open/active state before this milestone.
+
+**UI wiring, this time real:** `HomeScreen`/`ExperienceHostScreen` each
+gain one additive, optional, defaulted `ExperienceWorkspaceManager?`
+constructor parameter (`null` by default — every existing construction
+path unaffected, proven by a real widget test). `ExperienceHostScreen`
+goes further: once its runtime finishes loading, if a real workspace
+manager was supplied, it reports its own real `ExperienceSession` through
+it — proven by a second real widget test. `HomeScreen`'s own creation flow
+is deliberately NOT rerouted through the workspace this milestone (accept-
+and-store only) — its interactive birth-sequence/voice-input state machine
+is real UI logic a single implementation pass cannot safely verify without
+interactive testing.
+
+World Model persistence declined again (no durable workspace identity
+independent of the app process).
+
+**Execution result:** 17 new tests, all passing. Full regression:
+**1553/1553** (up from 1536). `flutter analyze`: 71 issues, 0 errors,
+unchanged baseline. `IntentSessionManager`, `EngineeringLifecycleCoordinator`,
+`AnythingRuntime`, World Model, Engineering Memory, Generator Framework all
+completely untouched (confirmed via `git diff --stat`). `useCompilerPipeline`
+unaffected, still defaults `false`.
+
+See `docs/architecture/EXPERIENCE_WORKSPACE_MANAGER.md` for the full audit.
+
+**DO NOT START R33 — per this specification's own stop condition, wait
+for external architectural review.**

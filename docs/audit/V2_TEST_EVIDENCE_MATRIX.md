@@ -1599,3 +1599,37 @@ or live UI screen this milestone.
 Framework, `SolutionExecutionOrchestrator`, `HomeScreen`,
 `ExperienceHostScreen` all completely untouched. `useCompilerPipeline`
 unaffected, still defaults `false`.
+
+## Implementation Specification IS-R32 — Experience Workspace Manager
+
+`test/r32_experience_workspace_manager_test.dart` (17 tests) proves:
+workspace creation (a real, identity-checked proof `openExperience()`
+genuinely invokes the real, unmodified `IntentSessionManager.startSession()`);
+multiple open experiences (real tracking, switching, active-session
+promotion on close, honest `null` when the workspace empties); session
+forwarding (a real, identity-checked proof `continueExperience()` reaches
+`EngineeringLifecycleCoordinator` unmodified, and a real `StateError` for
+an unopened session); background engineering (evolving a non-active
+session never disturbs the active pointer; both sessions keep real,
+independent state); runtime tracking (`updateRuntimeState()` and the
+experience-id bridge `reportRuntimeStateForExperience()`, including its
+honest no-op case); workspace timeline (real, correctly-ordered events);
+UI integration (two real widget tests: `ExperienceHostScreen` constructed
+WITHOUT `workspaceManager` behaves exactly as before; constructed WITH one,
+it genuinely reports a real `ExperienceSession` through it once the
+runtime loads — the actual Mandatory Vision Validation proof); regression
+(`IntentSessionManager` called directly, bypassing the workspace entirely,
+behaves exactly as before); and real `Stopwatch`/`ProcessInfo.currentRss`
+performance numbers for workspace startup, experience switching, and
+memory across 20 real, concurrently-open sessions.
+
+No pre-existing test files required any changes — `ExperienceWorkspaceManager`
+is purely additive, and both UI screens' new constructor parameters default
+to `null`, leaving every existing test's construction path byte-for-byte
+unaffected.
+
+**Execution result:** 17 new tests pass. Full regression: **1553/1553**
+(up from 1536). `flutter analyze`: 71 issues, 0 errors, unchanged baseline.
+`IntentSessionManager`, `EngineeringLifecycleCoordinator`, `AnythingRuntime`,
+World Model, Engineering Memory, Generator Framework all completely
+untouched. `useCompilerPipeline` unaffected, still defaults `false`.
