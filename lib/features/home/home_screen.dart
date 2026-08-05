@@ -6,6 +6,7 @@ library;
 import 'package:flutter/material.dart';
 
 import 'package:anything/app/app_composition.dart';
+import 'package:anything/app/autonomous_workspace_runtime.dart';
 import 'package:anything/app/creation_coordinator.dart';
 import 'package:anything/app/experience_opening_coordinator.dart';
 import 'package:anything/app/experience_workspace_manager.dart';
@@ -52,7 +53,17 @@ class HomeScreen extends StatefulWidget {
   /// `docs/architecture/UNIVERSAL_INTENT_ROUTER.md`).
   final UniversalIntentRouter? intentRouter;
 
-  const HomeScreen({super.key, this.composition, this.workspaceManager, this.intentRouter});
+  /// Optional, additive workspace runtime (Implementation Specification
+  /// IS-R34) — `null` by default, so every existing caller/test that
+  /// constructs `HomeScreen()` without one keeps identical behavior.
+  /// `AutonomousWorkspaceRuntime` exposes no mutation/report method (a
+  /// pure, read-only snapshot aggregator) — there is no analogous "safe
+  /// extra step" to wire here the way R32 found for `ExperienceHostScreen`
+  /// and `workspaceManager`; accept-and-store is the honest, real limit
+  /// (see `docs/architecture/AUTONOMOUS_WORKSPACE_RUNTIME.md`).
+  final AutonomousWorkspaceRuntime? workspaceRuntime;
+
+  const HomeScreen({super.key, this.composition, this.workspaceManager, this.intentRouter, this.workspaceRuntime});
 
   @override
   HomeScreenState createState() => HomeScreenState();

@@ -4,6 +4,7 @@ library;
 import 'dart:async' show unawaited;
 import 'package:flutter/material.dart';
 
+import '../app/autonomous_workspace_runtime.dart';
 import '../app/experience_modification_coordinator.dart';
 import '../app/experience_workspace_manager.dart';
 import '../capabilities/platform/capability_platform.dart';
@@ -77,6 +78,17 @@ class ExperienceHostScreen extends StatefulWidget {
   /// `docs/architecture/EXPERIENCE_WORKSPACE_MANAGER.md`).
   final ExperienceWorkspaceManager? workspaceManager;
 
+  /// Optional, additive workspace runtime (Implementation Specification
+  /// IS-R34) — `null` by default, so every existing caller/test that
+  /// constructs `ExperienceHostScreen` without one keeps identical
+  /// behavior. `AutonomousWorkspaceRuntime` is a pure, read-only snapshot
+  /// aggregator with no report/mutation method — there is no analogous
+  /// "safe extra step" this screen can call the way it already does for
+  /// [workspaceManager]'s `reportRuntimeStateForExperience`; accept-and-
+  /// store is the honest, real limit (see
+  /// `docs/architecture/AUTONOMOUS_WORKSPACE_RUNTIME.md`).
+  final AutonomousWorkspaceRuntime? workspaceRuntime;
+
   const ExperienceHostScreen({
     super.key,
     required this.package,
@@ -89,6 +101,7 @@ class ExperienceHostScreen extends StatefulWidget {
     this.engineeringMemory,
     this.modificationCoordinator,
     this.workspaceManager,
+    this.workspaceRuntime,
   });
 
   @override
