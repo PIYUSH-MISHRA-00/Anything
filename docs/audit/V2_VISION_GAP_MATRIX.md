@@ -399,3 +399,17 @@ Statuses: VERIFIED (directly confirmed by source/test execution), PARTIAL (real 
 | AutonomousWorkspaceRuntime remains unchanged | **VERIFIED** — `git diff --stat` confirms zero changes to `lib/app/autonomous_workspace_runtime.dart`. |
 | No duplicate event/notification system | **VERIFIED** — `lib/core/events/events.dart` is the ONLY event system; no second `EventBus`/notification pipeline introduced; `IntentSessionManager`, `AnythingRuntime`, World Model, Engineering Memory all completely untouched (`git diff --stat`). |
 | No duplicate AI boundary | **VERIFIED** — zero new LLM calls; `WorkspaceEventPublisher` is pure translation over already-real, already-computed result types. |
+
+## R36
+
+| Item | Status |
+|---|---|
+| AppComposition composes the real R31-R35 AI Operating System services | **VERIFIED** — `experienceCreationCoordinator`/`engineeringLifecycleCoordinator`/`intentSessionManager`/`workspaceManager`/`intentRouter`/`workspaceRuntime`/`eventBus`/`eventPublisher` added additively to `lib/app/app_composition.dart`, constructed in real dependency order, proven to construct without error and share genuine singleton identity in `test/r36_operating_system_composition_test.dart`. |
+| ExperienceCreationCoordinator's disconnected-graph gap fixed | **VERIFIED** — `HomeScreen.initState()` now sources `_coordinator` from `_composition.experienceCreationCoordinator` instead of constructing its own local instance; behavior preservation proven (same shared `worldModel`/`engineeringMemory` ingestion, same 4-argument construction shape). |
+| HomeScreen/ExperienceHostScreen's existing optional parameters actually receive real services | **VERIFIED** — `HomeScreen` resolves `widget.X ?? _composition.X` for `workspaceManager`/`intentRouter`/`workspaceRuntime`/`eventBus` and threads the first three into `ExperienceHostScreen` at all 3 real navigation call sites; proven end-to-end with a real widget test using `same()` identity checks, never a private-field assumption. |
+| HomeScreen/ExperienceHostScreen public constructors unchanged | **VERIFIED** — both constructors byte-for-byte unchanged; only `HomeScreenState.initState()`'s internal wiring logic changed; confirmed by constructor-level tests. |
+| Service lifetimes documented honestly, no new DI framework | **VERIFIED** — `docs/architecture/OPERATING_SYSTEM_COMPOSITION.md`'s lifetime table states plainly that Workspace Lifetime == Application Singleton in this codebase's current single-workspace-per-process shape, and that `SessionState` has no explicit destroy path today; no service-locator/scoping abstraction introduced anywhere (`git diff --stat` confirms no new file implementing one). |
+| ExperienceWorkspaceManager/UniversalIntentRouter/EngineeringLifecycleCoordinator/AutonomousWorkspaceRuntime/EventBus/WorkspaceEventPublisher remain unchanged | **VERIFIED** — `git diff --stat` confirms zero changes to any of the 6 files. |
+| AnythingKernel/World Model/Engineering Memory/Generator Framework/AnythingRuntime remain unchanged | **VERIFIED** — `git diff --stat` confirms zero changes. |
+| No duplicate composition root/Kernel/Workspace/Runtime/EventBus | **VERIFIED** — exactly one `AppComposition` class, one factory (`production()`); no second composition root/DI framework introduced anywhere. |
+| No duplicate AI boundary | **VERIFIED** — zero new LLM calls; every new field is a plain composition of already-real services. |

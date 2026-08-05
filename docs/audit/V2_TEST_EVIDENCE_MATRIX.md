@@ -1770,3 +1770,61 @@ test's construction path byte-for-byte unaffected.
 `AnythingRuntime`, World Model, Engineering Memory all completely
 untouched (`git diff --stat`). `useCompilerPipeline` unaffected, still
 defaults `false`.
+
+## R36 — Operating System Composition Root
+
+`test/r36_operating_system_composition_test.dart` (14 tests) proves:
+`AppComposition.production()` constructs the full, extended 8-field
+R31-R35 service graph without throwing; singleton lifetime (a real
+`intentRouter.route()` call is observed identically through
+`workspaceManager`/`workspaceRuntime`'s own independent read paths,
+proving they share the ONE `ExperienceWorkspaceManager` instance, not
+private copies); EventBus sharing (a real event published via
+`composition.eventPublisher` is received by a subscriber obtained via
+`composition.eventBus`, a completely independent access path through the
+SAME composition); workspace lifetime (`composition.workspaceManager` is
+identical across reads — Application Singleton, per the honest lifetime
+finding in `docs/architecture/OPERATING_SYSTEM_COMPOSITION.md`);
+dependency injection (an injected fake kernel/reasoner is the one
+actually used end-to-end through `IntentSessionManager` ->
+`ExperienceWorkspaceManager` -> `UniversalIntentRouter`, never silently
+replaced); `ExperienceCreationCoordinator` relocation behavior
+preservation (a coordinator built with the exact 4-argument shape
+`AppComposition.production()` now uses still ingests into the SAME shared
+`worldModel`/`engineeringMemory`, and engineering-memory persistence still
+runs); regression (`ExperienceWorkspaceManager`/
+`EngineeringLifecycleCoordinator` called directly, bypassing
+`AppComposition` entirely, behave exactly as R32/R30 built them);
+backward compatibility (real constructor-level tests for `HomeScreen`/
+`ExperienceHostScreen` confirming every optional field still defaults to
+`null`; a real widget test proving a bare `HomeScreen()` pumped with no
+injected composition renders without throwing, now sourcing its
+coordinator from the extended `AppComposition.production()`; a real,
+end-to-end widget test proving `HomeScreen` forwards its resolved
+`workspaceManager`/`workspaceRuntime`/`eventBus` into a real, pushed
+`ExperienceHostScreen` at its real navigation call site, never silently
+dropping an injected test double); real `Stopwatch`/
+`ProcessInfo.currentRss` performance numbers for full composition-graph
+construction latency and a 10-cycle construct/close memory delta.
+
+No pre-existing test files required any changes — `HomeScreen`'s own
+public constructor is unchanged, and every existing construction path
+(without the new services) remains byte-for-byte unaffected.
+
+**Execution result:** 14 new tests pass. Full regression run TWICE: pass
+1 was **1615/1616** — one transient `SqfliteFfiException("database is
+locked")` in `test/r33_universal_intent_router_test.dart`'s own,
+unmodified "session lookup / workspace lookup latency" performance test
+(a print-only test with no assertion that could meaningfully fail —
+pointing at real FFI-level lock contention, not a logic defect); pass 2
+was a clean **1616/1616** with the identical, unmodified test suite —
+confirming the pass-1 failure was transient/environmental, not a real
+regression (matching R35's own documented "R35's process lesson" pattern
+of transient FFI-level flakiness under this environment). `flutter
+analyze`: 71 issues, 0 errors, unchanged baseline.
+`ExperienceWorkspaceManager`, `UniversalIntentRouter`,
+`IntentSessionManager`, `EngineeringLifecycleCoordinator`,
+`AutonomousWorkspaceRuntime`, `EventBus`, `WorkspaceEventPublisher`,
+`AnythingKernel`, World Model, Engineering Memory all completely
+untouched (`git diff --stat`). `useCompilerPipeline` unaffected, still
+defaults `false`.

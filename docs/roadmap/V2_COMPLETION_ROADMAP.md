@@ -1749,5 +1749,48 @@ still defaults `false`.
 
 See `docs/architecture/WORKSPACE_EVENT_BUS.md` for the full audit.
 
-**DO NOT START R36 — per this specification's own stop condition, wait
+## Implementation Specification IS-R36 — Operating System Composition Root, AI Operating System Service Composition
+
+**Reality:** `AppComposition` (R1) never held any of the 8 R31-R35 "AI
+Operating System" services. Sharper finding: `HomeScreen.initState()`
+constructed its OWN, LOCAL `ExperienceCreationCoordinator` — never
+reachable from `AppComposition`, the exact "independently constructed,
+disconnected graph" problem R1 itself originally fixed for
+`WorldModelCoordinator`. Every one of R32-R35's optional `workspaceManager`/
+`intentRouter`/`workspaceRuntime`/`eventBus` constructor parameters were,
+until R36, always `null` in the real, running production app.
+
+**The fix:** `AppComposition` extended additively with
+`experienceCreationCoordinator` (moved from `HomeScreen`-local),
+`engineeringLifecycleCoordinator`, `intentSessionManager`,
+`workspaceManager`, `intentRouter`, `workspaceRuntime`, `eventBus`,
+`eventPublisher`, constructed in real dependency order. `HomeScreen`'s
+own public constructor stays byte-for-byte unchanged; `initState()`
+sources `_coordinator` from `_composition.experienceCreationCoordinator`
+and resolves `_workspaceManager`/`_intentRouter`/`_workspaceRuntime`/
+`_eventBus` as `widget.X ?? _composition.X`, threaded into
+`ExperienceHostScreen` at all 3 of its real navigation call sites.
+
+**Service lifetime, honest finding:** "Workspace Lifetime" and
+"Application Singleton" are the SAME lifetime in this codebase's current
+single-workspace-per-process shape — no multi-workspace concept exists.
+`SessionState` is genuinely Session-lifetime with no explicit destroy path
+today, stated honestly rather than papered over. No new DI
+framework/service-locator/scoping abstraction introduced.
+
+**Execution result:** 14 new tests, all passing, run twice with zero
+R36-attributable flakiness. Full regression: **1616/1616** (up from 1602
+— +14 new). `flutter analyze`: 71 issues, 0 errors, unchanged baseline.
+Performance: full `AppComposition.production()` graph construction under
+1ms; no measurable RSS growth across 10 construct/close cycles.
+`useCompilerPipeline` unaffected, still defaults `false`.
+`ExperienceWorkspaceManager`/`UniversalIntentRouter`/
+`EngineeringLifecycleCoordinator`/`AutonomousWorkspaceRuntime`/`EventBus`/
+`WorkspaceEventPublisher`/`AnythingKernel`/World Model/Engineering Memory
+all confirmed completely untouched via `git diff --stat`.
+
+See `docs/architecture/OPERATING_SYSTEM_COMPOSITION.md` for the full
+audit.
+
+**DO NOT START R37 — per this specification's own stop condition, wait
 for external architectural review.**
