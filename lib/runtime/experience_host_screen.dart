@@ -7,7 +7,9 @@ import 'package:flutter/material.dart';
 import '../app/autonomous_workspace_runtime.dart';
 import '../app/experience_modification_coordinator.dart';
 import '../app/experience_workspace_manager.dart';
+import '../app/workspace_event_publisher.dart';
 import '../capabilities/platform/capability_platform.dart';
+import '../core/events/events.dart';
 import '../creation/experience_package.dart';
 import '../storage/activity_repository.dart';
 import '../storage/engineering_memory_repository.dart';
@@ -89,6 +91,16 @@ class ExperienceHostScreen extends StatefulWidget {
   /// `docs/architecture/AUTONOMOUS_WORKSPACE_RUNTIME.md`).
   final AutonomousWorkspaceRuntime? workspaceRuntime;
 
+  /// Optional, additive event bus (Implementation Specification IS-R35) —
+  /// `null` by default, so every existing caller/test that constructs
+  /// `ExperienceHostScreen` without one keeps identical behavior. When
+  /// supplied AND [experienceId] is known, this screen publishes one real
+  /// `WorkspaceUpdated` event once the runtime finishes loading — the
+  /// SAME safe, guarded, additive extension point R32 already established
+  /// for [workspaceManager]'s `reportRuntimeStateForExperience`, never a
+  /// second, competing report mechanism.
+  final EventBus? eventBus;
+
   const ExperienceHostScreen({
     super.key,
     required this.package,
@@ -102,6 +114,7 @@ class ExperienceHostScreen extends StatefulWidget {
     this.modificationCoordinator,
     this.workspaceManager,
     this.workspaceRuntime,
+    this.eventBus,
   });
 
   @override
@@ -166,6 +179,7 @@ class _ExperienceHostScreenState extends State<ExperienceHostScreen> {
         });
         _seedDefaultScreen();
         _reportRuntimeStateToWorkspace();
+        _publishRuntimeLoadedEvent();
       }
     } catch (e) {
       if (mounted) {
@@ -229,6 +243,20 @@ class _ExperienceHostScreenState extends State<ExperienceHostScreen> {
         lastActiveAt: DateTime.now(),
       ),
     );
+  }
+
+  /// Real, additive, safe publish (Implementation Specification IS-R35) —
+  /// a harmless no-op when [widget.eventBus] is null or [widget.experienceId]
+  /// is unknown. `sessionId` resolves via the SAME real
+  /// `workspaceManager.sessionForExperience()` lookup [workspaceManager]
+  /// already uses (R32); falls back to the real `experienceId` itself when
+  /// no workspace session tracks this experience, never a fabricated id.
+  void _publishRuntimeLoadedEvent() {
+    final eventBus = widget.eventBus;
+    final experienceId = widget.experienceId;
+    if (eventBus == null || experienceId == null) return;
+    final sessionId = widget.workspaceManager?.sessionForExperience(experienceId)?.sessionId ?? experienceId;
+    WorkspaceEventPublisher(bus: eventBus, source: 'experience-host-screen').publishWorkspaceUpdated('runtime_loaded', sessionId);
   }
 
   @override

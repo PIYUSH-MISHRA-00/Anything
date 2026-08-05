@@ -11,6 +11,7 @@ import 'package:anything/app/creation_coordinator.dart';
 import 'package:anything/app/experience_opening_coordinator.dart';
 import 'package:anything/app/experience_workspace_manager.dart';
 import 'package:anything/app/universal_intent_router.dart';
+import 'package:anything/core/events/events.dart';
 import 'package:anything/design_system/components/birth_sequence.dart';
 import 'package:anything/design_system/components/anything_chip.dart';
 import 'package:anything/design_system/components/anything_empty_state.dart';
@@ -63,7 +64,16 @@ class HomeScreen extends StatefulWidget {
   /// (see `docs/architecture/AUTONOMOUS_WORKSPACE_RUNTIME.md`).
   final AutonomousWorkspaceRuntime? workspaceRuntime;
 
-  const HomeScreen({super.key, this.composition, this.workspaceManager, this.intentRouter, this.workspaceRuntime});
+  /// Optional, additive event bus (Implementation Specification IS-R35) —
+  /// `null` by default, so every existing caller/test that constructs
+  /// `HomeScreen()` without one keeps identical behavior. `EventBus`
+  /// (`lib/core/events/events.dart`) already existed, real and tested,
+  /// with zero production callers before this milestone — stored here for
+  /// a future caller to publish/subscribe through; accept-and-store
+  /// matches every prior optional-injection parameter on this screen.
+  final EventBus? eventBus;
+
+  const HomeScreen({super.key, this.composition, this.workspaceManager, this.intentRouter, this.workspaceRuntime, this.eventBus});
 
   @override
   HomeScreenState createState() => HomeScreenState();
