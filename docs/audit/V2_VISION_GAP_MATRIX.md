@@ -365,3 +365,12 @@ Statuses: VERIFIED (directly confirmed by source/test execution), PARTIAL (real 
 | HomeScreen and ExperienceHostScreen support optional integration without breaking existing behavior | **VERIFIED** — both screens gain one additive, defaulted-`null` `workspaceManager` constructor parameter; a real widget test proves construction WITHOUT it is byte-for-byte unaffected, and a second real widget test proves construction WITH a real one genuinely reports runtime state through it. |
 | No duplicate architecture | **VERIFIED** — `lib/app/intent_session_manager.dart`, `lib/app/engineering_lifecycle_coordinator.dart`, `lib/runtime/anything_runtime.dart`, `lib/world_model/`, `lib/storage/engineering_memory_repository.dart`, `lib/generator_framework/` all completely untouched (`git diff --stat`). |
 | No duplicate AI boundary | **VERIFIED** — zero new LLM calls; every intent still reaches the ONE `AnythingKernel.processIntent()` call only via `IntentSessionManager`'s own existing coordinators. |
+
+| Item | Status |
+|---|---|
+| Universal Intent Router is the single command surface for user intent | **VERIFIED, real and structural, never semantic** — `UniversalIntentRouter.route()` deterministically dispatches every intent through `ExperienceWorkspaceManager`'s real methods based only on explicit `RouteTarget`/real workspace state, never text parsing; proven end-to-end in `test/r33_universal_intent_router_test.dart`. |
+| ExperienceWorkspaceManager remains unchanged | **VERIFIED** — `git diff --stat` confirms zero changes to `lib/app/experience_workspace_manager.dart`. |
+| IntentSessionManager remains unchanged | **VERIFIED** — `git diff --stat` confirms zero changes to `lib/app/intent_session_manager.dart`. |
+| EngineeringLifecycleCoordinator remains unchanged | **VERIFIED** — `git diff --stat` confirms zero changes to `lib/app/engineering_lifecycle_coordinator.dart`. |
+| No duplicate architecture | **VERIFIED** — `lib/app/experience_workspace_manager.dart`, `lib/app/intent_session_manager.dart`, `lib/app/engineering_lifecycle_coordinator.dart`, `lib/kernel/`, `lib/world_model/`, `lib/storage/engineering_memory_repository.dart`, `lib/generator_framework/` all completely untouched (`git diff --stat`); `UniversalIntentRouter` never calls `IntentSessionManager`/`EngineeringLifecycleCoordinator`/`AnythingKernel` directly. |
+| No duplicate AI boundary | **VERIFIED** — zero new LLM calls; routing is pure structural dispatch, never intent-text interpretation. |

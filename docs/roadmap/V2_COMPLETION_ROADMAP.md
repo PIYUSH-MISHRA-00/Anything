@@ -1565,3 +1565,59 @@ See `docs/architecture/EXPERIENCE_WORKSPACE_MANAGER.md` for the full audit.
 
 **DO NOT START R33 — per this specification's own stop condition, wait
 for external architectural review.**
+
+## Implementation Specification IS-R33 — Universal Intent Router, AI Operating System Command Surface
+
+**Reality:** `ExperienceWorkspaceManager` (R32) already exposes real
+`openExperience()`/`continueExperience()`/`switchActiveExperience()`
+methods, but nothing decided FOR a caller which one to invoke for a given
+`Intent` — a caller had to already know. Investigating R32's own
+documentation also surfaced a real correction: its claim that a
+`HomeScreen` widget test proved backward compatibility actually pointed at
+an `ExperienceHostScreen` test — no prior milestone has widget-pumped a
+bare `HomeScreen()`.
+
+**Implementation:** `UniversalIntentRouter`
+(`lib/app/universal_intent_router.dart`) — a pure, deterministic,
+structural decision layer over the real, unmodified
+`ExperienceWorkspaceManager`. Zero new reasoning: `Intent`'s own fields
+were confirmed to carry no session-targeting signal, so routing depends
+only on real workspace state plus an explicit, caller-supplied
+`RouteTarget` (`.session()`/`.experience()`/`.newExperience()`). R33's 7
+requested action labels were investigated and honestly collapsed: only
+ONE real underlying call exists for "act on an open session"
+(`continueExperience()`); "Continue Existing Session," "Modify Existing
+Experience," and "Resume Background Session" are the same real call
+reached via three distinct real structural paths, named separately in
+`RoutingAction` only because the path taken is real and worth reporting.
+"Clarification Required"/"Provider Required"/"No Action" are real,
+already-typed outcomes (`CreationClarification`/`CreationProviderRequired`/
+`LifecycleOutcome.noChangeDetected`) the router faithfully surfaces,
+never re-derives.
+
+**A real design gap was found and fixed during implementation**:
+`ExperienceWorkspaceManager.openExperience()` only auto-activates the
+FIRST session it ever opens (`_activeSessionId ??= result.sessionId`,
+real, unmodified R32 code) — with no explicit signal, a router could never
+open a SECOND experience once one was active. Added `RouteTarget
+.newExperience()` to close this honestly, rather than silently forcing
+every intent through the active session.
+
+**UI wiring:** `HomeScreen` gains one additive, optional, defaulted-`null`
+`intentRouter` constructor parameter, matching R32's own `workspaceManager`
+pattern exactly — accepts and stores only; `_createExperience`'s real
+state machine is not rerouted this milestone, for the same real
+regression-risk reasons R31/R32 already gave.
+
+**Execution result:** 15 new tests, all passing. Full regression:
+**1568/1568** (up from 1553). `flutter analyze`: 71 issues, 0 errors,
+unchanged baseline. `ExperienceWorkspaceManager`, `IntentSessionManager`,
+`EngineeringLifecycleCoordinator`, `AnythingKernel`, World Model,
+Engineering Memory, Generator Framework all completely untouched
+(confirmed via `git diff --stat`). `useCompilerPipeline` unaffected, still
+defaults `false`.
+
+See `docs/architecture/UNIVERSAL_INTENT_ROUTER.md` for the full audit.
+
+**DO NOT START R34 — per this specification's own stop condition, wait
+for external architectural review.**

@@ -1633,3 +1633,44 @@ unaffected.
 `IntentSessionManager`, `EngineeringLifecycleCoordinator`, `AnythingRuntime`,
 World Model, Engineering Memory, Generator Framework all completely
 untouched. `useCompilerPipeline` unaffected, still defaults `false`.
+
+## R33 — Universal Intent Router
+
+`test/r33_universal_intent_router_test.dart` proves: new experience
+routing (a real, identity-checked proof the resulting session is tracked
+by the real, unmodified `ExperienceWorkspaceManager` afterward); session
+continuation (no explicit target, a real active session, faithfully
+surfacing its `LifecycleResult`); modification routing (an explicit target
+naming the active session by `sessionId`, and a second, separate proof
+resolving by `experienceId` through `sessionForExperience()`); resume
+background session (a real `switchActiveExperience()` genuinely runs — the
+workspace's own active-session pointer is checked both before and after);
+rejection (an unknown `sessionId` and an unknown `experienceId`, each
+correctly `unknownTarget`, never a silent fallback to `newExperience`);
+real Kernel-level outcome surfacing (a re-submitted identical intent
+produces `LifecycleOutcome.noChangeDetected`, read straight off the real
+result, never re-derived); workspace integration (zero-bypass, identity-
+checked — the routed session is reachable through the SAME workspace
+object); `HomeScreen` backward compatibility (a real constructor-level
+test — `HomeScreen().intentRouter == null`, never throws — the honest
+equivalent of a widget-pump proof, since no prior milestone has ever
+widget-tested a bare `HomeScreen()`, and R32's own claim to have done so
+was found, on inspection, to actually test `ExperienceHostScreen`) and a
+real, injected-router construction test; regression
+(`ExperienceWorkspaceManager.openExperience()` called directly, bypassing
+the router entirely, behaves exactly as R32 built it); real
+`Stopwatch`/`ProcessInfo.currentRss` performance numbers for routing
+latency (both the `newExperience` and `resumeBackgroundSession` paths) and
+a 20-intent memory delta.
+
+No pre-existing test files required any changes — `UniversalIntentRouter`
+is purely additive, and `HomeScreen`'s new constructor parameter defaults
+to `null`, leaving every existing test's construction path byte-for-byte
+unaffected.
+
+**Execution result:** 15 new tests pass. Full regression: **1568/1568**
+(up from 1553). `flutter analyze`: 71 issues, 0 errors, unchanged baseline.
+`ExperienceWorkspaceManager`, `IntentSessionManager`,
+`EngineeringLifecycleCoordinator`, `AnythingKernel`, World Model,
+Engineering Memory, Generator Framework all completely untouched.
+`useCompilerPipeline` unaffected, still defaults `false`.
