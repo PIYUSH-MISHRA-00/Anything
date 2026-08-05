@@ -1725,3 +1725,48 @@ byte-for-byte unaffected.
 Memory, Generator Framework all completely untouched (`git diff --stat`).
 No new background `Timer`/polling machinery introduced anywhere.
 `useCompilerPipeline` unaffected, still defaults `false`.
+
+## R35 — Workspace Event Bus
+
+`test/r35_workspace_event_bus_test.dart` (19 tests) proves: the
+`EventBus` bug fix (two independent subscribers to the same event type
+both receive the same event — the exact case the original overwrite bug
+broke; type-isolation across mixed subscribers; publish ordering
+preserved; the 3 pre-existing `test/contracts/events_test.dart` tests
+replicated and still passing, proving full backward compatibility); the
+event model (`IntentAnalyzed.category` untouched by the new
+`eventCategory` field; `eventCategory`/`severity`/`correlationId` honor
+their real defaults on every pre-existing subtype); event publication
+(each of the 12 new event types carries real data read from its matching
+real result type, never fabricated; `publishSessionContinued()` emits
+`DeploymentAllowed`/`DeploymentBlocked`/`CommitFailed` only for their own
+matching terminal `LifecycleOutcome`, never for
+`noChangeDetected`/`noActionableTarget`/`noEngineeringMemory`/
+`cannotEvolve`; duplicate suppression — a second `captureRuntimeState()`
+snapshot with no new terminal outcome publishes zero further
+`NotificationGenerated` events, since `AutonomousWorkspaceRuntime`'s own
+R34 de-duplication is never re-derived here); correlation (a
+route -> continue chain shares one `correlationId` across
+`IntentRouted`/`SessionContinued`/`LifecycleCompleted`); regression (the
+real coordinators called directly, bypassing the publisher entirely,
+behave exactly as R31-R34 built them); backward compatibility (real
+constructor-level tests for `HomeScreen`/`ExperienceHostScreen` without
+`eventBus`, plus 2 real widget tests using `tester.runAsync()` +
+`databaseFactoryFfiNoIsolate` proving `ExperienceHostScreen`'s behavior
+both without and with a real, injected `EventBus`); real
+`Stopwatch`/`ProcessInfo.currentRss` performance numbers for 5000-publish
+dispatch latency and a 50-cycle bus create/dispose memory delta.
+
+No pre-existing test files required any changes beyond
+`test/contracts/events_test.dart` passing unmodified — both UI screens'
+new `eventBus` parameter defaults to `null`, leaving every existing
+test's construction path byte-for-byte unaffected.
+
+**Execution result:** 19 new tests pass. Full regression: **1602/1602**
+(up from 1583), run twice, zero flakiness. `flutter analyze`: 71 issues,
+0 errors, unchanged baseline. `ExperienceWorkspaceManager`,
+`UniversalIntentRouter`, `IntentSessionManager`,
+`EngineeringLifecycleCoordinator`, `AutonomousWorkspaceRuntime`,
+`AnythingRuntime`, World Model, Engineering Memory all completely
+untouched (`git diff --stat`). `useCompilerPipeline` unaffected, still
+defaults `false`.

@@ -386,3 +386,16 @@ Statuses: VERIFIED (directly confirmed by source/test execution), PARTIAL (real 
 | AnythingRuntime remains unchanged | **VERIFIED** — `git diff --stat` confirms zero changes to `lib/runtime/anything_runtime.dart`. |
 | No duplicate architecture | **VERIFIED** — `lib/app/experience_workspace_manager.dart`, `lib/app/intent_session_manager.dart`, `lib/app/engineering_lifecycle_coordinator.dart`, `lib/app/universal_intent_router.dart`, `lib/artifact_intelligence/`, `lib/solution_evolution/`, `lib/runtime/`, `lib/world_model/`, `lib/storage/engineering_memory_repository.dart`, `lib/generator_framework/` all completely untouched (`git diff --stat`); no new background `Timer`/polling machinery introduced anywhere. |
 | No duplicate AI boundary | **VERIFIED** — zero new LLM calls; `captureRuntimeState()` is a pure function over already-real, already-computed state. |
+
+## R35
+
+| Item | Status |
+|---|---|
+| Workspace Event Bus enables pub/sub across existing subsystems | **VERIFIED, as an already-real, now-wired system** — `EventBus`/`AnythingEvent` (`lib/core/events/events.dart`) existed fully tested with zero production callers; `WorkspaceEventPublisher` (`lib/app/workspace_event_publisher.dart`) translates real R30-R34 result types into 12 new typed events, proven end-to-end in `test/r35_workspace_event_bus_test.dart`. |
+| Real, load-bearing multi-subscriber bug fixed | **VERIFIED** — original `on<T>()` overwrote the previous subscriber's controller per type; fixed with one shared broadcast stream + filtered views; proven directly, and the 3 pre-existing `test/contracts/events_test.dart` tests still pass unmodified. |
+| ExperienceWorkspaceManager remains unchanged | **VERIFIED** — `git diff --stat` confirms zero changes to `lib/app/experience_workspace_manager.dart`. |
+| UniversalIntentRouter remains unchanged | **VERIFIED** — `git diff --stat` confirms zero changes to `lib/app/universal_intent_router.dart`. |
+| EngineeringLifecycleCoordinator remains unchanged | **VERIFIED** — `git diff --stat` confirms zero changes to `lib/app/engineering_lifecycle_coordinator.dart`. |
+| AutonomousWorkspaceRuntime remains unchanged | **VERIFIED** — `git diff --stat` confirms zero changes to `lib/app/autonomous_workspace_runtime.dart`. |
+| No duplicate event/notification system | **VERIFIED** — `lib/core/events/events.dart` is the ONLY event system; no second `EventBus`/notification pipeline introduced; `IntentSessionManager`, `AnythingRuntime`, World Model, Engineering Memory all completely untouched (`git diff --stat`). |
+| No duplicate AI boundary | **VERIFIED** — zero new LLM calls; `WorkspaceEventPublisher` is pure translation over already-real, already-computed result types. |

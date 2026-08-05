@@ -1691,3 +1691,63 @@ audit.
 
 **DO NOT START R35 — per this specification's own stop condition, wait
 for external architectural review.**
+
+## Implementation Specification IS-R35 — Workspace Event Bus, AI Operating System Event Architecture
+
+**Reality:** a complete, real, typed pub/sub `EventBus`/`AnythingEvent`
+system (11 subtypes, `test/contracts/events_test.dart`) already existed
+at `lib/core/events/events.dart`, dating to a "Stage 9.4"-era commit,
+with **zero production callers** anywhere in `lib/` (confirmed by grep).
+Same "real, tested, orphaned subsystem" pattern as R14/R16/R30. R35 wires
+it in — never a second event/notification system.
+
+**A real, load-bearing bug found and fixed:** the original `on<T>()`
+stored one `StreamController` per subscribed TYPE in a `Map<Type, ...>`,
+so a second subscriber to the same event type silently overwrote (and
+disconnected) the first. Fixed with one shared
+`StreamController<AnythingEvent>.broadcast()`; `on<T>()` now returns an
+independent filtered view per call. Proven directly (two independent
+subscribers to the same type both receive the same event) and the 3
+pre-existing tests still pass unmodified — full backward compatibility.
+
+**"Remain unchanged. Publish events." resolved the same way as
+R31-R34:** a new, small translation class, `WorkspaceEventPublisher`
+(`lib/app/workspace_event_publisher.dart`), converts already-real R30-R34
+result types into 12 new `AnythingEvent` subtypes. Never invoked
+automatically by any coordinator — a caller invokes the real coordinator
+method AND the matching publisher method together. Confirmed via `git
+diff --stat`: `ExperienceWorkspaceManager`, `UniversalIntentRouter`,
+`IntentSessionManager`, `EngineeringLifecycleCoordinator`,
+`AutonomousWorkspaceRuntime`, `AnythingRuntime`, World Model, Engineering
+Memory all completely untouched.
+
+**Event model:** `AnythingEvent` gained 4 additive, defaulted base
+fields (`eventCategory`, `severity`, `correlationId`, `payload`) — zero
+changes needed to any of the 11 pre-existing subtype constructors. Named
+`eventCategory` (not `category`) to avoid colliding with the pre-existing
+`IntentAnalyzed.category` (caught by `flutter analyze`'s
+`invalid_override` before this file was finished). 12 new subtypes:
+`IntentRouted`, `SessionCreated`, `SessionContinued`, `SessionSwitched`,
+`WorkspaceUpdated`, `RuntimeSnapshotCaptured`, `LifecycleCompleted`,
+`ArtifactUpdated`, `DeploymentAllowed`, `DeploymentBlocked` (severity:
+warning), `CommitFailed` (severity: error), `NotificationGenerated`.
+
+**UI wiring:** `HomeScreen` and `ExperienceHostScreen` each gain one
+additive, optional, defaulted-`null` `eventBus` constructor parameter.
+`ExperienceHostScreen` takes one real extra step (same precedent as
+R32's `workspaceManager`): once an experience finishes loading, it
+publishes a real `WorkspaceUpdated('runtime_loaded', sessionId)` event.
+`HomeScreen` has no equivalent safe next step this milestone —
+accept-and-store only.
+
+**Execution result:** 19 new tests, all passing, run twice with zero
+flakiness. Full regression: **1602/1602** (up from 1583). `flutter
+analyze`: 71 issues, 0 errors, unchanged baseline. Performance: 5000
+`publish()` calls dispatched in 5ms; 50 bus create/dispose cycles ~508KB
+RSS delta with no leak growth pattern. `useCompilerPipeline` unaffected,
+still defaults `false`.
+
+See `docs/architecture/WORKSPACE_EVENT_BUS.md` for the full audit.
+
+**DO NOT START R36 — per this specification's own stop condition, wait
+for external architectural review.**
