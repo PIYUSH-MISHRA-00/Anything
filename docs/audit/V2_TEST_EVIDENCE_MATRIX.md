@@ -1534,3 +1534,39 @@ issues, 0 errors, unchanged baseline. `lib/generator_framework/`,
 `lib/engineering_intelligence/`, `lib/artifact_intelligence/` all
 completely untouched; `SolutionExecutionOrchestrator.execute()` itself
 unmodified. `useCompilerPipeline` unaffected, still defaults `false`.
+
+## R30 — Engineering Lifecycle Coordinator
+
+`test/r30_engineering_lifecycle_test.dart` proves, through the real
+`AnythingKernel`/real sqlite storage/real generators end-to-end (never a
+hand-built fake package): production integration (no historical
+engineering memory → a real, honest early exit; a genuine no-op → zero
+execution primitives invoked, prior package confirmed untouched),
+incremental lifecycle (a real, backend-free frontend-only entity addition
+deploys via `IncrementalCompilerSynthesizer`, real persisted package
+confirmed via repository read-back; a real, naturally-reachable incremental
+failure — removing an entity — correctly produces an honest `blocked`
+outcome, never persisted), full lifecycle (a real, backend-affecting change
+deploys via the full `SolutionExecutionOrchestrator`, real persisted
+package confirmed via repository read-back), deployment flow (the real
+`ArtifactIntelligenceEngine` + `decideDeployment()` composition proven
+correct on a real, reachable failure — `backendPlan` omitted for a
+backend-needed strategy), rollback flow (a real, separate, later
+`rollback()` call genuinely restores the prior package), regression
+(`SolutionEvolutionEngine.planRegeneration()` called directly, bypassing
+this coordinator entirely, behaves exactly as R29 built it), and real
+Stopwatch/`ProcessInfo.currentRss` performance numbers for incremental
+lifecycle latency, full lifecycle latency, and memory across 20 repeated
+real lifecycles.
+
+No pre-existing test files required any changes — `EngineeringLifecycleCoordinator`
+is purely additive, never wired into any existing subsystem's own call
+graph.
+
+**Execution result:** 11 new tests pass, run TWICE with zero flakiness.
+Full regression: **1524/1524** (up from 1513). `flutter analyze`: 71
+issues, 0 errors, unchanged baseline. `SolutionEvolutionEngine`,
+`SolutionExecutionOrchestrator`, `ArtifactIntelligenceEngine`,
+`EngineeringMemoryRepository`, World Model, Generator Framework, and
+`ExperienceModificationCoordinator` all completely untouched.
+`useCompilerPipeline` unaffected, still defaults `false`.

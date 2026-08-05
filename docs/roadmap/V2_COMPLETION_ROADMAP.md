@@ -1435,3 +1435,63 @@ See `docs/architecture/SOLUTION_EVOLUTION.md` for the full audit.
 
 **DO NOT START R30 — per this specification's own stop condition, wait
 for external architectural review.**
+
+---
+
+## R30 — Engineering Lifecycle Coordinator, Production Closed-Loop Execution
+
+R30 adds `EngineeringLifecycleCoordinator` (`lib/app/engineering_lifecycle_coordinator.dart`)
+— the first real production caller of both `SolutionEvolutionEngine` (R29)
+and `IncrementalCompilerSynthesizer.buildEvolutionPlan()` (R24), each
+confirmed to have had zero production callers before this milestone (grep:
+each name appeared only in its own defining file and in test files). The
+coordinator is a pure composition: Kernel → `SolutionEvolutionEngine
+.planRegeneration()` → `IncrementalCompilerSynthesizer.synthesize()` OR
+`SolutionExecutionOrchestrator.execute()` → (`ArtifactIntelligenceEngine
+.analyze()` + `SolutionEvolutionEngine.decideDeployment()`, FULL path
+only) → `ExperienceModificationCoordinator.applyEvolutionPlan()` on
+`allowed`, never on `blocked`.
+
+**Commit mechanism:** `IncrementalCompilerSynthesizer.buildEvolutionPlan()`
+(R24) is reused unmodified for the incremental path; one small,
+coordinator-local method mirrors its exact body for the FULL path, sourcing
+the candidate package from `OrchestrationReport` instead — never a change
+to either existing subsystem.
+
+**Rollback (Design A):** the deployment gate always runs BEFORE
+`applyEvolutionPlan()` is ever called, so a `blocked` decision means
+nothing is ever persisted — `LifecycleResult.rollbackPerformed` is always
+`false` from this coordinator's own internal flow (an honest, named
+limitation, mirroring R29's own identical finding). `rollback()` itself
+remains real, reachable, and tested via a separate, later, caller-invoked
+call using the returned `previousPackage`.
+
+**Deployment flow asymmetry (honest):** `ArtifactIntelligenceEngine` is
+reserved for the FULL path (a genuinely complete `OrchestrationReport`) —
+the incremental path uses its own simpler, real gate
+(`IncrementalSynthesisResult.succeeded` + a real `ExperiencePackageValidator`
+re-check) instead of fabricating cross-target dependency status for targets
+that weren't actually re-verified this cycle.
+
+**Proof:** `test/r30_engineering_lifecycle_test.dart` — real, end-to-end
+scenarios through the real Kernel/sqlite/generators: no engineering memory
+(honest early exit), no-op (zero execution primitives invoked), incremental
+deploy (a real frontend-only entity addition), incremental blocked (a real,
+naturally-reachable failure — removing an entity, never persisted), full
+deploy (a real backend-affecting change through the full orchestrator),
+full-path deployment-gate composition proven correct on a real reachable
+failure, and a real, separate rollback call genuinely restoring the prior
+package.
+
+**Execution result:** 11 new tests, all passing, run TWICE with zero
+flakiness. Full regression: **1524/1524** (up from 1513). `flutter analyze`: 71 issues, 0 errors,
+unchanged baseline. `SolutionEvolutionEngine`, `SolutionExecutionOrchestrator`,
+`ArtifactIntelligenceEngine`, `EngineeringMemoryRepository`, World Model,
+Generator Framework, and `ExperienceModificationCoordinator` all completely
+untouched (confirmed via `git diff --stat`). `useCompilerPipeline`
+unaffected, still defaults `false`.
+
+See `docs/architecture/ENGINEERING_LIFECYCLE.md` for the full audit.
+
+**DO NOT START R31 — per this specification's own stop condition, wait
+for external architectural review.**

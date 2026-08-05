@@ -332,3 +332,16 @@ Statuses: VERIFIED (directly confirmed by source/test execution), PARTIAL (real 
 | No duplicate AI boundary | **VERIFIED** — zero new LLM calls anywhere; both `SolutionEvolutionEngine` methods are pure, synchronous, deterministic functions. |
 | No duplicate generators | **VERIFIED** — `SolutionEvolutionEngine` never calls any `Generator`/`runCompilerPipeline`/`runGeneratorPipeline` — it only recommends, never executes. |
 | No duplicate orchestration | **VERIFIED** — `SolutionExecutionOrchestrator.execute()`'s own logic and every existing test for it are completely unaffected. |
+
+## R30
+
+| Item | Status |
+|---|---|
+| Engineering Lifecycle Coordinator is the first production caller of SolutionEvolutionEngine | **VERIFIED** — `EngineeringLifecycleCoordinator.evolveExperience()` is the first, real, production call site of `SolutionEvolutionEngine.planRegeneration()`/`.decideDeployment()`, confirmed by grep before this milestone (both previously appeared only in their own defining files and in test files). |
+| SolutionEvolutionEngine remains unchanged | **VERIFIED** — `git diff --stat` confirms zero changes to `lib/solution_evolution/`. |
+| SolutionExecutionOrchestrator remains unchanged | **VERIFIED** — `git diff --stat` confirms zero changes to `lib/solution_orchestration/solution_execution_orchestrator.dart`; the new coordinator is an external caller of `execute()`, never wired into it. |
+| ArtifactIntelligenceEngine remains unchanged | **VERIFIED** — `git diff --stat` confirms zero changes to `lib/artifact_intelligence/`. |
+| Rollback uses ExperienceModificationCoordinator | **VERIFIED** — `rollback()`/`applyEvolutionPlan()` are called exactly as they exist, never reimplemented; `ExperienceModificationCoordinator` itself completely untouched (`git diff --stat`). |
+| No duplicate architecture | **VERIFIED** — `lib/generator_framework/`, `lib/runtime/`, `lib/software_cognition/`, `lib/world_model/`, `lib/storage/engineering_memory_repository.dart`, `lib/engineering_intelligence/`, `lib/artifact_intelligence/`, `lib/solution_evolution/`, `lib/solution_orchestration/`, `lib/app/experience_modification_coordinator.dart` all completely untouched (`git diff --stat`). |
+| No duplicate AI boundary | **VERIFIED** — zero new LLM calls anywhere; the coordinator's "after" state comes from the SAME single `AnythingKernel.processIntent()` call every other production path already uses. |
+| No duplicate compiler | **VERIFIED** — dispatch is entirely through the existing `IncrementalCompilerSynthesizer`/`SolutionExecutionOrchestrator`; no new generator/compiler logic introduced. |
