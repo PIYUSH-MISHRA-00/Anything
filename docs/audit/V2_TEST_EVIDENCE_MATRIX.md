@@ -1570,3 +1570,32 @@ issues, 0 errors, unchanged baseline. `SolutionEvolutionEngine`,
 `EngineeringMemoryRepository`, World Model, Generator Framework, and
 `ExperienceModificationCoordinator` all completely untouched.
 `useCompilerPipeline` unaffected, still defaults `false`.
+
+## Implementation Specification IS-R31 — Intent Session Manager
+
+`test/r31_intent_session_manager_test.dart` proves: session creation (a
+real experience, real timeline entry, real engineering state — confirmed
+already persisted by `ExperienceCreationCoordinator` on success, R5, no
+second write needed), session continuation (a real, structural change
+dispatches to the real, unmodified `EngineeringLifecycleCoordinator
+.evolveExperience()`, and an identical re-intent honestly produces
+`LifecycleOutcome.noChangeDetected`), unknown/inactive-session error
+handling (`StateError`, never a silent no-op), runtime-state tracking
+(real, caller-reported via `updateRuntimeState()`, never fabricated), and
+regression (`ExperienceCreationCoordinator.createFromIntent()` called
+directly, bypassing this manager entirely, behaves exactly as before). Real
+`Stopwatch`/`ProcessInfo.currentRss` performance numbers for session
+startup latency, session continuation latency, and memory across 20
+repeated real sessions.
+
+No pre-existing test files required any changes — `IntentSessionManager` is
+purely additive, never wired into any existing subsystem's own call graph
+or live UI screen this milestone.
+
+**Execution result:** 12 new tests pass. Full regression: **1536/1536**
+(up from 1524). `flutter analyze`: 71 issues, 0 errors, unchanged baseline.
+`AnythingKernel`, `EngineeringLifecycleCoordinator`,
+`ExperienceCreationCoordinator`, World Model, Engineering Memory, Generator
+Framework, `SolutionExecutionOrchestrator`, `HomeScreen`,
+`ExperienceHostScreen` all completely untouched. `useCompilerPipeline`
+unaffected, still defaults `false`.

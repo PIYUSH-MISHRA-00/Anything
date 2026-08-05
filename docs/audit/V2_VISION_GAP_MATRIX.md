@@ -345,3 +345,14 @@ Statuses: VERIFIED (directly confirmed by source/test execution), PARTIAL (real 
 | No duplicate architecture | **VERIFIED** — `lib/generator_framework/`, `lib/runtime/`, `lib/software_cognition/`, `lib/world_model/`, `lib/storage/engineering_memory_repository.dart`, `lib/engineering_intelligence/`, `lib/artifact_intelligence/`, `lib/solution_evolution/`, `lib/solution_orchestration/`, `lib/app/experience_modification_coordinator.dart` all completely untouched (`git diff --stat`). |
 | No duplicate AI boundary | **VERIFIED** — zero new LLM calls anywhere; the coordinator's "after" state comes from the SAME single `AnythingKernel.processIntent()` call every other production path already uses. |
 | No duplicate compiler | **VERIFIED** — dispatch is entirely through the existing `IncrementalCompilerSynthesizer`/`SolutionExecutionOrchestrator`; no new generator/compiler logic introduced. |
+
+## R31
+
+| Item | Status |
+|---|---|
+| Intent Session Manager composes ExperienceCreationCoordinator + EngineeringLifecycleCoordinator | **VERIFIED** — `IntentSessionManager.startSession()`/`.continueSession()` delegate to the real, unmodified `ExperienceCreationCoordinator.createFromIntent()`/`EngineeringLifecycleCoordinator.evolveExperience()` respectively; proven end-to-end in `test/r31_intent_session_manager_test.dart`. |
+| EngineeringLifecycleCoordinator remains unchanged | **VERIFIED** — `git diff --stat` confirms zero changes to `lib/app/engineering_lifecycle_coordinator.dart`. |
+| AnythingKernel remains unchanged | **VERIFIED** — `git diff --stat` confirms zero changes to `lib/kernel/`; `IntentSessionManager` never calls `processIntent()` directly, only through the two existing coordinators. |
+| No duplicate architecture | **VERIFIED** — `lib/kernel/`, `lib/app/creation_coordinator.dart`, `lib/app/experience_modification_coordinator.dart`, `lib/solution_orchestration/`, `lib/artifact_intelligence/`, `lib/engineering_intelligence/`, `lib/world_model/`, `lib/storage/engineering_memory_repository.dart`, `lib/generator_framework/`, and the real, live `lib/features/home/home_screen.dart`/`lib/runtime/experience_host_screen.dart` UI screens are all completely untouched (`git diff --stat`). |
+| No duplicate AI boundary | **VERIFIED** — zero new LLM calls; every intent still reaches the ONE `AnythingKernel.processIntent()` call only via the two existing coordinators. |
+| Single application-facing entry point | **PARTIAL, HONESTLY** — `IntentSessionManager` is built, complete, and thoroughly tested as the intended real entry point, but `HomeScreen`/`ExperienceHostScreen` are not rewired to use it this milestone (deliberate, documented deferral — see `docs/architecture/INTENT_SESSION_MANAGER.md`'s "UI-entry-point tension" section). Recommended for R32. |

@@ -1493,5 +1493,38 @@ unaffected, still defaults `false`.
 
 See `docs/architecture/ENGINEERING_LIFECYCLE.md` for the full audit.
 
-**DO NOT START R31 — per this specification's own stop condition, wait
+## Implementation Specification IS-R31 — Intent Session Manager (complete)
+
+**Reality:** `ExperienceCreationCoordinator` (creation) and
+`EngineeringLifecycleCoordinator` (R30, ongoing evolution) were never
+composed into one session-owning entry point, and no real, in-memory
+session timeline existed across an engineering session's lifetime.
+
+**Implementation:** `IntentSessionManager`
+(`lib/app/intent_session_manager.dart`) — `startSession(intent)` delegates
+to the real, unmodified `ExperienceCreationCoordinator.createFromIntent()`;
+`continueSession(sessionId, intent)` delegates to the real, unmodified
+`EngineeringLifecycleCoordinator.evolveExperience()`. Every session field
+(`currentEngineeringState`, `currentLifecycleResult`, `currentRuntimeState`,
+`sessionTimeline`) maps to a real, existing type — `EngineeringMemoryRecord`,
+`LifecycleResult`, `ExperienceSession`, `ActivityEvent` — never a fabricated
+parallel model. World Model persistence declined (no durable session
+identity independent of the app process).
+
+**UI wiring:** deliberately deferred to R32 — `HomeScreen`/`ExperienceHostScreen`
+remain unchanged this milestone; rewiring live, interactive Flutter screens
+without interactive testing carries real, unverifiable regression risk. See
+`docs/architecture/INTENT_SESSION_MANAGER.md` for the full reasoning.
+
+**Execution result:** 12 new tests, all passing. Full regression:
+**1536/1536** (up from 1524). `flutter analyze`: 71 issues, 0 errors,
+unchanged baseline. `AnythingKernel`, `EngineeringLifecycleCoordinator`,
+`ExperienceCreationCoordinator`, World Model, Engineering Memory, Generator
+Framework, `SolutionExecutionOrchestrator` all completely untouched
+(confirmed via `git diff --stat`). `useCompilerPipeline` unaffected, still
+defaults `false`.
+
+See `docs/architecture/INTENT_SESSION_MANAGER.md` for the full audit.
+
+**DO NOT START R32 — per this specification's own stop condition, wait
 for external architectural review.**
