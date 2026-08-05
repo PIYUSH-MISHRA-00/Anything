@@ -24,6 +24,7 @@ import 'package:anything/app/autonomous_workspace_runtime.dart';
 import 'package:anything/app/creation_coordinator.dart';
 import 'package:anything/app/engineering_lifecycle_coordinator.dart';
 import 'package:anything/app/experience_workspace_manager.dart';
+import 'package:anything/app/intent_execution_pipeline.dart';
 import 'package:anything/app/intent_session_manager.dart';
 import 'package:anything/app/universal_intent_router.dart';
 import 'package:anything/app/workspace_event_publisher.dart';
@@ -125,6 +126,12 @@ class AppComposition {
   /// bus.
   final WorkspaceEventPublisher eventPublisher;
 
+  /// The shared Intent Execution Pipeline (Implementation Specification
+  /// IS-R37) — the ONE canonical production path from an `Intent` to
+  /// engineering execution, composed from [intentRouter]/[eventPublisher]
+  /// above. See `docs/architecture/INTENT_EXECUTION_PIPELINE.md`.
+  final IntentExecutionPipeline intentExecutionPipeline;
+
   AppComposition._({
     required this.experienceRepository,
     required this.worldModel,
@@ -144,6 +151,7 @@ class AppComposition {
     required this.workspaceRuntime,
     required this.eventBus,
     required this.eventPublisher,
+    required this.intentExecutionPipeline,
   });
 
   /// Builds the real, production composition graph. Every dependency below
@@ -215,6 +223,11 @@ class AppComposition {
     final eventBus = EventBus();
     final eventPublisher = WorkspaceEventPublisher(bus: eventBus);
 
+    // Implementation Specification IS-R37: the one canonical production
+    // path from an Intent to engineering execution — composed from
+    // [intentRouter]/[eventPublisher] above, never a second router.
+    final intentExecutionPipeline = IntentExecutionPipeline(router: intentRouter, eventPublisher: eventPublisher);
+
     return AppComposition._(
       experienceRepository: experienceRepository,
       worldModel: worldModel,
@@ -234,6 +247,7 @@ class AppComposition {
       workspaceRuntime: workspaceRuntime,
       eventBus: eventBus,
       eventPublisher: eventPublisher,
+      intentExecutionPipeline: intentExecutionPipeline,
     );
   }
 }

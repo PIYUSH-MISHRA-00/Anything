@@ -10,6 +10,7 @@ import 'package:anything/app/autonomous_workspace_runtime.dart';
 import 'package:anything/app/creation_coordinator.dart';
 import 'package:anything/app/experience_opening_coordinator.dart';
 import 'package:anything/app/experience_workspace_manager.dart';
+import 'package:anything/app/intent_execution_pipeline.dart';
 import 'package:anything/app/universal_intent_router.dart';
 import 'package:anything/core/events/events.dart';
 import 'package:anything/design_system/components/birth_sequence.dart';
@@ -73,7 +74,20 @@ class HomeScreen extends StatefulWidget {
   /// matches every prior optional-injection parameter on this screen.
   final EventBus? eventBus;
 
-  const HomeScreen({super.key, this.composition, this.workspaceManager, this.intentRouter, this.workspaceRuntime, this.eventBus});
+  /// Optional, additive intent execution pipeline (Implementation
+  /// Specification IS-R37) — `null` by default, so every existing
+  /// caller/test that constructs `HomeScreen()` without one keeps identical
+  /// behavior. REALITY before R37: `_createExperience()` called
+  /// `ExperienceCreationCoordinator.createFromIntent()` directly, bypassing
+  /// `UniversalIntentRouter` entirely — the real production creation flow
+  /// never registered its session in `ExperienceWorkspaceManager`. This
+  /// milestone reroutes `_createExperience()` through
+  /// `IntentExecutionPipeline.execute()` instead — the ONE thing this
+  /// screen now calls to get engineering work done (see
+  /// `docs/architecture/INTENT_EXECUTION_PIPELINE.md`).
+  final IntentExecutionPipeline? pipeline;
+
+  const HomeScreen({super.key, this.composition, this.workspaceManager, this.intentRouter, this.workspaceRuntime, this.eventBus, this.pipeline});
 
   @override
   HomeScreenState createState() => HomeScreenState();
@@ -81,7 +95,6 @@ class HomeScreen extends StatefulWidget {
 
 class HomeScreenState extends State<HomeScreen> {
   late final AppComposition _composition;
-  late final ExperienceCreationCoordinator _coordinator;
 
   /// Real, resolved AI Operating System services (Implementation
   /// Specification IS-R36) — an explicit, caller-supplied [widget] instance
@@ -94,6 +107,11 @@ class HomeScreenState extends State<HomeScreen> {
   late final UniversalIntentRouter _intentRouter;
   late final AutonomousWorkspaceRuntime _workspaceRuntime;
   late final EventBus _eventBus;
+
+  /// Real, resolved Intent Execution Pipeline (Implementation Specification
+  /// IS-R37) — the ONE thing `_createExperience()` calls to get engineering
+  /// work done; see [HomeScreen.pipeline]'s own doc comment.
+  late final IntentExecutionPipeline _pipeline;
   late final ExperienceOpeningCoordinator _openingCoordinator;
   late final SqliteExperienceRepository _repository;
   late final IntentRepository _intentRepository;
@@ -137,16 +155,17 @@ class HomeScreenState extends State<HomeScreen> {
     // write the SAME World Graph and provider registry (MIS-1 Part 2's
     // ownership finding).
     _composition = widget.composition ?? AppComposition.production();
-    // Implementation Specification IS-R36: sourced from the shared
-    // `AppComposition` instead of constructed locally here — REALITY before
-    // R36 (confirmed by grep): this was the ONE, disconnected,
-    // `AppComposition`-unreachable `ExperienceCreationCoordinator` instance
-    // in the whole app. See `docs/architecture/OPERATING_SYSTEM_COMPOSITION.md`.
-    _coordinator = _composition.experienceCreationCoordinator;
     _workspaceManager = widget.workspaceManager ?? _composition.workspaceManager;
     _intentRouter = widget.intentRouter ?? _composition.intentRouter;
     _workspaceRuntime = widget.workspaceRuntime ?? _composition.workspaceRuntime;
     _eventBus = widget.eventBus ?? _composition.eventBus;
+    // Implementation Specification IS-R37: sourced from the shared
+    // `AppComposition` instead of calling `ExperienceCreationCoordinator`
+    // directly here — REALITY before R37 (confirmed by grep): this was the
+    // ONE real, live production intent-entry point that bypassed
+    // `UniversalIntentRouter` entirely. See
+    // `docs/architecture/INTENT_EXECUTION_PIPELINE.md`.
+    _pipeline = widget.pipeline ?? _composition.intentExecutionPipeline;
     _openingCoordinator = ExperienceOpeningCoordinator();
     _repository = SqliteExperienceRepository();
     _intentRepository = IntentRepository();
@@ -207,7 +226,15 @@ class HomeScreenState extends State<HomeScreen> {
       _createdExperienceName = null;
     });
 
-    final result = await _coordinator.createFromIntent(intent);
+    // Implementation Specification IS-R37: routed through the ONE canonical
+    // production `IntentExecutionPipeline` instead of calling
+    // `ExperienceCreationCoordinator` directly — `RouteTarget.newExperience()`
+    // preserves this box's exact existing UX contract (every submission
+    // independently creates a new experience; there is no "continue" UI
+    // affordance on Home), while genuinely registering the resulting
+    // session in `ExperienceWorkspaceManager` for the first time.
+    final routingResult = await _pipeline.execute(intent, target: const RouteTarget.newExperience());
+    final result = routingResult.creationResult!;
 
     if (!mounted) return;
 
