@@ -18,6 +18,7 @@ import '../world_model/world_model_coordinator.dart';
 import 'anything_runtime.dart';
 import 'experience_renderer.dart';
 import 'experience_router.dart';
+import 'experience_runtime_controller.dart';
 import 'experience_session.dart';
 
 /// Hosts a running Experience inside Anything.
@@ -101,6 +102,16 @@ class ExperienceHostScreen extends StatefulWidget {
   /// second, competing report mechanism.
   final EventBus? eventBus;
 
+  /// Optional, additive runtime controller (Implementation Specification
+  /// IS-R38) — `null` by default, so every existing caller/test that
+  /// constructs `ExperienceHostScreen` without one keeps identical
+  /// behavior. When omitted, this screen builds its own, wrapping the
+  /// `_runtime` it already owns plus [workspaceManager]/[eventBus]/
+  /// [experienceId] — real, valuable deduplication of the reload sequence
+  /// `_runModification`/`_performRollback` used to repeat inline (see
+  /// `docs/architecture/EXPERIENCE_RUNTIME_CONTROLLER.md`).
+  final ExperienceRuntimeController? runtimeController;
+
   const ExperienceHostScreen({
     super.key,
     required this.package,
@@ -115,6 +126,7 @@ class ExperienceHostScreen extends StatefulWidget {
     this.workspaceManager,
     this.workspaceRuntime,
     this.eventBus,
+    this.runtimeController,
   });
 
   @override
@@ -123,6 +135,7 @@ class ExperienceHostScreen extends StatefulWidget {
 
 class _ExperienceHostScreenState extends State<ExperienceHostScreen> {
   late final AnythingRuntime _runtime;
+  late final ExperienceRuntimeController _runtimeController;
   late final ExperienceModificationCoordinator _modificationCoordinator;
   late final ActivityRepository _activity;
   late final ExperienceProtectionService _protectionService;
@@ -154,6 +167,25 @@ class _ExperienceHostScreenState extends State<ExperienceHostScreen> {
   void initState() {
     super.initState();
     _runtime = widget.runtime ?? AnythingRuntime(capabilityPlatform: widget.capabilityPlatform);
+    // Implementation Specification IS-R38: real, additive owner of this
+    // runtime's lifecycle — wraps the SAME `_runtime` this screen already
+    // owns; only used below for the reload (`_runModification`/
+    // `_performRollback`) and terminate (`dispose`) paths, which had ZERO
+    // workspace/event reporting before this milestone. The INITIAL load in
+    // `_loadExperience()` deliberately keeps its own existing
+    // `_reportRuntimeStateToWorkspace`/`_publishRuntimeLoadedEvent` calls
+    // untouched — those publish `change: 'runtime_loaded'`, a literal
+    // string `test/r35_workspace_event_bus_test.dart` already asserts on;
+    // routing the initial load through the controller too would change
+    // that string to `'runtime_started'` and break that real, existing
+    // test for no behavioral gain.
+    _runtimeController = widget.runtimeController ??
+        ExperienceRuntimeController(
+          runtime: _runtime,
+          workspace: widget.workspaceManager,
+          eventPublisher: widget.eventBus == null ? null : WorkspaceEventPublisher(bus: widget.eventBus!, source: 'experience-host-screen'),
+          experienceId: widget.experienceId,
+        );
     _modificationCoordinator = widget.modificationCoordinator ??
         ExperienceModificationCoordinator(
           worldModel: widget.worldModel,
@@ -263,8 +295,12 @@ class _ExperienceHostScreenState extends State<ExperienceHostScreen> {
   void dispose() {
     // Only close runtime if WE created it (not injected).
     // When runtime is injected via DI, the caller owns its lifecycle.
+    // Implementation Specification IS-R38: routed through the controller's
+    // terminate() — same real closeSession() call, now also reporting/
+    // publishing the closing transition (this screen never reported
+    // closure to the workspace/event bus at all before this milestone).
     if (widget.runtime == null) {
-      unawaited(_runtime.closeSession());
+      unawaited(_runtimeController.terminate());
     }
     super.dispose();
   }
@@ -431,8 +467,12 @@ class _ExperienceHostScreenState extends State<ExperienceHostScreen> {
       setState(() => _currentPackage = result.newPackage);
       _lastPreviousPackage = result.previousPackage;
 
-      await _runtime.closeSession();
-      await _runtime.openExperience(_currentPackage);
+      // Implementation Specification IS-R38: the real closeSession()+
+      // openExperience() pair, factored into ExperienceRuntimeController
+      // .reload() — real, evolved `_currentPackage` passed explicitly
+      // (the controller's own currentSession still holds the OLD package
+      // at this point, so its no-arg default would reload the wrong one).
+      await _runtimeController.reload(package: _currentPackage);
       if (!mounted) return;
       setState(() => _router = _runtime.router);
       _reseedAfterReload(preferredScreenId: preReloadScreenId, preferredTabIndex: preReloadTabIndex);
@@ -497,8 +537,9 @@ class _ExperienceHostScreenState extends State<ExperienceHostScreen> {
       // level of undo (see `_lastPreviousPackage`'s doc comment).
       _lastPreviousPackage = null;
 
-      await _runtime.closeSession();
-      await _runtime.openExperience(_currentPackage);
+      // Implementation Specification IS-R38: same real reload primitive as
+      // `_runModification` above.
+      await _runtimeController.reload(package: _currentPackage);
       if (!mounted) return;
       setState(() => _router = _runtime.router);
       _seedDefaultScreen();
