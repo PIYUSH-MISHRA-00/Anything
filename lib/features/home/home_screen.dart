@@ -9,6 +9,7 @@ import 'package:anything/app/app_composition.dart';
 import 'package:anything/app/creation_coordinator.dart';
 import 'package:anything/app/experience_opening_coordinator.dart';
 import 'package:anything/app/experience_workspace_manager.dart';
+import 'package:anything/app/universal_intent_router.dart';
 import 'package:anything/design_system/components/birth_sequence.dart';
 import 'package:anything/design_system/components/anything_chip.dart';
 import 'package:anything/design_system/components/anything_empty_state.dart';
@@ -41,7 +42,17 @@ class HomeScreen extends StatefulWidget {
   /// verifiable scope (see `docs/architecture/EXPERIENCE_WORKSPACE_MANAGER.md`).
   final ExperienceWorkspaceManager? workspaceManager;
 
-  const HomeScreen({super.key, this.composition, this.workspaceManager});
+  /// Optional, additive intent router (Implementation Specification IS-R33)
+  /// — `null` by default, so every existing caller/test that constructs
+  /// `HomeScreen()` without one keeps identical behavior. Stored for a
+  /// future caller to use; matches R32's own precedent exactly — this
+  /// milestone deliberately does NOT reroute `_createExperience`'s existing
+  /// creation flow through it, for the same real regression-risk reasons
+  /// R32 already gave for `workspaceManager` (see
+  /// `docs/architecture/UNIVERSAL_INTENT_ROUTER.md`).
+  final UniversalIntentRouter? intentRouter;
+
+  const HomeScreen({super.key, this.composition, this.workspaceManager, this.intentRouter});
 
   @override
   HomeScreenState createState() => HomeScreenState();
