@@ -1933,3 +1933,52 @@ directly in this environment.
 `WorkspaceEventPublisher`, `IntentExecutionPipeline`, `AnythingKernel`, World
 Model, Engineering Memory all completely untouched (`git diff --stat`).
 `useCompilerPipeline` unaffected, still defaults `false`.
+
+## R39 — Workspace Lifecycle Policy Engine
+
+`test/r39_workspace_lifecycle_policy_engine_test.dart` (15 tests) proves:
+policy evaluation (`evaluateAppLifecycle()` correctly mapped for every real
+`AppLifecycleState` case — `paused`/`hidden` → pause, `resumed` → resume,
+`inactive`/`detached` → no-op; `evaluateWorkspaceSnapshot()` correctly
+produces a pause decision for every running, non-active session and NONE
+for the active session, an already-paused background session, or a
+background session with no live runtime — proven against a real
+multi-session `WorkspaceRuntimeSnapshot` fixture); multiple runtime
+instances (the same multi-session test proves N independent,
+correctly-`sessionId`-targeted decisions in one call); `apply()` (a real
+pause/resume round-trip through a real `ExperienceRuntimeController`,
+asserting both the controller's own `runtime_*` events and the engine's
+`policy_*` events publish in the correct order; a `noAction` decision
+invokes and publishes nothing); background pause / foreground resume (a
+real, live `ExperienceHostScreen`, pumped with a real DI-injected
+`AnythingRuntime`, driven through
+`tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused)`
+then `.resumed` — the real runtime's `status` genuinely transitions; a
+separate test proves `.inactive` does NOT pause it, protecting against
+over-eager pausing on transient system dialogs); regression
+(`ExperienceRuntimeController` used directly, bypassing the policy engine,
+behaves exactly as R38 built it); backward compatibility
+(`ExperienceHostScreen`'s constructor gained no new field this milestone —
+always-on `WidgetsBindingObserver` wiring, proven safe because
+`didChangeAppLifecycleState()` never fires unless a real OS-level
+transition occurs or a test explicitly simulates one, which no pre-R39 test
+does); real `Stopwatch`/`ProcessInfo.currentRss` performance numbers.
+
+No pre-existing test files required any changes — `ExperienceHostScreen`'s
+own public constructor gained no new field this milestone; every existing
+construction path remains unaffected because `AppLifecycleState` observation
+is a real, harmless no-op until a real or explicitly-simulated transition
+occurs.
+
+**Execution result:** implemented and fully, independently validated in the
+implementing environment. Flutter SDK reachable at
+`D:\flutter\bin\flutter.bat`. `flutter analyze`: 71 issues, 0 errors,
+unchanged baseline, zero new issues attributable to this milestone's 2
+changed/new `lib/` files. `flutter test`: see this milestone's own
+Validation Report for the exact full-suite count observed directly in this
+environment.
+`ExperienceRuntimeController`, `AnythingRuntime`, `ExperienceWorkspaceManager`,
+`AutonomousWorkspaceRuntime`, `IntentExecutionPipeline`,
+`UniversalIntentRouter`, `EngineeringLifecycleCoordinator`, `AnythingKernel`,
+World Model, Engineering Memory all completely untouched (`git diff --stat`).
+`useCompilerPipeline` unaffected, still defaults `false`.

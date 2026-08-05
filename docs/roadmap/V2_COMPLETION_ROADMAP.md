@@ -1880,5 +1880,51 @@ in the diff.
 
 See `docs/architecture/EXPERIENCE_RUNTIME_CONTROLLER.md` for the full audit.
 
-**DO NOT START R39 — per this specification's own stop condition, wait
+## Implementation Specification IS-R39 — Workspace Lifecycle Policy Engine, AI Operating System Runtime Policies
+
+**Reality:** no application-lifecycle observation existed anywhere in this
+codebase (`grep` for `AppLifecycleState`/`WidgetsBindingObserver`/
+`didChangeAppLifecycleState` across `lib/` returned zero matches) —
+genuinely new ground, not a rediscovery. `ExperienceWorkspaceManager
+.closeExperience()` also has zero production callers. `AutonomousWorkspaceRuntime
+.captureRuntimeState()` (R34, unmodified) already exposes a ready-made
+active/background session distinction via `WorkspaceRuntimeSnapshot
+.backgroundSessions`.
+
+**The fix:** a new, thin `WorkspaceLifecyclePolicyEngine`
+(`lib/app/workspace_lifecycle_policy_engine.dart`) with pure decision
+methods (`evaluateAppLifecycle()`/`evaluateWorkspaceSnapshot()`) plus one
+real `apply()` method that invokes the existing, unmodified
+`ExperienceRuntimeController` (R38) — no new runtime, no new controller, no
+new snapshot/event type (`WorkspaceUpdated` reused with new `change`
+strings: `policy_pause`/`policy_resume`/`policy_terminate`/`policy_restore`).
+`ExperienceHostScreen` now mixes in `WidgetsBindingObserver` (always-on, no
+new constructor field — proven safe because the observer callback never
+fires during any pre-R39 test) and routes real `AppLifecycleState`
+transitions through the engine to pause/resume its own runtime on real
+app backgrounding/foregrounding. Background Pause, Foreground Resume, and
+Automatic Resume are fully implemented with a real, live trigger; Inactive
+Runtime's decision logic is proven correct for N real sessions but
+deliberately not auto-applied in production (no multi-runtime registry
+exists — building one this milestone would risk a second runtime
+controller); Workspace Close and Session Restore are honestly documented as
+having no real automatic trigger yet; Future Memory Policies are explicitly
+deferred by the specification's own wording.
+
+**Execution result:** implemented and fully, independently validated in the
+implementing environment. Flutter SDK reachable (`D:\flutter\bin\flutter.bat`).
+`flutter analyze`: 71/0, unchanged baseline. `flutter test`: see
+`Anything_R39_Validation_Report.txt` for the exact full-suite count.
+`ExperienceRuntimeController`/`AnythingRuntime`/`IntentExecutionPipeline`/
+`UniversalIntentRouter`/`EngineeringLifecycleCoordinator`/`AnythingKernel`/
+`ExperienceWorkspaceManager`/`AutonomousWorkspaceRuntime`/
+`WorkspaceEventPublisher`/World Model/Engineering Memory all confirmed
+completely untouched via `git diff --stat`. `useCompilerPipeline`
+unaffected, still defaults `false`. Zero new LLM/reasoning calls anywhere
+in the diff.
+
+See `docs/architecture/WORKSPACE_LIFECYCLE_POLICY_ENGINE.md` for the full
+audit.
+
+**DO NOT START R40 — per this specification's own stop condition, wait
 for external architectural review.**
