@@ -9,6 +9,7 @@ import '../app/experience_modification_coordinator.dart';
 import '../app/experience_workspace_manager.dart';
 import '../app/workspace_event_publisher.dart';
 import '../app/workspace_lifecycle_policy_engine.dart';
+import '../app/workspace_runtime_supervisor.dart';
 import '../capabilities/platform/capability_platform.dart';
 import '../core/events/events.dart';
 import '../creation/experience_package.dart';
@@ -113,6 +114,18 @@ class ExperienceHostScreen extends StatefulWidget {
   /// `docs/architecture/EXPERIENCE_RUNTIME_CONTROLLER.md`).
   final ExperienceRuntimeController? runtimeController;
 
+  /// Optional, additive runtime supervisor (Implementation Specification
+  /// IS-R40) — `null` by default, so every existing caller/test that
+  /// constructs `ExperienceHostScreen` without one keeps identical
+  /// behavior. When supplied AND a real workspace `sessionId` resolves for
+  /// [experienceId] (the SAME resolution [_publishRuntimeLoadedEvent]
+  /// already performs), this screen automatically registers its
+  /// [runtimeController] with the supervisor once the runtime finishes
+  /// loading, and unregisters it on [dispose] — real, valuable workspace-
+  /// wide visibility into this screen's runtime with zero behavior change
+  /// when omitted (see `docs/architecture/WORKSPACE_RUNTIME_SUPERVISOR.md`).
+  final WorkspaceRuntimeSupervisor? runtimeSupervisor;
+
   const ExperienceHostScreen({
     super.key,
     required this.package,
@@ -128,6 +141,7 @@ class ExperienceHostScreen extends StatefulWidget {
     this.workspaceRuntime,
     this.eventBus,
     this.runtimeController,
+    this.runtimeSupervisor,
   });
 
   @override
@@ -151,6 +165,14 @@ class _ExperienceHostScreenState extends State<ExperienceHostScreen> with Widget
   String? _editScreenId;
   Map<String, dynamic>? _detailRecordData;
   String? _detailScreenId;
+
+  /// The real sessionId this screen's [ExperienceRuntimeController] was
+  /// registered under with [widget.runtimeSupervisor] (Implementation
+  /// Specification IS-R40) — `null` when no supervisor was supplied, no
+  /// `experienceId` is known, or no matching workspace session resolved.
+  /// Recorded so [dispose] unregisters the EXACT same key, even if the
+  /// workspace's own resolution could theoretically differ later.
+  String? _registeredSupervisorSessionId;
 
   /// The package active immediately before the most recent successful
   /// evolution (Implementation Milestone R7) — powers a single-level
@@ -224,6 +246,7 @@ class _ExperienceHostScreenState extends State<ExperienceHostScreen> with Widget
         _seedDefaultScreen();
         _reportRuntimeStateToWorkspace();
         _publishRuntimeLoadedEvent();
+        _registerWithSupervisor();
       }
     } catch (e) {
       if (mounted) {
@@ -303,6 +326,22 @@ class _ExperienceHostScreenState extends State<ExperienceHostScreen> with Widget
     WorkspaceEventPublisher(bus: eventBus, source: 'experience-host-screen').publishWorkspaceUpdated('runtime_loaded', sessionId);
   }
 
+  /// Real, additive, safe registration (Implementation Specification
+  /// IS-R40) — a harmless no-op when [widget.runtimeSupervisor] is null or
+  /// [widget.experienceId] is unknown, or when no open workspace session
+  /// matches this experience (same real, honest resolution
+  /// [_publishRuntimeLoadedEvent] already uses). Registers THIS screen's
+  /// own, already-real [_runtimeController] — never a second controller.
+  void _registerWithSupervisor() {
+    final supervisor = widget.runtimeSupervisor;
+    final experienceId = widget.experienceId;
+    if (supervisor == null || experienceId == null) return;
+    final sessionId = widget.workspaceManager?.sessionForExperience(experienceId)?.sessionId;
+    if (sessionId == null) return;
+    supervisor.register(sessionId, _runtimeController, experienceId: experienceId);
+    _registeredSupervisorSessionId = sessionId;
+  }
+
   /// Implementation Specification IS-R39: real Background Pause / Foreground
   /// Resume policy — a real, deterministic decision from the real, current
   /// `RuntimeStatus` (never pausing an already-idle/error runtime, never
@@ -322,6 +361,15 @@ class _ExperienceHostScreenState extends State<ExperienceHostScreen> with Widget
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    // Implementation Specification IS-R40: unregister THIS screen's own
+    // registration (if any) — independent of the runtime-ownership check
+    // below, since the registration was always this screen's own, real
+    // action to undo, regardless of who owns closing the underlying
+    // runtime.
+    final registeredSessionId = _registeredSupervisorSessionId;
+    if (registeredSessionId != null) {
+      widget.runtimeSupervisor?.unregister(registeredSessionId);
+    }
     // Only close runtime if WE created it (not injected).
     // When runtime is injected via DI, the caller owns its lifecycle.
     // Implementation Specification IS-R38: routed through the controller's
