@@ -1839,5 +1839,46 @@ LLM/reasoning calls anywhere in the diff.
 
 See `docs/architecture/INTENT_EXECUTION_PIPELINE.md` for the full audit.
 
-**DO NOT START R38 — per this specification's own stop condition, wait
+## Implementation Specification IS-R38 — Experience Runtime Controller, AI Operating System Runtime Lifecycle
+
+**Reality:** `AnythingRuntime` already had a real, tested lifecycle API
+(`openExperience`/`pauseSession`/`resumeSession`/`closeSession`), but
+`pauseSession`/`resumeSession` had zero production callers, and
+`ExperienceHostScreen` duplicated the real `closeSession()`+`openExperience()`
+"reload" pair inline, verbatim, twice — neither call site reported the
+reload to the workspace or published any event. `ExperienceHostScreen`
+`_reportRuntimeStateToWorkspace()` also never forwarded the runtime's own
+real `currentSession` — it hand-built a synthetic stand-in with a fabricated
+id, so `AutonomousWorkspaceRuntime.captureRuntimeState()` (R34) had always
+read a stand-in, never the live runtime.
+
+**The fix:** a new, thin `ExperienceRuntimeController`
+(`lib/runtime/experience_runtime_controller.dart`) composes
+`AnythingRuntime` (unmodified), `ExperienceWorkspaceManager` (R32,
+unmodified), and `WorkspaceEventPublisher` (R35, unmodified) — no new
+runtime, no new snapshot type (`ExperienceSession` itself is sufficient),
+no new event subtype (`WorkspaceUpdated` reused). `ExperienceHostScreen`
+gained one additive, optional constructor field (`runtimeController`); its
+two duplicated inline reload sequences and its owned-runtime `dispose()`
+close now route through the controller's `reload()`/`terminate()` — real
+router re-seeding logic untouched, the existing DI ownership guard
+preserved exactly. A real bug was found and fixed while writing this
+milestone's own tests: `terminate()` initially reported the pre-close,
+still-`running` session; fixed to mark it `closed` via `copyWith()` before
+reporting.
+
+**Execution result:** implemented and fully, independently validated —
+Flutter SDK reachable this milestone (`D:\flutter\bin\flutter.bat`).
+`flutter analyze`: 71/0, unchanged baseline. `flutter test`: see
+`Anything_R38_Validation_Report.txt` for the exact full-suite count.
+`AnythingRuntime`/`IntentExecutionPipeline`/`UniversalIntentRouter`/
+`EngineeringLifecycleCoordinator`/`AnythingKernel`/`ExperienceWorkspaceManager`/
+`WorkspaceEventPublisher`/World Model/Engineering Memory all confirmed
+completely untouched via `git diff --stat`. `useCompilerPipeline`
+unaffected, still defaults `false`. Zero new LLM/reasoning calls anywhere
+in the diff.
+
+See `docs/architecture/EXPERIENCE_RUNTIME_CONTROLLER.md` for the full audit.
+
+**DO NOT START R39 — per this specification's own stop condition, wait
 for external architectural review.**

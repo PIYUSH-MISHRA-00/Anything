@@ -1878,3 +1878,58 @@ honestly rather than fabricate a result" discipline.
 `WorkspaceEventPublisher`, `AnythingKernel`, World Model, Engineering Memory
 all completely untouched (`git diff --stat`). `useCompilerPipeline`
 unaffected, still defaults `false`.
+
+## R38 — Experience Runtime Controller
+
+`test/r38_experience_runtime_controller_test.dart` (15 tests) proves: runtime
+startup (`controller.start(package)` reaches `AnythingRuntime.openExperience()`,
+returns a real running session); pause/resume (the previously-dead
+`AnythingRuntime.pauseSession()`/`.resumeSession()` now have a real, tested
+caller, correctly transitioning both `runtime.status` and
+`currentSession.status`); reload (both the default-current-package and
+explicit-package cases, with a real close+reopen proven via `ExperienceRouter`
+instance identity change — not a no-op — plus a real `StateError` when there
+is nothing to reload); termination (`runtime.status` becomes `idle`,
+`currentSession` becomes `null`); snapshot/restore (a real round-trip:
+`captureSnapshot()` on one runtime, `restore()` on a completely FRESH
+runtime/controller, same package confirmed on the other side — no new
+snapshot type, `ExperienceSession` itself is sufficient); workspace/event
+integration (every transition proven, via object `same()` identity, to
+report the REAL `AnythingRuntime.currentSession` to
+`ExperienceWorkspaceManager` — never the synthetic, fabricated-id session
+`ExperienceHostScreen` used to hand-build — and to publish the correct
+`WorkspaceUpdated.change` string to a real `EventBus` subscriber for every
+transition); regression (`AnythingRuntime`'s own methods called directly,
+bypassing the controller, behave exactly as before); backward compatibility
+(`ExperienceHostScreen()` without `runtimeController` still defaults it to
+`null`; a real widget test proves the existing "Change this app" reload flow
+still works correctly with no controller injected); real `Stopwatch`/
+`ProcessInfo.currentRss` performance numbers.
+
+**Real bug found and fixed during test-writing, not spec-mandated
+speculatively**: `terminate()` initially reported the pre-close session
+(still `SessionStatus.running`) to the workspace — `AnythingRuntime
+.closeSession()` builds a closed-status copy internally but only ever
+exposes it transiently before nulling `currentSession`, so no external
+caller could otherwise observe the real terminal status. Fixed by marking
+the captured closing session `SessionStatus.closed` via `copyWith()` before
+reporting — caught by the workspace-integration test asserting the real
+post-terminate report, not assumed.
+
+No pre-existing test files required any changes — `ExperienceHostScreen`'s
+own public constructor gained one new optional, defaulted-`null` field
+(`runtimeController`), otherwise unchanged; every existing construction path
+(without it) remains unaffected.
+
+**Execution result:** implemented and fully, independently validated in the
+implementing environment. Flutter SDK reachable at `D:\flutter\bin\flutter.bat`
+this milestone (unlike R37's implementing environment). `flutter analyze`:
+71 issues, 0 errors, unchanged baseline, zero new issues attributable to
+this milestone's 2 changed/new `lib/` files. `flutter test`: see this
+milestone's own Validation Report for the exact full-suite count observed
+directly in this environment.
+`ExperienceWorkspaceManager`, `UniversalIntentRouter`, `IntentSessionManager`,
+`EngineeringLifecycleCoordinator`, `AutonomousWorkspaceRuntime`, `EventBus`,
+`WorkspaceEventPublisher`, `IntentExecutionPipeline`, `AnythingKernel`, World
+Model, Engineering Memory all completely untouched (`git diff --stat`).
+`useCompilerPipeline` unaffected, still defaults `false`.
