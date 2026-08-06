@@ -1,4 +1,4 @@
-/// Workspace Experience Switcher — Implementation Specification IS-R43/R44.
+/// Workspace Experience Switcher — Implementation Specification IS-R43/R44/R45.
 ///
 /// Displays currently-running Experiences (the real, active session and
 /// every real background session) and lets the user select a background
@@ -17,25 +17,24 @@
 /// real fix — it tracks the real, already-pushed `Route` per `sessionId` and
 /// pops back to it instead of pushing a duplicate.
 ///
-/// This Switcher now routes its "select a background session" action
-/// through `activationManager.activate()` — the real runtime effect
-/// (target resumes, siblings pause) AND real navigation (revealing that
-/// session's actual, already-running screen) both happen for real. Building
-/// the target route reuses the SAME real, already-running
-/// `ExperienceRuntimeController`/`AnythingRuntime` the background session's
-/// own screen instance is using (via `WorkspaceRuntimeSupervisor.lookup()`),
-/// injected through `ExperienceHostScreen`'s established `runtime:`/
-/// `runtimeController:` DI parameters — never a freshly-constructed one.
+/// R45: the "select a background session" action's route-construction logic
+/// (previously inline here) is now extracted into
+/// `ExperienceEntryPipeline.activateRunningSession()` — the ONE, real,
+/// canonical entry mechanism every production Experience-opening path flows
+/// through, shared with `HomeScreen`'s own call sites. Zero behavior
+/// change: this is a mechanical extraction of the exact same real logic
+/// (reusing the SAME real, already-running `ExperienceRuntimeController`/
+/// `AnythingRuntime` via `WorkspaceRuntimeSupervisor.lookup()`, injected
+/// through `ExperienceHostScreen`'s established `runtime:`/
+/// `runtimeController:` DI parameters — never a freshly-constructed one),
+/// verified by this file's own, unchanged test assertions.
 library;
 
 import 'package:flutter/material.dart';
 
 import '../../app/autonomous_workspace_runtime.dart';
-import '../../app/experience_activation_manager.dart';
-import '../../app/experience_workspace_manager.dart';
-import '../../app/workspace_runtime_supervisor.dart';
+import '../../app/experience_entry_pipeline.dart';
 import '../../app/workspace_scheduling_engine.dart';
-import '../../runtime/experience_host_screen.dart';
 
 /// Opens the Workspace Experience Switcher as a modal bottom sheet — the
 /// same `showModalBottomSheet` pattern `ExperienceHostScreen` already uses
@@ -43,18 +42,14 @@ import '../../runtime/experience_host_screen.dart';
 Future<void> showWorkspaceSwitcher(
   BuildContext context,
   WorkspaceSchedulingEngine scheduler, {
-  required ExperienceActivationManager activationManager,
-  required WorkspaceRuntimeSupervisor runtimeSupervisor,
-  ExperienceWorkspaceManager? workspaceManager,
+  required ExperienceEntryPipeline entryPipeline,
 }) {
   return showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
     builder: (_) => WorkspaceSwitcherSheet(
       scheduler: scheduler,
-      activationManager: activationManager,
-      runtimeSupervisor: runtimeSupervisor,
-      workspaceManager: workspaceManager,
+      entryPipeline: entryPipeline,
     ),
   );
 }
@@ -63,21 +58,17 @@ Future<void> showWorkspaceSwitcher(
 /// hidden inside a builder closure only) so it can be tested directly.
 class WorkspaceSwitcherSheet extends StatefulWidget {
   final WorkspaceSchedulingEngine scheduler;
-  final ExperienceActivationManager activationManager;
-  final WorkspaceRuntimeSupervisor runtimeSupervisor;
 
-  /// Optional — threaded into the revealed `ExperienceHostScreen` the same
-  /// way `HomeScreen`'s own call sites already do; `null` is a safe,
-  /// honest default (matches every other optional DI field in this
-  /// codebase).
-  final ExperienceWorkspaceManager? workspaceManager;
+  /// The unified entry pipeline (Implementation Specification IS-R45) —
+  /// used both for its own `activateRunningSession()` (the real
+  /// navigation step) and its carried `runtimeSupervisor` (to resolve the
+  /// real, already-running controller for a selected background session).
+  final ExperienceEntryPipeline entryPipeline;
 
   const WorkspaceSwitcherSheet({
     super.key,
     required this.scheduler,
-    required this.activationManager,
-    required this.runtimeSupervisor,
-    this.workspaceManager,
+    required this.entryPipeline,
   });
 
   @override
@@ -94,14 +85,15 @@ class _WorkspaceSwitcherSheetState extends State<WorkspaceSwitcherSheet> {
   void _refresh() => setState(() {});
 
   /// Selects a background session — real runtime activation AND real
-  /// navigation, through the one real `ExperienceActivationManager`
-  /// (Implementation Specification IS-R44). Falls back to the real,
-  /// honest R43 behavior (schedule only + a snackbar) when the session's
-  /// real runtime/package is unavailable — a real, honest edge case
-  /// (e.g. the session is tracked by the workspace but was never
-  /// registered with the supervisor), never a fabricated navigation.
+  /// navigation, through `ExperienceEntryPipeline.activateRunningSession()`
+  /// (Implementation Specification IS-R45, extracted from this widget's own
+  /// R44 logic verbatim). Falls back to the real, honest R43 behavior
+  /// (schedule only + a snackbar) when the session's real runtime/package
+  /// is unavailable — a real, honest edge case (e.g. the session is tracked
+  /// by the workspace but was never registered with the supervisor), never
+  /// a fabricated navigation.
   Future<void> _selectForeground(String sessionId, String? name, SessionRuntimeStatus session) async {
-    final controller = widget.runtimeSupervisor.lookup(sessionId);
+    final controller = widget.entryPipeline.runtimeSupervisor?.lookup(sessionId);
     final package = session.runtimeState?.package;
 
     if (controller == null || package == null) {
@@ -120,29 +112,13 @@ class _WorkspaceSwitcherSheetState extends State<WorkspaceSwitcherSheet> {
     // real navigation call sites use) remains valid.
     final navigator = Navigator.of(context);
     navigator.pop();
-    await widget.activationManager.activate(
+    await widget.entryPipeline.activateRunningSession(
       navigator,
       sessionId,
-      createRoute: () => MaterialPageRoute(
-        builder: (_) => ExperienceHostScreen(
-          package: package,
-          experienceName: session.experienceName,
-          experienceId: session.experienceId,
-          workspaceManager: widget.workspaceManager,
-          runtime: controller.runtime,
-          runtimeController: controller,
-          // Deliberately NOT `widget.runtimeSupervisor`: [controller] was
-          // resolved via that SAME supervisor's own `lookup(sessionId)`,
-          // meaning it is already registered — `ExperienceHostScreen
-          // ._registerWithSupervisor()` (unmodified) always calls
-          // `register()` unconditionally when a supervisor is supplied,
-          // which would throw the real `StateError`
-          // `WorkspaceRuntimeSupervisor.register()` (R40, unmodified)
-          // raises on a duplicate sessionId. Omitting it here is the real,
-          // minimal fix — no change to `ExperienceHostScreen` itself.
-          scheduler: widget.scheduler,
-        ),
-      ),
+      controller: controller,
+      package: package,
+      experienceId: session.experienceId,
+      experienceName: session.experienceName,
     );
   }
 

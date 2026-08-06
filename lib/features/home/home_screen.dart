@@ -9,10 +9,13 @@ import 'package:anything/app/app_composition.dart';
 import 'package:anything/app/autonomous_workspace_runtime.dart';
 import 'package:anything/app/creation_coordinator.dart';
 import 'package:anything/app/experience_activation_manager.dart';
+import 'package:anything/app/experience_entry_pipeline.dart';
 import 'package:anything/app/experience_opening_coordinator.dart';
 import 'package:anything/app/experience_workspace_manager.dart';
 import 'package:anything/app/intent_execution_pipeline.dart';
 import 'package:anything/app/universal_intent_router.dart';
+import 'package:anything/app/workspace_event_publisher.dart';
+import 'package:anything/app/workspace_lifecycle_policy_engine.dart';
 import 'package:anything/app/workspace_runtime_supervisor.dart';
 import 'package:anything/app/workspace_scheduling_engine.dart';
 import 'package:anything/core/events/events.dart';
@@ -27,7 +30,6 @@ import 'package:anything/storage/sqlite_experience_repository.dart';
 import 'package:anything/storage/intent_repository.dart';
 import 'package:anything/core/contracts/intent.dart' as core;
 import 'package:anything/core/contracts/protection_provider.dart';
-import 'package:anything/runtime/experience_host_screen.dart';
 import 'package:anything/features/workspace/workspace_switcher.dart';
 
 /// Home screen with production creation pipeline.
@@ -123,7 +125,31 @@ class HomeScreen extends StatefulWidget {
   /// `docs/architecture/EXPERIENCE_ACTIVATION_MANAGER.md`).
   final ExperienceActivationManager? activationManager;
 
-  const HomeScreen({super.key, this.composition, this.workspaceManager, this.intentRouter, this.workspaceRuntime, this.eventBus, this.pipeline, this.runtimeSupervisor, this.scheduler, this.activationManager});
+  /// Optional, additive unified entry pipeline (Implementation
+  /// Specification IS-R45) — `null` by default, so every existing
+  /// caller/test that constructs `HomeScreen()` without one keeps identical
+  /// behavior. REALITY before R45: every real Experience-opening path here
+  /// (Recent list, birth completion, protection resume, and the
+  /// `CreationOpened` reopen branch) called `ExperienceOpeningCoordinator`
+  /// directly, then activated with `sessionId: null` always — no workspace
+  /// session was ever registered for any of them. This screen now routes
+  /// every one of those paths through this pipeline instead (see
+  /// `docs/architecture/UNIFIED_EXPERIENCE_ENTRY_PIPELINE.md`).
+  final ExperienceEntryPipeline? entryPipeline;
+
+  const HomeScreen({
+    super.key,
+    this.composition,
+    this.workspaceManager,
+    this.intentRouter,
+    this.workspaceRuntime,
+    this.eventBus,
+    this.pipeline,
+    this.runtimeSupervisor,
+    this.scheduler,
+    this.activationManager,
+    this.entryPipeline,
+  });
 
   @override
   HomeScreenState createState() => HomeScreenState();
@@ -167,7 +193,12 @@ class HomeScreenState extends State<HomeScreen> {
   /// `ExperienceHostScreen` navigation call site below goes through; see
   /// [HomeScreen.activationManager]'s own doc comment.
   late final ExperienceActivationManager _activationManager;
-  late final ExperienceOpeningCoordinator _openingCoordinator;
+
+  /// Real, resolved Unified Experience Entry Pipeline (Implementation
+  /// Specification IS-R45) — the ONE thing every real Experience-opening
+  /// call site below goes through; see [HomeScreen.entryPipeline]'s own
+  /// doc comment.
+  late final ExperienceEntryPipeline _entryPipeline;
   late final SqliteExperienceRepository _repository;
   late final IntentRepository _intentRepository;
   late final IntentComposer _composer;
@@ -222,9 +253,56 @@ class HomeScreenState extends State<HomeScreen> {
     // `docs/architecture/INTENT_EXECUTION_PIPELINE.md`.
     _pipeline = widget.pipeline ?? _composition.intentExecutionPipeline;
     _runtimeSupervisor = widget.runtimeSupervisor ?? _composition.workspaceRuntimeSupervisor;
-    _scheduler = widget.scheduler ?? _composition.workspaceSchedulingEngine;
-    _activationManager = widget.activationManager ?? _composition.experienceActivationManager;
-    _openingCoordinator = ExperienceOpeningCoordinator();
+    // IS-R45 fix: `_composition.workspaceSchedulingEngine` is bound to
+    // `_composition`'s OWN `workspaceManager`/`workspaceRuntime`/`eventBus`
+    // internally. If a caller overrides any of those three without also
+    // overriding `scheduler`, the composition default would silently
+    // reference a DIFFERENT workspace than the one this screen actually
+    // uses — invisible until something calls `scheduler.scheduleForeground()`
+    // for a session that only exists in the overridden workspace (R45's new
+    // Recent-flow registration is the first real caller to do so). Build a
+    // fresh, consistent scheduler from this screen's own resolved fields in
+    // that case; the bare/no-override case keeps using the exact shared
+    // singleton (identity-sensitive tests are unaffected).
+    final needsConsistentScheduler = widget.scheduler == null &&
+        (widget.workspaceManager != null || widget.workspaceRuntime != null || widget.eventBus != null);
+    _scheduler = widget.scheduler ??
+        (needsConsistentScheduler
+            ? WorkspaceSchedulingEngine(
+                workspaceRuntime: _workspaceRuntime,
+                supervisor: _runtimeSupervisor,
+                policyEngine: const WorkspaceLifecyclePolicyEngine(),
+                workspace: _workspaceManager,
+                eventPublisher: WorkspaceEventPublisher(bus: _eventBus),
+              )
+            : _composition.workspaceSchedulingEngine);
+    _activationManager = widget.activationManager ??
+        (identical(_scheduler, _composition.workspaceSchedulingEngine)
+            ? _composition.experienceActivationManager
+            : ExperienceActivationManager(scheduler: _scheduler, eventPublisher: WorkspaceEventPublisher(bus: _eventBus)));
+    // Implementation Specification IS-R45: built from THIS screen's own
+    // individually-resolved fields above (never from `_composition`
+    // directly) so every existing, established per-field override
+    // (`workspaceManager:`/`runtimeSupervisor:`/etc., R32-R44's own
+    // convention) keeps taking real effect in the real navigation path —
+    // an explicit `widget.entryPipeline` override still wins outright, for
+    // callers/tests that want to inject the whole pipeline at once. A
+    // fresh `ExperienceOpeningCoordinator()` matches this screen's own
+    // pre-R45 behavior exactly (never shared, always constructed locally).
+    _entryPipeline = widget.entryPipeline ??
+        ExperienceEntryPipeline(
+          intentExecutionPipeline: _pipeline,
+          openingCoordinator: ExperienceOpeningCoordinator(),
+          activationManager: _activationManager,
+          workspaceManager: _workspaceManager,
+          worldModel: _composition.worldModel,
+          capabilityPlatform: _composition.capabilityPlatform,
+          engineeringMemory: _composition.engineeringMemory,
+          workspaceRuntime: _workspaceRuntime,
+          eventBus: _eventBus,
+          runtimeSupervisor: _runtimeSupervisor,
+          scheduler: _scheduler,
+        );
     _repository = SqliteExperienceRepository();
     _intentRepository = IntentRepository();
     _composer = IntentComposer(_composition.kernel);
@@ -349,49 +427,27 @@ class HomeScreenState extends State<HomeScreen> {
     _loadRecent();
   }
 
-  /// Open an Experience through the trusted opening coordinator.
+  /// Open an Experience through the unified entry pipeline (Implementation
+  /// Specification IS-R45) — real workspace-session registration (if none
+  /// exists yet) and real runtime + navigation activation, replacing the
+  /// pre-R45 direct `ExperienceOpeningCoordinator` + raw-`activate()` call
+  /// that always left `sessionId: null`.
   Future<void> _openViaCoordinator(
     String experienceId,
     String experienceName,
   ) async {
     if (!mounted) return;
 
-    final result = await _openingCoordinator.openExperience(experienceId);
+    final result = await _entryPipeline.activateExperience(Navigator.of(context), experienceId);
 
     if (!mounted) return;
 
     switch (result) {
       case OpenReady():
-        // Implementation Specification IS-R44: routed through the ONE
-        // real Experience Activation Manager instead of a raw
-        // Navigator.push — avoids pushing a second ExperienceHostScreen
-        // for a session that's already open (e.g. reached via the
-        // Switcher). `sessionId` resolves to `null` for an Experience
-        // with no workspace session (the real, honest "Recent" list
-        // case, unchanged by this milestone), falling back to a plain,
-        // untracked push exactly as before.
-        _activationManager.activate(
-          Navigator.of(context),
-          _workspaceManager.sessionForExperience(result.experienceId)?.sessionId,
-          createRoute: () => MaterialPageRoute(
-            builder: (_) => ExperienceHostScreen(
-              package: result.package,
-              experienceName: result.experienceName,
-              experienceId: result.experienceId,
-              worldModel: _composition.worldModel,
-              capabilityPlatform: _composition.capabilityPlatform,
-              engineeringMemory: _composition.engineeringMemory,
-              workspaceManager: _workspaceManager,
-              workspaceRuntime: _workspaceRuntime,
-              eventBus: _eventBus,
-              runtimeSupervisor: _runtimeSupervisor,
-              scheduler: _scheduler,
-            ),
-          ),
-        ).then((_) => _loadRecent());
+        _loadRecent();
 
       case OpenProtectionInputRequired():
-        // Show time input flow, then resume through coordinator.
+        // Show time input flow, then resume through the pipeline.
         await _showProtectionInputAndResume(
           result.experienceId,
           result.experienceName,
@@ -460,33 +516,16 @@ class HomeScreenState extends State<HomeScreen> {
         minutes: now.minute,
         seconds: now.second,
       );
-      final openResult = await _openingCoordinator
-          .openProtectedExperienceWithSeed(
-            experienceId: experienceId,
-            timeSeed: timeSeed,
-          );
+      // Implementation Specification IS-R45: routed through the unified
+      // entry pipeline — real workspace-session registration + activation,
+      // same real contract as `_openViaCoordinator`'s own `OpenReady` case.
+      final openResult = await _entryPipeline.activateProtectedExperience(
+        Navigator.of(context),
+        experienceId: experienceId,
+        timeSeed: timeSeed,
+      );
       if (openResult is OpenReady && mounted) {
-        // Implementation Specification IS-R44: same real activation
-        // routing as `_openViaCoordinator`'s own `OpenReady` case above.
-        _activationManager.activate(
-          Navigator.of(context),
-          _workspaceManager.sessionForExperience(openResult.experienceId)?.sessionId,
-          createRoute: () => MaterialPageRoute(
-            builder: (_) => ExperienceHostScreen(
-              package: openResult.package,
-              experienceName: openResult.experienceName,
-              experienceId: openResult.experienceId,
-              worldModel: _composition.worldModel,
-              capabilityPlatform: _composition.capabilityPlatform,
-              engineeringMemory: _composition.engineeringMemory,
-              workspaceManager: _workspaceManager,
-              workspaceRuntime: _workspaceRuntime,
-              eventBus: _eventBus,
-              runtimeSupervisor: _runtimeSupervisor,
-              scheduler: _scheduler,
-            ),
-          ),
-        ).then((_) => _loadRecent());
+        _loadRecent();
       } else if (openResult is OpenFailed && mounted) {
         ScaffoldMessenger.of(
           context,
@@ -522,33 +561,15 @@ class HomeScreenState extends State<HomeScreen> {
         seconds: customDateTime.second,
       );
 
-      final openResult = await _openingCoordinator
-          .openProtectedExperienceWithSeed(
-            experienceId: experienceId,
-            timeSeed: timeSeed,
-          );
+      // Implementation Specification IS-R45: same real pipeline routing as
+      // the "current time" branch above.
+      final openResult = await _entryPipeline.activateProtectedExperience(
+        Navigator.of(context),
+        experienceId: experienceId,
+        timeSeed: timeSeed,
+      );
       if (openResult is OpenReady && mounted) {
-        // Implementation Specification IS-R44: same real activation
-        // routing as `_openViaCoordinator`'s own `OpenReady` case above.
-        _activationManager.activate(
-          Navigator.of(context),
-          _workspaceManager.sessionForExperience(openResult.experienceId)?.sessionId,
-          createRoute: () => MaterialPageRoute(
-            builder: (_) => ExperienceHostScreen(
-              package: openResult.package,
-              experienceName: openResult.experienceName,
-              experienceId: openResult.experienceId,
-              worldModel: _composition.worldModel,
-              capabilityPlatform: _composition.capabilityPlatform,
-              engineeringMemory: _composition.engineeringMemory,
-              workspaceManager: _workspaceManager,
-              workspaceRuntime: _workspaceRuntime,
-              eventBus: _eventBus,
-              runtimeSupervisor: _runtimeSupervisor,
-              scheduler: _scheduler,
-            ),
-          ),
-        ).then((_) => _loadRecent());
+        _loadRecent();
       } else if (openResult is OpenFailed && mounted) {
         ScaffoldMessenger.of(
           context,
@@ -557,7 +578,7 @@ class HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  /// Open an Experience from the recent list via the trusted coordinator.
+  /// Open an Experience from the recent list via the unified entry pipeline.
   void _openExperience(ExperienceMetadataRecord exp) async {
     await _openViaCoordinator(exp.id, exp.name);
   }
@@ -615,9 +636,7 @@ class HomeScreenState extends State<HomeScreen> {
                       onPressed: () => showWorkspaceSwitcher(
                         context,
                         _scheduler,
-                        activationManager: _activationManager,
-                        runtimeSupervisor: _runtimeSupervisor,
-                        workspaceManager: _workspaceManager,
+                        entryPipeline: _entryPipeline,
                       ),
                     ),
                     Container(

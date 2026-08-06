@@ -204,6 +204,33 @@ class IntentSessionManager {
     }
   }
 
+  /// Registers an ALREADY-RESOLVED, already-loaded Experience as a new real
+  /// session — Implementation Specification IS-R45. For entry paths that
+  /// resolve identity by explicit `experienceId` (Recent list, birth
+  /// completion, protection resume) rather than by intent-expression
+  /// disambiguation. Never touches `ExperienceCreationCoordinator`/
+  /// `AnythingKernel` — this path has nothing to reason about, the
+  /// Experience is already known. Reuses the real, existing
+  /// `CreationOpened`/`SessionStartResult` shape [startSession] already
+  /// produces for its own "Opened" case, so nothing downstream needs to
+  /// change to understand a session started this way.
+  Future<SessionStartResult> startSessionForExistingExperience({
+    required String experienceId,
+    required String experienceName,
+  }) async {
+    final sessionId = 'session-${DateTime.now().microsecondsSinceEpoch}-${_sessionCounter++}';
+    final state = SessionState(sessionId: sessionId);
+    state.currentExperienceId = experienceId;
+    state.currentExperienceName = experienceName;
+    state.currentEngineeringState = await _engineeringMemory.load(experienceId);
+    _sessions[sessionId] = state;
+    await _record(state, type: 'session_started', message: 'Opened $experienceName');
+    return SessionStartResult(
+      sessionId: sessionId,
+      creationResult: CreationOpened(experienceId: experienceId, experienceName: experienceName, message: 'Opened $experienceName'),
+    );
+  }
+
   Future<void> _record(SessionState state, {required String type, required String message, int? durationMs}) async {
     final event = ActivityEvent(
       id: '${state.sessionId}-${state.timeline.length}',

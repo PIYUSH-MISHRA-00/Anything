@@ -24,6 +24,8 @@ import 'package:anything/app/autonomous_workspace_runtime.dart';
 import 'package:anything/app/creation_coordinator.dart';
 import 'package:anything/app/engineering_lifecycle_coordinator.dart';
 import 'package:anything/app/experience_activation_manager.dart';
+import 'package:anything/app/experience_entry_pipeline.dart';
+import 'package:anything/app/experience_opening_coordinator.dart';
 import 'package:anything/app/experience_workspace_manager.dart';
 import 'package:anything/app/intent_execution_pipeline.dart';
 import 'package:anything/app/intent_session_manager.dart';
@@ -162,6 +164,16 @@ class AppComposition {
   /// `docs/architecture/EXPERIENCE_ACTIVATION_MANAGER.md`.
   final ExperienceActivationManager experienceActivationManager;
 
+  /// The shared Unified Experience Entry Pipeline (Implementation
+  /// Specification IS-R45) — the ONE canonical entry mechanism every real
+  /// production Experience-opening path (create, Recent list, birth
+  /// completion, protection resume, Workspace Switcher) flows through,
+  /// composed from [intentExecutionPipeline]/[experienceActivationManager]/
+  /// [workspaceManager]/the other already-shared services above, plus a
+  /// dedicated, real `ExperienceOpeningCoordinator`. See
+  /// `docs/architecture/UNIFIED_EXPERIENCE_ENTRY_PIPELINE.md`.
+  final ExperienceEntryPipeline experienceEntryPipeline;
+
   AppComposition._({
     required this.experienceRepository,
     required this.worldModel,
@@ -185,6 +197,7 @@ class AppComposition {
     required this.workspaceRuntimeSupervisor,
     required this.workspaceSchedulingEngine,
     required this.experienceActivationManager,
+    required this.experienceEntryPipeline,
   });
 
   /// Builds the real, production composition graph. Every dependency below
@@ -285,6 +298,26 @@ class AppComposition {
     // above — never a second scheduler, never a second Navigator.
     final experienceActivationManager = ExperienceActivationManager(scheduler: workspaceSchedulingEngine, eventPublisher: eventPublisher);
 
+    // Implementation Specification IS-R45: the one shared entry pipeline,
+    // composed from [intentExecutionPipeline]/[experienceActivationManager]/
+    // the other already-shared services above, plus a dedicated, real
+    // `ExperienceOpeningCoordinator` (stateless-ish, same reasoning as
+    // `WorkspaceLifecyclePolicyEngine`'s own shared-inline-instance
+    // precedent) — never a second scheduler, never a second Navigator.
+    final experienceEntryPipeline = ExperienceEntryPipeline(
+      intentExecutionPipeline: intentExecutionPipeline,
+      openingCoordinator: ExperienceOpeningCoordinator(),
+      activationManager: experienceActivationManager,
+      workspaceManager: workspaceManager,
+      worldModel: worldModel,
+      capabilityPlatform: capabilityPlatform,
+      engineeringMemory: engineeringMemory,
+      workspaceRuntime: workspaceRuntime,
+      eventBus: eventBus,
+      runtimeSupervisor: workspaceRuntimeSupervisor,
+      scheduler: workspaceSchedulingEngine,
+    );
+
     return AppComposition._(
       experienceRepository: experienceRepository,
       worldModel: worldModel,
@@ -308,6 +341,7 @@ class AppComposition {
       workspaceRuntimeSupervisor: workspaceRuntimeSupervisor,
       workspaceSchedulingEngine: workspaceSchedulingEngine,
       experienceActivationManager: experienceActivationManager,
+      experienceEntryPipeline: experienceEntryPipeline,
     );
   }
 }

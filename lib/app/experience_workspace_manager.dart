@@ -92,6 +92,26 @@ class ExperienceWorkspaceManager {
     return result;
   }
 
+  /// Opens an ALREADY-RESOLVED, already-loaded experience by explicit id —
+  /// Implementation Specification IS-R45. Mirrors [openExperience]'s exact
+  /// real bookkeeping (tracks the session as open, activates it if it's
+  /// the workspace's first) but delegates to
+  /// `IntentSessionManager.startSessionForExistingExperience()` instead of
+  /// `startSession(Intent)` — never touches the Kernel/AI boundary. For
+  /// entry paths that already know exactly which Experience to open
+  /// (Recent list, birth completion, protection resume) rather than
+  /// resolving one from ambiguous intent text.
+  Future<SessionStartResult> openExistingExperience({
+    required String experienceId,
+    required String experienceName,
+  }) async {
+    final result = await _sessionManager.startSessionForExistingExperience(experienceId: experienceId, experienceName: experienceName);
+    _openSessionIds.add(result.sessionId);
+    _activeSessionId ??= result.sessionId;
+    await _record(type: 'workspace_opened', sessionId: result.sessionId, message: 'Opened session ${result.sessionId}');
+    return result;
+  }
+
   /// Continues an already-open experience: delegates entirely to the real,
   /// unmodified `IntentSessionManager.continueSession()` — never
   /// re-implements evolution/regeneration logic.
