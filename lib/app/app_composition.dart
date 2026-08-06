@@ -54,6 +54,7 @@ import 'package:anything/security/credential_vault.dart';
 import 'package:anything/services/provider_registry.dart';
 import 'package:anything/software_cognition/software_cognition_coordinator.dart';
 import 'package:anything/storage/engineering_memory_repository.dart';
+import 'package:anything/storage/knowledge_repository.dart';
 import 'package:anything/storage/sqlite_experience_repository.dart';
 import 'package:anything/storage/world_model_repository.dart';
 import 'package:anything/world_model/world_model_coordinator.dart';
@@ -211,7 +212,22 @@ class AppComposition {
 
     final worldModel = WorldModelCoordinator(persistence: WorldModelRepository(experienceRepository: experienceRepository));
 
-    final knowledgeEngine = KnowledgeAcquisitionEngine(searchProvider: DuckDuckGoSearchProvider(), webweavexAdapter: WebWeaveXAdapter());
+    // Implementation Specification IS-R48: knowledge now survives restart.
+    // The SAME `WebWeaveXAdapter` instance is threaded into both the engine
+    // (extraction/normalization) and the cache (canonical representation for
+    // persistence), so there is exactly one WebWeaveX boundary object in the
+    // production graph — never two adapters that could canonicalize
+    // differently. `KnowledgeCache` remains the single cache;
+    // `KnowledgeRepository` is its durable backing store, not a second cache.
+    final webweavexAdapter = WebWeaveXAdapter();
+    final knowledgeEngine = KnowledgeAcquisitionEngine(
+      searchProvider: DuckDuckGoSearchProvider(),
+      webweavexAdapter: webweavexAdapter,
+      cache: KnowledgeCache(
+        repository: KnowledgeRepository(),
+        canonicalizer: webweavexAdapter,
+      ),
+    );
 
     final capabilityPlatform = CapabilityPlatform()
       ..register(ClockCapability())

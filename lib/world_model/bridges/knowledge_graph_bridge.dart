@@ -5,16 +5,27 @@
 /// exclusively package:webweavex's job via KnowledgeGraphBuilder.
 ///
 /// Identity (Implementation Milestone R2): resolved from [sourceUri],
-/// NOT [resourceId]. REALITY: `KnowledgeResource.id` (the origin of
-/// `resourceId`) is assigned `'wwx-${microsecondsSinceEpoch}'` at
-/// acquisition time (`webweavex_adapter.dart`) — a fresh value on every
-/// fetch, by design, since it identifies the acquisition event, not the
-/// resource. Using it as the World Graph identity would mean the SAME
-/// URL, re-acquired later, always mints a brand-new node — the opposite
-/// of R2's "repeated acquisition must not duplicate nodes" requirement.
-/// `sourceUri` is the real, stable "same knowledge resource" key
-/// already used for local dedup (`KnowledgeAcquisitionEngine._deduplicate`
-/// keys on `contentHash ?? sourceUri`); reusing it here means
+/// NOT [resourceId].
+///
+/// ORIGINAL R2 RATIONALE, NOW OBSOLETE — corrected by IS-R48, documentation
+/// only, no behavior change. This paragraph used to state that
+/// `KnowledgeResource.id` is assigned `'wwx-${microsecondsSinceEpoch}'` at
+/// acquisition time — "a fresh value on every fetch, by design" — and that
+/// using it as World Graph identity would therefore mint a brand-new node
+/// for every re-acquisition. That was accurate when R2 was written, and it
+/// stopped being true at IS-R47: resource identity is now derived from
+/// WebWeaveX's `stableSerialize` over the identity-bearing fields, so the
+/// same URL with the same normalized content yields the SAME id on every
+/// acquisition and across restarts (IS-R48).
+///
+/// THE R2 DECISION STILL STANDS, on a stronger footing than before.
+/// `sourceUri` remains the correct World Graph identity because it is the
+/// "same knowledge resource" key even when the CONTENT legitimately changes
+/// — a page edited between fetches now correctly produces a different
+/// canonical id, and keying the graph on that id would still split one real
+/// entity into two nodes. `sourceUri` is also the key already used for local
+/// dedup (`KnowledgeAcquisitionEngine._deduplicate` keys on
+/// `contentHash ?? sourceUri`); reusing it here means
 /// `GraphMerge`'s existing identity-based dedup (identical
 /// identity+kind+label -> clean no-op merge, re-verified this milestone)
 /// correctly recognizes a re-fetch of the same URL as the SAME node. If

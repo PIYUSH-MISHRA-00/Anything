@@ -75,6 +75,21 @@ class KnowledgeResource {
     return sha256.convert(bytes).toString();
   }
 
+  /// IS-R48: `content` is now included.
+  ///
+  /// REALITY before R48: `toJson()` omitted `content` entirely and
+  /// `fromJson()` never read it, so `KnowledgeResource.fromJson(r.toJson())`
+  /// silently returned a resource with `content == null`. That was already a
+  /// latent round-trip bug in `KnowledgeBundle.toJson()/fromJson()` (the only
+  /// consumers), and it becomes load-bearing once resources are persisted:
+  /// `WebWeaveXAdapter.canonicalRepresentation()` includes `content`, so a
+  /// content-less round trip would produce a DIFFERENT canonical
+  /// representation after restart — breaking this milestone's central
+  /// guarantee.
+  ///
+  /// `retrievedAt` remains a separate, first-class field rather than part of
+  /// identity: it is real provenance about WHEN a fetch happened, and IS-R47
+  /// deliberately excludes it from the canonical representation.
   Map<String, dynamic> toJson() => {
     'id': id,
     'type': type.name,
@@ -82,6 +97,7 @@ class KnowledgeResource {
     'sourceUri': sourceUri,
     'sourceDomain': sourceDomain,
     'retrievedAt': retrievedAt.toIso8601String(),
+    'content': content,
     'contentHash': contentHash,
     'language': language,
     'format': format,
@@ -103,6 +119,7 @@ class KnowledgeResource {
       sourceUri: json['sourceUri'] as String,
       sourceDomain: json['sourceDomain'] as String,
       retrievedAt: DateTime.parse(json['retrievedAt'] as String),
+      content: json['content'] as String?,
       contentHash: json['contentHash'] as String?,
       language: json['language'] as String? ?? 'en',
       format: json['format'] as String? ?? 'text/html',

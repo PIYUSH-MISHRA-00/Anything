@@ -21,6 +21,7 @@ library;
 import 'package:uuid/uuid.dart';
 
 import 'package:anything/kernel/specification/experience_spec.dart';
+import 'package:anything/storage/knowledge_repository.dart';
 import 'knowledge_resource.dart';
 import 'knowledge_bundle.dart';
 import 'search_provider.dart';
@@ -271,14 +272,56 @@ class KnowledgeAcquisitionEngine {
 
 /// Local knowledge cache, keyed by (query, language, provider, options).
 ///
-/// In-memory and process-scoped: "offline mode reuses cached knowledge"
-/// within a session/process lifetime (e.g. the knowledge refinement loop's
-/// repeated rounds, or repeated Experience-modification requests in the
-/// same running app instance). Cross-restart persistence is not required
-/// by this milestone's scope and is a documented limitation, not a gap
-/// hidden by fabricated behavior.
+/// THE single canonical knowledge cache. There is no second cache, no
+/// `PersistentKnowledgeCache`, and no cache hierarchy — certified by
+/// `test/r46_architectural_integrity_certification_test.dart`.
+///
+/// PERSISTENCE (Implementation Specification IS-R48) is an implementation
+/// detail of this class, not a layer above or beside it. Supply a
+/// [KnowledgeRepository] and a [WebWeaveXAdapter] and the same [put]/[get]/
+/// [clear] API additionally reads and writes durable rows; supply neither —
+/// the default — and behaviour is byte-identical to the pre-R48, purely
+/// in-memory cache, which is what keeps every existing caller and test
+/// untouched.
+///
+/// RESTORATION IS LAZY AND INCREMENTAL, BY DESIGN. There is no startup scan
+/// and no eager load. A [get] that misses in memory hydrates exactly ONE
+/// cache key's rows from storage and promotes them into memory; nothing else
+/// is read. IS-R48's own performance rule requires bounded startup with "no
+/// eager loading of unnecessary resources" and "incremental cache
+/// restoration" — loading on first use is the maximally incremental form of
+/// that, and it needs no startup hook at all.
+///
+/// INVALIDATION reuses the policy that already existed rather than inventing
+/// one: [put] replaces a key outright and [clear] empties everything. The
+/// knowledge subsystem has no TTL, eviction or staleness rule anywhere (a
+/// repository-wide search at R48 found none), so there is no expiration
+/// policy engine to extend — and R48 deliberately does not introduce a
+/// second one. The persisted rows follow the in-memory semantics exactly:
+/// `putResources()` deletes then re-inserts, so a key never accumulates
+/// stale rows.
 class KnowledgeCache {
   final Map<String, List<KnowledgeResource>> _cache = {};
+
+  /// Durable backing store. `null` (the default) means purely in-memory.
+  final KnowledgeRepository? _repository;
+
+  /// Supplies the canonical representation persisted alongside each resource.
+  /// Held as the adapter rather than a raw function so this class never
+  /// imports `package:webweavex` (R46 invariant I-21b, I-21d).
+  final WebWeaveXAdapter? _canonicalizer;
+
+  KnowledgeCache({
+    KnowledgeRepository? repository,
+    WebWeaveXAdapter? canonicalizer,
+  }) : _repository = repository,
+       _canonicalizer = canonicalizer;
+
+  /// Persistence needs BOTH a store to write to and a canonicalizer to
+  /// produce the canonical representation that must survive the round trip.
+  /// With only one of the two, this cache stays purely in-memory rather than
+  /// persisting something it cannot canonicalize.
+  bool get isPersistent => _repository != null && _canonicalizer != null;
 
   /// Resources stored via the legacy [store] API (no query key attached —
   /// e.g. pre-seeded by a caller that already knows what it wants cached
@@ -291,11 +334,37 @@ class KnowledgeCache {
     KnowledgeCacheKey key,
     List<KnowledgeResource> resources,
   ) async {
-    _cache[key.toStableString()] = List.unmodifiable(resources);
+    final stableKey = key.toStableString();
+    _cache[stableKey] = List.unmodifiable(resources);
+    if (!isPersistent) return;
+    await _repository!.putResources(stableKey, [
+      for (final resource in resources)
+        PersistedKnowledgeResource(
+          resource: resource,
+          canonicalRepresentation: _canonicalizer!.canonicalRepresentation(
+            resource,
+          ),
+        ),
+    ]);
   }
 
+  /// Memory first; on a miss, hydrate exactly this ONE key from storage and
+  /// promote it into memory so the next hit costs nothing. Nothing else is
+  /// read — this is the incremental restoration path.
   Future<List<KnowledgeResource>?> get(KnowledgeCacheKey key) async {
-    return _cache[key.toStableString()];
+    final stableKey = key.toStableString();
+    final inMemory = _cache[stableKey];
+    if (inMemory != null) return inMemory;
+    if (!isPersistent) return null;
+
+    final persisted = await _repository!.resourcesFor(stableKey);
+    if (persisted == null) return null;
+
+    final restored = List<KnowledgeResource>.unmodifiable(
+      persisted.map((e) => e.resource),
+    );
+    _cache[stableKey] = restored;
+    return restored;
   }
 
   /// Legacy bulk store: adds resources to a query-less pool, still
@@ -325,7 +394,11 @@ class KnowledgeCache {
   Future<void> clear() async {
     _cache.clear();
     _legacyPool.clear();
+    if (_repository != null) await _repository.clear();
   }
 
+  /// In-memory key count. Deliberately NOT a durable count: it reports what
+  /// is resident right now, which is what every pre-R48 caller already meant
+  /// by it. Durable counts come from `KnowledgeRepository.resourceCount()`.
   int get size => _cache.length;
 }
