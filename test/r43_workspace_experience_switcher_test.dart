@@ -35,6 +35,7 @@ import 'package:anything/app/app_composition.dart';
 import 'package:anything/app/autonomous_workspace_runtime.dart';
 import 'package:anything/app/creation_coordinator.dart';
 import 'package:anything/app/engineering_lifecycle_coordinator.dart';
+import 'package:anything/app/experience_activation_manager.dart';
 import 'package:anything/app/experience_workspace_manager.dart';
 import 'package:anything/app/intent_session_manager.dart';
 import 'package:anything/app/workspace_lifecycle_policy_engine.dart';
@@ -116,6 +117,7 @@ class _Rig {
   final AutonomousWorkspaceRuntime workspaceRuntime;
   final WorkspaceRuntimeSupervisor supervisor;
   final WorkspaceSchedulingEngine scheduler;
+  final ExperienceActivationManager activationManager;
 
   _Rig({
     required this.repository,
@@ -124,6 +126,7 @@ class _Rig {
     required this.workspaceRuntime,
     required this.supervisor,
     required this.scheduler,
+    required this.activationManager,
   });
 
   static Future<_Rig> create(List<SemanticApp> reasonerSequence, {String? dbName}) async {
@@ -142,8 +145,9 @@ class _Rig {
     final supervisor = WorkspaceRuntimeSupervisor();
     const policyEngine = WorkspaceLifecyclePolicyEngine();
     final scheduler = WorkspaceSchedulingEngine(workspaceRuntime: workspaceRuntime, supervisor: supervisor, policyEngine: policyEngine, workspace: workspace);
+    final activationManager = ExperienceActivationManager(scheduler: scheduler);
 
-    return _Rig(repository: repository, creationCoordinator: creationCoordinator, workspace: workspace, workspaceRuntime: workspaceRuntime, supervisor: supervisor, scheduler: scheduler);
+    return _Rig(repository: repository, creationCoordinator: creationCoordinator, workspace: workspace, workspaceRuntime: workspaceRuntime, supervisor: supervisor, scheduler: scheduler, activationManager: activationManager);
   }
 
   /// Opens a real, NEW workspace session AND registers a real, started
@@ -215,7 +219,7 @@ void main() {
         await rig.openAndRegister('track my todos');
       });
 
-      await tester.pumpWidget(MaterialApp(home: Scaffold(body: WorkspaceSwitcherSheet(scheduler: rig.scheduler))));
+      await tester.pumpWidget(MaterialApp(home: Scaffold(body: WorkspaceSwitcherSheet(scheduler: rig.scheduler, activationManager: rig.activationManager, runtimeSupervisor: rig.supervisor, workspaceManager: rig.workspace))));
       await tester.pump();
 
       expect(find.text('Camp Log'), findsOneWidget, reason: 'the real active session (first opened) must render');
@@ -232,7 +236,7 @@ void main() {
         rig = await _Rig.create([_app('Camp Log')]);
       });
 
-      await tester.pumpWidget(MaterialApp(home: Scaffold(body: WorkspaceSwitcherSheet(scheduler: rig.scheduler))));
+      await tester.pumpWidget(MaterialApp(home: Scaffold(body: WorkspaceSwitcherSheet(scheduler: rig.scheduler, activationManager: rig.activationManager, runtimeSupervisor: rig.supervisor, workspaceManager: rig.workspace))));
       await tester.pump();
 
       expect(find.text('No apps are currently running.'), findsOneWidget);
@@ -253,7 +257,7 @@ void main() {
       });
       expect(rig.workspace.activeSessionId, sessionA);
 
-      await tester.pumpWidget(MaterialApp(home: Scaffold(body: WorkspaceSwitcherSheet(scheduler: rig.scheduler))));
+      await tester.pumpWidget(MaterialApp(home: Scaffold(body: WorkspaceSwitcherSheet(scheduler: rig.scheduler, activationManager: rig.activationManager, runtimeSupervisor: rig.supervisor, workspaceManager: rig.workspace))));
       await tester.pump();
 
       await tester.tap(find.text('Book Club'));
@@ -278,7 +282,7 @@ void main() {
         await rig.openAndRegister('track my book club');
       });
 
-      await tester.pumpWidget(MaterialApp(home: Scaffold(body: WorkspaceSwitcherSheet(scheduler: rig.scheduler))));
+      await tester.pumpWidget(MaterialApp(home: Scaffold(body: WorkspaceSwitcherSheet(scheduler: rig.scheduler, activationManager: rig.activationManager, runtimeSupervisor: rig.supervisor, workspaceManager: rig.workspace))));
       await tester.pump();
       expect(find.text('Camp Log'), findsOneWidget);
 
@@ -291,7 +295,7 @@ void main() {
       // Navigator.pop after a real switch) reading the scheduler's now
       // real, current state — proving the refresh is a genuine re-read,
       // never a stale, cached list.
-      await tester.pumpWidget(MaterialApp(home: Scaffold(body: WorkspaceSwitcherSheet(scheduler: rig.scheduler))));
+      await tester.pumpWidget(MaterialApp(home: Scaffold(body: WorkspaceSwitcherSheet(scheduler: rig.scheduler, activationManager: rig.activationManager, runtimeSupervisor: rig.supervisor, workspaceManager: rig.workspace))));
       await tester.pump();
 
       final campLogTile = tester.widget<ListTile>(find.widgetWithText(ListTile, 'Camp Log'));
@@ -410,7 +414,7 @@ void main() {
       });
 
       final sw = Stopwatch()..start();
-      await tester.pumpWidget(MaterialApp(home: Scaffold(body: WorkspaceSwitcherSheet(scheduler: rig.scheduler))));
+      await tester.pumpWidget(MaterialApp(home: Scaffold(body: WorkspaceSwitcherSheet(scheduler: rig.scheduler, activationManager: rig.activationManager, runtimeSupervisor: rig.supervisor, workspaceManager: rig.workspace))));
       await tester.pump();
       sw.stop();
       // ignore: avoid_print
