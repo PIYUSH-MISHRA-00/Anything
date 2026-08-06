@@ -56,6 +56,7 @@ import 'package:anything/core/contracts/intent.dart';
 import 'package:anything/core/contracts/model_provider.dart';
 import 'package:anything/core/events/events.dart';
 import 'package:anything/creation/experience_package.dart';
+import 'package:anything/features/experiences/experiences_screen.dart';
 import 'package:anything/features/home/home_screen.dart';
 import 'package:anything/kernel/anything_kernel.dart';
 import 'package:anything/runtime/anything_runtime.dart';
@@ -494,9 +495,113 @@ void main() {
     });
   });
 
+  // ── My Apps library (`ExperiencesScreen`) — the real production entry
+  // surface R45's first pass MISSED entirely. ────────────────────────────
+  //
+  // REALITY (found by re-auditing every `Navigator.push`/`ExperienceHostScreen`
+  // call site in lib/ AFTER R45 shipped): `ExperiencesScreen` is a real,
+  // live production screen — the "My Apps" tab, constructed unconditionally
+  // in `AnythingAppShell._screenBuilders` (`lib/app/app_shell.dart`). All
+  // THREE of its Experience-opening paths (library tap, protection resume
+  // "current time", protection resume "custom time") called
+  // `ExperienceOpeningCoordinator` directly — through their OWN privately
+  // constructed instance, not even the shared one — and then raw-
+  // `Navigator.push`ed `ExperienceHostScreen`, registering NO workspace
+  // session, reaching NO scheduler, NO runtime supervisor and NO
+  // `ExperienceActivationManager`. That is precisely the bypass this
+  // milestone exists to eliminate, so R45's own success criterion ("every
+  // production experience-opening path flows through ONE pipeline") was not
+  // actually met until these paths were routed through the pipeline too.
+  //
+  // R44's `ExperienceActivationManager` doc comment asserting `HomeScreen`
+  // is "the ONE and ONLY real production call site that ever pushes
+  // `ExperienceHostScreen` anywhere in this codebase (confirmed by grep)"
+  // was, in reality, never true — `experiences_screen.dart` pushed it in
+  // three places the whole time.
+  group('My Apps library flow (R45) — ExperiencesScreen, the production entry surface the first pass missed', () {
+    testWidgets('tapping a real Experience in the real My Apps library registers a real workspace session through the unified pipeline — this path previously registered nothing at all', (tester) async {
+      late _Rig rig;
+      late String experienceId;
+      await tester.runAsync(() async {
+        rig = await _Rig.create([_app('Camp Log')]);
+        experienceId = await rig.seedPersistedExperience('track my camping trips');
+      });
+      expect(rig.workspace.openSessionIds, isEmpty, reason: 'the seed alone must not have registered any workspace session');
+
+      await tester.pumpWidget(
+        MaterialApp(home: ExperiencesScreen(repository: rig.repository, entryPipeline: rig.entryPipeline)),
+      );
+      await tester.pump();
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 200)));
+      await tester.pump();
+
+      expect(find.text('Camp Log'), findsOneWidget, reason: 'the real, persisted Experience must actually be listed in the real library before we can tap it');
+
+      final callsBeforeTap = rig.reasoner.calls;
+      await tester.tap(find.text('Camp Log'));
+      await tester.pump();
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 200)));
+      await tester.pump();
+
+      expect(rig.reasoner.calls, callsBeforeTap, reason: 'opening from the library resolves identity by explicit id — it must never reach the Kernel/reasoner, and must add no second AI boundary');
+      expect(rig.workspace.openSessionIds, isNotEmpty, reason: 'the real, load-bearing proof: the My Apps tap now genuinely registers a workspace session, which it never did before');
+      expect(rig.workspace.sessionForExperience(experienceId), isNotNull);
+
+      final sessionId = rig.workspace.sessionForExperience(experienceId)!.sessionId;
+      expect(rig.supervisor.lookup(sessionId), isNotNull, reason: 'real runtime supervision — the raw Navigator.push path supervised nothing');
+      expect(rig.supervisor.lookup(sessionId)!.status, RuntimeStatus.running, reason: 'real scheduler participation via the same canonical activation path every other entry source uses');
+      expect(rig.activationManager.existingRouteFor(sessionId), isNotNull, reason: 'the route must be tracked by the ONE ExperienceActivationManager — proving this is real activation, not an untracked raw push');
+      expect(find.byType(ExperienceHostScreen), findsOneWidget);
+
+      await tester.runAsync(() => rig.repository.close());
+    });
+
+    testWidgets('re-tapping the SAME already-open Experience in the library never creates a duplicate ExperienceHostScreen', (tester) async {
+      late _Rig rig;
+      await tester.runAsync(() async {
+        rig = await _Rig.create([_app('Camp Log')]);
+        await rig.seedPersistedExperience('track my camping trips');
+      });
+
+      await tester.pumpWidget(
+        MaterialApp(home: ExperiencesScreen(repository: rig.repository, entryPipeline: rig.entryPipeline)),
+      );
+      await tester.pump();
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 200)));
+      await tester.pump();
+
+      await tester.tap(find.text('Camp Log'));
+      await tester.pump();
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 200)));
+      await tester.pump();
+      expect(find.byType(ExperienceHostScreen), findsOneWidget);
+
+      // Pop back to the library and open the very same Experience again.
+      final navigator = tester.state<NavigatorState>(find.byType(Navigator));
+      navigator.pop();
+      await tester.pump();
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 200)));
+      await tester.pump();
+
+      await tester.tap(find.text('Camp Log'));
+      await tester.pump();
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 200)));
+      await tester.pump();
+
+      expect(find.byType(ExperienceHostScreen), findsOneWidget, reason: 'exactly one host screen — real duplicate-prevention through the canonical activation manager');
+
+      await tester.runAsync(() => rig.repository.close());
+    });
+  });
+
   group('Backward compatibility (R45)', () {
     test('HomeScreen() constructed WITHOUT entryPipeline defaults it to null (constructor otherwise unchanged)', () {
       const screen = HomeScreen();
+      expect(screen.entryPipeline, isNull);
+    });
+
+    test('ExperiencesScreen() constructed WITHOUT entryPipeline defaults it to null (constructor otherwise unchanged)', () {
+      const screen = ExperiencesScreen();
       expect(screen.entryPipeline, isNull);
     });
 
@@ -507,6 +612,16 @@ void main() {
       await tester.pump();
 
       expect(find.byType(HomeScreen), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('a bare ExperiencesScreen() pumped with no injected entryPipeline renders without throwing — sourcing the ONE shared pipeline from AppComposition.production()', (tester) async {
+      await tester.pumpWidget(const MaterialApp(home: Scaffold(body: ExperiencesScreen())));
+      await tester.pump();
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
+      await tester.pump();
+
+      expect(find.byType(ExperiencesScreen), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
   });
