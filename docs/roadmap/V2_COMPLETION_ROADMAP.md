@@ -2111,5 +2111,61 @@ LLM/reasoning calls anywhere in the diff.
 
 See `docs/architecture/WORKSPACE_SCHEDULING_ENGINE.md` for the full audit.
 
-**DO NOT START R43 — per this specification's own stop condition, wait
+## Implementation Specification IS-R43 — Workspace Experience Switcher, AI Operating System Multitasking UI
+
+**Reality:** `AppComposition` (last touched R41) had no `WorkspaceSchedulingEngine`
+field — `HomeScreen` never threaded one into `ExperienceHostScreen`'s own
+`scheduler` field (added R42, always `null` in production). `AnythingAppShell`
+constructs `AppComposition.production()` exactly once and passes ONLY
+`composition:` to `HomeScreen` — every other shared service is resolved
+inside `HomeScreen` from that one object, confirmed by reading
+`lib/app/app_shell.dart` before deciding no app-shell change was needed.
+`WorkspaceRuntimeSupervisor.register()` throws on a duplicate `sessionId`,
+and Flutter's `Navigator` keeps earlier-pushed routes mounted — a real,
+load-bearing risk for any naive "reopen the target session's screen"
+navigation design, with no `RouteObserver`/route-tagging convention
+anywhere in this codebase to resolve it safely in one milestone.
+
+**The fix:** `AppComposition` gained one new field, `workspaceSchedulingEngine`,
+constructed from already-shared `workspaceRuntime`/`workspaceRuntimeSupervisor`/
+`workspaceManager`/`eventPublisher` (a `const WorkspaceLifecyclePolicyEngine()`
+constructed inline, since that class is genuinely stateless). `HomeScreen`
+resolves it via the established `widget.X ?? _composition.X` pattern and
+threads it into all 3 real `ExperienceHostScreen` call sites, plus adds one
+new tappable header icon (`Icons.apps`, distinct from the existing,
+purely-decorative person icon) opening a new `WorkspaceSwitcherSheet`
+(`lib/features/workspace/workspace_switcher.dart`) as a modal bottom sheet
+— the same `showModalBottomSheet` pattern `ExperienceHostScreen` already
+uses for its own "Change this app"/"Evolution history" sheets. The Switcher
+reads `scheduler.foregroundExperience()`/`.backgroundExperiences()` (pure
+reads, never re-deriving workspace bookkeeping) and, on tapping a
+background session, calls the real `scheduler.scheduleForeground()` — the
+real runtime effect happens (target resumes, siblings pause) — but does NOT
+attempt real navigation-based switching (revealing the target session's
+actual screen), for the double-registration reason above; real, honest UI
+feedback (closes the sheet, shows a snackbar) confirms the switch instead.
+Deferred to R44, documented plainly rather than silently narrowed.
+
+**Execution result:** implemented and independently validated. Flutter SDK
+reachable (`D:\flutter\bin\flutter.bat`). `flutter analyze`: 71/0, unchanged
+baseline, confirmed via multiple full, untruncated runs — two real,
+self-caught test bugs (real SQLite/Kernel I/O called directly inside
+`testWidgets` callbacks without `tester.runAsync()` wrapping; an unbounded
+`Column` inside the new Switcher widget that overflows once given real
+layout constraints, fixed by mirroring `ExperienceHostScreen`'s own
+established bounded-height/`ListView` bottom-sheet pattern) were found and
+fixed during this same validation. `flutter test`: 1719/1719 passed (1705
+baseline + 14 new), confirmed via a full, untruncated run streamed to a log
+file. `ExperienceRuntimeController`/`WorkspaceLifecyclePolicyEngine`/
+`WorkspaceRuntimeSupervisor`/`WorkspaceSchedulingEngine`/`AnythingRuntime`/
+`ExperienceWorkspaceManager`/`AutonomousWorkspaceRuntime`/
+`IntentExecutionPipeline`/`UniversalIntentRouter`/
+`EngineeringLifecycleCoordinator`/`AnythingKernel`/World Model/Engineering
+Memory all confirmed completely untouched via `git diff --stat`.
+`useCompilerPipeline` unaffected, still defaults `false`. Zero new
+LLM/reasoning calls anywhere in the diff.
+
+See `docs/architecture/WORKSPACE_EXPERIENCE_SWITCHER.md` for the full audit.
+
+**DO NOT START R44 — per this specification's own stop condition, wait
 for external architectural review.**

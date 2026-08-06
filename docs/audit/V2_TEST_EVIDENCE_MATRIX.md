@@ -2148,3 +2148,60 @@ for the exact full-suite count, also confirmed via a full, untruncated run.
 Memory all confirmed completely untouched via `git diff --stat`.
 `useCompilerPipeline` unaffected, still defaults `false`. Zero new
 LLM/reasoning calls anywhere in the diff.
+
+## R43 — Workspace Experience Switcher, AI Operating System Multitasking UI
+
+`test/r43_workspace_experience_switcher_test.dart` (new, 14 tests) proves:
+shared scheduler construction (`AppComposition.production()
+.workspaceSchedulingEngine` is real, non-null, and two reads return the
+IDENTICAL instance); workspace switcher rendering (a real, pumped
+`WorkspaceSwitcherSheet` displays the real active session and every real
+background session, read directly from `WorkspaceSchedulingEngine`, never
+re-deriving workspace bookkeeping itself; an empty workspace renders an
+honest empty state); foreground switching (tapping a background session in
+the real, pumped Switcher reaches `scheduleForeground()` for real — the
+target runtime resumes, the previously-active runtime pauses, proven with
+real `RuntimeStatus` assertions); background switching (a re-pumped
+Switcher correctly shows the previously-active session as background after
+a real switch); scheduler integration (a real, end-to-end widget test
+proves `HomeScreen` forwards its resolved scheduler into
+`ExperienceHostScreen` at its real navigation call site, never silently
+dropping an injected instance; a second test proves tapping the real
+"Running apps" header button opens the real Switcher sheet); regression
+(`WorkspaceSchedulingEngine` used directly, bypassing the Switcher/
+`AppComposition` entirely, still behaves exactly as R42 built it); backward
+compatibility (`HomeScreen()` without `scheduler` defaults it to `null`; a
+bare `HomeScreen()` pumped with no injected scheduler renders without
+throwing, now sourcing its scheduler from `AppComposition.production()`);
+real `Stopwatch`/`ProcessInfo.currentRss` performance measurements across
+Switcher rendering, foreground transition, workspace refresh, and repeated
+scheduling cycles.
+
+No pre-existing test files required any changes — `AppComposition` gained
+one new field, `HomeScreen` gained one new optional constructor field
+threaded into its 3 real navigation call sites plus one new tappable header
+icon, and `ExperienceHostScreen`'s own, already-existing `scheduler` field
+(R42) simply now receives a real, shared instance in production instead of
+always `null`. Two real bugs were found and fixed during this milestone's
+own test-writing (not shipped): real SQLite/Kernel I/O called directly
+inside `testWidgets` callbacks without `tester.runAsync()` wrapping (the
+same class of mistake R40's own test file already documents the hard way,
+reproduced independently here), and a `Column` with no bounded/scrollable
+container inside the new `WorkspaceSwitcherSheet` widget, which overflows
+once given real layout constraints — fixed by mirroring
+`ExperienceHostScreen`'s own established "Evolution history" bottom-sheet
+pattern (`SizedBox`-bounded height + `Expanded(child: ListView(...))`).
+
+**Execution result:** implemented and independently validated in the
+implementing environment. Flutter SDK reachable at
+`D:\flutter\bin\flutter.bat`. `flutter analyze`: 71/0, unchanged baseline,
+confirmed via multiple full, untruncated runs. `flutter test`: 1719/1719
+passed (1705 baseline + 14 new), confirmed via a full, untruncated run
+streamed to a log file. `ExperienceRuntimeController`/
+`WorkspaceLifecyclePolicyEngine`/`WorkspaceRuntimeSupervisor`/
+`WorkspaceSchedulingEngine`/`AnythingRuntime`/`ExperienceWorkspaceManager`/
+`AutonomousWorkspaceRuntime`/`IntentExecutionPipeline`/`UniversalIntentRouter`/
+`EngineeringLifecycleCoordinator`/`AnythingKernel`/World Model/Engineering
+Memory all confirmed completely untouched via `git diff --stat`.
+`useCompilerPipeline` unaffected, still defaults `false`. Zero new
+LLM/reasoning calls anywhere in the diff.
