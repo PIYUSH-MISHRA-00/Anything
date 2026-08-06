@@ -2167,5 +2167,63 @@ LLM/reasoning calls anywhere in the diff.
 
 See `docs/architecture/WORKSPACE_EXPERIENCE_SWITCHER.md` for the full audit.
 
-**DO NOT START R44 — per this specification's own stop condition, wait
+## Implementation Specification IS-R44 — Experience Activation Manager, AI Operating System Experience Activation
+
+**Reality:** R43 explicitly deferred real navigation-based switching —
+`WorkspaceSwitcherSheet._selectForeground()` only called
+`scheduler.scheduleForeground()` and showed a snackbar, never revealing the
+target session's actual screen, because `WorkspaceRuntimeSupervisor
+.register()` throws on a duplicate `sessionId` and Flutter's `Navigator`
+keeps earlier-pushed routes mounted. `HomeScreen` is confirmed, by grep, to
+be the ONE and ONLY real production call site that ever pushes
+`ExperienceHostScreen` anywhere in this codebase. A real layering fact
+found by reading the actual widget tree: `MaterialApp` is built in
+`lib/app/app.dart`, one layer above where `AppComposition` is actually
+constructed (`lib/app/app_shell.dart`) — meaning a `NavigatorObserver`
+attached at the `MaterialApp` level could not easily reach an
+`AppComposition`-owned manager without restructuring construction order.
+
+**The fix:** since `HomeScreen` already owns every real push call site, no
+`NavigatorObserver` is genuinely required — `HomeScreen` itself tracks
+routes at the moment it pushes/pops them. `ExperienceActivationManager`
+(new) tracks the real `Route` OBJECT pushed for each `sessionId` (identity
+comparison, never a string name that could collide); a later `activate()`
+call for the same session pops back to that exact route via
+`Navigator.popUntil` instead of pushing a duplicate. `AppComposition`
+gained one new shared field; `HomeScreen` threads it into all 3 real
+navigation call sites; the Switcher's "select a background session" action
+now calls `activate()` too — reusing the ALREADY-RUNNING controller/runtime
+for the target session (via `WorkspaceRuntimeSupervisor.lookup()`) rather
+than constructing a fresh one, and deliberately omitting `runtimeSupervisor:`
+on the reconstructed screen (since the controller is already registered,
+passing it would trigger the exact duplicate-registration `StateError` this
+milestone exists to avoid). `ExperienceHostScreen` itself required zero
+changes. `lib/app/app.dart` is untouched.
+
+**Process note:** the implementing fork completed all real engineering (the
+activation manager, the `HomeScreen`/Switcher rewiring, and the full,
+passing test suite) but stalled before reaching commit/docs — its own final
+status message was truncated/malformed rather than a genuine completion
+report. The coordinating session independently read every diff in full,
+confirmed the actual engineering was correct and complete (including a
+subtle, correctly-solved bug: capturing `NavigatorState` before the
+Switcher sheet pops itself, since its own `BuildContext` becomes invalid
+once popped), ran `flutter analyze`/`flutter test` itself to a clean
+result, then wrote the architecture doc and completed the commit/push/
+artifact steps directly — mirroring the R35 precedent.
+
+**Execution result:** `flutter analyze`: 71/0, unchanged baseline.
+`flutter test`: 1732/1732 passed (1719 baseline + 13 new), zero
+regressions — both independently run by the coordinating session via
+`D:\flutter\bin\flutter.bat`, full untruncated runs. `WorkspaceSchedulingEngine`/
+`WorkspaceRuntimeSupervisor`/`WorkspaceLifecyclePolicyEngine`/
+`ExperienceRuntimeController`/`AnythingRuntime`/`ExperienceHostScreen`/
+`UniversalIntentRouter`/`AnythingKernel`/World Model/Engineering Memory all
+confirmed completely untouched via `git diff --stat`. `useCompilerPipeline`
+unaffected, still defaults `false`. Zero new LLM/reasoning calls anywhere
+in the diff.
+
+See `docs/architecture/EXPERIENCE_ACTIVATION_MANAGER.md` for the full audit.
+
+**DO NOT START R45 — per this specification's own stop condition, wait
 for external architectural review.**

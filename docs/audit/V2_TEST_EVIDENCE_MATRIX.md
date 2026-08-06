@@ -2205,3 +2205,59 @@ streamed to a log file. `ExperienceRuntimeController`/
 Memory all confirmed completely untouched via `git diff --stat`.
 `useCompilerPipeline` unaffected, still defaults `false`. Zero new
 LLM/reasoning calls anywhere in the diff.
+
+## R44 — Experience Activation Manager, AI Operating System Experience Activation
+
+`test/r44_experience_activation_manager_test.dart` (new, 13 tests) proves:
+shared activation manager construction (`AppComposition.production()
+.experienceActivationManager` is real, non-null, and two reads return the
+IDENTICAL instance); existing route activation (`activate()` called twice
+for the SAME `sessionId` pushes exactly ONE `ExperienceHostScreen` — proven
+by pushing an unrelated route on top of the tracked one first, then
+confirming the second `activate()` call's `popUntil` correctly searches
+past it and reveals the original, never pushing a duplicate); duplicate
+prevention (the concrete, load-bearing proof: re-activating an
+already-mounted session NEVER throws `WorkspaceRuntimeSupervisor
+.register()`'s real duplicate `StateError`, `supervisor.registrations`
+count never grows, and the original controller's identity is preserved,
+untouched); runtime activation (`activate()` reaches real
+`scheduler.scheduleForeground()` — the target runtime resumes, the sibling
+pauses, proven with real `RuntimeStatus` assertions); navigation activation
+(a NEW session pushes a real new route; an EXISTING session navigates back
+without adding one; a `null` sessionId — the real "Recent"-list case —
+falls back to a plain, untracked push, never a crash); Switcher integration
+— the concrete Mandatory Vision Validation proof (pump a real `HomeScreen`,
+open two real Experiences, open the real Switcher, tap the background one,
+and confirm the real `Navigator` now shows that session's actual
+`ExperienceHostScreen` in view, with the sheet closed); regression
+(`WorkspaceSchedulingEngine`/`WorkspaceRuntimeSupervisor` used directly,
+bypassing the activation manager entirely, still behave exactly as
+R40/R42 built them); backward compatibility (`HomeScreen()` without
+`activationManager` defaults it to `null`; a bare `HomeScreen()` pumped
+with no injected manager renders without throwing, now sourcing it from
+`AppComposition.production()`); real `Stopwatch`/`ProcessInfo.currentRss`
+performance measurements across activation latency, navigation lookup, and
+repeated scheduling cycles.
+
+`test/r43_workspace_experience_switcher_test.dart` required mechanical
+updates to match `WorkspaceSwitcherSheet`'s two new required constructor
+fields (`activationManager`/`runtimeSupervisor`) — no test assertions
+changed, only fixture construction.
+
+**Execution result:** implemented and independently validated by the
+coordinating session directly (the implementing fork completed all real
+engineering — the manager, the `HomeScreen`/Switcher rewiring, and the full
+test suite — but stalled before reaching commit/docs; the coordinating
+session independently read every diff in full, confirmed the actual
+engineering was correct and complete, then ran validation and completed
+the remaining commit/docs/artifact steps itself, mirroring the R35
+precedent). Flutter SDK reachable at `D:\flutter\bin\flutter.bat`.
+`flutter analyze`: 71/0, unchanged baseline. `flutter test`: 1732/1732
+passed (1719 baseline + 13 new), zero regressions — both run to completion
+directly, not substituted. `WorkspaceSchedulingEngine`/
+`WorkspaceRuntimeSupervisor`/`WorkspaceLifecyclePolicyEngine`/
+`ExperienceRuntimeController`/`AnythingRuntime`/`ExperienceHostScreen`/
+`UniversalIntentRouter`/`AnythingKernel`/World Model/Engineering Memory all
+confirmed completely untouched via `git diff --stat`. `useCompilerPipeline`
+unaffected, still defaults `false`. Zero new LLM/reasoning calls anywhere
+in the diff.
