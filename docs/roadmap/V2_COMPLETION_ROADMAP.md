@@ -2269,10 +2269,36 @@ fields instead of the stale composition default. The bare/no-override case
 (and every existing test that overrides the full workspace/scheduler group
 together) is unaffected — confirmed via a full test-suite run, not assumed.
 
-**Execution result:** `flutter analyze`: 71/0, unchanged baseline, confirmed
-via a fresh, full run. `flutter test`: full suite run to completion via
-`D:\flutter\bin\flutter.bat`, zero regressions (1732 baseline + 16 new — see
-final count in `docs/audit/V2_TEST_EVIDENCE_MATRIX.md`).
+**A second, larger bypass found by re-auditing after the first pass:** the
+first pass unified only the paths `HomeScreen` and `WorkspaceSwitcherSheet`
+own, and so did **not** actually satisfy this milestone's own success
+criterion. Re-auditing every `Navigator.push`/`ExperienceHostScreen`
+construction site across `lib/` found `ExperiencesScreen`
+(`lib/features/experiences/experiences_screen.dart`) — the real "My Apps"
+tab, constructed unconditionally in `AnythingAppShell._screenBuilders`
+(`lib/app/app_shell.dart:38`), and the app's actual persistent Experience
+library. All **three** of its opening paths (library tap, and both
+protection-resume branches) called their own private
+`ExperienceOpeningCoordinator` and then raw-`Navigator.push`ed
+`ExperienceHostScreen`, registering no workspace session and reaching no
+scheduler, no `WorkspaceRuntimeSupervisor` and no
+`ExperienceActivationManager` — precisely the bypass class this milestone
+exists to eliminate. All three now route through the same shared pipeline
+(`activateExperience()`/`activateProtectedExperience()`), and the screen's
+private coordinator, its three `MaterialPageRoute`/`ExperienceHostScreen`
+constructions and its now-unused import were deleted. Mechanical whole-repo
+proof: `ExperienceEntryPipeline` is now the **only** construction site of
+`ExperienceHostScreen` in all of `lib/`. Related disclosure: R44's
+`ExperienceActivationManager` doc comment claiming `HomeScreen` is the only
+production pusher of that screen was never true; the file is left
+byte-for-byte unchanged to keep the "remains unchanged" proof mechanical,
+and the comment fix is deferred to R46.
+
+**Execution result:** `flutter analyze`: 71 issues, unchanged baseline,
+confirmed via a fresh, full run, with **zero in any R45-touched file**.
+`flutter test`: full suite run to completion via `D:\flutter\bin\flutter.bat`,
+zero regressions — **1752/1752 passed** (1748 post-first-pass baseline + 4
+new My Apps tests; see `docs/audit/V2_TEST_EVIDENCE_MATRIX.md`).
 `WorkspaceSchedulingEngine`/`WorkspaceRuntimeSupervisor`/
 `WorkspaceLifecyclePolicyEngine`/`ExperienceRuntimeController`/
 `AnythingRuntime`/`AnythingKernel`/`UniversalIntentRouter`/`ExperienceHostScreen`

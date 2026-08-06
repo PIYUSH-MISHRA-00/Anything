@@ -2264,7 +2264,7 @@ in the diff.
 
 ## R45 — Unified Experience Entry Pipeline, AI Operating System Entry Unification
 
-`test/r45_experience_entry_pipeline_test.dart` (new, 16 tests) proves:
+`test/r45_experience_entry_pipeline_test.dart` (new, **20 tests**) proves:
 shared pipeline construction (`AppComposition.production()
 .experienceEntryPipeline` is real, non-null, and two reads return the
 IDENTICAL instance); workspace registration (the new, additive, Kernel-free
@@ -2303,6 +2303,35 @@ injected pipeline renders without throwing, sourcing it from individually-
 resolved fields/`AppComposition.production()`); real `Stopwatch`/
 `ProcessInfo.currentRss` performance measurements across Recent-flow entry
 latency, workspace registration latency, and repeated registration cycles.
+
+**My Apps library flow (4 further tests, added after a second audit pass).**
+R45's first pass unified only the entry paths `HomeScreen` and
+`WorkspaceSwitcherSheet` own. A re-audit of every `Navigator.push`/
+`ExperienceHostScreen` construction site in `lib/` found that
+`ExperiencesScreen` (`lib/features/experiences/experiences_screen.dart`) —
+the real "My Apps" tab, constructed unconditionally in
+`AnythingAppShell._screenBuilders` (`lib/app/app_shell.dart:38`) — bypassed
+the pipeline in all three of its opening paths (library tap, and both
+protection-resume branches), using its own private
+`ExperienceOpeningCoordinator` plus a raw `Navigator.push`, and therefore
+registering no workspace session and reaching no scheduler, no supervisor
+and no activation manager. The new tests pump the real `ExperiencesScreen`,
+find the real persisted Experience in the rendered library, and **tap it**,
+proving: the tap now registers a real workspace session (`openSessionIds`
+non-empty, `sessionForExperience()` non-null); the session is really
+supervised and `RuntimeStatus.running` (real scheduler participation); the
+route is tracked by the ONE `ExperienceActivationManager`
+(`existingRouteFor()` non-null — real activation, not an untracked push);
+the reasoner call count stays flat (no Kernel involvement, no second AI
+boundary); re-tapping the same library entry after popping back creates no
+duplicate `ExperienceHostScreen`; and backward compatibility (`entryPipeline`
+defaults to `null`, a bare `ExperiencesScreen()` renders without throwing).
+These tests could not have compiled against the pre-fix screen, and their
+central assertion fails outright against the old raw-push path.
+
+The mechanical, whole-repository proof the success criterion now genuinely
+holds: `ExperienceEntryPipeline` is the **only** site in all of `lib/` that
+constructs `ExperienceHostScreen` (verified by grep).
 
 A real regression was found and fixed during this milestone's own
 validation, not silently worked around: R45's new registration step (a

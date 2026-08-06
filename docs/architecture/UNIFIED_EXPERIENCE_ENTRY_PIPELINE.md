@@ -163,10 +163,81 @@ is a real, public field), then the composition default. This guarantees
 overrides, in either direction. Verified via a full, untruncated
 `flutter test` run: 1748/1748 passed.
 
+## A SECOND, LARGER BYPASS FOUND AFTER THE FIRST PASS — `ExperiencesScreen`
+
+A post-implementation re-audit of **every** `Navigator.push` and
+`ExperienceHostScreen` construction site in `lib/` (not just the ones
+`HomeScreen` owns) found that R45's first pass had missed an entire real
+production entry surface.
+
+**REALITY.** `ExperiencesScreen`
+(`lib/features/experiences/experiences_screen.dart`) is the real "My Apps"
+tab — constructed unconditionally in `AnythingAppShell._screenBuilders`
+(`lib/app/app_shell.dart:38`), one of the four bottom-nav destinations, and
+the app's actual persistent Experience library. It is therefore at least as
+load-bearing an entry surface as `HomeScreen`'s own Recent list.
+
+All **three** of its Experience-opening paths bypassed the pipeline
+completely:
+
+1. `_openExperience()` — tapping any app in the library.
+2. `_showProtectionInputAndResume()`, "use current time" branch.
+3. `_showProtectionInputAndResume()`, "choose date & time" branch.
+
+Each called `ExperienceOpeningCoordinator` directly — through its **own**
+privately constructed instance (`_openingCoordinator = ExperienceOpeningCoordinator()`),
+not even the shared one — and then raw-`Navigator.push`ed
+`ExperienceHostScreen`. Consequently every one of them registered **no**
+workspace session, reached **no** scheduler, **no** `WorkspaceRuntimeSupervisor`,
+and **no** `ExperienceActivationManager`; they also never passed
+`workspaceManager`/`workspaceRuntime`/`eventBus`/`runtimeSupervisor`/`scheduler`
+to the host screen at all. This is exactly the bypass class this milestone
+exists to eliminate, so R45's own SUCCESS CRITERIA ("the canonical entry
+mechanism for **every** production experience") was **not** actually met by
+the first pass.
+
+**A stale claim in canonical source, corrected.** R44's
+`ExperienceActivationManager` doc comment
+(`lib/app/experience_activation_manager.dart:16-18`) asserts that
+`HomeScreen` is "the ONE and ONLY real production call site that ever pushes
+`ExperienceHostScreen` anywhere in this codebase (confirmed by grep)". That
+statement was never true — `experiences_screen.dart` pushed it in three
+places the entire time. The R44 design conclusion it supports (that no
+`NavigatorObserver` is required) still holds now that all pushes really do
+flow through one pipeline, so **the file itself is left byte-for-byte
+unchanged** to preserve this milestone's provable "ExperienceActivationManager
+remains unchanged" criterion; the correction is recorded here and is listed
+under RECOMMENDATION FOR R46 as a comment-only cleanup.
+
+**FIX.** All three paths now route through the same shared pipeline, exactly
+as `HomeScreen` does: `activateExperience()` for the library tap and
+`activateProtectedExperience()` for both protection-resume branches. The
+screen gained an optional `entryPipeline` override defaulting to
+`composition.experienceEntryPipeline` (mirroring `HomeScreen.entryPipeline`'s
+established convention), and its private `ExperienceOpeningCoordinator`,
+its three `MaterialPageRoute`/`ExperienceHostScreen` constructions, and its
+now-unused `experience_host_screen.dart` import were all deleted — a net
+deletion of duplicated navigation logic, not an addition.
+
+The `.then((_) => _loadExperiences())` library-refresh-on-return behavior is
+preserved exactly: `ExperienceActivationManager.activate()` awaits
+`Navigator.push`, whose Future completes when the Experience route is
+popped, so awaiting the pipeline call and refreshing in the `OpenReady`
+branch is equivalent — the same shape `HomeScreen._openViaCoordinator()`
+already uses.
+
+**PROOF.** `ExperienceEntryPipeline` is now the **only** site in all of
+`lib/` that constructs `ExperienceHostScreen` (verified by grep), which is
+the concrete, mechanical proof the success criterion now genuinely holds.
+Four new tests cover it (see TEST RESULTS).
+
 ## ENTRY SOURCES
 
 - **Create New Experience** — `submitIntent()`, the real, unchanged
   Intent/Kernel path (R37).
+- **My Apps Library (`ExperiencesScreen`)** — `activateExperience()` /
+  `activateProtectedExperience()`. The real persistent-library entry
+  surface; see the section above.
 - **Recent List + Restore Session** — `activateExperience()`. Loading an
   already-persisted Experience by id IS itself the real restore mechanism;
   no separate snapshot-specific restore trigger exists in production today,
@@ -218,6 +289,23 @@ regression (`WorkspaceSchedulingEngine`/`WorkspaceRuntimeSupervisor`/
 compatibility; real `Stopwatch`/`ProcessInfo.currentRss` performance
 measurements.
 
+**Four further tests (added with the `ExperiencesScreen` fix above), 20
+total in the file:** a real, live "My Apps" library flow — pumping the real
+`ExperiencesScreen`, finding the real persisted Experience in the rendered
+list, and **tapping it** — asserting that the tap now genuinely registers a
+workspace session (`openSessionIds` non-empty, `sessionForExperience()`
+non-null), that the session is really supervised and `RuntimeStatus.running`
+(real scheduler participation), that the route is tracked by the ONE
+`ExperienceActivationManager` (`existingRouteFor()` non-null, proving real
+activation rather than an untracked raw push), and that the reasoner call
+count stays flat (no Kernel involvement, no second AI boundary);
+duplicate-prevention when the same library entry is re-tapped after popping
+back; plus two backward-compatibility proofs (`entryPipeline` defaults to
+`null`; a bare `ExperiencesScreen()` renders without throwing, sourcing the
+shared pipeline from `AppComposition.production()`). These tests could not
+even have compiled against the pre-fix screen, and their central assertion
+(`openSessionIds` non-empty) fails outright against the old raw-push path.
+
 `test/r43_workspace_experience_switcher_test.dart` required mechanical
 updates to match `WorkspaceSwitcherSheet`'s new `entryPipeline:` constructor
 field (replacing its previous `activationManager:`/`runtimeSupervisor:`/
@@ -260,13 +348,33 @@ session bookkeeping, not a leak signature).
   pre-R45 behavior for that configuration), which is honest but worth
   restating: full registration requires a real `workspaceManager`.
 
+- `lib/app/experience_activation_manager.dart:16-18` still carries the
+  factually stale R44 claim that `HomeScreen` is the only production
+  `ExperienceHostScreen` pusher. Deliberately left byte-for-byte unchanged
+  so this milestone's "ExperienceActivationManager remains unchanged"
+  criterion stays mechanically provable; it is a comment-only inaccuracy
+  with no behavioral effect, and correcting it is listed for R46.
+
 ## RECOMMENDATION FOR R46
 
 Every real entry path now participates in workspace registration and
-scheduler activation consistently. The natural next candidate is closing
-the `HomeScreen` submit-button reactivity gap documented above — a small,
-real, honest fix (add a `setState()`-triggering listener to the text
-controller) rather than a new architectural milestone.
+scheduler activation consistently, and `ExperienceEntryPipeline` is the
+only construction site of `ExperienceHostScreen` in `lib/`. Two small,
+real, honest fixes are the natural next candidates — neither is a new
+architectural milestone:
+
+1. Correct the stale R44 comment in
+   `lib/app/experience_activation_manager.dart:16-18` (comment-only; it
+   was deferred purely to keep this milestone's unchanged-subsystem proof
+   mechanical).
+2. Close the `HomeScreen` submit-button reactivity gap documented above
+   (add a `setState()`-triggering listener to the text controller).
+
+A worthwhile third item, given this milestone needed a second pass to find
+`ExperiencesScreen`: add a real, cheap architectural regression test that
+greps/asserts `ExperienceEntryPipeline` remains the sole constructor of
+`ExperienceHostScreen`, so any future bypass fails CI instead of waiting
+for an audit.
 
 **DO NOT START R46 in this session — per this specification's own stop
 condition, wait for external architectural review.**
