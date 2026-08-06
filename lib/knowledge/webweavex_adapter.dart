@@ -9,6 +9,32 @@
 ///
 /// Architecture:
 ///   SearchProvider (query -> URLs) -> WebWeaveXAdapter (URL -> KnowledgeResource)
+///
+/// DETERMINISTIC NORMALIZATION (Implementation Specification IS-R47 Task 4).
+/// REALITY before R47, confirmed by reading this file: extracted `content`
+/// was hashed and cached exactly as the page produced it, and each resource
+/// took an id derived from `DateTime.now().microsecondsSinceEpoch`. Two
+/// consequences, both real:
+///
+///   1. The SAME page fetched twice produced DIFFERENT resource ids, so no
+///      two acquisitions were ever comparable.
+///   2. Byte-equivalent-but-differently-encoded content — CRLF vs LF, NFC vs
+///      NFD Unicode, trailing whitespace — produced DIFFERENT `contentHash`
+///      values. `KnowledgeAcquisitionEngine._deduplicate()` keys on exactly
+///      that hash, so genuinely duplicate knowledge survived deduplication
+///      and was fed to the reasoner twice.
+///
+/// R47 closes this using WebWeaveX's OWN canonical determinism primitives —
+/// `normalizeRuntimeValue` (NFKC + CRLF->LF + trailing-whitespace strip) and
+/// `stableSerialize` (canonical JSON with sorted keys). No bespoke
+/// normalizer, no second serializer, no second cache: the existing
+/// `KnowledgeCache` and the existing dedup/rank pipeline are untouched and
+/// simply receive already-canonical input.
+///
+/// WebWeaveX types still stop at this adapter boundary. The engine never
+/// imports `package:webweavex`; when it needs a canonical representation it
+/// calls [canonicalRepresentation] here. That keeps R46 invariant I-21b
+/// (WebWeaveX imported only by its documented adapters) unchanged.
 library;
 
 import 'package:webweavex/webweavex.dart' as wwx;
@@ -58,25 +84,50 @@ class WebWeaveXAdapter {
     final semanticHtml = wwx.extractSemanticHtml(html);
     final semanticContent = wwx.extractSemanticContent(html);
 
-    final title = (semanticHtml['title'] as String? ?? '').trim();
+    // IS-R47: normalize through WebWeaveX's own canonical normalizer BEFORE
+    // anything downstream sees the text — so hashing, deduplication and
+    // caching all operate on a canonical form rather than on whatever byte
+    // sequence the page happened to serve.
+    final title = wwx.normalizeRuntimeValue(
+      (semanticHtml['title'] as String? ?? '').trim(),
+    );
     final paragraphs = (semanticContent['paragraphs'] as List? ?? [])
         .cast<String>();
     final fullText = semanticHtml['text'] as String? ?? '';
-    var content = paragraphs.isNotEmpty ? paragraphs.join('\n\n') : fullText;
+    var content = wwx.normalizeRuntimeValue(
+      paragraphs.isNotEmpty ? paragraphs.join('\n\n') : fullText,
+    );
     if (content.isEmpty) return null;
 
     // Trusted knowledge-size ceiling — a single huge page must not blow the
     // reasoning-prompt budget downstream (see RuntimeSecurityLimits and
     // ModelApplicationReasoner's own tighter per-prompt truncation).
+    //
+    // Truncation happens AFTER normalization deliberately: normalizing first
+    // means the ceiling applies to the canonical form, so two encodings of
+    // the same page truncate at the same point and still agree. Truncating
+    // first could cut mid-sequence and leave the two forms diverging.
     if (content.length > RuntimeSecurityLimits.maxKnowledgeBytes) {
-      content = content.substring(0, RuntimeSecurityLimits.maxKnowledgeBytes);
+      content = wwx.normalizeRuntimeValue(
+        content.substring(0, RuntimeSecurityLimits.maxKnowledgeBytes),
+      );
     }
 
     final now = DateTime.now();
     final contentHash = KnowledgeResource.computeHash(content);
 
     return KnowledgeResource(
-      id: 'wwx-${now.microsecondsSinceEpoch}',
+      // IS-R47: identity derived from the canonical serialization of the
+      // identity-bearing fields, never from a wall clock. The same page with
+      // the same normalized content now yields the SAME id on every
+      // acquisition, which is what makes repeat acquisitions comparable.
+      // `retrievedAt` is deliberately excluded — it is real provenance about
+      // WHEN this fetch happened, not part of WHAT was fetched.
+      id: _deterministicId(
+        sourceUri: url,
+        title: title.isNotEmpty ? title : uri.host,
+        contentHash: contentHash,
+      ),
       type: KnowledgeResourceType.webDocument,
       title: title.isNotEmpty ? title : uri.host,
       sourceUri: url,
@@ -120,6 +171,59 @@ class WebWeaveXAdapter {
       if (resource != null) results.add(resource);
     }
     return results;
+  }
+
+  /// The canonical, deterministic representation of a resource's
+  /// identity-bearing content (Implementation Specification IS-R47 Task 4).
+  ///
+  /// Produced by WebWeaveX's OWN `stableSerialize` — canonical JSON with
+  /// stably-sorted keys — over the fields that define WHAT was acquired.
+  /// `retrievedAt`, `id` and the scoring/trust metadata are excluded on
+  /// purpose: they describe when a fetch happened and how it was judged, not
+  /// what it contains, and including them would make the representation
+  /// differ between two acquisitions of identical content.
+  ///
+  /// This exists so `KnowledgeAcquisitionEngine` and its tests can obtain a
+  /// canonical representation WITHOUT importing `package:webweavex`
+  /// themselves — the adapter boundary (R46 invariant I-21b) stays intact.
+  ///
+  /// Guarantee: two resources acquired from the same URL with the same
+  /// normalized content produce byte-identical strings here.
+  String canonicalRepresentation(KnowledgeResource resource) {
+    return wwx.stableSerialize(<String, dynamic>{
+      'sourceUri': resource.sourceUri,
+      'sourceDomain': resource.sourceDomain,
+      'type': resource.type.name,
+      'title': resource.title,
+      'language': resource.language,
+      'format': resource.format,
+      'contentHash': resource.contentHash,
+      'content': resource.content,
+      'provider': resource.provenance.provider,
+    });
+  }
+
+  /// Normalize an arbitrary text value through WebWeaveX's canonical
+  /// normalizer (NFKC, CRLF -> LF, trailing-whitespace strip).
+  ///
+  /// Exposed so other Anything code can normalize consistently without
+  /// importing `package:webweavex`. It is a straight delegation — this
+  /// adapter deliberately implements no normalization rules of its own.
+  String normalizeText(String value) => wwx.normalizeRuntimeValue(value);
+
+  /// Deterministic resource identity: a short digest of the canonical
+  /// serialization of the identity-bearing fields.
+  static String _deterministicId({
+    required String sourceUri,
+    required String title,
+    required String contentHash,
+  }) {
+    final canonical = wwx.stableSerialize(<String, dynamic>{
+      'sourceUri': sourceUri,
+      'title': title,
+      'contentHash': contentHash,
+    });
+    return 'wwx-${KnowledgeResource.computeHash(canonical).substring(0, 24)}';
   }
 
   /// Get WebWeaveX version info.

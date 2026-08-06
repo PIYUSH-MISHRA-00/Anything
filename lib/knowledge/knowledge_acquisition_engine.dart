@@ -123,7 +123,10 @@ class KnowledgeAcquisitionEngine {
       // provider is configured — this is what makes "offline: reuse
       // cached knowledge" and "network unavailable: still usable if
       // already cached" actually true rather than aspirational.
-      final key = KnowledgeCacheKey(query: query, language: language);
+      final key = KnowledgeCacheKey(
+        query: _canonicalQuery(query),
+        language: language,
+      );
       var found = await _cache.get(key);
       found ??= _cache.findRelevant(query);
       if (found != null && found.isNotEmpty) {
@@ -195,6 +198,24 @@ class KnowledgeAcquisitionEngine {
       cacheStatus: anyFromCache && !anyFreshlyFetched ? 'offline_cached' : null,
     );
   }
+
+  /// Canonicalize a query before it becomes a cache key (Implementation
+  /// Specification IS-R47 Task 4).
+  ///
+  /// `KnowledgeCacheKey.toStableString()` already trims/lowercases/sorts, but
+  /// it does NOT Unicode-normalize — so two canonically-equivalent queries
+  /// (NFC vs NFD, or containing CRLF) mapped to different cache entries and
+  /// re-fetched the same knowledge. Routing the query through the SAME
+  /// canonical normalizer the extracted content already goes through closes
+  /// that, with no second normalizer and no second cache.
+  ///
+  /// Delegated through [WebWeaveXAdapter.normalizeText] rather than importing
+  /// `package:webweavex` here, so the adapter stays the single WebWeaveX
+  /// boundary (R46 invariant I-21b). With no adapter configured — the bare,
+  /// network-free `KnowledgeAcquisitionEngine()` default — behavior is
+  /// unchanged, which is what keeps every existing caller and test intact.
+  String _canonicalQuery(String query) =>
+      _webweavexAdapter?.normalizeText(query) ?? query;
 
   List<String> _planQueries(
     List<KnowledgeRequirement> requirements,
