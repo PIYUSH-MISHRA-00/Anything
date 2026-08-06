@@ -4,13 +4,13 @@ library;
 import 'package:flutter/material.dart';
 
 import '../../app/app_composition.dart';
+import '../../app/experience_entry_pipeline.dart';
 import '../../app/experience_opening_coordinator.dart';
 import '../../core/contracts/protection_provider.dart';
 import '../../design_system/components/components.dart';
 import '../../design_system/tokens/spacing.dart';
 import '../../storage/sqlite_experience_repository.dart';
 import '../../storage/activity_repository.dart';
-import '../../runtime/experience_host_screen.dart';
 
 /// My Apps screen showing real persisted Experiences.
 class ExperiencesScreen extends StatefulWidget {
@@ -23,12 +23,30 @@ class ExperiencesScreen extends StatefulWidget {
   /// `AppComposition.production()` when not supplied.
   final AppComposition? composition;
 
+  /// The shared Unified Experience Entry Pipeline (Implementation
+  /// Specification IS-R45). REALITY before this fix: this screen — the real
+  /// "My Apps" tab, wired into `AnythingAppShell` (`lib/app/app_shell.dart`)
+  /// — was a real production Experience-entry surface that R45 missed
+  /// entirely. All three of its opening paths called
+  /// `ExperienceOpeningCoordinator` directly and then raw-`Navigator.push`ed
+  /// `ExperienceHostScreen`, bypassing workspace registration, the
+  /// scheduler, runtime supervision and `ExperienceActivationManager`
+  /// completely — the exact bypass R45 exists to eliminate. (R44's own
+  /// `ExperienceActivationManager` doc comment asserting `HomeScreen` is
+  /// "the ONE and ONLY real production call site that ever pushes
+  /// `ExperienceHostScreen`" was, in fact, never true.) Defaults to the ONE
+  /// shared pipeline on [composition]; an explicit override exists for
+  /// tests, matching `HomeScreen.entryPipeline`'s own established
+  /// convention. See `docs/architecture/UNIFIED_EXPERIENCE_ENTRY_PIPELINE.md`.
+  final ExperienceEntryPipeline? entryPipeline;
+
   const ExperiencesScreen({
     super.key,
     this.repository,
     this.onCreateRequested,
     this.onProtectRequested,
     this.composition,
+    this.entryPipeline,
   });
 
   @override
@@ -39,7 +57,11 @@ class _ExperiencesScreenState extends State<ExperiencesScreen> {
   late final AppComposition _composition;
   late final SqliteExperienceRepository _repo;
   late final ActivityRepository _activity;
-  late final ExperienceOpeningCoordinator _openingCoordinator;
+
+  /// Real, resolved Unified Experience Entry Pipeline (Implementation
+  /// Specification IS-R45) — the ONE thing every Experience-opening call
+  /// site below now goes through; see [ExperiencesScreen.entryPipeline].
+  late final ExperienceEntryPipeline _entryPipeline;
   List<ExperienceMetadataRecord> _experiences = [];
   bool _isLoading = true;
 
@@ -49,7 +71,7 @@ class _ExperiencesScreenState extends State<ExperiencesScreen> {
     _composition = widget.composition ?? AppComposition.production();
     _repo = widget.repository ?? SqliteExperienceRepository();
     _activity = ActivityRepository();
-    _openingCoordinator = ExperienceOpeningCoordinator();
+    _entryPipeline = widget.entryPipeline ?? _composition.experienceEntryPipeline;
     _loadExperiences();
   }
 
@@ -67,25 +89,24 @@ class _ExperiencesScreenState extends State<ExperiencesScreen> {
     await _repo.touchLastUsed(exp.id);
     if (!mounted) return;
 
-    final result = await _openingCoordinator.openExperience(exp.id);
+    // Implementation Specification IS-R45: routed through the ONE unified
+    // entry pipeline — real workspace-session registration (if none exists
+    // yet) plus real runtime + navigation activation, replacing the direct
+    // `ExperienceOpeningCoordinator` + raw-`Navigator.push` pair that
+    // registered no session and never reached the scheduler. Awaiting this
+    // preserves the old `.then((_) => _loadExperiences())` refresh exactly:
+    // `ExperienceActivationManager.activate()` awaits `Navigator.push`,
+    // whose Future completes when the Experience route is popped.
+    final result = await _entryPipeline.activateExperience(
+      Navigator.of(context),
+      exp.id,
+    );
 
     if (!mounted) return;
 
     switch (result) {
       case OpenReady():
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => ExperienceHostScreen(
-              package: result.package,
-              experienceName: result.experienceName,
-              experienceId: result.experienceId,
-              worldModel: _composition.worldModel,
-              engineeringMemory: _composition.engineeringMemory,
-              capabilityPlatform: _composition.capabilityPlatform,
-            ),
-          ),
-        ).then((_) => _loadExperiences());
+        _loadExperiences();
 
       case OpenProtectionInputRequired():
         _showProtectionInputAndResume(
@@ -155,25 +176,15 @@ class _ExperiencesScreenState extends State<ExperiencesScreen> {
         minutes: now.minute,
         seconds: now.second,
       );
-      final openResult = await _openingCoordinator
-          .openProtectedExperienceWithSeed(
-            experienceId: experienceId,
-            timeSeed: timeSeed,
-          );
+      // Implementation Specification IS-R45: same real pipeline routing as
+      // `_openExperience` above.
+      final openResult = await _entryPipeline.activateProtectedExperience(
+        Navigator.of(context),
+        experienceId: experienceId,
+        timeSeed: timeSeed,
+      );
       if (openResult is OpenReady && mounted) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => ExperienceHostScreen(
-              package: openResult.package,
-              experienceName: openResult.experienceName,
-              experienceId: openResult.experienceId,
-              worldModel: _composition.worldModel,
-              engineeringMemory: _composition.engineeringMemory,
-              capabilityPlatform: _composition.capabilityPlatform,
-            ),
-          ),
-        ).then((_) => _loadExperiences());
+        _loadExperiences();
       } else if (openResult is OpenFailed && mounted) {
         ScaffoldMessenger.of(
           context,
@@ -209,25 +220,15 @@ class _ExperiencesScreenState extends State<ExperiencesScreen> {
         seconds: customDateTime.second,
       );
 
-      final openResult = await _openingCoordinator
-          .openProtectedExperienceWithSeed(
-            experienceId: experienceId,
-            timeSeed: timeSeed,
-          );
+      // Implementation Specification IS-R45: same real pipeline routing as
+      // the "current time" branch above.
+      final openResult = await _entryPipeline.activateProtectedExperience(
+        Navigator.of(context),
+        experienceId: experienceId,
+        timeSeed: timeSeed,
+      );
       if (openResult is OpenReady && mounted) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => ExperienceHostScreen(
-              package: openResult.package,
-              experienceName: openResult.experienceName,
-              experienceId: openResult.experienceId,
-              worldModel: _composition.worldModel,
-              engineeringMemory: _composition.engineeringMemory,
-              capabilityPlatform: _composition.capabilityPlatform,
-            ),
-          ),
-        ).then((_) => _loadExperiences());
+        _loadExperiences();
       } else if (openResult is OpenFailed && mounted) {
         ScaffoldMessenger.of(
           context,
