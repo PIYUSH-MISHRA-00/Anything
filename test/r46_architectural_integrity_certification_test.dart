@@ -136,6 +136,20 @@ String _stripCommentsAndStrings(String source) {
     }
 
     // String literal — single, double, and triple-quoted, raw or not.
+    //
+    // INTERPOLATIONS ARE PRESERVED AS CODE. `'${DateTime.now()}'` contains
+    // real, executing Dart inside the `${...}`; blanking it along with the
+    // surrounding prose created a genuine blind spot in which any logic
+    // written inside an interpolation was invisible to every static
+    // invariant. IS-R48 found this the hard way: a mutation probe that
+    // reintroduced timestamp-derived ids as
+    // `return 'wwx-${DateTime.now().microsecondsSinceEpoch}';` did NOT fail
+    // certification, because the offending code sat inside a string literal.
+    //
+    // Interpolated regions are now copied verbatim. That is deliberately the
+    // conservative direction for a certification layer: a nested string
+    // inside an interpolation could in principle produce a false positive,
+    // which is loud and fixable, whereas a false negative is silent.
     if (c == "'" || c == '"') {
       final isTriple = i + 2 < source.length && source[i + 1] == c && source[i + 2] == c;
       final delim = isTriple ? c * 3 : c;
@@ -145,6 +159,27 @@ String _stripCommentsAndStrings(String source) {
         if (source[i] == r'\' && !isTriple) {
           out.write('  ');
           i += 2;
+          continue;
+        }
+        // `${ ... }` — copy the expression through, tracking nested braces.
+        if (source[i] == r'$' && i + 1 < source.length && source[i + 1] == '{') {
+          out.write('  ');
+          i += 2;
+          var depth = 1;
+          while (i < source.length && depth > 0) {
+            final ch = source[i];
+            if (ch == '{') depth++;
+            if (ch == '}') {
+              depth--;
+              if (depth == 0) {
+                out.write(' ');
+                i++;
+                break;
+              }
+            }
+            out.write(ch == '\n' ? '\n' : ch);
+            i++;
+          }
           continue;
         }
         if (i + delim.length <= source.length && source.substring(i, i + delim.length) == delim) {
@@ -299,6 +334,17 @@ const Map<String, List<String>> knownDuplicateDeclarations = <String, List<Strin
 /// reintroducing a second `AnythingRuntime` type.
 const List<String> removedDeadFiles = ['lib/core/contracts/runtime.dart'];
 
+/// THE single knowledge cache and its single durable store (IS-R48).
+///
+/// `KnowledgeCache` is the one canonical cache; `KnowledgeRepository` is its
+/// implementation detail, not a second cache and not a second persistence
+/// layer. Only these files may reference the repository type — anything else
+/// referencing it would be a path around the cache.
+const List<String> permittedKnowledgeRepositoryFiles = [
+  'lib/app/app_composition.dart',
+  'lib/knowledge/knowledge_acquisition_engine.dart',
+];
+
 /// External protection/knowledge packages must stay behind their single
 /// documented adapter boundary.
 const List<String> permittedKaalkaImportFiles = ['lib/security/kaalka_service.dart'];
@@ -356,6 +402,32 @@ final x = 1;
       final real = libFiles.where((f) => f.path == 'lib/application_engineering/lifecycle_engineering.dart');
       expect(real, isNotEmpty, reason: 'the real file this guard exists for must still be present');
       expect(real.first.code.contains('ExperienceOpeningCoordinator'), isFalse, reason: 'the real string-literal mention must be stripped, which is why this file is absent from the ExperienceOpeningCoordinator allowlist');
+    });
+
+    test('code inside a string INTERPOLATION survives stripping — the blind spot IS-R48 found by mutation', () {
+      // A mutation probe reintroducing timestamp ids as
+      //   return 'wwx-${DateTime.now().microsecondsSinceEpoch}';
+      // passed certification, because the offending code lived inside a
+      // string literal and the stripper blanked it wholesale. Interpolated
+      // regions are real executing code and must remain visible.
+      const src = "final a = 'wwx-\${DateTime.now().microsecondsSinceEpoch}';";
+      final stripped = _stripCommentsAndStrings(src);
+      expect(stripped.contains('microsecondsSinceEpoch'), isTrue,
+          reason: 'code inside \${...} must survive stripping, or any logic written there is invisible to every invariant');
+
+      // ... while the surrounding prose is still removed.
+      const mixed = "final b = 'ExperienceHostScreen mentioned in prose \${Foo()} more prose';";
+      final strippedMixed = _stripCommentsAndStrings(mixed);
+      expect(strippedMixed.contains('ExperienceHostScreen'), isFalse, reason: 'plain string prose must still be stripped');
+      expect(strippedMixed.contains('Foo()'), isTrue, reason: 'the interpolated expression must survive');
+
+      // A construction inside an interpolation is therefore detectable.
+      const construction = "final c = 'x \${ExperienceHostScreen()} y';";
+      final probe = [
+        _SourceFile('lib/probe.dart', _stripCommentsAndStrings(construction), construction),
+      ];
+      expect(_constructionSites(probe, 'ExperienceHostScreen'), ['lib/probe.dart'],
+          reason: 'a rogue construction hidden inside an interpolation must still be caught');
     });
 
     test('the construction matcher does not match a longer identifier that merely ends with the type name', () {
@@ -599,6 +671,52 @@ final x = 1;
       expect(offenders, isEmpty,
           reason: 'A deliberately-closed WebWeaveX surface was adopted: $offenders. '
               'These would create a second graph / second memory system / second protection path.');
+    });
+
+    test('KnowledgeCache is the ONE knowledge cache — no second cache, no cache hierarchy (IS-R48 Task 2)', () {
+      // IS-R48 forbids a PersistentKnowledgeCache, a CachedKnowledgeManager,
+      // or any parallel cache hierarchy. Enforced structurally rather than by
+      // name-blacklist: exactly one class in all of lib/ may be a *Cache.
+      final cacheClasses = libFiles
+          .expand((f) => RegExp(r'\bclass\s+(\w*Cache)\b')
+              .allMatches(f.code)
+              .map((m) => '${f.path}:${m.group(1)}'))
+          .toList()
+        ..sort();
+      expect(cacheClasses, ['lib/knowledge/knowledge_acquisition_engine.dart:KnowledgeCache'],
+          reason: 'A second knowledge cache class appeared. KnowledgeCache must remain the single canonical cache; persistence is an implementation detail inside it.');
+    });
+
+    test('the durable knowledge store cannot be bypassed — only KnowledgeCache and the composition root may reference it (IS-R48 Task 2/6)', () {
+      final referencers = libFiles
+          .where((f) => f.path != 'lib/storage/knowledge_repository.dart')
+          .where((f) => RegExp(r'\bKnowledgeRepository\b').hasMatch(f.code))
+          .map((f) => f.path)
+          .toList()
+        ..sort();
+      expect(referencers, permittedKnowledgeRepositoryFiles,
+          reason: 'KnowledgeRepository is an implementation detail of KnowledgeCache. '
+              'A new referencer means something reaches persistence around the cache. Found: $referencers');
+    });
+
+    test('the durable store never imports WebWeaveX — canonical form comes FROM the adapter, it is not recomputed in storage (IS-R48 Task 3)', () {
+      final repo = libFiles.firstWhere((f) => f.path == 'lib/storage/knowledge_repository.dart');
+      expect(RegExp('''import\\s+['"]package:webweavex''').hasMatch(repo.raw), isFalse,
+          reason: 'the repository must persist the canonical representation it is GIVEN, never compute one');
+      // And it must not hand-roll a canonical encoder of its own.
+      expect(repo.code.contains('stableSerialize'), isFalse);
+      expect(repo.code.contains('normalizeRuntimeValue'), isFalse);
+    });
+
+    test('resource identity is never timestamp-derived — the pre-R47 defect cannot return (IS-R48 Task 7)', () {
+      final adapter = libFiles.firstWhere((f) => f.path == 'lib/knowledge/webweavex_adapter.dart');
+      // Stripped code, so the doc comment that DESCRIBES the old scheme does
+      // not trip this — only a real reintroduction would.
+      expect(adapter.code.contains('microsecondsSinceEpoch'), isFalse,
+          reason: 'timestamp-derived resource ids returned; canonical ids could no longer survive restart');
+      expect(adapter.code.contains('millisecondsSinceEpoch'), isFalse);
+      expect(adapter.code.contains('_deterministicId'), isTrue,
+          reason: 'the canonical identity derivation must still be present');
     });
 
     test('neither the Kernel nor any UI file imports an external cognition/protection package directly', () {
