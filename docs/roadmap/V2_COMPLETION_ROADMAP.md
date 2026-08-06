@@ -2467,5 +2467,80 @@ certification tests), zero regressions. `git status --porcelain`: clean.
 See `docs/architecture/ARCHITECTURAL_INTEGRITY_CERTIFICATION.md` and the
 updated invariant, WebWeaveX and remaining-gap matrices under `docs/audit/`.
 
-**DO NOT START R48 — per this specification's own stop condition, wait
+**R48 has since been implemented — see below.**
+
+## Implementation Specification IS-R48 — Canonical Knowledge Persistence
+
+Knowledge now survives application restart, built on R47's canonical
+identities rather than beside them.
+
+**Reality:** `KnowledgeCache` was in-memory and process-scoped — its own doc
+comment said so. Every restart discarded all acquired knowledge and re-fetched
+it. R47 had already removed the real blocker by making resource ids and cache
+keys canonical, so persisted rows finally mean something across runs.
+
+**Design — persistence is an implementation detail, not a layer.**
+`KnowledgeCache` remains THE single canonical cache and gained two optional
+constructor arguments; supply neither (the default) and behaviour is
+byte-identical to the pre-R48 in-memory cache, which is what keeps every
+existing caller and test untouched. The durable store,
+`lib/storage/knowledge_repository.dart`, is the Nth instance of the per-domain
+repository pattern `lib/storage/` already holds ten of — deliberately
+mirroring `SqliteExperienceRepository` rather than inventing a shape. It is a
+store, not a cache: no lookup policy, no ranking, no dedup, no expiry.
+
+**Restoration is lazy and per-key.** No startup scan, no eager load. A `get()`
+that misses in memory hydrates exactly one cache key's rows and promotes them;
+nothing else is read. That is the maximally incremental form of the
+specification's "bounded startup / no eager loading" rule, and it needs no
+startup hook at all.
+
+**Invalidation reuses what existed rather than inventing a policy.** A
+repository-wide search found the knowledge subsystem has **no** TTL, eviction
+or staleness rule anywhere — so there was no expiration policy engine to
+extend, and R48 deliberately did not introduce a second one. `putResources()`
+deletes then re-inserts, mirroring `put()`'s existing replace-on-put
+semantics exactly; `clear()` empties both memory and disk.
+
+**A latent bug that had to be fixed first.** `KnowledgeResource.toJson()`
+omitted `content` and `fromJson()` never read it, so `fromJson(toJson(r))`
+silently produced `content == null`. Harmless while nothing round-tripped
+resources; fatal here, because `canonicalRepresentation()` includes `content`
+— a content-less round trip would have produced a DIFFERENT canonical
+representation after restart, quietly defeating the milestone's central
+guarantee.
+
+**A blind spot in the certification scanner, found by mutation.** A probe
+reintroducing timestamp ids as
+`return 'wwx-${DateTime.now().microsecondsSinceEpoch}';` **passed**
+certification: the offending code sat inside a string interpolation, and the
+scanner blanked string contents wholesale, so any logic inside `${...}` was
+invisible to *every* static invariant. The instrument was fixed rather than
+the test — interpolations now survive stripping — and a self-certification
+test was added. This is the third scanner defect found by tooling rather than
+inspection, after R46's vacuously-passing import scan and R47's incomplete
+reference search. The behavioural suite had the same blind spot from the other
+direction (the restart test extracted once and only round-tripped), so a
+stronger test now re-extracts in the second session and requires the fresh id
+to match.
+
+**Certification extended** to 46 tests, with four new invariants: `KnowledgeCache`
+is the only `*Cache` class in `lib/` (I-35); `KnowledgeRepository` is
+referenced only by the cache and the composition root, so persistence cannot
+be bypassed (I-36); the durable store never imports WebWeaveX and hand-rolls
+no canonical encoder (I-37); and resource identity is never timestamp-derived
+(I-38). A single mutation probe combining a duplicate cache, a parallel
+persistence path and a WebWeaveX escape failed **four** invariants at once.
+
+**Also corrected** (documentation only): `knowledge_graph_bridge.dart`'s R2
+rationale still claimed ids were fresh per fetch "by design". The R2 decision
+to key the World Graph on `sourceUri` stands, on stronger footing than before.
+
+**Execution result:** `flutter analyze`: 71 issues, unchanged baseline, zero
+in any R48 file. `flutter test`: **1827 passed, 3 skipped, exit 0** — the 3
+are pre-existing network-dependent tests that self-skip when offline (they
+passed during R47's run, when the network was up); 1827 + 3 = 1830 = R47's
+1808 + 22 new, so every test is accounted for. `git status --porcelain`: clean.
+
+**DO NOT START R49 — per this specification's own stop condition, wait
 for external architectural review.**

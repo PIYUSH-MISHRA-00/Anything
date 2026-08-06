@@ -2539,3 +2539,93 @@ Anchored to `(?:[^'"]*/)?<basename>['"]`.
 in any R47 file. `flutter test`: 1808/1808 passed (1789 baseline + 15 + 4),
 exit 0, full untruncated run, zero regressions. `git status --porcelain`:
 clean.
+
+## R48 — Canonical Knowledge Persistence
+
+`test/r48_canonical_knowledge_persistence_test.dart` (new, 17 tests) plus a
+certification extension (41 -> 46 tests).
+
+**Round-trip integrity (1 test).** Proves the latent bug R48 had to fix
+first: `KnowledgeResource.toJson()` omitted `content` and `fromJson()` never
+read it, so `fromJson(toJson(r))` silently returned `content == null`.
+Harmless while nothing round-tripped resources; fatal for persistence,
+because `canonicalRepresentation()` includes `content` — a content-less round
+trip would have produced a DIFFERENT canonical representation after restart.
+The test asserts content, hash, retrievedAt AND the canonical representation
+all survive.
+
+**Repository (4 tests).** Order, identity, hash and canonical representation
+are preserved per key; a miss returns null (distinguishable from a genuinely
+empty hit); `putResources()` REPLACES a key rather than accumulating rows;
+`clear()`/`removeKey()` really empty the store. Critically: a row whose stored
+content no longer hashes to its stored hash is DROPPED, never repaired and
+never served — verified by tampering with a persisted row directly through
+the database and asserting the read returns null. Serving silently-corrupted
+knowledge to the reasoner would be worse than a cache miss.
+
+**Restart equivalence (4 tests) — the load-bearing guarantee.** "Restart"
+means genuinely new `KnowledgeRepository`, `KnowledgeCache` and (where
+relevant) `KnowledgeAcquisitionEngine` instances over the SAME database file,
+with the previous ones closed first, so anything that survives really came
+off disk. Canonical id, canonical hash, canonical representation, content,
+retrievedAt, provenance, trust, license, ranking and freshness are all proven
+identical after restart. Three independent loads produce ONE canonical
+representation (deterministic replay, not deterministic once). The full
+acquisition pipeline survives: a brand-new engine serves the same bundle with
+ZERO new fetches, verified by counting real fetch calls, and returns
+`BundleStatus.offlineCached`.
+
+One test deserves specific mention: a resource RE-EXTRACTED after restart
+must match the one restored from disk. The other restart tests would pass
+even with timestamp-derived ids, because they extract once and then only
+round-trip the stored value. This one requires a freshly-extracted id to
+equal the persisted one — true only if identity is genuinely canonical.
+
+**Lazy incremental restoration (2 tests).** A fresh persistent cache reports
+`size == 0` after construction while both keys really are on disk; requesting
+one key hydrates exactly one; requesting the second hydrates the second. A
+hydrated key is promoted into memory — proven by closing the store and
+observing the second read still succeed.
+
+**Single-cache and invalidation (2 tests).** `clear()` empties BOTH memory and
+durable storage, so a cleared cache leaves no rows to resurrect; re-putting a
+key replaces it on disk too, so restart sees the NEW value with no lingering
+old row.
+
+**Backward compatibility (4 tests).** A bare `KnowledgeCache()` is purely
+in-memory and behaves exactly as before. A cache with a repository but NO
+canonicalizer stays inert rather than persisting something it cannot
+canonicalize — half-configured persistence is off, not partial. The bare
+network-free `KnowledgeAcquisitionEngine()` is unchanged. The legacy
+pre-seeded pool (`store`/`findRelevant`) still works.
+
+**Certification extension (41 -> 46).** `KnowledgeCache` is the only `*Cache`
+class in all of `lib/` (I-35, structural rather than a name blacklist);
+`KnowledgeRepository` is referenced only by the cache and the composition root
+(I-36 — persistence cannot be bypassed); the durable store never imports
+WebWeaveX and hand-rolls no canonical encoder (I-37); resource identity is
+never timestamp-derived (I-38); and code inside a string interpolation
+survives stripping (I-31b, self-certification).
+
+**Mutation evidence.** Probe A — one file declaring
+`class PersistentKnowledgeCache`, calling `KnowledgeRepository` directly, and
+importing `package:webweavex` — failed FOUR independent invariants at once
+(I-21b, I-21d, I-35, I-36).
+
+Probe B is the important one. Reintroducing
+`return 'wwx-${DateTime.now().microsecondsSinceEpoch}';` into the adapter
+**passed** certification. The offending code sat inside a string
+interpolation, and the scanner blanked string contents wholesale — so ANY
+logic inside `${...}` was invisible to EVERY static invariant, not just this
+one. The instrument was fixed (interpolated regions now survive stripping),
+I-31b was added to prove it, and probe B then failed as it should. This is
+the third scanner defect found by mutation or tooling rather than by
+inspection, after R46's vacuously-passing import scan and R47's incomplete
+reference search.
+
+**Execution result:** `flutter analyze`: 71, unchanged baseline, zero in any
+R48 file. `flutter test`: 1827 passed, 3 skipped, exit 0. The 3 skips are
+pre-existing network-dependent tests that self-skip when offline; they passed
+during R47's run when the network was up. 1827 + 3 = 1830 = R47's 1808 + 22
+new, so every test is accounted for and nothing silently stopped running.
+`git status --porcelain`: clean.

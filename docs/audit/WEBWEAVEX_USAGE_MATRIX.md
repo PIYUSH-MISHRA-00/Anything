@@ -105,7 +105,7 @@ Honest assessment. Each row states a real, cited gap — not a hypothetical.
 | W-2 | Replay equivalence for knowledge acquisition | No replay of acquisition | Would strengthen determinism auditing, but R23's compiler certification already covers the generation path. Still open, still lower value than W-1 was. |
 | W-3 | Runtime graph / memory fabric | Anything has its own World Model and Engineering Memory | **Should NOT adopt** — would create a second graph and a second memory system, a direct "no parallel architecture" violation. Closed deliberately in R46; **now mechanically enforced** by I-21e. |
 | W-4 | Kaalka v5 via WebWeaveX | Direct `package:kaalka` dependency | **Should NOT adopt** — would create a second protection path and break I-21a. Closed deliberately in R46; **now mechanically enforced** by I-21e. |
-| W-5 | Cross-restart knowledge persistence | `KnowledgeCache` is in-memory and process-scoped | Unchanged by R47 and out of its scope. Now that cache keys and resource identities are canonical, a persistent cache would be a straightforward follow-on — R47 removed the blocker (non-deterministic ids) rather than the feature gap itself. |
+| W-5 | Cross-restart knowledge persistence | **DONE — IS-R48.** `KnowledgeCache` gained an optional `KnowledgeRepository` backing store; canonical representations are persisted via the adapter's `stableSerialize` output and restored lazily per key. | **CLOSED.** R47 removed the blocker (non-deterministic ids); R48 built on it. Canonical ids, hashes and representations are proven byte-identical across a genuine restart, and a re-extraction in the new session matches the restored value — proving identity is canonical, not merely round-tripped. |
 
 ## 5. Certified constraints (from the integration doc, now mechanically enforced)
 
@@ -139,3 +139,13 @@ Adoption count: **6 WebWeaveX capabilities used** (HTML extraction, bounded
 fetch, repository analysis, document IR, deterministic serialization, runtime
 normalization), up from 4 at R46; **4 deliberately closed and enforced**;
 2 unused with no identified consumer.
+
+**IS-R48 addendum.** R48 added no new WebWeaveX capability — it *consumed*
+the two R47 already adopted, in a second place. `stableSerialize` output is
+now persisted alongside each resource so the canonical form is durable
+evidence rather than something recomputed from scratch after restart. The
+adapter boundary is unchanged and newly reinforced: the durable store
+(`lib/storage/knowledge_repository.dart`) is certified **never** to import
+`package:webweavex` and to hand-roll no canonical encoder of its own
+(invariant I-37) — it persists the canonical representation it is *given*.
+Importer count remains 4.

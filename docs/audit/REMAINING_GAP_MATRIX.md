@@ -15,6 +15,21 @@ Severity: **A** = architectural integrity, **B** = correctness/UX,
 | G-08 | `HomeScreen` submit-button reactivity | **FIXED.** The icon subtree is wrapped in a `ValueListenableBuilder<TextEditingValue>` on the existing `_textController` — the native Flutter mechanism, rebuilding only that subtree. No new state, no listener to dispose, no business-logic change. |
 | G-10 | WebWeaveX deterministic serialization unused | **IMPLEMENTED** (IS-R47 Task 4). See `WEBWEAVEX_USAGE_MATRIX.md` W-1. |
 
+## CLOSED BY IS-R48
+
+| # | Gap | How it was closed |
+|---|---|---|
+| G-13 | `KnowledgeCache` in-memory only; no cross-restart persistence | **CLOSED.** Persistence added *inside* `KnowledgeCache` as an implementation detail, backed by a new `KnowledgeRepository` following the same per-domain pattern as the ten repositories already in `lib/storage/`. Canonical ids, hashes and representations are proven byte-identical across a genuine restart. Restoration is lazy and per-key — no startup scan, no eager load. |
+
+## Gaps IS-R48 found and closed within the same milestone
+
+| # | What happened |
+|---|---|
+| G-14 | **`KnowledgeResource.toJson()` silently dropped `content`**, and `fromJson()` never read it — so `fromJson(toJson(r))` returned a resource with `content == null`. A latent round-trip bug in `KnowledgeBundle` serialization (its only consumer) that was harmless while nothing round-tripped resources, and fatal for R48: `canonicalRepresentation()` includes `content`, so a content-less round trip would have produced a DIFFERENT canonical representation after restart. Fixed and directly tested. |
+| G-15 | **The certification scanner was blind to string interpolations.** A mutation probe reintroducing timestamp ids as `return 'wwx-${DateTime.now().microsecondsSinceEpoch}';` **passed** certification, because the offending code sat inside a string literal and the stripper blanked string contents wholesale — meaning *any* logic inside `${...}` was invisible to *every* static invariant. The instrument was fixed (interpolations now survive stripping) and a self-certification test added. This is the **third** scanner defect found by mutation or tooling rather than by inspection, after R46's vacuously-passing import scan and R47's incomplete reference search. |
+| G-16 | **The restart test had the same blind spot from the other direction.** It extracted once and then only round-tripped the stored value, so it would have passed with timestamp ids too. A stronger test now re-extracts the same page in the second session and requires the fresh id to equal the persisted one — true only if identity is genuinely canonical. |
+| G-17 | **Stale rationale in `knowledge_graph_bridge.dart`.** Its R2 doc comment stated `KnowledgeResource.id` is `'wwx-${microsecondsSinceEpoch}'`, "a fresh value on every fetch, by design" — true when written, false since R47. Corrected (documentation only). The R2 *decision* to key the World Graph on `sourceUri` still stands, on stronger footing: a page edited between fetches now correctly yields a different canonical id, and keying on that id would split one real entity into two nodes. |
+
 ## A gap R47 created and closed within the same milestone
 
 | # | What happened |
@@ -32,7 +47,8 @@ Severity: **A** = architectural integrity, **B** = correctness/UX,
 | G-05 | B | **`savePackage()` stores Experience packages in plaintext by default.** Kaalka protection is opt-in per Experience. | `storage/sqlite_experience_repository.dart:172` vs `:292`. | Confirmed deliberate product design, cited in three places in `lib/`. Restated because "Kaalka is canonical" is easily misread as "everything is encrypted". Not a defect; a disclosure. |
 | G-06 | B | **`IntentRepository` stores raw user intent text unprotected.** User-authored natural language can be sensitive. | Persistence audit, `KAALKA_USAGE_MATRIX.md` §3. | Product/security decision, out of certification scope. Worth explicit review. |
 | G-09 | C | **`FakeKnowledgeProvider` lives in production `lib/`.** | `capabilities/builtin/knowledge_capability.dart:12`. Verified **not** wired in production — `AppComposition:220` wires the real `KnowledgeAcquisitionProviderAdapter`. | **Still open.** Harmless test double in the wrong directory. Hygiene only. |
-| G-13 | C | **`KnowledgeCache` remains in-memory and process-scoped.** No cross-restart knowledge persistence. | `knowledge_acquisition_engine.dart:251-259`, documented there as a known limitation. | **Still open, but unblocked.** R47 made resource ids and cache keys canonical, which was the real obstacle to persisting them meaningfully. See `WEBWEAVEX_USAGE_MATRIX.md` W-5. |
+| G-18 | C | **Persisted knowledge has no size ceiling or eviction.** The durable store grows until `clear()`. Each resource is bounded by `RuntimeSecurityLimits.maxKnowledgeBytes` (200 KB), but the number of rows is not. | `lib/storage/knowledge_repository.dart`. | **Open, deliberately.** IS-R48 Task 5 required reusing existing expiration policies and forbade a second policy engine — and a repository-wide search found the knowledge subsystem has **no** TTL, eviction or staleness rule to reuse. Inventing one would have been exactly the speculative machinery the rules forbid. The honest position: R48 gave persistence the same replace-on-put/clear semantics the in-memory cache always had, and a real retention policy is a deliberate product decision for a future milestone. |
+| G-19 | C | **The 3 network-dependent knowledge tests could not run in this environment.** They self-skip when there is no outbound network. | `test/knowledge/performance_test.dart`, `test/knowledge/knowledge_pipeline_production_test.dart`. | **Environmental, not a defect.** They passed during R47's run (network up) and skipped during R48's (network down). They exercise the real DuckDuckGo + WebWeaveX path, so R48's changes to that path are verified only by the injectable-fetcher tests, not against live network. Stated plainly rather than reported as a clean pass. |
 
 ## Deliberately closed options — recorded so they are not reopened by accident
 

@@ -123,6 +123,26 @@ The four permitted model-invocation files, and why each is permitted:
 | I-21c | No `lib/kernel/`, `lib/features/` or `lib/screens/` file imports either package directly | STATIC (raw source) | CERTIFIED |
 | I-21d | WebWeaveX **deterministic serialization/normalization** (`stableSerialize`, `normalizeRuntimeValue`) is called only from `knowledge/webweavex_adapter.dart` | STATIC | CERTIFIED (IS-R47) |
 | I-21e | The four deliberately-closed WebWeaveX surfaces stay closed — no runtime graph, memory fabric, workflow runtime, or Kaalka-via-WebWeaveX | STATIC | CERTIFIED (IS-R47) |
+| I-35 | `KnowledgeCache` is the **only** `*Cache` class in `lib/` — no second cache, no cache hierarchy | STATIC | CERTIFIED (IS-R48) |
+| I-36 | `KnowledgeRepository` is referenced **only** by `KnowledgeCache` and the composition root — persistence cannot be bypassed | STATIC | CERTIFIED (IS-R48) |
+| I-37 | The durable store never imports WebWeaveX and hand-rolls no canonical encoder — it persists the canonical form it is *given* | STATIC | CERTIFIED (IS-R48) |
+| I-38 | Resource identity is never timestamp-derived — no `microsecondsSinceEpoch`/`millisecondsSinceEpoch` in the adapter, and `_deterministicId` still exists | STATIC | CERTIFIED (IS-R48) |
+
+**I-35** is enforced structurally rather than by blacklisting names: exactly
+one class in all of `lib/` may match `class \w*Cache`. That catches a
+`PersistentKnowledgeCache`, a `CachedKnowledgeManager` variant, or any other
+parallel cache, without needing to predict what it would be called.
+
+**I-36** is what makes "persistence is an implementation detail" a fact rather
+than an intention. `KnowledgeRepository` is a store, not a cache: it has no
+lookup policy, no ranking, no deduplication and no expiry. If any file other
+than `KnowledgeCache` and `AppComposition` reaches it, something has found a
+path around the single canonical cache.
+
+**I-38** exists because the pre-R47 defect (`id: 'wwx-${now.microsecondsSinceEpoch}'`)
+is precisely what would silently destroy R48's guarantee: canonical ids could
+no longer survive restart, and every restored resource would be a stranger to
+its freshly-acquired twin.
 
 **I-21d** is the guard for IS-R47 Task 4. R47 integrated WebWeaveX's canonical
 determinism primitives; they must be reached the same way every other
@@ -168,6 +188,7 @@ code. Rejected: R46 adds nothing to `lib/`. Recorded as a known limitation.
 | I-29 | The scanner really walks the repository (>400 files; found 462) | SELF-TEST | CERTIFIED |
 | I-30 | Comment stripping removes doc/line/block comments | SELF-TEST | CERTIFIED |
 | I-31 | String stripping removes type names in strings — proven on the real file it guards | SELF-TEST | CERTIFIED |
+| I-31b | Code inside a string **interpolation** SURVIVES stripping — `${...}` is executing code, not prose | SELF-TEST | CERTIFIED (IS-R48) |
 | I-32 | The matcher rejects `MyExperienceHostScreen(` (no false positive) | SELF-TEST | CERTIFIED |
 | I-33 | The matcher accepts a real construction (no false negative) | SELF-TEST | CERTIFIED |
 | I-34 | R46 added nothing to `lib/` | STATIC | CERTIFIED |
@@ -209,3 +230,45 @@ Deterministic serialization/normalization must stay inside the WebWeaveX adapter
 
 It independently failed I-21b as well, since the probe also imported
 `package:webweavex` — layered defence working as intended.
+
+**R48 probe A — duplicate cache + parallel persistence + WebWeaveX escape.**
+A single probe declaring `class PersistentKnowledgeCache`, calling
+`KnowledgeRepository` directly, and importing `package:webweavex` failed
+**four** independent invariants at once — I-21b, I-21d, I-35 and I-36:
+
+```
+I-35 Expected: ['lib/knowledge/knowledge_acquisition_engine.dart:KnowledgeCache']
+     Actual:   [... 'lib/r48_mutation_probe_a.dart:PersistentKnowledgeCache']
+I-36 Expected: [app_composition.dart, knowledge_acquisition_engine.dart]
+     Actual:   [... 'lib/r48_mutation_probe_a.dart']
+```
+
+**R48 probe B — timestamp identity, and the blind spot it exposed.** This is
+the most important entry in this section. Reintroducing
+
+```dart
+return 'wwx-${DateTime.now().microsecondsSinceEpoch}';
+```
+
+into the adapter **did not fail certification**. The offending code sat inside
+a **string interpolation**, and the scanner blanked string contents wholesale
+— so any logic written inside `${...}` was invisible to *every* static
+invariant, not just this one.
+
+The instrument was fixed rather than the test: interpolated regions are now
+copied through as code (I-31b covers this, including proof that a construction
+hidden inside an interpolation is now caught, while surrounding prose is still
+stripped). With the fix in place, probe B fails as it should:
+
+```
+I-38 Expected: false / Actual: <true>
+     timestamp-derived resource ids returned; canonical ids could no longer
+     survive restart
+```
+
+The behavioural suite had the same blind spot from a different direction: the
+restart-equivalence test extracted **once** and then only round-tripped the
+stored value, so it would have passed with timestamp ids too. A stronger test
+was added that re-extracts the same page in the second session and requires
+the fresh id to equal the persisted one — which is only true if identity is
+genuinely canonical.
