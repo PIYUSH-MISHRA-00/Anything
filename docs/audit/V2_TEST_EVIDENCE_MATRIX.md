@@ -2372,3 +2372,96 @@ via a fresh, full run after the fix above. `flutter test`: 1748/1748 passed
 `ExperienceHostScreen` all confirmed completely untouched via
 `git diff --stat`. `useCompilerPipeline` unaffected, still defaults `false`.
 Zero new LLM/reasoning calls anywhere in the diff.
+
+
+## R46 — Architectural Integrity Certification, Canonical Architecture Enforcement
+
+`test/r46_architectural_integrity_certification_test.dart` (new, 37 tests) is
+not a feature test suite — it is a permanent certification layer that proves
+architectural invariants from repository-wide evidence on every run. It
+exists because R45 shipped without meeting its own success criterion, and the
+gap was found only by a later manual audit.
+
+**Nothing was added to `lib/`** — and that is itself certified (I-34).
+Architectural certification is a build-time concern with zero runtime value.
+
+Scanner self-certification (5 tests): the instrument is proven before any
+invariant is trusted — the scan really walks the repository (>400 files;
+found 462); comment stripping really removes doc/line/block comments; string
+stripping really removes type names inside strings, proven on the REAL file
+it guards (`lib/application_engineering/lifecycle_engineering.dart`, which
+contains the string `'ExperienceOpeningCoordinator (trusted opening)'` that a
+naive grep counts as a construction); the matcher rejects
+`MyExperienceHostScreen(` (no false positive) and accepts a real construction
+(no false negative).
+
+Static construction ownership (13 tests, one per canonical type): every
+construction site of `ExperienceEntryPipeline`, `ExperienceHostScreen`,
+`WorkspaceRuntimeSupervisor`, `WorkspaceSchedulingEngine`,
+`ExperienceActivationManager`, `UniversalIntentRouter`,
+`IntentExecutionPipeline`, `ExperienceWorkspaceManager`,
+`IntentSessionManager`, `ExperienceOpeningCoordinator`, `AnythingKernel`,
+`AnythingRuntime` and `ExperienceRuntimeController` is compared against a
+pinned allowlist. Allowlists rather than `count == 1` because reality is not
+one site for every type, and pinning the exact set is strictly stronger: it
+fails on a NEW site even when an old one is deleted in the same change.
+
+Declaration integrity (2 tests): every canonical type is declared exactly
+once, except one pinned, documented collision — `lib/core/contracts/runtime.dart`
+declares a dead v1 `abstract class AnythingRuntime` colliding with the live
+implementation. A dedicated test proves it stays dead (zero importers, zero
+implementors, in `lib/` and `test/`).
+
+Pipeline certification (2 tests): `ExperienceEntryPipeline` is the ONLY file
+in `lib/` constructing `ExperienceHostScreen` — the mechanical form of R45's
+success criterion — plus a redundant, clearer-failing restatement that no
+file outside the pipeline both references the host screen and calls
+`Navigator.push`.
+
+AI certification (3 tests): the set of files permitted to reach a language
+model is pinned to four, exactly one of which
+(`synthesis/model_reasoner.dart`) is a mandatory creation-path reasoning
+boundary; exactly four `ApplicationReasoner` implementations exist and
+exactly one may reach a provider; and the optional intent-understanding call
+provably retains BOTH deterministic fallbacks (no configured provider, and a
+thrown model error), which is what makes it a non-mandatory boundary rather
+than a second one.
+
+External boundary certification (3 tests): `package:kaalka` imported only by
+`security/kaalka_service.dart`; `package:webweavex` only by its four
+documented adapters/analyzers; and no `lib/kernel/`, `lib/features/` or
+`lib/screens/` file imports either directly. These scan RAW source
+deliberately — an import URI IS a string literal and does not survive
+stripping. The first implementation scanned stripped source and reported zero
+import sites, a bug that would have vacuously certified "no Kaalka imports
+anywhere"; both tests now also assert the result is non-empty so that failure
+mode cannot recur.
+
+Dynamic certification (6 tests) on the real `AppComposition.production()`
+graph: each canonical service is a stable single instance; the ONE scheduler
+supervises through the ONE supervisor and schedules the ONE workspace
+manager; the ONE activation manager activates through the ONE scheduler; the
+ONE entry pipeline holds all four composition singletons by identity; a fresh
+production graph supervises zero runtimes; and both real entry surfaces build
+against the same composition without throwing.
+
+Regression/backward compatibility (2) and performance (1): repository scan
+~550ms, invariant verification ~625ms, total ~1.2s.
+
+**Mutation evidence.** A certification that has never been observed failing
+is not evidence. A temporary probe file containing a rogue
+`Navigator.push(... ExperienceHostScreen ...)` — exactly the R45 bypass class
+— was added to `lib/`. Three invariants failed immediately and named the
+offending file:
+
+```
+Expected: ['lib/app/experience_entry_pipeline.dart']
+  Actual: ['lib/app/experience_entry_pipeline.dart', 'lib/r46_mutation_probe.dart']
+```
+
+The probe was then deleted. R45's regression would now be caught at CI time.
+
+**Execution result:** `flutter analyze`: 71 issues, unchanged baseline, zero
+in any R46 file. `flutter test`: 1789/1789 passed (1752 baseline + 37 new),
+exit 0, full untruncated run, zero regressions. `git status --porcelain`:
+clean. Zero changes to `lib/`.

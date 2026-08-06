@@ -2310,5 +2310,88 @@ See `docs/architecture/UNIFIED_EXPERIENCE_ENTRY_PIPELINE.md` for the full
 audit, including the pre-existing `HomeScreen` submit-button reactivity gap
 found (not introduced) while writing this milestone's tests.
 
-**DO NOT START R46 — per this specification's own stop condition, wait
+**R46 has since been implemented — see below.**
+
+## Implementation Specification IS-R46 — Architectural Integrity Certification, Canonical Architecture Enforcement
+
+**Reality:** R45 shipped, was documented complete, and did not meet its own
+success criterion — `ExperiencesScreen` bypassed the entry pipeline in three
+paths. The root cause was structural: the specification enumerated call sites
+to inspect, and the implementation satisfied that list rather than the goal.
+Every milestone R1–R45 asserted architectural properties in prose and proved
+them with hand-run greps recorded in documents. Prose does not fail a build,
+and a recorded grep certifies only the moment it was run. At R46 `lib/`
+contains 462 `.dart` files — no human audit of that surface is reliably
+repeatable, and R45 is the proof.
+
+**The fix:** one permanent, mechanical certification layer —
+`test/r46_architectural_integrity_certification_test.dart`, 37 tests.
+**Nothing was added to `lib/`**, and that is itself certified: architectural
+certification is a build-time concern with zero runtime value, and a
+`lib/certification/` subsystem would be exactly the speculative parallel
+machinery every milestone since MIS-1 has forbidden.
+
+Two mechanisms. STATIC: every `.dart` file under `lib/` is enumerated from
+the real directory tree (no hardcoded list, no filename assumptions),
+comments and string literals are stripped, and construction sites of 13
+canonical types are compared against a pinned allowlist. DYNAMIC: the real
+`AppComposition.production()` graph is built and identity invariants asserted
+on live objects.
+
+Allowlists rather than `count == 1`, because reality is not one site for
+every type — `HomeScreen` legitimately composes local instances for per-field
+test injection (IS-R45), and `CertificationRunner` legitimately builds a
+second Kernel *instance* with a fake reasoner (R23). Pinning the exact set is
+honest about that and strictly stronger than a count: it fails on a NEW site
+even when an old one is deleted in the same change.
+
+**Proven to bite.** A temporary probe file containing a rogue
+`Navigator.push(... ExperienceHostScreen ...)` — exactly the R45 bypass class
+— was added to `lib/`. Certification failed immediately and named the file.
+The probe was deleted. A certification never observed failing is not
+evidence.
+
+**The AI invariant, stated honestly.** "Exactly one `provider.generate(` in
+`lib/`" is false, and asserting it would have required a dishonest exemption.
+Four files may reach a model: `synthesis/model_reasoner.dart` (THE one
+mandatory creation-path boundary), `kernel/understanding/model_understanding_service.dart`
+(optional, with heuristic fallback on both no-provider and throw), and two
+runtime AI *capabilities* offered to generated Experiences. The certified
+invariant pins that set and separately proves the understanding call keeps
+both fallbacks.
+
+**R46 finding — a dead, name-colliding v1 contract.**
+`lib/core/contracts/runtime.dart` declares `abstract class AnythingRuntime`,
+colliding with the live implementation while having an entirely different
+shape. Imported by nothing and implemented by nothing, in `lib/` or `test/` —
+orphaned residue of exactly the kind MIS-1 Part 1 documented. Deliberately
+NOT deleted (certification milestone, stop condition); instead pinned so it
+is visible in CI, with a test enforcing it stays dead. Deletion recommended
+for R47.
+
+**Also audited, per specification, without modifying either:** WebWeaveX
+(correctly bounded, genuinely used for extraction/fetch/repository IR; the
+one worthwhile unrealized integration is deterministic serialization for
+knowledge caching, which the project itself deferred at Stage 5) and Kaalka
+(single crypto importer certified; two consumer paths found, one bypassing
+the `ProtectionProvider` contract; package persistence is plaintext by
+default because protection is deliberately opt-in — confirmed in three places
+in `lib/`).
+
+**Performance:** repository scan ~550ms (462 files, 2,145KB stripped source),
+invariant verification ~625ms, total ~1.2s. A first implementation took 18.7s
+for verification alone — catastrophic regex backtracking in the
+class-declaration matcher; matching `\bclass\s+<Type>\b` is sufficient and
+~30× faster.
+
+**Execution result:** `flutter analyze`: 71 issues, unchanged baseline, zero
+in any R46 file. `flutter test`: **1789/1789 passed**, exit 0, full
+untruncated run (1752 baseline + 37 new), zero regressions. `git status
+--porcelain`: clean. Nothing in `lib/` changed.
+
+See `docs/architecture/ARCHITECTURAL_INTEGRITY_CERTIFICATION.md` plus the
+invariant, ownership, canonical-flow, subsystem, integration, WebWeaveX,
+Kaalka and remaining-gap matrices under `docs/audit/`.
+
+**DO NOT START R47 — per this specification's own stop condition, wait
 for external architectural review.**
