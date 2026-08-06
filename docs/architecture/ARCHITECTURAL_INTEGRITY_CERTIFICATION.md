@@ -240,7 +240,73 @@ unchanged baseline, zero in any R46 file.
    initial state; the end-to-end entry behaviour is covered by R45's own suite
    rather than duplicated here.
 
-## RECOMMENDATION FOR R47
+## IS-R47 — WHAT THE CERTIFICATION LAYER GAINED
+
+R47 acted on this document's own recommendations and extended the layer.
+It now runs **41 tests** (was 37).
+
+### New invariants
+
+| # | Invariant | Why |
+|---|---|---|
+| I-15 (replaced) | The deleted v1 runtime contract is **gone** and cannot reappear — 3 guards | R47 Task 1 deleted it; the debt must not silently return |
+| I-15b | `AnythingRuntime` declares exactly once | proves the collision is *resolved*, not tolerated |
+| I-15c | The v1 `RuntimeEvent` hierarchy did not return | proves dead **code** was removed, not just a name |
+| I-21d | Deterministic serialization reached only via the adapter | R47 Task 4 must not create a second normalization path |
+| I-21e | The four closed WebWeaveX surfaces stay closed | enforces R46's deliberate closures instead of merely documenting them |
+
+`knownDuplicateDeclarations` is now **empty**. The map is deliberately kept
+rather than deleted with its only entry, so a future collision must be
+recorded explicitly instead of silently relaxing the exactly-once rule.
+
+### Two real defects the layer found in itself during R47
+
+Both are reported because they matter more than a clean result.
+
+**1. A "find all references" search that missed a reference.** R47's first
+verification searched for the literal text `contracts/runtime.dart` and
+concluded the dead file was entirely unreferenced. It was not:
+`lib/core/contracts/contracts.dart` re-exported it as
+`export 'runtime.dart';` — a **relative** path with no `contracts/` segment,
+and an `export` rather than an `import`. The deletion left a dangling
+`uri_does_not_exist`, moving the analyzer baseline 71 → 72, which is how it
+surfaced. The barrel export was removed and I-15 widened to match
+`import|export` on the bare filename.
+
+**2. The widened pattern then over-matched.** `[^'"]*runtime\.dart` also
+matches `anything_runtime.dart` — the LIVE implementation, imported across the
+codebase — producing a repository-wide false positive. It was caught by the
+**full suite**, not by inspection, and fixed by anchoring to
+`(?:[^'"]*/)?<basename>['"]`.
+
+The pattern across R46 and R47 is consistent: the dangerous failures of a
+certification layer are the silent ones (R46's vacuously-passing import scan,
+R47's incomplete reference search), and they are caught by making the
+instrument prove itself and by running the whole suite — never by reading the
+regex again and feeling confident.
+
+### Mutation certification re-run
+
+Both new invariant families were mutation-proven, not assumed:
+
+- **Probe A** recreated `lib/core/contracts/runtime.dart`. I-15 and I-15b both
+  failed and named the file. Re-run again after the anchoring fix, to confirm
+  the corrected pattern still bites.
+- **Probe B** called `wwx.stableSerialize`/`wwx.normalizeRuntimeValue`
+  directly from a rogue file outside the adapter. I-21d failed and named it;
+  I-21b failed independently because the probe also imported the package —
+  layered defence working as intended.
+
+Both probes were deleted and the tree confirmed clean.
+
+## SUPERSEDED RECOMMENDATIONS (R46 → acted on by R47)
+
+Items 1, 2 and 3 below were **completed by IS-R47**: the dead contract was
+deleted, the stale R44 comment corrected, and the `HomeScreen` reactivity gap
+fixed. Item 5 (the two production `Fake*` services) and item 4
+(`MinimalKernel`) remain open — see `docs/audit/REMAINING_GAP_MATRIX.md`.
+
+## ORIGINAL RECOMMENDATION FOR R47
 
 1. **Delete `lib/core/contracts/runtime.dart`** — dead, unreferenced, and it
    collides with a live canonical type name. One-file deletion, zero

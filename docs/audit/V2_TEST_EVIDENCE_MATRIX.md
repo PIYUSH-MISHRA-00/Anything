@@ -2465,3 +2465,77 @@ The probe was then deleted. R45's regression would now be caught at CI time.
 in any R46 file. `flutter test`: 1789/1789 passed (1752 baseline + 37 new),
 exit 0, full untruncated run, zero regressions. `git status --porcelain`:
 clean. Zero changes to `lib/`.
+
+## R47 — Architectural Debt Elimination + Deterministic Knowledge Normalization
+
+Two files: `test/r47_deterministic_knowledge_normalization_test.dart` (new,
+15 tests) and an extension of the R46 certification layer (37 -> 41 tests).
+
+**Deterministic normalization (15 tests).** These drive the adapter's real,
+already-existing injectable `PageFetcher` seam, so the REAL WebWeaveX
+parsing, normalization and serialization all execute; only the network is
+replaced. They prove: two independent extractions of the identical page
+produce the SAME id, contentHash and canonical representation (before R47 the
+id came from `DateTime.now().microsecondsSinceEpoch`, so no two acquisitions
+were ever comparable); the canonical representation deliberately EXCLUDES
+`retrievedAt`, so provenance stays truthful while representations stay
+identical; genuinely different content still produces different identity, so
+normalization did not collapse real distinctions; the same content from a
+different URL remains a distinct resource because `sourceUri` is
+identity-bearing; CRLF vs LF, NFC vs NFD, and trailing whitespace all
+converge to the same `contentHash`; and `normalizeText` is idempotent.
+
+End-to-end through the real `KnowledgeAcquisitionEngine`: two URLs whose
+content differs ONLY by line-ending encoding now deduplicate to a SINGLE
+resource — before R47 both survived `_deduplicate()` (which keys on
+`contentHash`) and reached the reasoner as separate knowledge. Distinct
+sources are still both retained, so dedup did not become over-eager. Repeated
+acquisition of the same requirement yields byte-identical normalized
+representations and is served from the EXISTING cache (no second cache layer
+was introduced). Canonically-equivalent QUERIES hit the same cache entry
+rather than re-fetching, verified by counting real fetches.
+
+The NFC/NFD test carries an explicit encoding hazard guard: it asserts the two
+constants genuinely differ and have different lengths BEFORE asserting that
+normalization unifies them, so a careless re-encoding of the file fails the
+test instead of silently satisfying it. This is not hypothetical — a
+PowerShell rewrite double-encoded the file during development and corrupted
+exactly those constants.
+
+Backward compatibility: a bare `KnowledgeAcquisitionEngine()` is still
+completely network-free with unchanged failure semantics; an empty
+requirement list still short-circuits; an unreachable page still yields null
+rather than throwing.
+
+**Certification extension (37 -> 41 tests).** The deleted v1 runtime contract
+is GONE and cannot reappear (three independent guards: absent from disk,
+absent from the scanned set, and referenced by no `import` OR `export`);
+`AnythingRuntime` declares exactly once so the R46 collision is resolved
+rather than tolerated; the v1 `RuntimeEvent` hierarchy did not return;
+deterministic serialization is reachable ONLY through the adapter (I-21d);
+and the four deliberately-closed WebWeaveX surfaces stay closed (I-21e).
+
+**Mutation evidence.** Probe A recreated `lib/core/contracts/runtime.dart`;
+I-15 and I-15b both failed and named the file. Probe B called
+`wwx.stableSerialize`/`wwx.normalizeRuntimeValue` directly from a rogue file
+outside the adapter; I-21d failed and named it, and I-21b failed
+independently because the probe also imported the package — layered defence.
+Both probes were deleted and the tree confirmed clean. Probe A was re-run
+after an anchoring fix to confirm the corrected pattern still bites.
+
+**Two real defects the tooling caught in R47's own work**, reported because
+they matter more than the clean result. First, the initial "find all
+references" search for the dead contract matched only the literal text
+`contracts/runtime.dart` and missed `export 'runtime.dart';` in the
+`lib/core/contracts/contracts.dart` barrel — a relative path, and an export
+rather than an import. The deletion left a dangling `uri_does_not_exist` and
+moved the analyzer baseline 71 -> 72, which is how it surfaced. Second, the
+widened invariant pattern `[^'"]*runtime\.dart` then matched
+`anything_runtime.dart` — the LIVE implementation — producing a
+repository-wide false positive caught by the full suite, not by inspection.
+Anchored to `(?:[^'"]*/)?<basename>['"]`.
+
+**Execution result:** `flutter analyze`: 71 issues, unchanged baseline, zero
+in any R47 file. `flutter test`: 1808/1808 passed (1789 baseline + 15 + 4),
+exit 0, full untruncated run, zero regressions. `git status --porcelain`:
+clean.

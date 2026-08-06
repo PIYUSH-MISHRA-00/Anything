@@ -1,8 +1,21 @@
-# Architecture Invariant Matrix — IS-R46
+# Architecture Invariant Matrix — IS-R46, extended by IS-R47
 
 Every row is enforced mechanically by
 `test/r46_architectural_integrity_certification_test.dart` on every test run.
 "Evidence" names the mechanism, never a human judgement.
+
+**IS-R47 changes to this matrix**, all in §2 and §5:
+
+- **I-14 tightened.** `knownDuplicateDeclarations` is now **empty**. R47
+  deleted `lib/core/contracts/runtime.dart`, so `AnythingRuntime` is declared
+  exactly once like every other canonical type. The collision is *resolved*,
+  not merely tolerated.
+- **I-15 replaced and strengthened.** The old invariant ("the dead contract
+  stays unreferenced") became "the dead contract is GONE and cannot
+  reappear", with three independent guards, plus **I-15b** (declared exactly
+  once) and **I-15c** (the v1 event hierarchy did not return).
+- **I-21d and I-21e added** — deterministic serialization stays behind the
+  adapter, and the four deliberately-closed WebWeaveX surfaces stay closed.
 
 Legend: **STATIC** = repository-wide source scan (462 `lib/` files, comments
 and string literals stripped). **DYNAMIC** = assertion on live objects built
@@ -40,14 +53,37 @@ second AI boundary — certified separately by I-14/I-15.
 
 | # | Invariant | Evidence | Status |
 |---|---|---|---|
-| I-14 | Every canonical type declared exactly once in `lib/`, except one pinned collision | STATIC | CERTIFIED (1 known exception) |
-| I-15 | The dead v1 `AnythingRuntime` contract has zero importers and zero implementors | STATIC | CERTIFIED |
+| I-14 | Every canonical type declared **exactly once** in `lib/` — **zero** tolerated collisions | STATIC | CERTIFIED (IS-R47: exception list now empty) |
+| I-15 | The dead v1 runtime contract is **deleted** and cannot reappear | STATIC ×3 | CERTIFIED (IS-R47) |
+| I-15b | `AnythingRuntime` declares in exactly one file | STATIC | CERTIFIED (IS-R47) |
+| I-15c | The v1 `RuntimeEvent` hierarchy did not return | STATIC | CERTIFIED (IS-R47) |
 
-The one exception: `lib/core/contracts/runtime.dart` declares an orphaned
-v1-era `abstract class AnythingRuntime` whose shape does not match the live
-implementation. Imported by nothing, implemented by nothing. Pinned rather
-than hidden; deletion recommended for R47. See
-`docs/architecture/ARCHITECTURAL_INTEGRITY_CERTIFICATION.md`.
+**Resolved by IS-R47 Task 1.** R46 found `lib/core/contracts/runtime.dart`
+declaring an orphaned v1-era `abstract class AnythingRuntime` whose shape did
+not match the live implementation, and pinned it. R47 re-verified
+repository-wide that nothing implemented it and that all six of its symbols
+(`AnythingRuntime`, `RuntimeEvent`, `CapabilityExecutionStarted`,
+`CapabilityExecutionCompleted`, `ExperienceOpened`, `ExperienceClosed`) were
+used nowhere else, then deleted it.
+
+I-15 now enforces three independent guards: the file does not exist on disk,
+it is absent from the scanned file set, and **nothing imports *or exports*
+it** — matched on the bare filename so a relative path cannot hide a
+reference.
+
+That last clause exists because it caught a real miss. R47's first
+verification pass searched only for the literal text `contracts/runtime.dart`
+and concluded the file was entirely unreferenced. It was not:
+`lib/core/contracts/contracts.dart` re-exported it as `export 'runtime.dart';`
+— a **relative** path with no `contracts/` segment. The deletion left a
+dangling `uri_does_not_exist` and the analyzer baseline moved 71 → 72, which
+is how it surfaced. The barrel export was removed and the invariant widened
+to `import|export` on the bare filename.
+
+I-15c deliberately pins only the three unmistakably-v1 names.
+`ExperienceOpened`/`ExperienceClosed` are **not** pinned: they are plausible
+names for future *canonical* workspace events, and this guard exists to stop
+dead v1 code returning, not to reserve English words forever.
 
 ## 3. Pipeline certification
 
@@ -85,6 +121,22 @@ The four permitted model-invocation files, and why each is permitted:
 | I-21a | `package:kaalka` imported only by `security/kaalka_service.dart` | STATIC (raw source) | CERTIFIED |
 | I-21b | `package:webweavex` imported only by its 4 documented adapters/analyzers | STATIC (raw source) | CERTIFIED |
 | I-21c | No `lib/kernel/`, `lib/features/` or `lib/screens/` file imports either package directly | STATIC (raw source) | CERTIFIED |
+| I-21d | WebWeaveX **deterministic serialization/normalization** (`stableSerialize`, `normalizeRuntimeValue`) is called only from `knowledge/webweavex_adapter.dart` | STATIC | CERTIFIED (IS-R47) |
+| I-21e | The four deliberately-closed WebWeaveX surfaces stay closed — no runtime graph, memory fabric, workflow runtime, or Kaalka-via-WebWeaveX | STATIC | CERTIFIED (IS-R47) |
+
+**I-21d** is the guard for IS-R47 Task 4. R47 integrated WebWeaveX's canonical
+determinism primitives; they must be reached the same way every other
+WebWeaveX capability is — through the adapter. A direct call from the Kernel,
+the acquisition engine, or the UI would mean a **second normalization path**
+had been introduced, which is exactly what Task 4's "no parallel serialization
+framework / no duplicate normalization pipeline" rule forbids.
+`KnowledgeAcquisitionEngine` therefore normalizes its cache-key queries by
+calling `WebWeaveXAdapter.normalizeText()`, never by importing WebWeaveX.
+
+**I-21e** keeps R46's deliberate closures enforced rather than merely
+documented: adopting WebWeaveX's runtime graph or memory fabric would create a
+second graph and a second memory system, and routing crypto through its Kaalka
+v5 surface would create a second protection path and break I-21a.
 
 These three scan **raw** source deliberately: an import URI *is* a string
 literal and does not survive comment/string stripping. The first
@@ -122,9 +174,38 @@ code. Rejected: R46 adds nothing to `lib/`. Recorded as a known limitation.
 
 ## 8. Mutation evidence
 
-The certification was proven to **fail** by adding a temporary probe file to
-`lib/` containing a rogue `Navigator.push(... ExperienceHostScreen ...)` —
-exactly the R45 bypass class. I-02, I-16 and I-17 failed immediately and named
-the offending file. The probe was then deleted.
+A certification that has never been observed failing is not evidence. Every
+invariant family below was proven to **fail** under a deliberate mutation,
+then the probe was deleted and the tree confirmed clean.
 
-A certification that has never been observed failing is not evidence.
+**R46 — pipeline bypass.** A probe file containing a rogue
+`Navigator.push(... ExperienceHostScreen ...)` — exactly the R45 bypass class.
+I-02, I-16 and I-17 failed and named the file:
+
+```
+Expected: ['lib/app/experience_entry_pipeline.dart']
+  Actual: ['lib/app/experience_entry_pipeline.dart', 'lib/r46_mutation_probe.dart']
+```
+
+**R47 probe A — resurrect the deleted contract.** Recreating
+`lib/core/contracts/runtime.dart` failed **two independent** invariants:
+
+```
+I-15  Expected: false / Actual: <true>
+      lib/core/contracts/runtime.dart was deleted by IS-R47 and must not be recreated.
+I-15b Expected: ['lib/runtime/anything_runtime.dart']
+      Actual:   ['lib/core/contracts/runtime.dart', 'lib/runtime/anything_runtime.dart']
+```
+
+**R47 probe B — a rogue second normalization path.** A probe calling
+`wwx.stableSerialize`/`wwx.normalizeRuntimeValue` directly, outside the
+adapter, failed I-21d:
+
+```
+Expected: ['lib/knowledge/webweavex_adapter.dart']
+  Actual: ['lib/knowledge/webweavex_adapter.dart', 'lib/r47_mutation_probe_b.dart']
+Deterministic serialization/normalization must stay inside the WebWeaveX adapter boundary.
+```
+
+It independently failed I-21b as well, since the probe also imported
+`package:webweavex` — layered defence working as intended.

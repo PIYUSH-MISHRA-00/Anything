@@ -2393,5 +2393,79 @@ See `docs/architecture/ARCHITECTURAL_INTEGRITY_CERTIFICATION.md` plus the
 invariant, ownership, canonical-flow, subsystem, integration, WebWeaveX,
 Kaalka and remaining-gap matrices under `docs/audit/`.
 
-**DO NOT START R47 — per this specification's own stop condition, wait
+**R47 has since been implemented — see below.**
+
+## Implementation Specification IS-R47 — Architectural Debt Elimination + Deterministic Knowledge Normalization
+
+Five tasks: eliminate the debt R46's audit catalogued, and complete the one
+deferred integration the project itself had already documented.
+
+**Task 1 — dead contract removed.** `lib/core/contracts/runtime.dart`
+declared an orphaned v1-era `abstract class AnythingRuntime` colliding by name
+with the live `lib/runtime/anything_runtime.dart` while having an incompatible
+shape. R47 re-verified repository-wide that nothing implemented it and that
+all six of its symbols were used nowhere, then deleted it. `AnythingRuntime`
+now declares exactly once; the certification's tolerated-collision list is
+empty. Three guards prevent its return, mutation-proven.
+
+**A gap R47 created and closed in the same milestone, reported rather than
+hidden.** The first verification searched for the literal text
+`contracts/runtime.dart` and concluded the file was unreferenced. It was not:
+`lib/core/contracts/contracts.dart` re-exported it as `export 'runtime.dart';`
+— a **relative** path, and an `export` not an `import`. The deletion left a
+dangling `uri_does_not_exist` and moved the analyzer baseline 71 → 72, which
+is how it surfaced. The barrel export was removed and the invariant widened to
+`import|export` on the bare filename. The widened pattern then over-matched
+`anything_runtime.dart` (the live implementation) and failed the full suite;
+it was anchored to a path boundary. Both defects were caught by tooling, not
+by inspection.
+
+**Task 2 — stale comment corrected** (documentation only, zero behavior
+change). `experience_activation_manager.dart` now names
+`ExperienceEntryPipeline` as the single pusher of `ExperienceHostScreen`,
+states plainly that the previous `HomeScreen` claim was never true, explains
+why it was deliberately left through R45 and R46 (to keep those milestones'
+unchanged-subsystem proofs mechanical), and points at the invariants that now
+enforce it.
+
+**Task 3 — HomeScreen reactivity fixed.** `TextField.onChanged` called
+`_composer.setExpression()`, which notified `IntentComposer`'s listeners —
+and `HomeScreen` was not one of them — so typing never revealed the submit
+button until an unrelated `setState`. Fixed with a
+`ValueListenableBuilder<TextEditingValue>` on the existing `_textController`,
+which is already a `ValueListenable`: the native Flutter mechanism, rebuilding
+only the icon subtree, with no new state and no listener to dispose. An
+`addListener(() => setState(...))` would have rebuilt the entire screen on
+every keystroke. Business logic, scheduler and activation behavior untouched.
+
+**Task 4 — deterministic knowledge normalization.** The R46 audit's one named
+unrealized integration (W-1). `WebWeaveXAdapter` hashed and cached content
+exactly as served and stamped each resource with
+`id: 'wwx-${now.microsecondsSinceEpoch}'`, so the same page acquired twice
+produced different ids, and canonically-equivalent content (CRLF vs LF, NFC vs
+NFD, trailing whitespace) produced different `contentHash` values — which
+`_deduplicate()` keys on, so genuinely duplicate knowledge survived dedup and
+reached the reasoner twice. R47 routes extraction through WebWeaveX's own
+`normalizeRuntimeValue` and derives identity from `stableSerialize`, and
+canonicalizes cache-key queries through the same normalizer. No bespoke
+normalizer, no second serializer, no second cache, no second knowledge engine.
+`retrievedAt` is deliberately excluded from the canonical form so provenance
+stays truthful while representations stay identical.
+
+**Task 5 — certification extended** to 41 tests: the removed contract cannot
+reappear, `AnythingRuntime` declares exactly once, the v1 event hierarchy did
+not return, deterministic serialization is reachable only through the adapter
+(I-21d), and the four deliberately-closed WebWeaveX surfaces stay closed
+(I-21e). Both new families were mutation-proven with real probes.
+
+**Execution result:** `flutter analyze`: 71 issues, **unchanged baseline**
+(after fixing the dangling export that briefly made it 72), zero in any
+R47-touched file. `flutter test`: **1808/1808 passed**, exit 0, full
+untruncated run (1789 baseline + 15 new normalization tests + 4 new
+certification tests), zero regressions. `git status --porcelain`: clean.
+
+See `docs/architecture/ARCHITECTURAL_INTEGRITY_CERTIFICATION.md` and the
+updated invariant, WebWeaveX and remaining-gap matrices under `docs/audit/`.
+
+**DO NOT START R48 — per this specification's own stop condition, wait
 for external architectural review.**
