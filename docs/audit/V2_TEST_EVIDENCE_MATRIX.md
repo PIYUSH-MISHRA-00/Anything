@@ -2040,3 +2040,56 @@ environment.
 `EngineeringLifecycleCoordinator`, `AnythingKernel`, World Model, Engineering
 Memory all completely untouched (`git diff --stat`). `useCompilerPipeline`
 unaffected, still defaults `false`.
+
+## R41 — Shared Workspace Runtime Supervision, Production Activation
+
+`test/r41_shared_runtime_supervision_test.dart` (new) proves: shared
+supervisor construction (`AppComposition.production().workspaceRuntimeSupervisor`
+is a real, non-null `WorkspaceRuntimeSupervisor`; two separate reads return
+the IDENTICAL instance via `identical()`, matching R36's own established
+singleton proof for `workspaceManager`); multiple screens sharing one
+supervisor (two real, independently-started `AnythingRuntime`s, each opened
+against its own real workspace session via a shared `_Rig`, hosted by two
+`ExperienceHostScreen`s pushed onto the SAME `Navigator` — the real shape of
+a user opening a second Experience while the first stays in the stack below
+— given the SAME injected `WorkspaceRuntimeSupervisor`; after both load,
+`supervisor.registrations` has length 2, each screen's real controller is
+independently `lookup()`-able under its own real `sessionId`, and the two
+controllers are proven distinct via `isNot(same(...))`); workspace-wide
+pause/resume (the concrete, load-bearing "Mandatory Vision Validation" proof
+— ONE real `AppLifecycleState.paused` transition, delivered via
+`tester.binding.handleAppLifecycleStateChanged()`, pauses BOTH real,
+independent runtimes; `.resumed` resumes both); controller registration
+integrity (two controllers registered directly on one supervisor carry
+correct, non-cross-contaminated `sessionId`/`experienceId`/controller
+references); regression (`WorkspaceRuntimeSupervisor`/
+`WorkspaceLifecyclePolicyEngine` used directly bypassing `AppComposition`
+still behave exactly as R40/R39 built them; `UniversalIntentRouter.route()`
+called directly still behaves exactly as R33 built it); backward
+compatibility (`HomeScreen()`/`ExperienceHostScreen()` without the
+new/existing field default to `null`; a real, live `ExperienceHostScreen`
+with NO supervisor injected still only pauses/resumes its own runtime on a
+real lifecycle transition — the exact, unchanged R39 behavior); real
+`Stopwatch`/`ProcessInfo.currentRss` performance measurements, including
+`AppComposition.production()` construction latency with the new field.
+
+No pre-existing test files required any changes — `AppComposition`,
+`HomeScreen`, and `ExperienceHostScreen` each gained purely additive
+changes (one new required composition field constructed internally, one new
+optional constructor field, and a branch inside an existing method,
+respectively); every existing construction/call path remains unaffected.
+
+**Execution result:** implemented and independently validated in the
+implementing environment. Flutter SDK reachable at
+`D:\flutter\bin\flutter.bat`. `flutter analyze`: 71/0, unchanged baseline,
+confirmed via a full, untruncated run. `flutter test`: see
+`Anything_R41_Validation_Report.txt` for the exact full-suite count, also
+confirmed via a full, untruncated run (learning R40's own lesson: never pipe
+a long-running `flutter test` through a truncating/buffering command before
+inspection). `ExperienceRuntimeController`/`WorkspaceLifecyclePolicyEngine`/
+`WorkspaceRuntimeSupervisor`/`AnythingRuntime`/`ExperienceWorkspaceManager`/
+`AutonomousWorkspaceRuntime`/`IntentExecutionPipeline`/`UniversalIntentRouter`/
+`EngineeringLifecycleCoordinator`/`AnythingKernel`/World Model/Engineering
+Memory all confirmed completely untouched via `git diff --stat`.
+`useCompilerPipeline` unaffected, still defaults `false`. Zero new
+LLM/reasoning calls anywhere in the diff.

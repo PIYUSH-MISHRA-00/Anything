@@ -2006,5 +2006,55 @@ LLM/reasoning calls anywhere in the diff.
 
 See `docs/architecture/WORKSPACE_RUNTIME_SUPERVISOR.md` for the full audit.
 
-**DO NOT START R41 — per this specification's own stop condition, wait
+## Implementation Specification IS-R41 — Shared Workspace Runtime Supervision, Production Activation
+
+**Reality:** `AppComposition` (last touched R37) had no
+`workspaceRuntimeSupervisor` field — `WorkspaceRuntimeSupervisor` (R40) had
+no shared, composition-root-level instance, exactly the gap R40's own
+"Known Limitations" named. `HomeScreen`'s 3 real `ExperienceHostScreen`
+navigation call sites threaded `workspaceManager`/`workspaceRuntime`/
+`eventBus` but not a `runtimeSupervisor`. `AnythingAppShell` constructs
+`AppComposition.production()` exactly once and passes ONLY `composition:`
+to `HomeScreen` — every other shared service is resolved INSIDE `HomeScreen`
+from that one object, confirmed by reading `app_shell.dart` in full, so no
+change to that file was needed. `ExperienceHostScreen` already had a
+`runtimeSupervisor` field (R40, for auto-register/unregister) and its own
+real `WidgetsBindingObserver`/`didChangeAppLifecycleState` (R39), which
+applied ONLY to that screen's own runtime.
+
+**The fix:** `AppComposition` gained one new field,
+`workspaceRuntimeSupervisor`, constructed via
+`WorkspaceRuntimeSupervisor(eventPublisher: eventPublisher)` right after
+`eventPublisher` — the exact same dependency-composition pattern R36/R37
+already established for new shared services. `HomeScreen` gained one new
+optional constructor field `runtimeSupervisor` (`null` by default),
+resolved via the same `widget.X ?? _composition.X` pattern every sibling
+field already uses, and threaded into all 3 real `ExperienceHostScreen(...)`
+call sites. `ExperienceHostScreen.didChangeAppLifecycleState` now branches:
+when `widget.runtimeSupervisor` is non-null, the real OS-level transition is
+applied via `supervisor.applyAppLifecyclePolicy(state, _policyEngine)` —
+reaching EVERY runtime registered with the shared supervisor, not just this
+screen's own; when `null`, the EXACT, unchanged R39 per-screen behavior
+runs (including its own-runtime-status guards). No new
+`WidgetsBindingObserver` was added anywhere — this milestone's own required
+"ONE real production trigger... using existing lifecycle mechanisms" is
+satisfied by reusing R39's real observer, only widening what it does with
+the transition it already receives.
+
+**Execution result:** implemented and independently validated. Flutter SDK
+reachable (`D:\flutter\bin\flutter.bat`). `flutter analyze`: 71/0, unchanged
+baseline, confirmed via a full, untruncated run. `flutter test`: see
+`Anything_R41_Validation_Report.txt` for the exact full-suite count, also
+confirmed via a full, untruncated run.
+`ExperienceRuntimeController`/`WorkspaceLifecyclePolicyEngine`/
+`WorkspaceRuntimeSupervisor`/`AnythingRuntime`/`ExperienceWorkspaceManager`/
+`AutonomousWorkspaceRuntime`/`IntentExecutionPipeline`/`UniversalIntentRouter`/
+`EngineeringLifecycleCoordinator`/`AnythingKernel`/World Model/Engineering
+Memory all confirmed completely untouched via `git diff --stat`.
+`useCompilerPipeline` unaffected, still defaults `false`. Zero new
+LLM/reasoning calls anywhere in the diff.
+
+See `docs/architecture/SHARED_RUNTIME_SUPERVISION.md` for the full audit.
+
+**DO NOT START R42 — per this specification's own stop condition, wait
 for external architectural review.**
