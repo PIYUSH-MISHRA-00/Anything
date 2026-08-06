@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:anything/app/app_composition.dart';
 import 'package:anything/app/autonomous_workspace_runtime.dart';
 import 'package:anything/app/creation_coordinator.dart';
+import 'package:anything/app/experience_activation_manager.dart';
 import 'package:anything/app/experience_opening_coordinator.dart';
 import 'package:anything/app/experience_workspace_manager.dart';
 import 'package:anything/app/intent_execution_pipeline.dart';
@@ -111,7 +112,18 @@ class HomeScreen extends StatefulWidget {
   /// header (see `docs/architecture/WORKSPACE_EXPERIENCE_SWITCHER.md`).
   final WorkspaceSchedulingEngine? scheduler;
 
-  const HomeScreen({super.key, this.composition, this.workspaceManager, this.intentRouter, this.workspaceRuntime, this.eventBus, this.pipeline, this.runtimeSupervisor, this.scheduler});
+  /// Optional, additive activation manager (Implementation Specification
+  /// IS-R44) — `null` by default, so every existing caller/test that
+  /// constructs `HomeScreen()` without one keeps identical behavior.
+  /// REALITY before R44: every real `ExperienceHostScreen` push here went
+  /// straight through `Navigator.push`, with no way to avoid pushing a
+  /// second screen for an already-open session (the real gap R43's own
+  /// Switcher explicitly deferred). Every real navigation call site below
+  /// now routes through this manager instead (see
+  /// `docs/architecture/EXPERIENCE_ACTIVATION_MANAGER.md`).
+  final ExperienceActivationManager? activationManager;
+
+  const HomeScreen({super.key, this.composition, this.workspaceManager, this.intentRouter, this.workspaceRuntime, this.eventBus, this.pipeline, this.runtimeSupervisor, this.scheduler, this.activationManager});
 
   @override
   HomeScreenState createState() => HomeScreenState();
@@ -149,6 +161,12 @@ class HomeScreenState extends State<HomeScreen> {
   /// Workspace Experience Switcher this screen opens; see
   /// [HomeScreen.scheduler]'s own doc comment.
   late final WorkspaceSchedulingEngine _scheduler;
+
+  /// Real, resolved Experience Activation Manager (Implementation
+  /// Specification IS-R44) — the ONE thing every real
+  /// `ExperienceHostScreen` navigation call site below goes through; see
+  /// [HomeScreen.activationManager]'s own doc comment.
+  late final ExperienceActivationManager _activationManager;
   late final ExperienceOpeningCoordinator _openingCoordinator;
   late final SqliteExperienceRepository _repository;
   late final IntentRepository _intentRepository;
@@ -205,6 +223,7 @@ class HomeScreenState extends State<HomeScreen> {
     _pipeline = widget.pipeline ?? _composition.intentExecutionPipeline;
     _runtimeSupervisor = widget.runtimeSupervisor ?? _composition.workspaceRuntimeSupervisor;
     _scheduler = widget.scheduler ?? _composition.workspaceSchedulingEngine;
+    _activationManager = widget.activationManager ?? _composition.experienceActivationManager;
     _openingCoordinator = ExperienceOpeningCoordinator();
     _repository = SqliteExperienceRepository();
     _intentRepository = IntentRepository();
@@ -343,9 +362,18 @@ class HomeScreenState extends State<HomeScreen> {
 
     switch (result) {
       case OpenReady():
-        Navigator.push(
-          context,
-          MaterialPageRoute(
+        // Implementation Specification IS-R44: routed through the ONE
+        // real Experience Activation Manager instead of a raw
+        // Navigator.push — avoids pushing a second ExperienceHostScreen
+        // for a session that's already open (e.g. reached via the
+        // Switcher). `sessionId` resolves to `null` for an Experience
+        // with no workspace session (the real, honest "Recent" list
+        // case, unchanged by this milestone), falling back to a plain,
+        // untracked push exactly as before.
+        _activationManager.activate(
+          Navigator.of(context),
+          _workspaceManager.sessionForExperience(result.experienceId)?.sessionId,
+          createRoute: () => MaterialPageRoute(
             builder: (_) => ExperienceHostScreen(
               package: result.package,
               experienceName: result.experienceName,
@@ -438,9 +466,12 @@ class HomeScreenState extends State<HomeScreen> {
             timeSeed: timeSeed,
           );
       if (openResult is OpenReady && mounted) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
+        // Implementation Specification IS-R44: same real activation
+        // routing as `_openViaCoordinator`'s own `OpenReady` case above.
+        _activationManager.activate(
+          Navigator.of(context),
+          _workspaceManager.sessionForExperience(openResult.experienceId)?.sessionId,
+          createRoute: () => MaterialPageRoute(
             builder: (_) => ExperienceHostScreen(
               package: openResult.package,
               experienceName: openResult.experienceName,
@@ -497,9 +528,12 @@ class HomeScreenState extends State<HomeScreen> {
             timeSeed: timeSeed,
           );
       if (openResult is OpenReady && mounted) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
+        // Implementation Specification IS-R44: same real activation
+        // routing as `_openViaCoordinator`'s own `OpenReady` case above.
+        _activationManager.activate(
+          Navigator.of(context),
+          _workspaceManager.sessionForExperience(openResult.experienceId)?.sessionId,
+          createRoute: () => MaterialPageRoute(
             builder: (_) => ExperienceHostScreen(
               package: openResult.package,
               experienceName: openResult.experienceName,
@@ -578,7 +612,13 @@ class HomeScreenState extends State<HomeScreen> {
                     IconButton(
                       icon: const Icon(Icons.apps),
                       tooltip: 'Running apps',
-                      onPressed: () => showWorkspaceSwitcher(context, _scheduler),
+                      onPressed: () => showWorkspaceSwitcher(
+                        context,
+                        _scheduler,
+                        activationManager: _activationManager,
+                        runtimeSupervisor: _runtimeSupervisor,
+                        workspaceManager: _workspaceManager,
+                      ),
                     ),
                     Container(
                       width: 40,

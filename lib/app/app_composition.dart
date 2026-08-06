@@ -23,6 +23,7 @@ library;
 import 'package:anything/app/autonomous_workspace_runtime.dart';
 import 'package:anything/app/creation_coordinator.dart';
 import 'package:anything/app/engineering_lifecycle_coordinator.dart';
+import 'package:anything/app/experience_activation_manager.dart';
 import 'package:anything/app/experience_workspace_manager.dart';
 import 'package:anything/app/intent_execution_pipeline.dart';
 import 'package:anything/app/intent_session_manager.dart';
@@ -154,6 +155,13 @@ class AppComposition {
   /// `docs/architecture/WORKSPACE_EXPERIENCE_SWITCHER.md`.
   final WorkspaceSchedulingEngine workspaceSchedulingEngine;
 
+  /// The shared Experience Activation Manager (Implementation Specification
+  /// IS-R44) — the ONE coordinator of runtime + navigation activation for an
+  /// already-running Experience, composed from [workspaceSchedulingEngine]/
+  /// [eventPublisher] above. See
+  /// `docs/architecture/EXPERIENCE_ACTIVATION_MANAGER.md`.
+  final ExperienceActivationManager experienceActivationManager;
+
   AppComposition._({
     required this.experienceRepository,
     required this.worldModel,
@@ -176,6 +184,7 @@ class AppComposition {
     required this.intentExecutionPipeline,
     required this.workspaceRuntimeSupervisor,
     required this.workspaceSchedulingEngine,
+    required this.experienceActivationManager,
   });
 
   /// Builds the real, production composition graph. Every dependency below
@@ -271,6 +280,11 @@ class AppComposition {
       eventPublisher: eventPublisher,
     );
 
+    // Implementation Specification IS-R44: the one shared activation
+    // coordinator, composed from [workspaceSchedulingEngine]/[eventPublisher]
+    // above — never a second scheduler, never a second Navigator.
+    final experienceActivationManager = ExperienceActivationManager(scheduler: workspaceSchedulingEngine, eventPublisher: eventPublisher);
+
     return AppComposition._(
       experienceRepository: experienceRepository,
       worldModel: worldModel,
@@ -293,6 +307,7 @@ class AppComposition {
       intentExecutionPipeline: intentExecutionPipeline,
       workspaceRuntimeSupervisor: workspaceRuntimeSupervisor,
       workspaceSchedulingEngine: workspaceSchedulingEngine,
+      experienceActivationManager: experienceActivationManager,
     );
   }
 }
