@@ -145,6 +145,24 @@ alternative (hand-constructing a fully consistent `entryPipeline` inside
 every test double) was tried first, worked, and was deliberately reverted
 in favor of this smaller, real fix once the root cause was understood.
 
+**Second round — the fix above was incomplete, found and corrected during
+independent verification.** It only handled ONE mismatch direction:
+`workspaceManager`/`workspaceRuntime`/`eventBus` overridden without
+`scheduler`. The inverse direction — `scheduler` overridden WITHOUT
+`workspaceManager` (exactly `test/r43_workspace_experience_switcher_test.dart`'s
+own "HomeScreen forwards the shared scheduler" test, which supplies only
+`HomeScreen(scheduler: rig.scheduler)`) still threw the identical real
+`StateError`, reproduced with a clean stack trace after the first fix was
+believed complete. Corrected symmetrically: `_workspaceManager` now
+resolves `widget.workspaceManager ?? widget.scheduler?.workspace ??
+_composition.workspaceManager` — preferring an explicit override, then an
+overridden scheduler's own already-bound real workspace (`WorkspaceSchedulingEngine.workspace`
+is a real, public field), then the composition default. This guarantees
+`_workspaceManager` and `_scheduler` always reference the same real
+`ExperienceWorkspaceManager` regardless of which single field a caller
+overrides, in either direction. Verified via a full, untruncated
+`flutter test` run: 1748/1748 passed.
+
 ## ENTRY SOURCES
 
 - **Create New Experience** — `submitIntent()`, the real, unchanged
