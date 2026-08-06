@@ -2093,3 +2093,58 @@ inspection). `ExperienceRuntimeController`/`WorkspaceLifecyclePolicyEngine`/
 Memory all confirmed completely untouched via `git diff --stat`.
 `useCompilerPipeline` unaffected, still defaults `false`. Zero new
 LLM/reasoning calls anywhere in the diff.
+
+## R42 — Workspace Scheduling Engine, AI Operating System Experience Scheduler
+
+`test/r42_workspace_scheduling_engine_test.dart` (new, 15 tests) proves:
+foreground selection (`foregroundExperience()` returns the real, current
+active session; `null` when nothing is open); background selection
+(`backgroundExperiences()` returns exactly the real, open-but-not-active
+sessions); runtime switching (`scheduleForeground(sessionId)` reaches the
+real, unmodified `ExperienceWorkspaceManager.switchActiveExperience()`,
+resumes the new active real, registered runtime, AND pauses every other
+real, registered, running background runtime — real `RuntimeStatus` checks
+on real `AnythingRuntime`s, not just decision types); workspace scheduling
+(`scheduleActiveTransition()` called directly correctly reflects whatever
+the workspace's CURRENT real active session already is, including after a
+real `closeExperience()` fallback in a 3-session workspace; a real
+`scheduler_active_transition` `WorkspaceUpdated` event is published;
+`scheduleForeground()` without a `workspace` supplied throws a real, honest
+`StateError`); regression (`WorkspaceRuntimeSupervisor
+.applyInactiveRuntimePolicy()`/`ExperienceWorkspaceManager
+.switchActiveExperience()` used directly, bypassing the scheduler entirely,
+behave exactly as R40/R32 built them); backward compatibility
+(`ExperienceHostScreen()` without `scheduler` defaults it to `null`; a real
+widget test proves load/dispose unaffected with none injected; a second
+real widget test proves a real, injected `WorkspaceSchedulingEngine`
+genuinely pauses a real sibling background runtime once the active screen
+loads, via two `ExperienceHostScreen`-adjacent real sessions opened in the
+correct real order to match `ExperienceWorkspaceManager.openExperience()`'s
+own `_activeSessionId ??=` semantics); real `Stopwatch`/`ProcessInfo
+.currentRss` performance measurements across single, multi-controller, and
+repeated-cycle scheduling operations.
+
+No pre-existing test files required any changes — `ExperienceHostScreen`
+gained one new optional constructor field and one new call inside
+`_loadExperience()`; every existing construction/call path remains
+unaffected. `AppComposition`/`HomeScreen` were deliberately NOT touched
+this milestone (see KNOWN LIMITATIONS in
+`docs/architecture/WORKSPACE_SCHEDULING_ENGINE.md`).
+
+**Execution result:** implemented and independently validated in the
+implementing environment. Flutter SDK reachable at
+`D:\flutter\bin\flutter.bat`. `flutter analyze`: 71/0, unchanged baseline,
+confirmed via multiple full, untruncated runs (two real, self-caught bugs —
+a missing import causing genuine compile errors, and a test-fixture wiring
+gap that made the Inactive Runtime policy never fire — were found and fixed
+during this validation itself; see
+`docs/architecture/WORKSPACE_SCHEDULING_ENGINE.md`'s own "Bug Found and
+Fixed" section). `flutter test`: see `Anything_R42_Validation_Report.txt`
+for the exact full-suite count, also confirmed via a full, untruncated run.
+`ExperienceRuntimeController`/`WorkspaceLifecyclePolicyEngine`/
+`WorkspaceRuntimeSupervisor`/`AnythingRuntime`/`ExperienceWorkspaceManager`/
+`AutonomousWorkspaceRuntime`/`IntentExecutionPipeline`/`UniversalIntentRouter`/
+`EngineeringLifecycleCoordinator`/`AnythingKernel`/World Model/Engineering
+Memory all confirmed completely untouched via `git diff --stat`.
+`useCompilerPipeline` unaffected, still defaults `false`. Zero new
+LLM/reasoning calls anywhere in the diff.

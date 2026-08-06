@@ -2056,5 +2056,60 @@ LLM/reasoning calls anywhere in the diff.
 
 See `docs/architecture/SHARED_RUNTIME_SUPERVISION.md` for the full audit.
 
-**DO NOT START R42 — per this specification's own stop condition, wait
+## Implementation Specification IS-R42 — Workspace Scheduling Engine, AI Operating System Experience Scheduler
+
+**Reality:** `WorkspaceRuntimeSupervisor.applyInactiveRuntimePolicy()`/
+`.resume()` (R40) had zero callers anywhere in `lib/`, confirmed by grep —
+R40's and R41's own doc comments both explicitly deferred wiring a real
+trigger for either. "Which session is active" has always been
+`ExperienceWorkspaceManager`'s own responsibility (`activeSessionId`/
+`switchActiveExperience()`, R32); nothing coordinated that structural
+decision with the real, registered runtime controllers in the supervisor.
+`ExperienceOpeningCoordinator`'s "Recent"/birth-completion opening path
+still never registers a workspace session. No `RouteObserver`/`RouteAware`
+machinery exists anywhere in this codebase.
+
+**The fix:** `WorkspaceSchedulingEngine` (new, `lib/app/workspace_scheduling_engine.dart`)
+composes `AutonomousWorkspaceRuntime`/`WorkspaceRuntimeSupervisor`/
+`WorkspaceLifecyclePolicyEngine` (all unmodified) into the first real caller
+of `applyInactiveRuntimePolicy()`/`supervisor.resume()`. `foregroundExperience()`/
+`backgroundExperiences()` are pure reads of a fresh workspace snapshot.
+`scheduleActiveTransition()` resumes the real, registered controller for the
+snapshot's current active session, then pauses every other real, registered,
+running background runtime via the existing Inactive Runtime policy — never
+touching `AnythingRuntime` directly. `scheduleForeground(sessionId)` calls
+the real, unmodified `switchActiveExperience()` then delegates to
+`scheduleActiveTransition()`. `ExperienceHostScreen` gained one new optional
+constructor field `scheduler` (`null` by default); when supplied,
+`_loadExperience()` calls `scheduleActiveTransition()` once the runtime has
+genuinely started — a real, honest proxy for "this screen just gained
+focus," not a full route-aware focus-regain (no `RouteObserver` was
+introduced). "Preloaded" runtime state (named in the spec's own prose, not
+in its concrete responsibilities) was NOT implemented — no real warm-start
+mechanism exists in `AnythingRuntime` to build it honestly this milestone.
+`AppComposition`/`HomeScreen` were deliberately left untouched — unlike R41,
+this milestone's own spec does not mandate composition-root wiring, and
+doing it safely would also require giving `WorkspaceLifecyclePolicyEngine`
+its own first shared instance, a second, adjacent decision better made
+deliberately in a follow-up.
+
+**Execution result:** implemented and independently validated. Flutter SDK
+reachable (`D:\flutter\bin\flutter.bat`). `flutter analyze`: 71/0, matching
+the established baseline exactly, confirmed via multiple full, untruncated
+runs — two real, self-caught bugs (a missing import in the new test file
+causing genuine compile errors, and a test-fixture gap that left the
+Inactive Runtime policy unable to fire) were found and fixed during this
+same validation. `flutter test`: see `Anything_R42_Validation_Report.txt`
+for the exact full-suite count, also confirmed via a full, untruncated run.
+`ExperienceRuntimeController`/`WorkspaceLifecyclePolicyEngine`/
+`WorkspaceRuntimeSupervisor`/`AnythingRuntime`/`ExperienceWorkspaceManager`/
+`AutonomousWorkspaceRuntime`/`IntentExecutionPipeline`/`UniversalIntentRouter`/
+`EngineeringLifecycleCoordinator`/`AnythingKernel`/World Model/Engineering
+Memory all confirmed completely untouched via `git diff --stat`.
+`useCompilerPipeline` unaffected, still defaults `false`. Zero new
+LLM/reasoning calls anywhere in the diff.
+
+See `docs/architecture/WORKSPACE_SCHEDULING_ENGINE.md` for the full audit.
+
+**DO NOT START R43 — per this specification's own stop condition, wait
 for external architectural review.**
