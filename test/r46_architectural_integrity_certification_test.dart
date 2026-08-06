@@ -278,17 +278,26 @@ const List<String> permittedModelInvocationFiles = [
   'lib/synthesis/model_reasoner.dart',
 ];
 
-/// The ONE real canonical-type name collision in `lib/`, pinned explicitly so
-/// it is visible in CI rather than averaged away by a count.
+/// Canonical-type name collisions that are knowingly tolerated.
 ///
-/// `lib/core/contracts/runtime.dart` declares a v1-era `abstract class
-/// AnythingRuntime` whose shape does not match the live implementation at
-/// all. It is imported by nothing and implemented by nothing (certified
-/// separately below). Recorded as an R46 finding; deletion recommended for
-/// R47, deliberately not performed inside a certification milestone.
-const Map<String, List<String>> knownDuplicateDeclarations = {
-  'AnythingRuntime': ['lib/core/contracts/runtime.dart', 'lib/runtime/anything_runtime.dart'],
-};
+/// EMPTY AS OF R47. R46 found exactly one — `lib/core/contracts/runtime.dart`
+/// declared a dead v1-era `abstract class AnythingRuntime` whose shape did
+/// not match the live implementation — and recommended deletion. IS-R47
+/// deleted it after re-verifying repository-wide that it remained
+/// unreferenced and unimplemented. `AnythingRuntime` is now declared exactly
+/// once in `lib/`, like every other canonical type, and a dedicated test
+/// below proves the removed file cannot reappear.
+///
+/// This map is deliberately kept (rather than deleted along with its only
+/// entry) so that a future, genuinely-justified collision must be recorded
+/// here explicitly instead of silently relaxing the exactly-once rule.
+const Map<String, List<String>> knownDuplicateDeclarations = <String, List<String>>{};
+
+/// Files deleted by an architectural-debt milestone that must never come
+/// back. R47 removed the dead v1 runtime contract; if any future change
+/// recreates that path, certification fails rather than silently
+/// reintroducing a second `AnythingRuntime` type.
+const List<String> removedDeadFiles = ['lib/core/contracts/runtime.dart'];
 
 /// External protection/knowledge packages must stay behind their single
 /// documented adapter boundary.
@@ -395,32 +404,74 @@ final x = 1;
       }
     });
 
-    test('the dead v1 AnythingRuntime contract stays dead — nothing imports it, so the name collision cannot become a real ambiguity', () {
-      // R46 FINDING. `lib/core/contracts/runtime.dart` declares
-      // `abstract class AnythingRuntime`, a v1-era contract with a
-      // COMPLETELY different shape from the real, live
+    test('the dead v1 AnythingRuntime contract is GONE and cannot reappear (IS-R47 Task 1)', () {
+      // R46 FINDING, R47 RESOLUTION. `lib/core/contracts/runtime.dart`
+      // declared `abstract class AnythingRuntime`, a v1-era contract with a
+      // COMPLETELY different shape from the live
       // `lib/runtime/anything_runtime.dart` (`openExperience(ExperienceId)`
-      // vs `openExperience(ExperiencePackage)`). Nothing implements it and
-      // nothing imports it — in lib/ OR test/ — so it is genuinely dead,
-      // orphaned residue of exactly the kind MIS-1 Part 1 documented.
+      // vs `openExperience(ExperiencePackage)`) — two different types under
+      // one name. R46 certified it was imported by nothing and implemented
+      // by nothing, and recommended deletion. R47 re-verified that
+      // repository-wide and deleted it.
       //
-      // R46 is a certification milestone, so the file is NOT deleted here;
-      // deletion is recommended for R47 and left to architectural review.
-      // What IS enforced is that it stays unreferenced: the moment anything
-      // imports it, two different `AnythingRuntime` types are in play and
-      // this fails.
-      final importers = libFiles
-          .where((f) => f.path != 'lib/core/contracts/runtime.dart')
-          .where((f) => RegExp(r'''import\s+['"][^'"]*contracts/runtime\.dart''').hasMatch(f.raw))
-          .map((f) => f.path)
-          .toList();
-      expect(importers, isEmpty, reason: 'The dead v1 runtime contract acquired importers: $importers. Two different AnythingRuntime types would now be live.');
+      // Three independent guards, so the debt cannot silently return:
+      for (final removed in removedDeadFiles) {
+        expect(File(removed).existsSync(), isFalse, reason: '$removed was deleted by IS-R47 and must not be recreated.');
+        expect(libFiles.map((f) => f.path), isNot(contains(removed)));
+      }
+
+      // IMPORT *AND* EXPORT, and RELATIVE paths as well as package paths.
+      //
+      // This breadth is not theoretical. R47's first verification pass
+      // searched only for the literal text `contracts/runtime.dart` and
+      // concluded the file was completely unreferenced. It was not:
+      // `lib/core/contracts/contracts.dart` re-exported it as
+      // `export 'runtime.dart';` — a RELATIVE path with no `contracts/`
+      // segment — so the barrel kept a live reference the search never saw.
+      // The deletion produced a dangling `uri_does_not_exist` and the
+      // analyzer baseline went 71 -> 72, which is how it was caught.
+      // Matching the bare filename in both directives closes that hole.
+      for (final removed in removedDeadFiles) {
+        // Anchor the basename to a path boundary. A naive
+        // `[^'"]*runtime\.dart` also matches `anything_runtime.dart` — the
+        // LIVE implementation, imported all over the codebase — and reports
+        // a repository-wide false positive. (It did exactly that on first
+        // write; the full suite caught it.) The URI must be either exactly
+        // the basename or end with `/<basename>`.
+        final basename = RegExp.escape(removed.split('/').last);
+        final referencers = libFiles
+            .where((f) => RegExp('''(?:import|export)\\s+['"](?:[^'"]*/)?$basename['"]''').hasMatch(f.raw))
+            .map((f) => f.path)
+            .toList();
+        expect(referencers, isEmpty,
+            reason: 'Something imports or exports the deleted file $removed: $referencers');
+      }
 
       final implementors = libFiles
           .where((f) => RegExp(r'(?:implements|extends)\s+AnythingRuntime\b').hasMatch(f.code))
           .map((f) => f.path)
           .toList();
-      expect(implementors, isEmpty, reason: 'Nothing implemented the v1 contract at R46; found: $implementors');
+      expect(implementors, isEmpty, reason: 'Nothing implemented the v1 contract; found: $implementors');
+    });
+
+    test('AnythingRuntime is now declared exactly ONCE in lib/ — the R46 collision is genuinely resolved, not merely tolerated', () {
+      expect(_declaringFiles(libFiles, 'AnythingRuntime'), ['lib/runtime/anything_runtime.dart']);
+      expect(knownDuplicateDeclarations, isEmpty, reason: 'No canonical-type name collision should remain after IS-R47.');
+    });
+
+    test('the v1-specific event hierarchy the deleted file declared is gone from lib/ too — the deletion removed dead code, not just a name', () {
+      // The dead contract also declared a sealed RuntimeEvent hierarchy.
+      // Before deleting, R47 verified repository-wide (lib/ AND test/) that
+      // all six of its symbols were used nowhere else.
+      //
+      // Only the three unmistakably-v1 names are pinned here. `ExperienceOpened`
+      // and `ExperienceClosed` are deliberately NOT pinned: they are plausible
+      // names for future *canonical* workspace events, and this guard exists
+      // to stop dead v1 code returning, not to reserve English words forever.
+      for (final symbol in ['RuntimeEvent', 'CapabilityExecutionStarted', 'CapabilityExecutionCompleted']) {
+        final declaring = _declaringFiles(libFiles, symbol);
+        expect(declaring, isEmpty, reason: '$symbol was part of the deleted dead v1 contract and should not have been reintroduced; found in: $declaring');
+      }
     });
   });
 
@@ -519,6 +570,35 @@ final x = 1;
         ..sort();
       expect(files, isNotEmpty, reason: 'sanity: WebWeaveX must actually be imported somewhere, otherwise this test would pass vacuously');
       expect(files, permittedWebWeaveXImportFiles, reason: 'WebWeaveX must stay behind its adapter boundary; the Kernel/UI must never import it.');
+    });
+
+    test('deterministic serialization is reached ONLY through the approved adapter path (IS-R47 Task 4/5)', () {
+      // R47 integrated WebWeaveX's canonical determinism primitives
+      // (normalizeRuntimeValue, stableSerialize). They must be reached the
+      // same way every other WebWeaveX capability is: through an adapter.
+      // A direct call from the Kernel, the engine, or the UI would mean a
+      // second normalization path had been introduced.
+      final users = _matchSites(libFiles, RegExp(r'\b(?:wwx|webweavex)\s*\.\s*(?:stableSerialize|normalizeRuntimeValue)\s*\('))
+          .map((s) => s.split(':').first)
+          .toSet()
+          .toList()
+        ..sort();
+      expect(users, ['lib/knowledge/webweavex_adapter.dart'],
+          reason: 'Deterministic serialization/normalization must stay inside the WebWeaveX adapter boundary. Found: $users');
+    });
+
+    test('R47 introduced NO runtime graph, memory fabric, workflow runtime, or Kaalka-via-WebWeaveX (IS-R47 Task 5)', () {
+      // The R46 audit CLOSED these four WebWeaveX surfaces deliberately:
+      // adopting the graph or memory fabric would create a second graph and
+      // second memory system; routing crypto through WebWeaveX would create
+      // a second protection path and break I-21a. This keeps them closed.
+      final forbidden = RegExp(
+        r'\b(?:wwx|webweavex)\s*\.\s*(?:RuntimeGraph|buildRuntimeGraph|runtimeGraph|RuntimeMemory|MemoryLineage|queryMemory|replayMemory|KaalkaRuntime|kaalka)',
+      );
+      final offenders = _matchSites(libFiles, forbidden);
+      expect(offenders, isEmpty,
+          reason: 'A deliberately-closed WebWeaveX surface was adopted: $offenders. '
+              'These would create a second graph / second memory system / second protection path.');
     });
 
     test('neither the Kernel nor any UI file imports an external cognition/protection package directly', () {
