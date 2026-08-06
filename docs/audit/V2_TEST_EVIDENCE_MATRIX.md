@@ -2261,3 +2261,85 @@ directly, not substituted. `WorkspaceSchedulingEngine`/
 confirmed completely untouched via `git diff --stat`. `useCompilerPipeline`
 unaffected, still defaults `false`. Zero new LLM/reasoning calls anywhere
 in the diff.
+
+## R45 — Unified Experience Entry Pipeline, AI Operating System Entry Unification
+
+`test/r45_experience_entry_pipeline_test.dart` (new, 16 tests) proves:
+shared pipeline construction (`AppComposition.production()
+.experienceEntryPipeline` is real, non-null, and two reads return the
+IDENTICAL instance); workspace registration (the new, additive, Kernel-free
+`ExperienceWorkspaceManager.openExistingExperience()`/`IntentSessionManager
+.startSessionForExistingExperience()` register a real session WITHOUT ever
+touching the Kernel/reasoner, proven by a real `_CountingReasoner` whose
+call count stays flat); Recent flow — the concrete, load-bearing proof this
+milestone exists for (`activateExperience()` for an already-persisted,
+not-yet-open Experience registers a real NEW workspace session, which never
+happened before this milestone); scheduler participation (opening a SECOND
+Experience via `activateExperience()` while a first is active correctly
+pauses the first via the real Inactive Runtime policy); activation
+participation (re-activating the SAME already-open Experience via
+`activateExperience()` never creates a duplicate `ExperienceHostScreen`);
+Create flow (`submitIntent()` reaches the real `IntentExecutionPipeline`/
+`ExperienceCreationCoordinator` chain exactly as before, registering a real
+workspace session — plus a real, live `HomeScreen` "submit something, birth
+sequence, land in the new app" flow, exercised via the always-visible
+"Calculator" quick-suggestion chip to route around a pre-existing,
+unrelated `TextField` reactivity gap documented in
+`docs/architecture/UNIFIED_EXPERIENCE_ENTRY_PIPELINE.md`); Switcher flow —
+regression-proof, not a new capability (the Workspace Switcher's foreground
+selection behaves identically to R44's own already-correct
+`activateRunningSession()` behavior); Restore flow — honest scope
+(`activateExperience()`, loading a real, persisted package by known
+`experienceId`, IS itself the real restore mechanism; no separate
+snapshot-specific restore trigger exists in production, and none is
+fabricated here); regression (`IntentSessionManager.startSession()`/
+`ExperienceWorkspaceManager.openExperience()`, the pre-existing
+Intent-driven methods, called directly still behave exactly as R31/R32
+built them; `WorkspaceSchedulingEngine`/`WorkspaceRuntimeSupervisor` used
+directly, bypassing the pipeline entirely, still behave exactly as R40/R42
+built them); backward compatibility (`HomeScreen()` constructed WITHOUT
+`entryPipeline` defaults it to `null`; a bare `HomeScreen()` pumped with no
+injected pipeline renders without throwing, sourcing it from individually-
+resolved fields/`AppComposition.production()`); real `Stopwatch`/
+`ProcessInfo.currentRss` performance measurements across Recent-flow entry
+latency, workspace registration latency, and repeated registration cycles.
+
+A real regression was found and fixed during this milestone's own
+validation, not silently worked around: R45's new registration step (a
+session now gets registered even for a not-yet-open Recent-list open)
+exposed a pre-existing `HomeScreen` split-brain risk — `_scheduler`/
+`_activationManager` could silently default to `_composition`'s OWN,
+different `workspaceManager` when a caller overrode `workspaceManager`
+alone, invisible until something actually called
+`scheduler.scheduleForeground()` for a session that only existed in the
+override. This surfaced as a genuine `StateError` ("not open in this
+workspace") in `test/r36_operating_system_composition_test.dart`'s existing
+"real, end-to-end wiring" test. Root-cause fixed in `HomeScreen.initState()`:
+when a caller overrides any of `workspaceManager`/`workspaceRuntime`/
+`eventBus` without also overriding `scheduler`, a fresh, consistent
+`WorkspaceSchedulingEngine`/`ExperienceActivationManager` is built from the
+resolved fields instead of the stale composition default — confirmed, via a
+full grep of every `HomeScreen(...)` construction in the test suite, to be
+the ONLY combination affected; the bare/no-override case and every test
+that overrides the full workspace/scheduler group together are provably
+unaffected (their `_scheduler` stays `identical()` to
+`_composition.workspaceSchedulingEngine`). A first-attempt fix — hand-
+constructing a fully consistent `entryPipeline` inside the one affected
+test — was tried, confirmed working, then deliberately reverted once the
+real, smaller, production-side root cause was found and fixed instead.
+
+`test/r43_workspace_experience_switcher_test.dart` required mechanical
+updates to match `WorkspaceSwitcherSheet`'s new `entryPipeline:` required
+constructor field (replacing the previous `activationManager`/
+`runtimeSupervisor`/`workspaceManager` trio) — no test assertions changed,
+only fixture construction.
+
+**Execution result:** `flutter analyze`: 71/0, unchanged baseline, confirmed
+via a fresh, full run after the fix above. `flutter test`: 1748/1748 passed
+(1732 baseline + 16 new), zero regressions, full untruncated run, exit code
+0. `WorkspaceSchedulingEngine`/`WorkspaceRuntimeSupervisor`/
+`WorkspaceLifecyclePolicyEngine`/`ExperienceRuntimeController`/
+`AnythingRuntime`/`AnythingKernel`/`UniversalIntentRouter`/
+`ExperienceHostScreen` all confirmed completely untouched via
+`git diff --stat`. `useCompilerPipeline` unaffected, still defaults `false`.
+Zero new LLM/reasoning calls anywhere in the diff.

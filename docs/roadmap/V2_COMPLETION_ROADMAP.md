@@ -2225,5 +2225,64 @@ in the diff.
 
 See `docs/architecture/EXPERIENCE_ACTIVATION_MANAGER.md` for the full audit.
 
-**DO NOT START R45 — per this specification's own stop condition, wait
+## Implementation Specification IS-R45 — Unified Experience Entry Pipeline, AI Operating System Entry Unification
+
+**Reality:** three of `HomeScreen`'s four real entry-triggering call sites
+(everything except Intent submission) funneled through
+`ExperienceActivationManager.activate()` with `sessionId: null` always,
+because `ExperienceOpeningCoordinator`'s opening path never registered a
+workspace session — a limitation restated honestly in both R43's and R44's
+own docs. `Intent` has no field referencing an explicit `experienceId`;
+`CreationOpened` is produced only by `AnythingKernel.processIntent()`'s own
+internal fuzzy text-matching, never from a caller-supplied identifier —
+routing an explicit, already-known id through `openExperience(Intent)`
+would be unreliable and would wrongly introduce a Kernel/AI decision into a
+path that needs zero reasoning.
+
+**The fix:** a new `ExperienceEntryPipeline` (`lib/app/experience_entry_pipeline.dart`)
+composed over the existing, unmodified `IntentExecutionPipeline`/
+`ExperienceOpeningCoordinator`/`ExperienceActivationManager` — the ONE entry
+point `HomeScreen` and the Workspace Switcher now call for every real entry
+source (create, Recent list, protection resume, switch). Two new, additive,
+Kernel-free methods — `IntentSessionManager.startSessionForExistingExperience()`/
+`ExperienceWorkspaceManager.openExistingExperience()` — close the
+registration gap by reusing the existing `CreationOpened`/`SessionStartResult`
+types verbatim, never inventing a new one. `AppComposition` gained one new
+shared field, `experienceEntryPipeline`. `HomeScreen` builds its own local,
+stateless instance from its own individually-resolved fields (required for
+backward compatibility with existing per-field test injection), with
+`widget.entryPipeline` as an explicit override.
+
+**A real regression found and fixed during this milestone:** `HomeScreen`'s
+established `widget.X ?? _composition.X` per-field default pattern allowed
+`_scheduler`/`_activationManager` to silently bind to `_composition`'s own,
+separate default `workspaceManager` even when a caller overrode
+`workspaceManager` alone — invisible before R45 because that combination
+never triggered `scheduler.scheduleForeground()`. R45's new registration
+step does trigger it, surfacing a real `StateError` ("not open in this
+workspace") in `test/r36_operating_system_composition_test.dart`'s existing
+end-to-end wiring test. Root-cause fix, in `HomeScreen.initState()`: when a
+caller overrides any of `workspaceManager`/`workspaceRuntime`/`eventBus`
+without also overriding `scheduler`, build a fresh, consistent
+`WorkspaceSchedulingEngine`/`ExperienceActivationManager` from the resolved
+fields instead of the stale composition default. The bare/no-override case
+(and every existing test that overrides the full workspace/scheduler group
+together) is unaffected — confirmed via a full test-suite run, not assumed.
+
+**Execution result:** `flutter analyze`: 71/0, unchanged baseline, confirmed
+via a fresh, full run. `flutter test`: full suite run to completion via
+`D:\flutter\bin\flutter.bat`, zero regressions (1732 baseline + 16 new — see
+final count in `docs/audit/V2_TEST_EVIDENCE_MATRIX.md`).
+`WorkspaceSchedulingEngine`/`WorkspaceRuntimeSupervisor`/
+`WorkspaceLifecyclePolicyEngine`/`ExperienceRuntimeController`/
+`AnythingRuntime`/`AnythingKernel`/`UniversalIntentRouter`/`ExperienceHostScreen`
+all confirmed completely untouched via `git diff --stat`. `useCompilerPipeline`
+unaffected, still defaults `false`. Zero new LLM/reasoning calls anywhere in
+the diff.
+
+See `docs/architecture/UNIFIED_EXPERIENCE_ENTRY_PIPELINE.md` for the full
+audit, including the pre-existing `HomeScreen` submit-button reactivity gap
+found (not introduced) while writing this milestone's tests.
+
+**DO NOT START R46 — per this specification's own stop condition, wait
 for external architectural review.**
