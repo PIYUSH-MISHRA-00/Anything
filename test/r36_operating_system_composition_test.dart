@@ -37,17 +37,10 @@ import 'package:anything/app/app_composition.dart';
 import 'package:anything/app/autonomous_workspace_runtime.dart';
 import 'package:anything/app/creation_coordinator.dart';
 import 'package:anything/app/engineering_lifecycle_coordinator.dart';
-import 'package:anything/app/experience_activation_manager.dart';
-import 'package:anything/app/experience_entry_pipeline.dart';
-import 'package:anything/app/experience_opening_coordinator.dart';
 import 'package:anything/app/experience_workspace_manager.dart';
-import 'package:anything/app/intent_execution_pipeline.dart';
 import 'package:anything/app/intent_session_manager.dart';
 import 'package:anything/app/universal_intent_router.dart';
 import 'package:anything/app/workspace_event_publisher.dart';
-import 'package:anything/app/workspace_lifecycle_policy_engine.dart';
-import 'package:anything/app/workspace_runtime_supervisor.dart';
-import 'package:anything/app/workspace_scheduling_engine.dart';
 import 'package:anything/capabilities/registry/capability_descriptor.dart';
 import 'package:anything/capabilities/registry/capability_registry.dart';
 import 'package:anything/core/contracts/intent.dart';
@@ -408,36 +401,8 @@ void main() {
       expect(seedResult, isA<CreationCreated>());
       final experienceName = (seedResult as CreationCreated).package.manifest.name;
 
-      // Implementation Specification IS-R45: ExperienceEntryPipeline.activateExperience()
-      // ultimately reaches WorkspaceSchedulingEngine.scheduleForeground() ->
-      // ExperienceWorkspaceManager.switchActiveExperience() — this requires
-      // the SAME real workspace instance the registered session lives in.
-      // Passing `workspaceManager: rig.workspace` alone (as this test did
-      // pre-R45, when this path never actually registered/scheduled a
-      // session) is no longer sufficient: `scheduler`/`entryPipeline` would
-      // otherwise silently default to a FRESH, different
-      // `AppComposition.production()` workspace, causing a real
-      // `ExperienceWorkspaceManager.switchActiveExperience()` StateError
-      // ("not open in this workspace") — a real, honest cross-field
-      // consistency requirement genuine `AppComposition` always satisfies,
-      // now made explicit here for this rig-backed test double.
-      final supervisor = WorkspaceRuntimeSupervisor();
-      const policyEngine = WorkspaceLifecyclePolicyEngine();
-      final scheduler = WorkspaceSchedulingEngine(workspaceRuntime: rig.workspaceRuntime, supervisor: supervisor, policyEngine: policyEngine, workspace: rig.workspace);
-      final activationManager = ExperienceActivationManager(scheduler: scheduler, eventPublisher: rig.publisher);
-      final entryPipeline = ExperienceEntryPipeline(
-        intentExecutionPipeline: IntentExecutionPipeline(router: rig.router, eventPublisher: rig.publisher),
-        openingCoordinator: ExperienceOpeningCoordinator(repository: rig.repository),
-        activationManager: activationManager,
-        workspaceManager: rig.workspace,
-        workspaceRuntime: rig.workspaceRuntime,
-        eventBus: rig.bus,
-        runtimeSupervisor: supervisor,
-        scheduler: scheduler,
-      );
-
       await tester.pumpWidget(
-        MaterialApp(home: Scaffold(body: HomeScreen(workspaceManager: rig.workspace, workspaceRuntime: rig.workspaceRuntime, eventBus: rig.bus, entryPipeline: entryPipeline))),
+        MaterialApp(home: Scaffold(body: HomeScreen(workspaceManager: rig.workspace, workspaceRuntime: rig.workspaceRuntime, eventBus: rig.bus))),
       );
       for (var i = 0; i < 8; i++) {
         await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 60)));

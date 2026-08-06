@@ -348,18 +348,15 @@ void main() {
       expect(seedResult, isA<CreationCreated>());
       final experienceName = (seedResult as CreationCreated).package.manifest.name;
 
-      // Implementation Specification IS-R45: HomeScreen now resolves its
-      // ExperienceEntryPipeline (which internally reaches
-      // WorkspaceSchedulingEngine.scheduleForeground() ->
-      // ExperienceWorkspaceManager.switchActiveExperience()) independently
-      // from `scheduler` unless BOTH are explicitly supplied consistently
-      // — passing `scheduler:` alone would otherwise leave `entryPipeline`
-      // to default to a FRESH `AppComposition.production()` workspace,
-      // causing a real switchActiveExperience() StateError ("not open in
-      // this workspace"). Real `AppComposition` always co-constructs these
-      // consistently; this rig-backed test double must too.
+      // Implementation Specification IS-R45: HomeScreen.initState() now
+      // detects when a caller overrides scheduler-adjacent fields
+      // inconsistently and builds a matching WorkspaceSchedulingEngine
+      // internally (see the `needsConsistentScheduler` fix in
+      // lib/features/home/home_screen.dart) — passing `scheduler:` alone
+      // here is real, honest, single-field DI exactly like every other
+      // optional field on this screen.
       await tester.pumpWidget(
-        MaterialApp(home: Scaffold(body: HomeScreen(scheduler: rig.scheduler, entryPipeline: rig.entryPipeline))),
+        MaterialApp(home: Scaffold(body: HomeScreen(scheduler: rig.scheduler))),
       );
       for (var i = 0; i < 8; i++) {
         await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 60)));

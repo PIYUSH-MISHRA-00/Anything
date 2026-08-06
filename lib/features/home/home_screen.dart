@@ -241,7 +241,18 @@ class HomeScreenState extends State<HomeScreen> {
     // write the SAME World Graph and provider registry (MIS-1 Part 2's
     // ownership finding).
     _composition = widget.composition ?? AppComposition.production();
-    _workspaceManager = widget.workspaceManager ?? _composition.workspaceManager;
+    // IS-R45 fix (corrected — see the `_scheduler` resolution below for the
+    // full reasoning): `_workspaceManager` must resolve to the SAME real
+    // instance `_scheduler` is (or will be) bound to, or
+    // `WorkspaceSchedulingEngine.scheduleForeground()` ->
+    // `ExperienceWorkspaceManager.switchActiveExperience()` throws a real
+    // `StateError` ("not open in this workspace") the moment R45's
+    // registration step registers a session in one workspace while the
+    // scheduler is bound to a different one. When a caller supplies
+    // `scheduler:` WITHOUT also supplying `workspaceManager:`, prefer the
+    // scheduler's own real, already-bound workspace over the unrelated
+    // composition default — the exact inverse of the case handled below.
+    _workspaceManager = widget.workspaceManager ?? widget.scheduler?.workspace ?? _composition.workspaceManager;
     _intentRouter = widget.intentRouter ?? _composition.intentRouter;
     _workspaceRuntime = widget.workspaceRuntime ?? _composition.workspaceRuntime;
     _eventBus = widget.eventBus ?? _composition.eventBus;
@@ -263,7 +274,11 @@ class HomeScreenState extends State<HomeScreen> {
     // Recent-flow registration is the first real caller to do so). Build a
     // fresh, consistent scheduler from this screen's own resolved fields in
     // that case; the bare/no-override case keeps using the exact shared
-    // singleton (identity-sensitive tests are unaffected).
+    // singleton (identity-sensitive tests are unaffected). The OPPOSITE
+    // direction (scheduler overridden, workspaceManager not) never needs a
+    // fresh scheduler — `_workspaceManager`'s own resolution above already
+    // adopted `widget.scheduler.workspace`, so `widget.scheduler` itself is
+    // already consistent and used directly.
     final needsConsistentScheduler = widget.scheduler == null &&
         (widget.workspaceManager != null || widget.workspaceRuntime != null || widget.eventBus != null);
     _scheduler = widget.scheduler ??
