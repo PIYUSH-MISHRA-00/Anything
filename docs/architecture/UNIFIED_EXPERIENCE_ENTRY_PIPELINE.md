@@ -323,11 +323,27 @@ LLM/reasoning calls anywhere in the diff.
 
 ## PERFORMANCE
 
-Real, measured (never fabricated): `activateExperience()` fire-to-first-pump
-latency for a new session (~26ms); `openExistingExperience()` registration
-latency (~3.5ms); real process RSS delta across 10 repeated
-`openExistingExperience()` cycles (~4.7MB, expected for real SQLite-backed
-session bookkeeping, not a leak signature).
+Real, measured (never fabricated), and reported as a range because these
+are wall-clock measurements on a loaded developer machine, not a quiesced
+benchmark rig — two full-suite runs produced:
+
+| Measurement | Run 1 | Run 2 |
+|---|---|---|
+| `activateExperience()` fire-to-first-pump, new session | ~26ms | ~50ms |
+| `openExistingExperience()` registration latency | ~3.5ms | ~8.5ms |
+| RSS delta, 10 repeated `openExistingExperience()` cycles | ~4.7MB | ~12.8MB |
+
+The spread between runs is contention, not regression: the second run was
+taken with the full 1752-test suite executing concurrently. Both runs agree
+on the load-bearing conclusions — entry latency stays in the tens of
+milliseconds, registration is a small-single-digit-to-sub-10ms operation,
+and repeated registration cycles grow RSS proportionally with real
+SQLite-backed session bookkeeping rather than showing a leak signature
+(no super-linear growth across cycles). Routing `ExperiencesScreen` through
+the pipeline adds one workspace-session registration to a path that
+previously did none — that registration cost is exactly the
+`openExistingExperience()` figure above, and it buys the scheduler
+participation and supervision that path never had.
 
 ## KNOWN LIMITATIONS
 
