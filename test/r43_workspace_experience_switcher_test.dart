@@ -36,8 +36,13 @@ import 'package:anything/app/autonomous_workspace_runtime.dart';
 import 'package:anything/app/creation_coordinator.dart';
 import 'package:anything/app/engineering_lifecycle_coordinator.dart';
 import 'package:anything/app/experience_activation_manager.dart';
+import 'package:anything/app/experience_entry_pipeline.dart';
+import 'package:anything/app/experience_opening_coordinator.dart';
 import 'package:anything/app/experience_workspace_manager.dart';
+import 'package:anything/app/intent_execution_pipeline.dart';
 import 'package:anything/app/intent_session_manager.dart';
+import 'package:anything/app/universal_intent_router.dart';
+import 'package:anything/app/workspace_event_publisher.dart';
 import 'package:anything/app/workspace_lifecycle_policy_engine.dart';
 import 'package:anything/app/workspace_runtime_supervisor.dart';
 import 'package:anything/app/workspace_scheduling_engine.dart';
@@ -45,6 +50,7 @@ import 'package:anything/capabilities/registry/capability_descriptor.dart';
 import 'package:anything/capabilities/registry/capability_registry.dart';
 import 'package:anything/core/contracts/intent.dart';
 import 'package:anything/core/contracts/model_provider.dart';
+import 'package:anything/core/events/events.dart';
 import 'package:anything/creation/experience_package.dart';
 import 'package:anything/features/home/home_screen.dart';
 import 'package:anything/features/workspace/workspace_switcher.dart';
@@ -118,6 +124,7 @@ class _Rig {
   final WorkspaceRuntimeSupervisor supervisor;
   final WorkspaceSchedulingEngine scheduler;
   final ExperienceActivationManager activationManager;
+  final ExperienceEntryPipeline entryPipeline;
 
   _Rig({
     required this.repository,
@@ -127,6 +134,7 @@ class _Rig {
     required this.supervisor,
     required this.scheduler,
     required this.activationManager,
+    required this.entryPipeline,
   });
 
   static Future<_Rig> create(List<SemanticApp> reasonerSequence, {String? dbName}) async {
@@ -146,8 +154,31 @@ class _Rig {
     const policyEngine = WorkspaceLifecyclePolicyEngine();
     final scheduler = WorkspaceSchedulingEngine(workspaceRuntime: workspaceRuntime, supervisor: supervisor, policyEngine: policyEngine, workspace: workspace);
     final activationManager = ExperienceActivationManager(scheduler: scheduler);
+    final intentExecutionPipeline = IntentExecutionPipeline(
+      router: UniversalIntentRouter(workspace: workspace),
+      eventPublisher: WorkspaceEventPublisher(bus: EventBus()),
+    );
+    final entryPipeline = ExperienceEntryPipeline(
+      intentExecutionPipeline: intentExecutionPipeline,
+      openingCoordinator: ExperienceOpeningCoordinator(repository: repository, activity: activity),
+      activationManager: activationManager,
+      workspaceManager: workspace,
+      engineeringMemory: engineeringMemory,
+      workspaceRuntime: workspaceRuntime,
+      runtimeSupervisor: supervisor,
+      scheduler: scheduler,
+    );
 
-    return _Rig(repository: repository, creationCoordinator: creationCoordinator, workspace: workspace, workspaceRuntime: workspaceRuntime, supervisor: supervisor, scheduler: scheduler, activationManager: activationManager);
+    return _Rig(
+      repository: repository,
+      creationCoordinator: creationCoordinator,
+      workspace: workspace,
+      workspaceRuntime: workspaceRuntime,
+      supervisor: supervisor,
+      scheduler: scheduler,
+      activationManager: activationManager,
+      entryPipeline: entryPipeline,
+    );
   }
 
   /// Opens a real, NEW workspace session AND registers a real, started
@@ -219,7 +250,7 @@ void main() {
         await rig.openAndRegister('track my todos');
       });
 
-      await tester.pumpWidget(MaterialApp(home: Scaffold(body: WorkspaceSwitcherSheet(scheduler: rig.scheduler, activationManager: rig.activationManager, runtimeSupervisor: rig.supervisor, workspaceManager: rig.workspace))));
+      await tester.pumpWidget(MaterialApp(home: Scaffold(body: WorkspaceSwitcherSheet(scheduler: rig.scheduler, entryPipeline: rig.entryPipeline))));
       await tester.pump();
 
       expect(find.text('Camp Log'), findsOneWidget, reason: 'the real active session (first opened) must render');
@@ -236,7 +267,7 @@ void main() {
         rig = await _Rig.create([_app('Camp Log')]);
       });
 
-      await tester.pumpWidget(MaterialApp(home: Scaffold(body: WorkspaceSwitcherSheet(scheduler: rig.scheduler, activationManager: rig.activationManager, runtimeSupervisor: rig.supervisor, workspaceManager: rig.workspace))));
+      await tester.pumpWidget(MaterialApp(home: Scaffold(body: WorkspaceSwitcherSheet(scheduler: rig.scheduler, entryPipeline: rig.entryPipeline))));
       await tester.pump();
 
       expect(find.text('No apps are currently running.'), findsOneWidget);
@@ -257,7 +288,7 @@ void main() {
       });
       expect(rig.workspace.activeSessionId, sessionA);
 
-      await tester.pumpWidget(MaterialApp(home: Scaffold(body: WorkspaceSwitcherSheet(scheduler: rig.scheduler, activationManager: rig.activationManager, runtimeSupervisor: rig.supervisor, workspaceManager: rig.workspace))));
+      await tester.pumpWidget(MaterialApp(home: Scaffold(body: WorkspaceSwitcherSheet(scheduler: rig.scheduler, entryPipeline: rig.entryPipeline))));
       await tester.pump();
 
       await tester.tap(find.text('Book Club'));
@@ -282,7 +313,7 @@ void main() {
         await rig.openAndRegister('track my book club');
       });
 
-      await tester.pumpWidget(MaterialApp(home: Scaffold(body: WorkspaceSwitcherSheet(scheduler: rig.scheduler, activationManager: rig.activationManager, runtimeSupervisor: rig.supervisor, workspaceManager: rig.workspace))));
+      await tester.pumpWidget(MaterialApp(home: Scaffold(body: WorkspaceSwitcherSheet(scheduler: rig.scheduler, entryPipeline: rig.entryPipeline))));
       await tester.pump();
       expect(find.text('Camp Log'), findsOneWidget);
 
@@ -295,7 +326,7 @@ void main() {
       // Navigator.pop after a real switch) reading the scheduler's now
       // real, current state — proving the refresh is a genuine re-read,
       // never a stale, cached list.
-      await tester.pumpWidget(MaterialApp(home: Scaffold(body: WorkspaceSwitcherSheet(scheduler: rig.scheduler, activationManager: rig.activationManager, runtimeSupervisor: rig.supervisor, workspaceManager: rig.workspace))));
+      await tester.pumpWidget(MaterialApp(home: Scaffold(body: WorkspaceSwitcherSheet(scheduler: rig.scheduler, entryPipeline: rig.entryPipeline))));
       await tester.pump();
 
       final campLogTile = tester.widget<ListTile>(find.widgetWithText(ListTile, 'Camp Log'));
@@ -317,8 +348,18 @@ void main() {
       expect(seedResult, isA<CreationCreated>());
       final experienceName = (seedResult as CreationCreated).package.manifest.name;
 
+      // Implementation Specification IS-R45: HomeScreen now resolves its
+      // ExperienceEntryPipeline (which internally reaches
+      // WorkspaceSchedulingEngine.scheduleForeground() ->
+      // ExperienceWorkspaceManager.switchActiveExperience()) independently
+      // from `scheduler` unless BOTH are explicitly supplied consistently
+      // — passing `scheduler:` alone would otherwise leave `entryPipeline`
+      // to default to a FRESH `AppComposition.production()` workspace,
+      // causing a real switchActiveExperience() StateError ("not open in
+      // this workspace"). Real `AppComposition` always co-constructs these
+      // consistently; this rig-backed test double must too.
       await tester.pumpWidget(
-        MaterialApp(home: Scaffold(body: HomeScreen(scheduler: rig.scheduler))),
+        MaterialApp(home: Scaffold(body: HomeScreen(scheduler: rig.scheduler, entryPipeline: rig.entryPipeline))),
       );
       for (var i = 0; i < 8; i++) {
         await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 60)));
@@ -414,7 +455,7 @@ void main() {
       });
 
       final sw = Stopwatch()..start();
-      await tester.pumpWidget(MaterialApp(home: Scaffold(body: WorkspaceSwitcherSheet(scheduler: rig.scheduler, activationManager: rig.activationManager, runtimeSupervisor: rig.supervisor, workspaceManager: rig.workspace))));
+      await tester.pumpWidget(MaterialApp(home: Scaffold(body: WorkspaceSwitcherSheet(scheduler: rig.scheduler, entryPipeline: rig.entryPipeline))));
       await tester.pump();
       sw.stop();
       // ignore: avoid_print
