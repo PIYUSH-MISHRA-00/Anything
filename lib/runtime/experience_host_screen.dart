@@ -10,6 +10,7 @@ import '../app/experience_workspace_manager.dart';
 import '../app/workspace_event_publisher.dart';
 import '../app/workspace_lifecycle_policy_engine.dart';
 import '../app/workspace_runtime_supervisor.dart';
+import '../app/workspace_scheduling_engine.dart';
 import '../capabilities/platform/capability_platform.dart';
 import '../core/events/events.dart';
 import '../creation/experience_package.dart';
@@ -126,6 +127,16 @@ class ExperienceHostScreen extends StatefulWidget {
   /// when omitted (see `docs/architecture/WORKSPACE_RUNTIME_SUPERVISOR.md`).
   final WorkspaceRuntimeSupervisor? runtimeSupervisor;
 
+  /// Optional, additive scheduler (Implementation Specification IS-R42) —
+  /// `null` by default, so every existing caller/test that constructs
+  /// `ExperienceHostScreen` without one keeps identical behavior. When
+  /// supplied, this screen notifies it once the runtime finishes loading
+  /// (see `_loadExperience`) — a real, honest proxy for "this screen just
+  /// gained focus," NOT a full route-aware focus-regain (no `RouteObserver`
+  /// exists in this codebase; see `docs/architecture/WORKSPACE_SCHEDULING_ENGINE.md`).
+  /// A harmless no-op when omitted.
+  final WorkspaceSchedulingEngine? scheduler;
+
   const ExperienceHostScreen({
     super.key,
     required this.package,
@@ -142,6 +153,7 @@ class ExperienceHostScreen extends StatefulWidget {
     this.eventBus,
     this.runtimeController,
     this.runtimeSupervisor,
+    this.scheduler,
   });
 
   @override
@@ -247,6 +259,7 @@ class _ExperienceHostScreenState extends State<ExperienceHostScreen> with Widget
         _reportRuntimeStateToWorkspace();
         _publishRuntimeLoadedEvent();
         _registerWithSupervisor();
+        _notifyScheduler();
       }
     } catch (e) {
       if (mounted) {
@@ -340,6 +353,15 @@ class _ExperienceHostScreenState extends State<ExperienceHostScreen> with Widget
     if (sessionId == null) return;
     supervisor.register(sessionId, _runtimeController, experienceId: experienceId);
     _registeredSupervisorSessionId = sessionId;
+  }
+
+  /// Real, additive, safe scheduler notification (Implementation
+  /// Specification IS-R42) — a harmless no-op when [widget.scheduler] is
+  /// null. This screen finishing its own load is a real, honest proxy for
+  /// "this screen just gained focus" — never a fabricated route-regain
+  /// signal (see [WorkspaceSchedulingEngine]'s own doc comment).
+  void _notifyScheduler() {
+    unawaited(widget.scheduler?.scheduleActiveTransition());
   }
 
   /// Real Background Pause / Foreground Resume policy — reuses the SAME
