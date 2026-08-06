@@ -28,6 +28,7 @@ import 'package:anything/app/intent_execution_pipeline.dart';
 import 'package:anything/app/intent_session_manager.dart';
 import 'package:anything/app/universal_intent_router.dart';
 import 'package:anything/app/workspace_event_publisher.dart';
+import 'package:anything/app/workspace_runtime_supervisor.dart';
 import 'package:anything/capabilities/adapters/http_transport_adapter.dart';
 import 'package:anything/capabilities/adapters/knowledge_acquisition_provider_adapter.dart';
 import 'package:anything/capabilities/adapters/model_provider_ai_adapter.dart';
@@ -132,6 +133,16 @@ class AppComposition {
   /// above. See `docs/architecture/INTENT_EXECUTION_PIPELINE.md`.
   final IntentExecutionPipeline intentExecutionPipeline;
 
+  /// The shared Workspace Runtime Supervisor (Implementation Specification
+  /// IS-R40/R41) — the ONE registry every `ExperienceHostScreen` registers
+  /// its `ExperienceRuntimeController` with, constructed here so every real
+  /// navigation call site (`HomeScreen`) threads the SAME instance. REALITY
+  /// before R41: `WorkspaceRuntimeSupervisor` (R40) had no shared,
+  /// composition-root instance — each screen either got `null` or, if ever
+  /// supplied, an independent one; workspace-wide policy application had no
+  /// real multi-screen reach. See `docs/architecture/SHARED_RUNTIME_SUPERVISION.md`.
+  final WorkspaceRuntimeSupervisor workspaceRuntimeSupervisor;
+
   AppComposition._({
     required this.experienceRepository,
     required this.worldModel,
@@ -152,6 +163,7 @@ class AppComposition {
     required this.eventBus,
     required this.eventPublisher,
     required this.intentExecutionPipeline,
+    required this.workspaceRuntimeSupervisor,
   });
 
   /// Builds the real, production composition graph. Every dependency below
@@ -228,6 +240,11 @@ class AppComposition {
     // [intentRouter]/[eventPublisher] above, never a second router.
     final intentExecutionPipeline = IntentExecutionPipeline(router: intentRouter, eventPublisher: eventPublisher);
 
+    // Implementation Specification IS-R41: the one shared runtime-controller
+    // registry, composed from [eventPublisher] above — never a second
+    // supervisor. `WorkspaceRuntimeSupervisor` itself is unmodified since R40.
+    final workspaceRuntimeSupervisor = WorkspaceRuntimeSupervisor(eventPublisher: eventPublisher);
+
     return AppComposition._(
       experienceRepository: experienceRepository,
       worldModel: worldModel,
@@ -248,6 +265,7 @@ class AppComposition {
       eventBus: eventBus,
       eventPublisher: eventPublisher,
       intentExecutionPipeline: intentExecutionPipeline,
+      workspaceRuntimeSupervisor: workspaceRuntimeSupervisor,
     );
   }
 }

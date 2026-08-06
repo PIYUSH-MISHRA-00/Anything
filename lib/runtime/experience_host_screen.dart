@@ -342,16 +342,32 @@ class _ExperienceHostScreenState extends State<ExperienceHostScreen> with Widget
     _registeredSupervisorSessionId = sessionId;
   }
 
-  /// Implementation Specification IS-R39: real Background Pause / Foreground
-  /// Resume policy — a real, deterministic decision from the real, current
-  /// `RuntimeStatus` (never pausing an already-idle/error runtime, never
-  /// resuming a runtime that was never paused by this same policy), applied
-  /// through the existing `_runtimeController`. Never fires outside a real
-  /// OS-level transition (or an explicit test call to
-  /// `tester.binding.handleAppLifecycleStateChanged(...)`).
+  /// Real Background Pause / Foreground Resume policy — reuses the SAME
+  /// real `WidgetsBindingObserver` R39 already built as this milestone's
+  /// own "one real production trigger" (Implementation Specification
+  /// IS-R41), only widening its reach when a shared supervisor is present.
+  ///
+  /// When [widget.runtimeSupervisor] was injected (Implementation
+  /// Specification IS-R41): ONE real OS-level transition, observed by any
+  /// currently-mounted screen, now pauses/resumes EVERY runtime registered
+  /// with the shared supervisor — not just this screen's own. Safe to apply
+  /// unconditionally (no per-runtime status guard needed): `AnythingRuntime
+  /// .pauseSession()`/`.resumeSession()` are real, idempotent no-ops when a
+  /// runtime has no current session (unmodified, R38).
+  ///
+  /// When no supervisor was injected: EXACT, unchanged Implementation
+  /// Specification IS-R39 behavior — this screen's own runtime only, guarded
+  /// so it never pauses an already-idle/error runtime or resumes one that
+  /// was never paused. Never fires outside a real OS-level transition (or an
+  /// explicit test call to `tester.binding.handleAppLifecycleStateChanged(...)`).
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
+    final supervisor = widget.runtimeSupervisor;
+    if (supervisor != null) {
+      unawaited(supervisor.applyAppLifecyclePolicy(state, _policyEngine));
+      return;
+    }
     final decision = _policyEngine.evaluateAppLifecycle(state);
     if (decision.action == RuntimePolicyAction.pause && _runtime.status != RuntimeStatus.running) return;
     if (decision.action == RuntimePolicyAction.resume && _runtime.status != RuntimeStatus.paused) return;

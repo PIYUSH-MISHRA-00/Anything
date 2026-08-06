@@ -12,6 +12,7 @@ import 'package:anything/app/experience_opening_coordinator.dart';
 import 'package:anything/app/experience_workspace_manager.dart';
 import 'package:anything/app/intent_execution_pipeline.dart';
 import 'package:anything/app/universal_intent_router.dart';
+import 'package:anything/app/workspace_runtime_supervisor.dart';
 import 'package:anything/core/events/events.dart';
 import 'package:anything/design_system/components/birth_sequence.dart';
 import 'package:anything/design_system/components/anything_chip.dart';
@@ -87,7 +88,17 @@ class HomeScreen extends StatefulWidget {
   /// `docs/architecture/INTENT_EXECUTION_PIPELINE.md`).
   final IntentExecutionPipeline? pipeline;
 
-  const HomeScreen({super.key, this.composition, this.workspaceManager, this.intentRouter, this.workspaceRuntime, this.eventBus, this.pipeline});
+  /// Optional, additive runtime supervisor (Implementation Specification
+  /// IS-R41) — `null` by default, so every existing caller/test that
+  /// constructs `HomeScreen()` without one keeps identical behavior.
+  /// REALITY before R41: `WorkspaceRuntimeSupervisor` (R40) had no shared
+  /// composition-root instance — threaded into `ExperienceHostScreen` at
+  /// every real navigation call site below, so every screen this app opens
+  /// registers with the SAME supervisor (see
+  /// `docs/architecture/SHARED_RUNTIME_SUPERVISION.md`).
+  final WorkspaceRuntimeSupervisor? runtimeSupervisor;
+
+  const HomeScreen({super.key, this.composition, this.workspaceManager, this.intentRouter, this.workspaceRuntime, this.eventBus, this.pipeline, this.runtimeSupervisor});
 
   @override
   HomeScreenState createState() => HomeScreenState();
@@ -112,6 +123,12 @@ class HomeScreenState extends State<HomeScreen> {
   /// IS-R37) — the ONE thing `_createExperience()` calls to get engineering
   /// work done; see [HomeScreen.pipeline]'s own doc comment.
   late final IntentExecutionPipeline _pipeline;
+
+  /// Real, resolved Workspace Runtime Supervisor (Implementation
+  /// Specification IS-R41) — threaded into `ExperienceHostScreen` at every
+  /// real navigation call site below; see [HomeScreen.runtimeSupervisor]'s
+  /// own doc comment.
+  late final WorkspaceRuntimeSupervisor _runtimeSupervisor;
   late final ExperienceOpeningCoordinator _openingCoordinator;
   late final SqliteExperienceRepository _repository;
   late final IntentRepository _intentRepository;
@@ -166,6 +183,7 @@ class HomeScreenState extends State<HomeScreen> {
     // `UniversalIntentRouter` entirely. See
     // `docs/architecture/INTENT_EXECUTION_PIPELINE.md`.
     _pipeline = widget.pipeline ?? _composition.intentExecutionPipeline;
+    _runtimeSupervisor = widget.runtimeSupervisor ?? _composition.workspaceRuntimeSupervisor;
     _openingCoordinator = ExperienceOpeningCoordinator();
     _repository = SqliteExperienceRepository();
     _intentRepository = IntentRepository();
@@ -317,6 +335,7 @@ class HomeScreenState extends State<HomeScreen> {
               workspaceManager: _workspaceManager,
               workspaceRuntime: _workspaceRuntime,
               eventBus: _eventBus,
+              runtimeSupervisor: _runtimeSupervisor,
             ),
           ),
         ).then((_) => _loadRecent());
@@ -410,6 +429,7 @@ class HomeScreenState extends State<HomeScreen> {
               workspaceManager: _workspaceManager,
               workspaceRuntime: _workspaceRuntime,
               eventBus: _eventBus,
+              runtimeSupervisor: _runtimeSupervisor,
             ),
           ),
         ).then((_) => _loadRecent());
@@ -467,6 +487,7 @@ class HomeScreenState extends State<HomeScreen> {
               workspaceManager: _workspaceManager,
               workspaceRuntime: _workspaceRuntime,
               eventBus: _eventBus,
+              runtimeSupervisor: _runtimeSupervisor,
             ),
           ),
         ).then((_) => _loadRecent());
