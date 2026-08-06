@@ -7,7 +7,11 @@ export 'intent.dart';
 export 'experience.dart';
 export 'capability.dart';
 export 'kernel.dart';
-export 'runtime.dart';
+// `runtime.dart` was removed by IS-R47 Task 1 — a dead v1 `AnythingRuntime`
+// contract that collided by name with the live
+// `lib/runtime/anything_runtime.dart` while having an incompatible shape.
+// Nothing implemented it and nothing used any of its symbols; this barrel
+// re-export was its only remaining reference.
 export 'model_provider.dart';
 export 'knowledge_provider.dart';
 export 'protection_provider.dart';

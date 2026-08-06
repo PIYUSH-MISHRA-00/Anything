@@ -837,11 +837,35 @@ class HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ),
-          AnimatedSwitcher(
+          // Implementation Specification IS-R47 Task 3 — submit-button
+          // reactivity. REALITY before this fix (found while writing R45's
+          // tests, documented as a known limitation through R45 and R46):
+          // this `AnimatedSwitcher` branches on `_textController.text`, but
+          // nothing rebuilt the widget when that text changed.
+          // `TextField.onChanged` calls `_composer.setExpression()`, which
+          // notifies `IntentComposer`'s listeners — and `HomeScreen` was not
+          // one of them. So typing alone never revealed the submit button;
+          // it appeared only on the next unrelated `setState` (e.g. a focus
+          // change or a voice-state event).
+          //
+          // `TextEditingController` IS a `ValueListenable<TextEditingValue>`,
+          // so the fix is the native Flutter mechanism rather than new state:
+          // listen to the controller that is already the source of truth, and
+          // rebuild ONLY this icon subtree. A `_textController.addListener(
+          // () => setState(...))` in `initState` would also work but would
+          // rebuild the entire screen on every keystroke and add a listener
+          // to remove in `dispose()`.
+          //
+          // Business logic is untouched: `onChanged` still calls
+          // `_composer.setExpression()`, and no scheduler, activation or
+          // entry-pipeline behavior changes.
+          ValueListenableBuilder<TextEditingValue>(
+            valueListenable: _textController,
+            builder: (context, value, _) => AnimatedSwitcher(
             duration: const Duration(milliseconds: 100),
             transitionBuilder: (child, animation) =>
                 ScaleTransition(scale: animation, child: child),
-            child: _textController.text.isNotEmpty
+            child: value.text.isNotEmpty
                 ? IconButton(
                     key: const ValueKey('submit'),
                     onPressed: _showBirth
@@ -871,6 +895,7 @@ class HomeScreenState extends State<HomeScreen> {
                     ),
                     tooltip: 'Voice input',
                   ),
+            ),
           ),
           const SizedBox(width: 8),
         ],

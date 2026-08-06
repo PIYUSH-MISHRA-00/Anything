@@ -13,13 +13,27 @@
 /// routes mounted when a later route is pushed on top — naively re-pushing
 /// an already-mounted session's screen would throw.
 ///
-/// `HomeScreen` is the ONE and ONLY real production call site that ever
-/// pushes `ExperienceHostScreen` anywhere in this codebase (confirmed by
-/// grep) — this is what makes the simple design below sufficient: `HomeScreen`
-/// itself tracks routes at the moment it pushes/pops them. No
-/// `NavigatorObserver` is introduced (the spec's own "only if genuinely
-/// required" — it is not, given the single real pusher), and `AnythingApp`
-/// (`lib/app/app.dart`, where `MaterialApp` is built) is untouched.
+/// `ExperienceEntryPipeline` (`lib/app/experience_entry_pipeline.dart`,
+/// IS-R45) is the ONE and ONLY real production call site that ever pushes
+/// `ExperienceHostScreen` anywhere in this codebase — this is what makes the
+/// simple design below sufficient: routes are tracked at the exact moment
+/// they are pushed/popped, by [activate] itself. No `NavigatorObserver` is
+/// introduced (R44's own "only if genuinely required" — it is not, given the
+/// single real pusher), and `AnythingApp` (`lib/app/app.dart`, where
+/// `MaterialApp` is built) is untouched.
+///
+/// CORRECTION (IS-R47 Task 2, documentation only — no behavior change).
+/// This paragraph previously claimed `HomeScreen` was that single pusher,
+/// "confirmed by grep". That was never true: `ExperiencesScreen` (the "My
+/// Apps" tab) pushed `ExperienceHostScreen` in three places the entire time,
+/// bypassing workspace registration, the scheduler, runtime supervision and
+/// this manager — the real bypass IS-R45's second pass found and fixed. The
+/// stale claim was deliberately left in place through R45 and R46 so that
+/// those milestones' "ExperienceActivationManager remains byte-for-byte
+/// unchanged" proofs stayed mechanical; it is corrected now that the
+/// property it asserts is genuinely true AND mechanically enforced by
+/// `test/r46_architectural_integrity_certification_test.dart` (invariants
+/// I-02/I-16/I-17), rather than by a grep someone ran once.
 ///
 /// NAVIGATION MODEL: [activate] tracks the real `Route` OBJECT it pushes,
 /// keyed by `sessionId`, in a plain `Map` — a later [activate] call for the
