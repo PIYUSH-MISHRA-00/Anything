@@ -28,7 +28,9 @@ import 'package:anything/app/intent_execution_pipeline.dart';
 import 'package:anything/app/intent_session_manager.dart';
 import 'package:anything/app/universal_intent_router.dart';
 import 'package:anything/app/workspace_event_publisher.dart';
+import 'package:anything/app/workspace_lifecycle_policy_engine.dart';
 import 'package:anything/app/workspace_runtime_supervisor.dart';
+import 'package:anything/app/workspace_scheduling_engine.dart';
 import 'package:anything/capabilities/adapters/http_transport_adapter.dart';
 import 'package:anything/capabilities/adapters/knowledge_acquisition_provider_adapter.dart';
 import 'package:anything/capabilities/adapters/model_provider_ai_adapter.dart';
@@ -143,6 +145,15 @@ class AppComposition {
   /// real multi-screen reach. See `docs/architecture/SHARED_RUNTIME_SUPERVISION.md`.
   final WorkspaceRuntimeSupervisor workspaceRuntimeSupervisor;
 
+  /// The shared Workspace Scheduling Engine (Implementation Specification
+  /// IS-R42/R43) — the ONE coordinator that makes real, registered runtimes
+  /// in [workspaceRuntimeSupervisor] match [workspaceManager]'s real
+  /// active/background state, constructed here so every real navigation
+  /// call site (`HomeScreen`) threads the SAME instance, matching
+  /// [workspaceRuntimeSupervisor]'s own R41 precedent. See
+  /// `docs/architecture/WORKSPACE_EXPERIENCE_SWITCHER.md`.
+  final WorkspaceSchedulingEngine workspaceSchedulingEngine;
+
   AppComposition._({
     required this.experienceRepository,
     required this.worldModel,
@@ -164,6 +175,7 @@ class AppComposition {
     required this.eventPublisher,
     required this.intentExecutionPipeline,
     required this.workspaceRuntimeSupervisor,
+    required this.workspaceSchedulingEngine,
   });
 
   /// Builds the real, production composition graph. Every dependency below
@@ -245,6 +257,20 @@ class AppComposition {
     // supervisor. `WorkspaceRuntimeSupervisor` itself is unmodified since R40.
     final workspaceRuntimeSupervisor = WorkspaceRuntimeSupervisor(eventPublisher: eventPublisher);
 
+    // Implementation Specification IS-R43: the one shared scheduling
+    // coordinator, composed from [workspaceRuntime]/[workspaceRuntimeSupervisor]/
+    // [workspaceManager]/[eventPublisher] above — never a second scheduler.
+    // `WorkspaceLifecyclePolicyEngine` is genuinely stateless (a `const`
+    // constructor with no mutable fields, R39) so constructing one here
+    // inline is behaviorally identical to sharing a single instance.
+    final workspaceSchedulingEngine = WorkspaceSchedulingEngine(
+      workspaceRuntime: workspaceRuntime,
+      supervisor: workspaceRuntimeSupervisor,
+      policyEngine: const WorkspaceLifecyclePolicyEngine(),
+      workspace: workspaceManager,
+      eventPublisher: eventPublisher,
+    );
+
     return AppComposition._(
       experienceRepository: experienceRepository,
       worldModel: worldModel,
@@ -266,6 +292,7 @@ class AppComposition {
       eventPublisher: eventPublisher,
       intentExecutionPipeline: intentExecutionPipeline,
       workspaceRuntimeSupervisor: workspaceRuntimeSupervisor,
+      workspaceSchedulingEngine: workspaceSchedulingEngine,
     );
   }
 }

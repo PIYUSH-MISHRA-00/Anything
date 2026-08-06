@@ -13,6 +13,7 @@ import 'package:anything/app/experience_workspace_manager.dart';
 import 'package:anything/app/intent_execution_pipeline.dart';
 import 'package:anything/app/universal_intent_router.dart';
 import 'package:anything/app/workspace_runtime_supervisor.dart';
+import 'package:anything/app/workspace_scheduling_engine.dart';
 import 'package:anything/core/events/events.dart';
 import 'package:anything/design_system/components/birth_sequence.dart';
 import 'package:anything/design_system/components/anything_chip.dart';
@@ -26,6 +27,7 @@ import 'package:anything/storage/intent_repository.dart';
 import 'package:anything/core/contracts/intent.dart' as core;
 import 'package:anything/core/contracts/protection_provider.dart';
 import 'package:anything/runtime/experience_host_screen.dart';
+import 'package:anything/features/workspace/workspace_switcher.dart';
 
 /// Home screen with production creation pipeline.
 class HomeScreen extends StatefulWidget {
@@ -98,7 +100,18 @@ class HomeScreen extends StatefulWidget {
   /// `docs/architecture/SHARED_RUNTIME_SUPERVISION.md`).
   final WorkspaceRuntimeSupervisor? runtimeSupervisor;
 
-  const HomeScreen({super.key, this.composition, this.workspaceManager, this.intentRouter, this.workspaceRuntime, this.eventBus, this.pipeline, this.runtimeSupervisor});
+  /// Optional, additive scheduling engine (Implementation Specification
+  /// IS-R43) — `null` by default, so every existing caller/test that
+  /// constructs `HomeScreen()` without one keeps identical behavior.
+  /// REALITY before R43: `WorkspaceSchedulingEngine` (R42) had no shared
+  /// composition-root instance — threaded into `ExperienceHostScreen` at
+  /// every real navigation call site below (its own `scheduler` field,
+  /// added R42, was always `null` in production until now), and consumed by
+  /// the new Workspace Experience Switcher opened from this screen's own
+  /// header (see `docs/architecture/WORKSPACE_EXPERIENCE_SWITCHER.md`).
+  final WorkspaceSchedulingEngine? scheduler;
+
+  const HomeScreen({super.key, this.composition, this.workspaceManager, this.intentRouter, this.workspaceRuntime, this.eventBus, this.pipeline, this.runtimeSupervisor, this.scheduler});
 
   @override
   HomeScreenState createState() => HomeScreenState();
@@ -129,6 +142,13 @@ class HomeScreenState extends State<HomeScreen> {
   /// real navigation call site below; see [HomeScreen.runtimeSupervisor]'s
   /// own doc comment.
   late final WorkspaceRuntimeSupervisor _runtimeSupervisor;
+
+  /// Real, resolved Workspace Scheduling Engine (Implementation
+  /// Specification IS-R43) — threaded into `ExperienceHostScreen` at every
+  /// real navigation call site below, and consumed directly by the
+  /// Workspace Experience Switcher this screen opens; see
+  /// [HomeScreen.scheduler]'s own doc comment.
+  late final WorkspaceSchedulingEngine _scheduler;
   late final ExperienceOpeningCoordinator _openingCoordinator;
   late final SqliteExperienceRepository _repository;
   late final IntentRepository _intentRepository;
@@ -184,6 +204,7 @@ class HomeScreenState extends State<HomeScreen> {
     // `docs/architecture/INTENT_EXECUTION_PIPELINE.md`.
     _pipeline = widget.pipeline ?? _composition.intentExecutionPipeline;
     _runtimeSupervisor = widget.runtimeSupervisor ?? _composition.workspaceRuntimeSupervisor;
+    _scheduler = widget.scheduler ?? _composition.workspaceSchedulingEngine;
     _openingCoordinator = ExperienceOpeningCoordinator();
     _repository = SqliteExperienceRepository();
     _intentRepository = IntentRepository();
@@ -336,6 +357,7 @@ class HomeScreenState extends State<HomeScreen> {
               workspaceRuntime: _workspaceRuntime,
               eventBus: _eventBus,
               runtimeSupervisor: _runtimeSupervisor,
+              scheduler: _scheduler,
             ),
           ),
         ).then((_) => _loadRecent());
@@ -430,6 +452,7 @@ class HomeScreenState extends State<HomeScreen> {
               workspaceRuntime: _workspaceRuntime,
               eventBus: _eventBus,
               runtimeSupervisor: _runtimeSupervisor,
+              scheduler: _scheduler,
             ),
           ),
         ).then((_) => _loadRecent());
@@ -488,6 +511,7 @@ class HomeScreenState extends State<HomeScreen> {
               workspaceRuntime: _workspaceRuntime,
               eventBus: _eventBus,
               runtimeSupervisor: _runtimeSupervisor,
+              scheduler: _scheduler,
             ),
           ),
         ).then((_) => _loadRecent());
@@ -549,18 +573,27 @@ class HomeScreenState extends State<HomeScreen> {
                     letterSpacing: -0.01,
                   ),
                 ),
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: colorScheme.surfaceContainerHigh,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.person,
-                    size: 20,
-                    color: colorScheme.onSurfaceVariant,
-                  ),
+                Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.apps),
+                      tooltip: 'Running apps',
+                      onPressed: () => showWorkspaceSwitcher(context, _scheduler),
+                    ),
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: colorScheme.surfaceContainerHigh,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.person,
+                        size: 20,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
