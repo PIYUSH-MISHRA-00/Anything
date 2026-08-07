@@ -34,9 +34,11 @@ import 'package:anything/app/workspace_event_publisher.dart';
 import 'package:anything/app/workspace_lifecycle_policy_engine.dart';
 import 'package:anything/app/workspace_runtime_supervisor.dart';
 import 'package:anything/app/workspace_scheduling_engine.dart';
+import 'package:anything/capabilities/adapters/file_service_adapter.dart';
 import 'package:anything/capabilities/adapters/http_transport_adapter.dart';
 import 'package:anything/capabilities/adapters/knowledge_acquisition_provider_adapter.dart';
 import 'package:anything/capabilities/adapters/model_provider_ai_adapter.dart';
+import 'package:anything/capabilities/adapters/notification_service_adapter.dart';
 import 'package:anything/capabilities/builtin/ai_capability.dart';
 import 'package:anything/capabilities/builtin/clock_capability.dart';
 import 'package:anything/capabilities/builtin/file_capability.dart';
@@ -229,21 +231,47 @@ class AppComposition {
       ),
     );
 
+    // IS-R49: constructed here rather than further down, because the real
+    // notification presenter registered below delivers through it. Exactly
+    // one EventBus still exists in the production graph.
+    final eventBus = EventBus();
+
     final capabilityPlatform = CapabilityPlatform()
       ..register(ClockCapability())
       ..register(HttpCapability(transport: RealHttpTransport(), allowedHosts: _defaultHttpAllowedHosts))
       ..register(AiCapability(provider: ModelProviderAiAdapter(providerRegistry), experienceId: ''))
       ..register(KnowledgeCapability(provider: KnowledgeAcquisitionProviderAdapter(knowledgeEngine)))
-      // REALITY (documented, not papered over): no real OS-level
-      // notification delivery or file-picker-backed FileService exists in
-      // this codebase yet (no flutter_local_notifications wiring; adopting
-      // package:file_picker into a real, ownership-tracked FileService is
-      // real feature work, not "wiring," per R1's own scope). Registering
-      // the Fake* implementations keeps the dispatch path structurally
-      // real and testable without claiming a production capability that
-      // does not exist.
-      ..register(NotificationCapability(service: FakeNotificationService(), experienceId: ''))
-      ..register(FileCapability(service: FakeFileService(), experienceId: ''));
+      // Implementation Specification IS-R49: the last two production Fake*
+      // registrations are gone. Both now resolve to real services, each
+      // constructed exactly once here — there is no alternate composition
+      // root and no conditional production graph.
+      //
+      // RealNotificationService persists schedules durably (SharedPreferences,
+      // the backend ActivityRepository already uses — no new storage system),
+      // enforces per-Experience ownership, computes real due state, and
+      // delivers in-app through the EXISTING EventBus as the EXISTING R35
+      // `NotificationGenerated` event. No new event hierarchy, no second
+      // notification framework: `NotificationPlanner`/`BackgroundCoordinator`
+      // remain the canonical planning layer, untouched.
+      //
+      // HONEST SCOPE, unchanged from what background_coordinator.dart already
+      // states about itself: OS-level BACKGROUND delivery still requires a
+      // platform plugin plus native Android/iOS configuration that cannot be
+      // exercised by `flutter test` and cannot be verified without a device.
+      // It is left as one explicit seam (`NotificationPresenter`) rather than
+      // shipped unverified — see IS-R49's report and gap G-20.
+      ..register(NotificationCapability(
+        service: RealNotificationService(
+          presenter: EventBusNotificationPresenter(bus: eventBus),
+        ),
+        experienceId: '',
+      ))
+      // RealFileService is genuinely complete: real picking via
+      // package:file_picker (already a dependency), real sandboxed adoption,
+      // export, temporary files and workspace/Experience assets via
+      // path_provider + dart:io. Every path is resolved and verified to be
+      // inside the sandbox root.
+      ..register(FileCapability(service: RealFileService(), experienceId: ''));
 
     // Implementation Milestone R16: built before `kernel` so the SAME
     // instance is shared with `AnythingKernel`'s autonomous discovery step
@@ -282,7 +310,10 @@ class AppComposition {
     final workspaceManager = ExperienceWorkspaceManager(sessionManager: intentSessionManager);
     final intentRouter = UniversalIntentRouter(workspace: workspaceManager);
     final workspaceRuntime = AutonomousWorkspaceRuntime(workspace: workspaceManager);
-    final eventBus = EventBus();
+    // `eventBus` itself is now constructed earlier (above `capabilityPlatform`),
+    // because IS-R49's real notification presenter delivers through it. It is
+    // still the SAME single instance every consumer below receives — moving
+    // the construction point changes ordering, never cardinality.
     final eventPublisher = WorkspaceEventPublisher(bus: eventBus);
 
     // Implementation Specification IS-R37: the one canonical production
