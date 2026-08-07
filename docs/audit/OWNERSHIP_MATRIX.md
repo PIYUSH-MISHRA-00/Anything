@@ -356,3 +356,42 @@ OUTSIDE it. R49 did the reverse, and two concurrent callers delivered the same
 notification twice. The trade is that delivery is now at-most-once rather than
 at-least-once — correct for a contract that promises exactly once, and recorded
 as G-38.
+
+## IS-R57 — Repository composition
+
+| Repository | Composition owner | Since |
+|---|---|---|
+| `SqliteExperienceRepository` | `AppComposition` | pre-existing |
+| **`ActivityRepository`** | **`AppComposition`** | **R57** |
+| **`IntentRepository`** | **`AppComposition`** | **R57** |
+| `KnowledgeRepository` | `AppComposition` | pre-existing |
+| `WorldModelRepository` | `AppComposition` | pre-existing |
+| `EngineeringMemoryRepository` | `AppComposition` | pre-existing |
+| `CredentialVault` | `AppComposition` | pre-existing |
+| `ExperienceDatabase` | **deliberately none** — per Experience, created by `DataRuntime` | — |
+| `DurableCollectionStore` | **deliberately none** — stateless `const` value (R56) | — |
+
+Full detail: `docs/audit/REPOSITORY_OWNERSHIP_MATRIX.md`,
+`REPOSITORY_LIFETIME_MATRIX.md`, `REPOSITORY_DEPENDENCY_GRAPH.md`.
+
+### Ownership only — behaviour deliberately unchanged
+
+R56 PROVED the nine `ActivityRepository` instances were not a correctness
+defect: the class is stateless with a `const` constructor and
+`SharedPreferences` is a process singleton. R57 is therefore canonicalisation,
+not a bug fix, and all 2059 pre-existing tests pass untouched.
+
+### Seams retained, bare constructions removed
+
+The `x ?? Repository()` default stays everywhere it existed — it is the
+optional-injection pattern used since R32, and removing it would break the
+public constructors. What R57 removed is the FIVE bare constructions with no
+seam at all: `activity_screen`, `experiences_screen`, `experience_host_screen`,
+and `HomeScreen`'s own `SqliteExperienceRepository` and `IntentRepository`.
+
+### Two dead files deleted
+
+`lib/kernel/minimal_kernel.dart` (G-02, open since R47) and
+`lib/core/contracts/repository.dart` — the latter holding four contracts with
+zero implementations, one of which collided by name with the live
+`IntentRepository`.

@@ -578,3 +578,42 @@ next. The suite went from 2 minutes to 12 with eleven failures, and a single
 existed only to survive a yield that its own async callback reintroduced.
 Making the callback synchronous removed the yield, the lock, the static state
 and the deadlock together.
+
+## IS-R57 — Repository Composition Ownership (I-78 … I-80)
+
+| # | Invariant | Mechanism | Status |
+|---|---|---|---|
+| I-78 | Every repository is constructed ONLY in its approved sites | STATIC | CERTIFIED |
+| I-79 | `AppComposition` owns exactly ONE `ActivityRepository` and hands it out | STATIC | CERTIFIED |
+| I-80 | The dead repository contracts and `MinimalKernel` are gone and stay gone | STATIC | CERTIFIED |
+
+**I-78 is about SEAMS, not locations.** A construction preceded by `??` or
+`const` is a defaulted injection seam — the pattern used since R32 — and is
+allowed. A BARE construction is not: production cannot share the composition
+instance and a test cannot substitute one. That distinction is what lets the
+rule be enforced without the API break this milestone forbids. The nine
+pre-R57 `ActivityRepository` sites split six seams / three bare.
+
+**The invariant found a defect on its first run.** `IntentRepository` was
+constructed bare in `HomeScreen` and had no composition owner either — missed
+by R56's audit. It was composed, not excluded.
+
+**I-79 has three clauses because one would be decoration**: exactly one
+construction, exposed as a field, AND passed to at least four coordinators. A
+composition can satisfy the first two and still hand nothing out, leaving every
+consumer on its default. Ownership nobody receives is not ownership.
+
+**I-80 records a SECOND dead file the specification did not anticipate.**
+`lib/core/contracts/repository.dart` held four abstract contracts with twenty
+methods, ZERO implementations, reachable only through a barrel re-export — and
+its `IntentRepository` COLLIDED BY NAME with the live storage repository, so
+importing both would have failed with `ambiguous_import`. Identical in shape to
+the dead `runtime.dart` R47 deleted, and the barrel still carries R47's comment
+about that removal. Deleted alongside `MinimalKernel` (G-02, open since R47).
+
+**R57 mutation evidence.** Five probes, all failed as required: A (bare
+construction from UI) and C (from the runtime layer) and E (from a capability)
+failed I-78; B (double registration) failed I-79; D (registration removed)
+WOULD NOT COMPILE — it now breaks the build in three places, because consumers
+RECEIVE the instance instead of building their own. The type system became the
+stronger guard only once the ownership was real, exactly as in R55.

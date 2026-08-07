@@ -1,4 +1,4 @@
-# Remaining Gap Matrix — IS-R46, updated through IS-R56
+# Remaining Gap Matrix — IS-R46, updated through IS-R57
 
 Everything the repository-wide audit surfaced that is **not** resolved. Each
 row cites real evidence; nothing here is hypothetical.
@@ -33,6 +33,26 @@ Severity: **A** = architectural integrity, **B** = correctness/UX,
 |---|---|---|
 | G-18 | Persisted knowledge had no retention policy — unbounded growth | **CLOSED.** `RetentionPolicyEngine` now owns it: 500 entries / 20 MB / 30 days. `KnowledgeCache.applyRetention()` asks the engine and tells `KnowledgeRepository` which keys to drop; the repository still owns no policy (I-47). R48 deliberately did not invent a policy because none existed to reuse — R50 created the canonical owner first, then applied it. |
 | G-22 | Retention was invented independently three times with three magic numbers (`_maxRecords=100`, `_maxEvents=200`, `maxScheduled=200`) | **CLOSED.** All three delegate to the ONE engine. Values unchanged — three tests assert 100/200/200 exactly, so ownership moved without behaviour moving. No repository or capability service may hold a retention rule any more (I-46), mutation-proven. |
+
+## CLOSED BY IS-R57
+
+| # | Sev | Gap | How it was closed |
+|---|---|---|---|
+| **G-37** | B | **`ActivityRepository` had no composition ownership** — nine construction sites, absent from `AppComposition`, the only repository that could not be injected in production | **CLOSED.** Composed once and handed to every consumer. The six existing `?? ActivityRepository()` seams are retained (that is the injection pattern, and removing it would break the public constructors); the THREE bare constructions with no seam — `activity_screen`, `experiences_screen`, `experience_host_screen` — are gone. Certified I-78/I-79, five mutation probes. **Ownership only: R56 proved this was never a correctness defect, and all 2059 pre-existing tests pass untouched.** |
+| **G-02** | C | **`MinimalKernel` is dead** — declared, never constructed. Open since R47. | **DELETED.** Two references repository-wide, both its own declaration and constructor. Certified I-80 that it stays deleted. |
+| **NEW** | B | **`lib/core/contracts/repository.dart` was dead AND a latent compile break.** Four abstract contracts, twenty methods, ZERO implementations, reachable only through a barrel re-export — and its `IntentRepository` COLLIDED BY NAME with the live `lib/storage/intent_repository.dart`, so any file importing both would have failed with `ambiguous_import` (the trap R54 hit with a duplicated constant). | **DELETED**, barrel export removed. Identical in shape to the dead `runtime.dart` R47 removed — the barrel still carries R47's comment about that. Certified I-80, including that `IntentRepository` now declares exactly once. |
+| **NEW** | C | **`IntentRepository` had no composition owner either** — constructed bare inside `HomeScreen`. Not flagged by R56's audit. | **CLOSED.** Found by I-78 on its first run and composed rather than excluded from the rule. |
+
+## STILL OPEN AFTER IS-R57 — with what R57 tried
+
+| # | Sev | Gap | Status |
+|---|---|---|---|
+| G-40 | B | Parallel test files share one `anything_experiences.db`; runs intermittently fail with `database is locked` | **STILL OPEN, and R57's explanation FAILED.** I hypothesised the cause was `HomeScreen` building its own `SqliteExperienceRepository` alongside the composition's, fixed it, and measured: **3 failures / 11 runs with the fix, 3 / 11 without.** No improvement — hypothesis disproved. The `HomeScreen` change was kept on ownership grounds only. The real mechanism is still unidentified; the recommended fix remains an injectable database name for `AppComposition.production()`, or per-test databases in widget suites. |
+| G-35 | B | Atomicity stops at the repository boundary | Unchanged. |
+| G-38 | B | Notification delivery is at-most-once | Unchanged. |
+| G-34, G-36, G-39, G-41 | C | `touchLastUsed` writes directly; protection holds a repository for reads; `ThemeProvider` writes directly; stale test databases regrow | Unchanged. |
+| **NEW** G-42 | C | **Constructor defaults still permit multiple instances.** `x ?? Repository()` remains everywhere it existed, so a caller that injects nothing still gets its own instance. | **Open by design** (ADR Decision 1). Removing the defaults would change public constructors — forbidden by this milestone — and break every test relying on them. The composition now passes its instance, so the default does not fire in production. Certification distinguishes a defaulted SEAM (allowed) from a BARE construction (forbidden). |
+| **NEW** G-43 | C | **`EvolutionCoordinator` is not composed** — and nothing in `lib/` constructs it at all, so its `?? ActivityRepository()` default never fires in production. | **Open, deliberately.** Composing a coordinator nothing constructs would be speculative. Recorded so the asymmetry is visible rather than discovered later. |
 
 ## CLOSED BY IS-R56
 
