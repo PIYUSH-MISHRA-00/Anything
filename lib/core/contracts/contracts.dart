@@ -15,4 +15,12 @@ export 'kernel.dart';
 export 'model_provider.dart';
 export 'knowledge_provider.dart';
 export 'protection_provider.dart';
-export 'repository.dart';
+// `repository.dart` was removed by IS-R57 Phase 4 — four abstract contracts
+// (`ExperienceRepository`, `WorkspaceRepository`, `IntentRepository`,
+// `PreferencesRepository`) with TWENTY methods, ZERO implementations and zero
+// code references. `IntentRepository` collided by name with the live
+// `lib/storage/intent_repository.dart`, so any file importing both this barrel
+// and that repository would have failed with `ambiguous_import` — the same
+// latent trap R54 hit with a duplicated constant. This barrel re-export was
+// its only remaining reference, exactly as it had been for `runtime.dart`
+// (removed by IS-R47).

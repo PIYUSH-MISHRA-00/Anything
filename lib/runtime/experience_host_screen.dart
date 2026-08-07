@@ -137,6 +137,15 @@ class ExperienceHostScreen extends StatefulWidget {
   /// A harmless no-op when omitted.
   final WorkspaceSchedulingEngine? scheduler;
 
+  /// The shared `ActivityRepository` (IS-R57).
+  ///
+  /// This screen built its own before R57 — one of nine sites, and one of
+  /// three with no injection seam at all. It now follows the SAME optional-
+  /// injection pattern as every other dependency on this widget: supplied by
+  /// the caller in production (threaded from `AppComposition`), defaulted
+  /// otherwise so no existing caller breaks.
+  final ActivityRepository? activity;
+
   const ExperienceHostScreen({
     super.key,
     required this.package,
@@ -154,6 +163,7 @@ class ExperienceHostScreen extends StatefulWidget {
     this.runtimeController,
     this.runtimeSupervisor,
     this.scheduler,
+    this.activity,
   });
 
   @override
@@ -237,7 +247,7 @@ class _ExperienceHostScreenState extends State<ExperienceHostScreen> with Widget
           worldModel: widget.worldModel,
           engineeringMemory: widget.engineeringMemory,
         );
-    _activity = ActivityRepository();
+    _activity = widget.activity ?? const ActivityRepository();
     _protectionService =
         widget.protectionService ?? ExperienceProtectionService();
     _currentPackage = widget.package;

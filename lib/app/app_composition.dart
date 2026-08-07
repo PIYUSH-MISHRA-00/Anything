@@ -62,6 +62,8 @@ import 'package:anything/security/protection_service.dart';
 import 'package:anything/services/provider_registry.dart';
 import 'package:anything/software_cognition/software_cognition_coordinator.dart';
 import 'package:anything/storage/engineering_memory_repository.dart';
+import 'package:anything/storage/activity_repository.dart';
+import 'package:anything/storage/intent_repository.dart';
 import 'package:anything/storage/knowledge_repository.dart';
 import 'package:anything/storage/sqlite_experience_repository.dart';
 import 'package:anything/storage/world_model_repository.dart';
@@ -189,6 +191,23 @@ class AppComposition {
   /// enforces policy or activates a runtime.
   final ExperienceDistributionFramework experienceDistribution;
 
+  /// The shared Activity Repository (IS-R57).
+  ///
+  /// Before R57 this was the ONE repository with no composition owner: nine
+  /// separate call sites each built their own, and it appeared nowhere here.
+  /// R56 proved that was not a correctness defect — the class is stateless
+  /// with a `const` constructor and `SharedPreferences` is a process singleton
+  /// — so this is ownership canonicalisation, not a bug fix, and behaviour is
+  /// unchanged.
+  final ActivityRepository activityRepository;
+
+  /// The shared Intent Repository (IS-R57).
+  ///
+  /// Like [activityRepository], this had no composition owner before R57 — it
+  /// was constructed once, directly, inside `HomeScreen`. Stateless and
+  /// `const`, so this is ownership only and behaviour is unchanged.
+  final IntentRepository intentRepository;
+
   /// The shared Experience Commit Framework (IS-R55) — the ONE owner of
   /// writing Experience state. Creation, modification, evolution, protection,
   /// installation and removal all terminate here; nothing else writes.
@@ -228,6 +247,8 @@ class AppComposition {
     required this.experienceDistribution,
     required this.experienceInstallation,
     required this.experienceCommit,
+    required this.activityRepository,
+    required this.intentRepository,
   });
 
   /// Builds the real, production composition graph. Every dependency below
@@ -236,6 +257,11 @@ class AppComposition {
   /// them.
   factory AppComposition.production() {
     final experienceRepository = SqliteExperienceRepository();
+
+    // IS-R57: the ONE activity repository. Every coordinator and screen that
+    // records activity receives THIS instance.
+    const activityRepository = ActivityRepository();
+    const intentRepository = IntentRepository();
     final credentialVault = CredentialVault();
     final providerRegistry = AnythingProviderRegistry(credentialVault: credentialVault);
 
@@ -380,6 +406,7 @@ class AppComposition {
     // for the full real service graph and dependency-lifetime analysis.
     final experienceCreationCoordinator = ExperienceCreationCoordinator(
       kernel: kernel,
+      activity: activityRepository,
       // IS-R55: this previously took neither, so it built its OWN
       // SqliteExperienceRepository. Same database file, but a second instance
       // and — more importantly — a commit path outside the shared framework.
@@ -392,11 +419,15 @@ class AppComposition {
     );
     final engineeringLifecycleCoordinator = EngineeringLifecycleCoordinator(kernel: kernel, engineeringMemory: engineeringMemory);
     final intentSessionManager = IntentSessionManager(
+      activity: activityRepository,
       creationCoordinator: experienceCreationCoordinator,
       lifecycleCoordinator: engineeringLifecycleCoordinator,
       engineeringMemory: engineeringMemory,
     );
-    final workspaceManager = ExperienceWorkspaceManager(sessionManager: intentSessionManager);
+    final workspaceManager = ExperienceWorkspaceManager(
+      sessionManager: intentSessionManager,
+      activity: activityRepository,
+    );
     final intentRouter = UniversalIntentRouter(workspace: workspaceManager);
     final workspaceRuntime = AutonomousWorkspaceRuntime(workspace: workspaceManager);
     // `eventBus` itself is now constructed earlier (above `capabilityPlatform`),
@@ -442,7 +473,7 @@ class AppComposition {
     // precedent) â€” never a second scheduler, never a second Navigator.
     final experienceEntryPipeline = ExperienceEntryPipeline(
       intentExecutionPipeline: intentExecutionPipeline,
-      openingCoordinator: ExperienceOpeningCoordinator(),
+      openingCoordinator: ExperienceOpeningCoordinator(activity: activityRepository),
       activationManager: experienceActivationManager,
       workspaceManager: workspaceManager,
       worldModel: worldModel,
@@ -481,6 +512,8 @@ class AppComposition {
       experienceDistribution: distribution,
       experienceInstallation: installer,
       experienceCommit: commitFramework,
+      activityRepository: activityRepository,
+      intentRepository: intentRepository,
     );
   }
 }

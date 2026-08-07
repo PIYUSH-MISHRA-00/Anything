@@ -9,14 +9,19 @@ import '../../storage/activity_repository.dart';
 
 /// Activity screen with real local events.
 class ActivityScreen extends StatefulWidget {
-  const ActivityScreen({super.key});
+  /// The shared `ActivityRepository` (IS-R57). Optional, defaulted, so every
+  /// existing caller is unaffected — the same pattern the rest of the app uses.
+  final ActivityRepository? repository;
+
+  const ActivityScreen({super.key, this.repository});
 
   @override
   State<ActivityScreen> createState() => _ActivityScreenState();
 }
 
 class _ActivityScreenState extends State<ActivityScreen> {
-  final ActivityRepository _repository = ActivityRepository();
+  late final ActivityRepository _repository =
+      widget.repository ?? const ActivityRepository();
   List<ActivityEvent> _events = [];
   bool _isLoading = true;
 

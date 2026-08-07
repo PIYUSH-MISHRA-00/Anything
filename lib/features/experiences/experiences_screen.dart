@@ -78,7 +78,9 @@ class _ExperiencesScreenState extends State<ExperiencesScreen> {
     _composition = widget.composition ?? AppComposition.production();
     _repo = widget.repository ?? SqliteExperienceRepository();
     _commits = ExperienceCommitFramework(repository: _repo);
-    _activity = ActivityRepository();
+    // IS-R57: this screen already holds the composition; it now takes the
+    // ONE activity repository from it instead of building a tenth.
+    _activity = _composition.activityRepository;
     _entryPipeline = widget.entryPipeline ?? _composition.experienceEntryPipeline;
     _loadExperiences();
   }

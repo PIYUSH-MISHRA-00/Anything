@@ -307,7 +307,9 @@ class HomeScreenState extends State<HomeScreen> {
     _entryPipeline = widget.entryPipeline ??
         ExperienceEntryPipeline(
           intentExecutionPipeline: _pipeline,
-          openingCoordinator: ExperienceOpeningCoordinator(),
+          openingCoordinator: ExperienceOpeningCoordinator(
+            activity: _composition.activityRepository,
+          ),
           activationManager: _activationManager,
           workspaceManager: _workspaceManager,
           worldModel: _composition.worldModel,
@@ -318,8 +320,8 @@ class HomeScreenState extends State<HomeScreen> {
           runtimeSupervisor: _runtimeSupervisor,
           scheduler: _scheduler,
         );
-    _repository = SqliteExperienceRepository();
-    _intentRepository = IntentRepository();
+    _repository = _composition.experienceRepository;
+    _intentRepository = _composition.intentRepository;
     _composer = IntentComposer(_composition.kernel);
     _voiceService = VoiceInputService();
     _voiceService.addListener(_onVoiceStateChanged);
