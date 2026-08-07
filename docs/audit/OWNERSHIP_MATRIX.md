@@ -59,6 +59,45 @@ anywhere in `lib/` fails CI.
 | `KnowledgeCache` | `knowledge/knowledge_acquisition_engine.dart` | `AppComposition` | THE single cache (I-35) |
 | `KnowledgeRepository` | `storage/knowledge_repository.dart` | `AppComposition` | durable store for the cache only (I-36) |
 
+## Policy ownership (IS-R50)
+
+Two policy engines, two **disjoint** domains. A third of either kind, or any
+overlap between these two, fails certification (I-44).
+
+| Engine | Owns | Inputs | Output vocabulary | Acts on |
+|---|---|---|---|---|
+| `WorkspaceLifecyclePolicyEngine` (R39) | **runtime** lifecycle | `AppLifecycleState`, `WorkspaceRuntimeSnapshot` | `RuntimePolicyAction` (pause/resume/terminate/restore/noAction) | `ExperienceRuntimeController` |
+| `RetentionPolicyEngine` (R50) | **data** retention | record count, age, size | `LifecycleAction` (retain/evict/expire) | nothing — it decides, callers apply |
+
+### Retention delegation — who applies, and when
+
+| Domain | Applied by | When | Bound |
+|---|---|---|---|
+| `intents` | `IntentRepository.save()` | on write | 100 entries |
+| `activity` | `ActivityRepository.record()` | on write | 200 entries |
+| `notifications` | `RealNotificationService.schedule()` | on write | 200 entries |
+| `knowledge` | `KnowledgeCache.applyRetention()` | after `put()`, or on demand | 500 / 20 MB / 30 d |
+| `temporary_files` | `RealFileService.applyRetention()` | on demand | 1 d |
+| `exports` | `RealFileService.applyRetention()` | on demand | 7 d |
+
+Before R50 the first three bounds were `static const int` fields invented
+independently inside those three files, and `knowledge` had no bound at all
+(gap G-18). The values did not change; the **ownership** did. No repository or
+capability service may hold a retention rule any more (I-46).
+
+**`KnowledgeRepository` remains storage only.** It gained `keySummaries()` — a
+plain SQL aggregate reporting per-key count, bytes and recency. It reports
+facts; `KnowledgeCache` asks the engine and tells the repository which keys to
+remove. The repository evaluates nothing and reclaims nothing on its own
+initiative (I-47).
+
+**Not retention, deliberately excluded:** `CredentialVault.delete()`,
+`SqliteExperienceRepository.delete()`, `MemoryManager.deleteConversation()`,
+`IntentComposer.clear()` and `RealFileService.clearTemporaryFiles()` are
+explicit user or caller actions. Retention decides what happens *without*
+anyone asking; deletion someone asked for is not a policy outcome. Adopted
+Experience assets are likewise never reclaimed by policy.
+
 ## Platform capabilities (IS-R49)
 
 Every capability the runtime exposes to Experiences, and the ONE service

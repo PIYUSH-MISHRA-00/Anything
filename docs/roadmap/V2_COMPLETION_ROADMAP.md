@@ -2613,3 +2613,69 @@ in any R49 file. `flutter test`: full suite green, zero regressions.
 
 **DO NOT START R50 — per this specification's own stop condition, wait
 for external architectural review.**
+
+## Implementation Specification IS-R50 — Canonical Lifecycle, Retention and Policy Framework
+
+**Reality:** retention was invented independently three times, with three
+unexplained magic numbers, and one domain had none at all —
+`IntentRepository._maxRecords = 100`, `ActivityRepository._maxEvents = 200`,
+`RealNotificationService.maxScheduled = 200` (added by R49), and
+`KnowledgeRepository` unbounded (gap G-18). Each was locally reasonable and
+collectively unreviewable.
+
+**The decision that shaped the milestone.** IS-R50 asked that
+`WorkspaceLifecyclePolicyEngine` be extended "if that preserves the
+established ownership model". Reading it, extending would have damaged the
+model: it owns RUNTIME lifecycle (pause/resume/terminate/restore, acting on an
+`ExperienceRuntimeController`), its inputs are `AppLifecycleState`/snapshots,
+and its `RuntimePolicyAction` is a closed enum exhaustively switched over —
+adding `evict`/`expire` would make every caller's switch silently incomplete.
+So retention became a SIBLING with a disjoint domain, and the disjointness is
+certified in both directions (I-44). A third engine of either kind fails.
+
+**The engine.** `RetentionPolicyEngine` owns one table covering knowledge,
+intents, activity, notifications, temporary files and exports, with
+`RetentionClass`/`LifecyclePolicy`/`LifecycleCandidate`/`LifecycleDecision`/
+`LifecycleEvaluation`. It is pure: it decides, callers apply. Certified to
+hold no storage handle, perform no I/O and own no `Timer` (I-45) — which is
+what keeps R48's "repository is storage only" and Task 5's "no second
+scheduler" structural rather than aspirational.
+
+**Behaviour did not move with ownership.** The three existing bounds are
+unchanged (100/200/200) and three tests assert exactly that. A fourth proves
+the new capability: the same repository with an injected policy of 5 retains
+5 — impossible when the bound was a compile-time constant.
+
+**Knowledge (gap G-18 closed).** `KnowledgeRepository` gained `keySummaries()`
+— a SQL aggregate reporting per-key count, bytes and recency without loading
+content. It reports facts; `KnowledgeCache` asks the engine and tells the
+repository what to remove. The repository evaluates nothing (I-47).
+
+**Files.** `applyRetention()` covers `tmp/` and `exports/` only. Adopted
+Experience assets are never reclaimed by policy — a user's document is deleted
+by explicit action, never as a retention side effect.
+`clearTemporaryFiles()` stays an unconditional caller-initiated wipe,
+deliberately not policy-driven, for the same reason as
+`CredentialVault.delete()`.
+
+**Certification extended** 51 -> 55 tests with I-44..I-47. Mutation-proven:
+probe A (a `ParallelRetentionEngine`) failed I-44; probe B (restoring
+`_maxRecords` to `IntentRepository`) failed I-46.
+
+**What certification did NOT catch, reported plainly.** Removing
+`maxScheduled` broke R49's own test. Static checks verify architectural shape,
+not API compatibility — the analyzer baseline caught it (71 -> 72). Fourth
+time across R46-R50 that something other than the certification layer caught
+the real defect.
+
+**Execution result:** `flutter analyze`: 71, unchanged baseline, zero in any
+R50 file. `flutter test`: 1878 passed, 0 skipped, exit 0 (1855 + 19 + 4), zero
+regressions. `git status --porcelain`: clean. No Timer, no second scheduler,
+no second cache, no second repository, no API break. WebWeaveX and Kaalka
+untouched.
+
+See `docs/architecture/LIFECYCLE_POLICY_ARCHITECTURE.md` and
+`docs/audit/LIFECYCLE_CERTIFICATION.md`.
+
+**DO NOT START R51 — per this specification''s own stop condition, wait
+for external architectural review.**

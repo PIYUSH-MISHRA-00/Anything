@@ -132,6 +132,35 @@ The four permitted model-invocation files, and why each is permitted:
 | I-41 | Exactly one real implementation of `NotificationService` and one of `FileService` exist (plus their test doubles) | STATIC | CERTIFIED (IS-R49) |
 | I-42 | The real notification service adds **no second notification framework** — it reuses the existing `EventBus` and R35's `NotificationGenerated`, declares no new `AnythingEvent` subtype, and runs no timer of its own | STATIC | CERTIFIED (IS-R49) |
 | I-43 | The real file service adds **no duplicate storage system** — it references no sqflite, no experience/knowledge repository and no `SharedPreferences` | STATIC | CERTIFIED (IS-R49) |
+| I-44 | Exactly **two** policy engines exist — `WorkspaceLifecyclePolicyEngine` (runtime) and `RetentionPolicyEngine` (data) — and they are **disjoint in both directions** | STATIC | CERTIFIED (IS-R50) |
+| I-45 | The retention engine **decides but never deletes** — no `sqflite`/`Database`/`SharedPreferences`/`dart:io`/`File`/`Directory`/`Timer` | STATIC | CERTIFIED (IS-R50) |
+| I-46 | **No repository or capability service owns a retention rule** of its own | STATIC | CERTIFIED (IS-R50) |
+| I-47 | `KnowledgeRepository` never owns retention — it reports facts (`keySummaries()`) and is told what to drop | STATIC | CERTIFIED (IS-R50) |
+
+**I-44 is the milestone's central decision, made mechanical.** IS-R50 asked
+that `WorkspaceLifecyclePolicyEngine` be extended "if that preserves the
+established ownership model". It would not have: that engine owns *runtime*
+lifecycle (pause/resume/terminate/restore, acting on an
+`ExperienceRuntimeController`), its `RuntimePolicyAction` is a closed enum
+exhaustively switched over, and widening it with `evict`/`expire` would make
+every caller's switch silently incomplete. So retention became a **sibling**
+with a disjoint domain — and the disjointness is certified in *both*
+directions, because a merged vocabulary would be as much a violation as a
+duplicated engine. A third engine of either kind fails outright.
+
+**I-45 is not stylistic.** If the retention engine could delete, it would be a
+second storage owner and R48's "the repository is storage only" would quietly
+stop being true. If it could hold a `Timer`, it would be a second scheduler
+and IS-R50 Task 5's "no second scheduler" would quietly stop being true.
+Purity is what makes both promises structural.
+
+**I-47 has two halves that both matter.** The repository must not evaluate
+policy — *and* must still expose `keySummaries()`. The tempting fix for a
+store that must not decide is to make it blind, and a blind store cannot be
+governed at all.
+
+Full detail: `docs/audit/LIFECYCLE_CERTIFICATION.md` and
+`docs/architecture/LIFECYCLE_POLICY_ARCHITECTURE.md`.
 
 **I-39 is deliberately scoped to the composition root.** A `Fake*` *class* may
 legitimately live in `lib/` beside the abstraction it doubles — what mattered,
@@ -302,6 +331,33 @@ I-39 Expected: empty / Actual: ['FakeFileService']
 I-40 Expected: <1> / Actual: <0>
      RealFileService must be constructed exactly once in the composition root
 ```
+
+**R50 probe A — a parallel retention engine.** A file declaring
+`class ParallelRetentionEngine` failed I-44:
+
+```
+Expected: [retention_policy_engine.dart:RetentionPolicyEngine,
+           workspace_lifecycle_policy_engine.dart:WorkspaceLifecyclePolicyEngine]
+Actual:   [... , lib/r50_mutation_probe.dart:ParallelRetentionEngine]
+A parallel lifecycle/retention engine appeared
+```
+
+**R50 probe B — a repository re-inventing a bound.** Restoring
+`static const int _maxRecords = 100;` to `IntentRepository` failed I-46:
+
+```
+Expected: empty
+Actual:   ['static const int _maxRecords']
+lib/storage/intent_repository.dart re-invented a retention bound
+```
+
+**R50 — what certification did NOT catch.** Removing
+`RealNotificationService.maxScheduled` broke R49's own test, which passed it.
+No invariant here detected that: static certification checks architectural
+shape, not API compatibility. The **analyzer baseline** caught it, moving
+71 → 72 with an `undefined_named_parameter`. Fourth time across R46–R50 that
+something other than this layer caught the real defect — the layer is one
+mechanical check among several, not the only one.
 
 **R49 probe B — duplicate registration.** Registering `FileCapability` twice
 failed I-40:

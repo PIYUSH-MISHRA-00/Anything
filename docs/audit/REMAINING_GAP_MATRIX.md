@@ -27,6 +27,20 @@ Severity: **A** = architectural integrity, **B** = correctness/UX,
 |---|---|---|
 | G-03 | Two production `Fake*` services registered in the real composition | **CLOSED.** `FakeNotificationService` → `RealNotificationService` (durable schedules, real ownership, real due computation, real foreground delivery on the existing `EventBus` via R35's `NotificationGenerated`). `FakeFileService` → `RealFileService` (real picking via the already-present `file_picker`, real sandboxed adoption/export/temp/workspace assets via `path_provider` + `dart:io`). No `Fake*` is constructed in the composition root any more (I-39), mutation-proven. |
 
+## CLOSED BY IS-R50
+
+| # | Gap | How it was closed |
+|---|---|---|
+| G-18 | Persisted knowledge had no retention policy — unbounded growth | **CLOSED.** `RetentionPolicyEngine` now owns it: 500 entries / 20 MB / 30 days. `KnowledgeCache.applyRetention()` asks the engine and tells `KnowledgeRepository` which keys to drop; the repository still owns no policy (I-47). R48 deliberately did not invent a policy because none existed to reuse — R50 created the canonical owner first, then applied it. |
+| G-22 | Retention was invented independently three times with three magic numbers (`_maxRecords=100`, `_maxEvents=200`, `maxScheduled=200`) | **CLOSED.** All three delegate to the ONE engine. Values unchanged — three tests assert 100/200/200 exactly, so ownership moved without behaviour moving. No repository or capability service may hold a retention rule any more (I-46), mutation-proven. |
+
+## Gaps IS-R50 found and closed within the same milestone
+
+| # | What happened |
+|---|---|
+| G-23 | **R50 broke a caller of R49's own API.** Removing `RealNotificationService.maxScheduled` invalidated R49's test, which constructed the service with `maxScheduled: 3`. No certification invariant caught it — static checks verify architectural shape, not API compatibility. The **analyzer baseline** caught it, moving 71 → 72 with an `undefined_named_parameter`. The test was migrated to express the same bound as a retention policy; its assertions are unchanged. Fourth time across R46–R50 that something other than the certification layer caught the real defect. |
+| G-24 | **An observed, non-reproducing test failure, recorded rather than buried.** One full-suite run reported `r43_workspace_experience_switcher_test.dart` failing with `type 'CreationFailed' is not a subtype of type 'CreationCreated'` — a Kernel creation failure, in the same run that carried the broken R49 test file. It did **not** reproduce: the file passed 14/14 in isolation, and the subsequent clean full run passed 1878/1878. Reported because "it passed the second time" is not the same as "it never failed", and a future recurrence should find this note rather than start from zero. |
+
 ## Gaps IS-R49 found and closed within the same milestone
 
 | # | What happened |
