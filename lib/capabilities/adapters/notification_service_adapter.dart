@@ -51,9 +51,9 @@ library;
 
 import 'dart:convert';
 
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../app/retention_policy_engine.dart';
+import '../../storage/durable_collection_store.dart';
 import '../../core/events/events.dart';
 import '../builtin/notification_capability.dart';
 
@@ -161,9 +161,23 @@ class RealNotificationService implements NotificationService {
   /// single table.
   final RetentionPolicyEngine retention;
 
+  /// The ONE owner of read-modify-write against a durable key (IS-R56).
+  ///
+  /// R49 built every mutation below as read-the-whole-list, change it, write
+  /// the whole list, with awaits in between and nothing preventing two callers
+  /// interleaving. The R56 audit MEASURED the result: ten concurrent
+  /// `schedule()` calls left ONE notification stored, and two concurrent
+  /// `deliverDue()` calls presented the same notification TWICE, breaking the
+  /// exactly-once contract stated in `deliverDue`'s own doc comment. Both are
+  /// reachable in production, since `NotificationCapability` exposes
+  /// schedule/cancel to any running Experience while `BackgroundCoordinator`
+  /// polls `deliverDue`.
+  final DurableCollectionStore store;
+
   RealNotificationService({
     NotificationPresenter? presenter,
     this.retention = const RetentionPolicyEngine(),
+    this.store = const DurableCollectionStore(),
   }) : _presenter = presenter ?? const NoOpNotificationPresenter();
 
   @override
@@ -174,21 +188,23 @@ class RealNotificationService implements NotificationService {
     required String body,
     required DateTime scheduledTime,
   }) async {
-    final all = await pending();
-    // Re-scheduling an existing id replaces it rather than duplicating —
-    // the same replace-on-put semantics the rest of this codebase uses.
-    all.removeWhere((n) => n.id == id);
-    all.add(
-      ScheduledNotification(
-        id: id,
-        experienceId: experienceId,
-        title: title,
-        body: body,
-        scheduledTime: scheduledTime,
-      ),
-    );
-    all.sort((a, b) => a.scheduledTime.compareTo(b.scheduledTime));
-    await _write(_applyRetention(all));
+    await store.update<void>(_storageKey, (current) {
+      final all = _decode(current);
+      // Re-scheduling an existing id replaces it rather than duplicating —
+      // the same replace-on-put semantics the rest of this codebase uses.
+      all.removeWhere((n) => n.id == id);
+      all.add(
+        ScheduledNotification(
+          id: id,
+          experienceId: experienceId,
+          title: title,
+          body: body,
+          scheduledTime: scheduledTime,
+        ),
+      );
+      all.sort((a, b) => a.scheduledTime.compareTo(b.scheduledTime));
+      return (value: _encode(_applyRetention(all)), result: null);
+    });
   }
 
   /// Delegates every retention decision to the ONE canonical engine. This
@@ -207,25 +223,29 @@ class RealNotificationService implements NotificationService {
 
   @override
   Future<void> cancel(String id) async {
-    final all = await pending();
-    final before = all.length;
-    all.removeWhere((n) => n.id == id);
-    if (all.length != before) await _write(all);
+    await store.update<void>(_storageKey, (current) {
+      final all = _decode(current)..removeWhere((n) => n.id == id);
+      return (value: _encode(all), result: null);
+    });
   }
 
   @override
   Future<void> cancelAllForExperience(String experienceId) async {
-    final all = await pending();
-    final before = all.length;
-    all.removeWhere((n) => n.experienceId == experienceId);
-    if (all.length != before) await _write(all);
+    await store.update<void>(_storageKey, (current) {
+      final all = _decode(current)
+        ..removeWhere((n) => n.experienceId == experienceId);
+      return (value: _encode(all), result: null);
+    });
   }
 
   /// Every scheduled notification still outstanding, earliest first.
   /// Unparseable records are DROPPED rather than repaired or surfaced.
-  Future<List<ScheduledNotification>> pending() async {
-    final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString(_storageKey);
+  Future<List<ScheduledNotification>> pending() async =>
+      _decode(await store.read(_storageKey));
+
+  /// Parses the stored list. Unparseable records are DROPPED rather than
+  /// repaired or surfaced — unchanged from R49.
+  static List<ScheduledNotification> _decode(String? raw) {
     if (raw == null || raw.isEmpty) return [];
     try {
       final decoded = jsonDecode(raw);
@@ -245,6 +265,9 @@ class RealNotificationService implements NotificationService {
     }
   }
 
+  static String _encode(List<ScheduledNotification> all) =>
+      jsonEncode([for (final n in all) n.toJson()]);
+
   /// Notifications whose scheduled time has arrived at or before [now].
   Future<List<ScheduledNotification>> dueAt(DateTime now) async {
     final all = await pending();
@@ -252,26 +275,41 @@ class RealNotificationService implements NotificationService {
   }
 
   /// Presents everything due at [now] and removes it from the pending set,
-  /// so a notification is delivered exactly once. Returns what was delivered.
+  /// so a notification is delivered exactly once.
+  ///
+  /// CLAIM FIRST, PRESENT SECOND — and that order is the whole fix.
+  ///
+  /// R49 presented and THEN persisted the remainder. `await present(...)` is a
+  /// yield point, so a second concurrent caller entered while the due set was
+  /// still stored, read the same due set, and presented it again. The R56
+  /// audit measured exactly that: one scheduled notification, two
+  /// presentations.
+  ///
+  /// The due set is now REMOVED inside the store's critical section and
+  /// returned here; presentation happens afterwards. A second caller arriving
+  /// later finds nothing due and presents nothing.
+  ///
+  /// THE TRADE, STATED PLAINLY: this makes delivery AT-MOST-once rather than
+  /// at-least-once. If the process dies between the claim and the
+  /// presentation, that notification is not delivered and will not be retried.
+  /// That is the correct trade for this contract — the method promises exactly
+  /// once, a duplicate alarm is worse than a missed one, and the previous
+  /// behaviour was neither. Recorded as gap G-38.
   Future<List<ScheduledNotification>> deliverDue(DateTime now) async {
-    final all = await pending();
-    final due = all.where((n) => !n.scheduledTime.isAfter(now)).toList();
-    if (due.isEmpty) return const [];
+    final due =
+        await store.update<List<ScheduledNotification>>(_storageKey, (current) {
+      final all = _decode(current);
+      final claimed = all.where((n) => !n.scheduledTime.isAfter(now)).toList();
+      if (claimed.isEmpty) {
+        return (value: current, result: const <ScheduledNotification>[]);
+      }
+      final remaining = all.where((n) => n.scheduledTime.isAfter(now)).toList();
+      return (value: _encode(remaining), result: claimed);
+    });
 
     for (final notification in due) {
       await _presenter.present(notification);
     }
-
-    final remaining = all.where((n) => n.scheduledTime.isAfter(now)).toList();
-    await _write(remaining);
     return due;
-  }
-
-  Future<void> _write(List<ScheduledNotification> notifications) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(
-      _storageKey,
-      jsonEncode([for (final n in notifications) n.toJson()]),
-    );
   }
 }

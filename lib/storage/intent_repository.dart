@@ -5,8 +5,8 @@
 library;
 
 import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../app/retention_policy_engine.dart';
+import 'durable_collection_store.dart';
 import '../core/contracts/intent.dart';
 
 /// Persistent record of a submitted Intent.
@@ -128,20 +128,32 @@ class IntentRepository {
   /// canonical engine so every existing caller is unaffected (no API break).
   final RetentionPolicyEngine retention;
 
-  const IntentRepository({this.retention = const RetentionPolicyEngine()});
+  /// The ONE owner of read-modify-write against a durable key (IS-R56).
+  final DurableCollectionStore store;
+
+  const IntentRepository({
+    this.retention = const RetentionPolicyEngine(),
+    this.store = const DurableCollectionStore(),
+  });
 
   /// Save an intent record.
   Future<void> save(IntentRecord record) async {
-    final records = await list(limit: 1 << 30);
-
-    // Remove existing record with same ID
-    records.removeWhere((r) => r.id == record.id);
-
-    // Add new record at the beginning
-    records.insert(0, record);
-
-    await _saveRecords(_applyRetention(records));
+    await store.update<void>(_storageKey, (current) {
+      final records = _decode(current)
+        ..removeWhere((r) => r.id == record.id)
+        ..insert(0, record);
+      return (value: _encode(_applyRetention(records)), result: null);
+    });
   }
+
+  static List<IntentRecord> _decode(String? raw) {
+    if (raw == null || raw.isEmpty) return [];
+    final List<dynamic> jsonList = jsonDecode(raw);
+    return [for (final j in jsonList) IntentRecord.fromJson(j as Map<String, dynamic>)];
+  }
+
+  static String _encode(List<IntentRecord> records) =>
+      jsonEncode([for (final r in records) r.toJson()]);
 
   /// Delegates every retention decision to the ONE canonical engine. This
   /// repository decides nothing about how much history to keep.
@@ -158,29 +170,28 @@ class IntentRepository {
   }
 
   /// Update the status of an intent record.
+  /// Update the status of an intent record.
+  ///
+  /// IS-R56 FIXED A SILENT TRUNCATION HERE. This read through `list()`, whose
+  /// default limit is 50, and wrote the result back as the WHOLE history —
+  /// so with more than 50 records stored (retention allows 100) every record
+  /// past the 50th was silently discarded on any status update. The mutation
+  /// now runs against the full stored list inside the critical section, where
+  /// no limit applies. Found while consolidating the read-modify-write
+  /// pattern; unrelated to concurrency.
   Future<void> updateStatus(IntentId id, IntentStatus status) async {
-    final records = await list();
-
-    final index = records.indexWhere((r) => r.id == id);
-    if (index >= 0) {
+    await store.update<void>(_storageKey, (current) {
+      final records = _decode(current);
+      final index = records.indexWhere((r) => r.id == id);
+      if (index < 0) return (value: current, result: null);
       records[index] = records[index].copyWith(status: status);
-      await _saveRecords(records);
-    }
+      return (value: _encode(records), result: null);
+    });
   }
 
   /// Get recent intent records.
-  Future<List<IntentRecord>> list({int limit = 50}) async {
-    final prefs = await SharedPreferences.getInstance();
-    final jsonStr = prefs.getString(_storageKey);
-    if (jsonStr == null) return [];
-
-    final List<dynamic> jsonList = jsonDecode(jsonStr);
-    final records = jsonList
-        .map((j) => IntentRecord.fromJson(j as Map<String, dynamic>))
-        .toList();
-
-    return records.take(limit).toList();
-  }
+  Future<List<IntentRecord>> list({int limit = 50}) async =>
+      _decode(await store.read(_storageKey)).take(limit).toList();
 
   /// Get an intent record by ID.
   Future<IntentRecord?> getById(IntentId id) async {
@@ -193,21 +204,15 @@ class IntentRepository {
   }
 
   /// Delete an intent record.
+  /// Delete an intent record. See [updateStatus] — this had the identical
+  /// limit-50 truncation and is fixed the same way.
   Future<void> delete(IntentId id) async {
-    final records = await list();
-    records.removeWhere((r) => r.id == id);
-    await _saveRecords(records);
+    await store.update<void>(_storageKey, (current) {
+      final records = _decode(current)..removeWhere((r) => r.id == id);
+      return (value: _encode(records), result: null);
+    });
   }
 
   /// Clear all intent history.
-  Future<void> clearAll() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_storageKey);
-  }
-
-  Future<void> _saveRecords(List<IntentRecord> records) async {
-    final prefs = await SharedPreferences.getInstance();
-    final jsonList = records.map((r) => r.toJson()).toList();
-    await prefs.setString(_storageKey, jsonEncode(jsonList));
-  }
+  Future<void> clearAll() => store.clear(_storageKey);
 }
