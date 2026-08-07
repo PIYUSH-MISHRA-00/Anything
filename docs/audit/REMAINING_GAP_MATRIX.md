@@ -1,4 +1,4 @@
-# Remaining Gap Matrix — IS-R46, updated by IS-R47
+# Remaining Gap Matrix — IS-R46, updated through IS-R53
 
 Everything the repository-wide audit surfaced that is **not** resolved. Each
 row cites real evidence; nothing here is hypothetical.
@@ -33,6 +33,14 @@ Severity: **A** = architectural integrity, **B** = correctness/UX,
 |---|---|---|
 | G-18 | Persisted knowledge had no retention policy — unbounded growth | **CLOSED.** `RetentionPolicyEngine` now owns it: 500 entries / 20 MB / 30 days. `KnowledgeCache.applyRetention()` asks the engine and tells `KnowledgeRepository` which keys to drop; the repository still owns no policy (I-47). R48 deliberately did not invent a policy because none existed to reuse — R50 created the canonical owner first, then applied it. |
 | G-22 | Retention was invented independently three times with three magic numbers (`_maxRecords=100`, `_maxEvents=200`, `maxScheduled=200`) | **CLOSED.** All three delegate to the ONE engine. Values unchanged — three tests assert 100/200/200 exactly, so ownership moved without behaviour moving. No repository or capability service may hold a retention rule any more (I-46), mutation-proven. |
+
+## OPENED BY IS-R53 — recorded at the moment they were created
+
+| # | Sev | Gap | Evidence | Status |
+|---|---|---|---|---|
+| G-25 | **A** | **A user still cannot import an Experience.** R53 built a complete, end-to-end-tested distribution pipeline — but it moves `ExperienceDistributionPackage` *objects* and serialises them to JSON. There is no `.anything` file format, no file read or write, no zip, no share-sheet integration. | `lib/app/experience_distribution.dart` — no `dart:io`, no `FileService`, no `RealFileService` reference anywhere in the file. | **Open, deliberately and explicitly.** Stated first in every R53 document, because a working pipeline reads as a shipped feature and it is not one. The pieces exist: `RealFileService` (R49) owns file I/O and `file_picker` is already a dependency. Deferred so this milestone established ownership boundaries before adding a file layer on top of them. |
+| G-26 | B | **Nothing verifies publisher signatures, so nothing is ever `verified`.** `MarketplaceMetadata.publisherSignature` is transported and never checked. Every channel — including `marketplace` and `enterprise` — yields `VerificationState.unverified` and classifies as `imported`. | `provenanceFor()`; asserted for all five channels in `test/r53_experience_distribution_test.dart`. | **Open by design, not by omission.** Assigning `verified` because a signature *field* was present is precisely the "assumed rather than computed" failure R52 removed. The honest state is recorded in the data rather than hidden. A real verifier needs a key-distribution decision that is a product question, not an implementation one. |
+| G-27 | C | **Protection state is transported but never restored; `dependencies` is transported but never resolved.** An imported Experience is persisted with `isProtected: false` even when the envelope says the source was protected. | `import()`; `ExperienceDistributionManifest.dependencies`. | **Open, deliberately.** Distribution must not fabricate a protected state it cannot honour — the Kaalka ciphertext envelope is not transported, and `ExperienceProtectionService` remains the sole owner of protection. An imported Experience must be re-protected on the receiving device. `dependencies` is declared so the envelope format needs no version bump when dependency resolution arrives. |
 
 ## Gaps IS-R50 found and closed within the same milestone
 
