@@ -1,4 +1,4 @@
-/// AppComposition — the ONE canonical production composition root
+﻿/// AppComposition â€” the ONE canonical production composition root
 /// (Implementation Milestone R1).
 ///
 /// Holds every shared, app-session-scoped instance that must have exactly
@@ -6,7 +6,7 @@
 /// `WorldModelCoordinator` every subsystem ingests into, the single
 /// `CapabilityPlatform` the Runtime dispatches through, the single
 /// `AnythingProviderRegistry`/`CredentialVault` pair, and the single
-/// `AnythingKernel`. Not a new Kernel/Runtime/registry — a plain,
+/// `AnythingKernel`. Not a new Kernel/Runtime/registry â€” a plain,
 /// explainable holder object (Rule 8: no hidden magic) constructed once by
 /// `AnythingAppShell` and threaded via constructor injection to every
 /// screen that needs it, following this codebase's existing
@@ -15,7 +15,7 @@
 /// REALITY before R1: `HomeScreen.initState` independently constructed a
 /// `WorldModelCoordinator()`-less `AnythingKernel`, and
 /// `ExperienceModificationCoordinator` independently constructed its own
-/// default `WorldModelCoordinator()` — two disconnected graphs, per MIS-1
+/// default `WorldModelCoordinator()` â€” two disconnected graphs, per MIS-1
 /// Part 2's "Reachability Analysis". PROPOSED here: one shared instance,
 /// reached from every wired subsystem.
 library;
@@ -26,6 +26,7 @@ import 'package:anything/app/engineering_lifecycle_coordinator.dart';
 import 'package:anything/app/experience_activation_manager.dart';
 import 'package:anything/app/experience_entry_pipeline.dart';
 import 'package:anything/app/experience_opening_coordinator.dart';
+import 'package:anything/app/experience_distribution.dart';
 import 'package:anything/app/experience_provenance.dart';
 import 'package:anything/app/experience_workspace_manager.dart';
 import 'package:anything/app/governance_engine.dart';
@@ -66,7 +67,7 @@ import 'package:anything/world_model/world_model_coordinator.dart';
 /// Every HTTPS host a generated Experience's `httpClient`/`http` capability
 /// declaration may reach through the wired Capability Platform. Empty by
 /// default (REALITY: no generated Experience has ever declared a specific
-/// host yet, since HttpCapability was unreachable before R1) — a real
+/// host yet, since HttpCapability was unreachable before R1) â€” a real
 /// per-Experience allow-list belongs to a future milestone; this stays
 /// conservative (deny-all-by-default) rather than fabricating a permissive
 /// list.
@@ -86,13 +87,13 @@ class AppComposition {
   final AnythingKernel kernel;
 
   /// The shared engineering-memory repository (Implementation Milestone
-  /// R5) — same physical database connection as [experienceRepository]/
+  /// R5) â€” same physical database connection as [experienceRepository]/
   /// [worldModel]'s own persistence, per the established
   /// `WorldModelRepository` sharing pattern.
   final EngineeringMemoryRepository engineeringMemory;
 
   /// The shared Experience Creation Coordinator (Implementation
-  /// Specification IS-R36) — REALITY before R36: `HomeScreen.initState()`
+  /// Specification IS-R36) â€” REALITY before R36: `HomeScreen.initState()`
   /// constructed its own, local `ExperienceCreationCoordinator`, never
   /// reachable from `AppComposition` (confirmed by grep before this
   /// milestone). Moved here so the SAME instance composes into
@@ -101,14 +102,14 @@ class AppComposition {
   final ExperienceCreationCoordinator experienceCreationCoordinator;
 
   /// The shared Engineering Lifecycle Coordinator (Implementation
-  /// Specification IS-R30/R36) — newly constructed here; R30 itself never
+  /// Specification IS-R30/R36) â€” newly constructed here; R30 itself never
   /// had a shared composition-root instance (its own production callers,
   /// where any existed, constructed one locally).
   final EngineeringLifecycleCoordinator engineeringLifecycleCoordinator;
 
   /// The shared Intent Session Manager (Implementation Specification
   /// IS-R31/R36), composed from [experienceCreationCoordinator] and
-  /// [engineeringLifecycleCoordinator] above — never a second, independent
+  /// [engineeringLifecycleCoordinator] above â€” never a second, independent
   /// pair of coordinators.
   final IntentSessionManager intentSessionManager;
 
@@ -133,28 +134,28 @@ class AppComposition {
   final EventBus eventBus;
 
   /// The shared Workspace Event Publisher (Implementation Specification
-  /// IS-R35/R36), bound to [eventBus] above — never a second, independent
+  /// IS-R35/R36), bound to [eventBus] above â€” never a second, independent
   /// bus.
   final WorkspaceEventPublisher eventPublisher;
 
   /// The shared Intent Execution Pipeline (Implementation Specification
-  /// IS-R37) — the ONE canonical production path from an `Intent` to
+  /// IS-R37) â€” the ONE canonical production path from an `Intent` to
   /// engineering execution, composed from [intentRouter]/[eventPublisher]
   /// above. See `docs/architecture/INTENT_EXECUTION_PIPELINE.md`.
   final IntentExecutionPipeline intentExecutionPipeline;
 
   /// The shared Workspace Runtime Supervisor (Implementation Specification
-  /// IS-R40/R41) — the ONE registry every `ExperienceHostScreen` registers
+  /// IS-R40/R41) â€” the ONE registry every `ExperienceHostScreen` registers
   /// its `ExperienceRuntimeController` with, constructed here so every real
   /// navigation call site (`HomeScreen`) threads the SAME instance. REALITY
   /// before R41: `WorkspaceRuntimeSupervisor` (R40) had no shared,
-  /// composition-root instance — each screen either got `null` or, if ever
+  /// composition-root instance â€” each screen either got `null` or, if ever
   /// supplied, an independent one; workspace-wide policy application had no
   /// real multi-screen reach. See `docs/architecture/SHARED_RUNTIME_SUPERVISION.md`.
   final WorkspaceRuntimeSupervisor workspaceRuntimeSupervisor;
 
   /// The shared Workspace Scheduling Engine (Implementation Specification
-  /// IS-R42/R43) — the ONE coordinator that makes real, registered runtimes
+  /// IS-R42/R43) â€” the ONE coordinator that makes real, registered runtimes
   /// in [workspaceRuntimeSupervisor] match [workspaceManager]'s real
   /// active/background state, constructed here so every real navigation
   /// call site (`HomeScreen`) threads the SAME instance, matching
@@ -163,14 +164,14 @@ class AppComposition {
   final WorkspaceSchedulingEngine workspaceSchedulingEngine;
 
   /// The shared Experience Activation Manager (Implementation Specification
-  /// IS-R44) — the ONE coordinator of runtime + navigation activation for an
+  /// IS-R44) â€” the ONE coordinator of runtime + navigation activation for an
   /// already-running Experience, composed from [workspaceSchedulingEngine]/
   /// [eventPublisher] above. See
   /// `docs/architecture/EXPERIENCE_ACTIVATION_MANAGER.md`.
   final ExperienceActivationManager experienceActivationManager;
 
   /// The shared Unified Experience Entry Pipeline (Implementation
-  /// Specification IS-R45) — the ONE canonical entry mechanism every real
+  /// Specification IS-R45) â€” the ONE canonical entry mechanism every real
   /// production Experience-opening path (create, Recent list, birth
   /// completion, protection resume, Workspace Switcher) flows through,
   /// composed from [intentExecutionPipeline]/[experienceActivationManager]/
@@ -178,6 +179,12 @@ class AppComposition {
   /// dedicated, real `ExperienceOpeningCoordinator`. See
   /// `docs/architecture/UNIFIED_EXPERIENCE_ENTRY_PIPELINE.md`.
   final ExperienceEntryPipeline experienceEntryPipeline;
+
+  /// The shared Experience Distribution Framework (IS-R53) â€” the ONE owner of
+  /// Experience movement (import, export, packaging, verification). It starts
+  /// the R52/R51/R49 chain by assigning provenance; it never classifies trust,
+  /// enforces policy or activates a runtime.
+  final ExperienceDistributionFramework experienceDistribution;
 
   AppComposition._({
     required this.experienceRepository,
@@ -203,11 +210,12 @@ class AppComposition {
     required this.workspaceSchedulingEngine,
     required this.experienceActivationManager,
     required this.experienceEntryPipeline,
+    required this.experienceDistribution,
   });
 
   /// Builds the real, production composition graph. Every dependency below
   /// is the SAME canonical implementation MIS-1 Part 1/2 already identified
-  /// — this constructor wires them together, it does not invent any of
+  /// â€” this constructor wires them together, it does not invent any of
   /// them.
   factory AppComposition.production() {
     final experienceRepository = SqliteExperienceRepository();
@@ -220,7 +228,7 @@ class AppComposition {
     // The SAME `WebWeaveXAdapter` instance is threaded into both the engine
     // (extraction/normalization) and the cache (canonical representation for
     // persistence), so there is exactly one WebWeaveX boundary object in the
-    // production graph — never two adapters that could canonicalize
+    // production graph â€” never two adapters that could canonicalize
     // differently. `KnowledgeCache` remains the single cache;
     // `KnowledgeRepository` is its durable backing store, not a second cache.
     final webweavexAdapter = WebWeaveXAdapter();
@@ -241,7 +249,7 @@ class AppComposition {
     // Implementation Specification IS-R51: the ONE governance engine. It
     // DECIDES; every existing owner keeps enforcing. Its canonical rule set
     // additionally carries the host allowlist below, so network policy is
-    // stated once — `HttpCapability` continues to enforce it, unchanged.
+    // stated once â€” `HttpCapability` continues to enforce it, unchanged.
     final governance = OperatingSystemGovernanceEngine(
       rules: [
         ...OperatingSystemGovernanceEngine.canonicalRules,
@@ -251,9 +259,19 @@ class AppComposition {
 
     // IS-R52: the ONE trust classifier. It COMPUTES trust from provenance;
     // governance CONSUMES it; the capability platform ENFORCES the resulting
-    // decision. Four verbs, four owners — see docs/architecture/
+    // decision. Four verbs, four owners â€” see docs/architecture/
     // EXPERIENCE_IDENTITY_ARCHITECTURE.md.
     const trustClassifier = ExperienceTrustClassifier();
+
+    // IS-R53: the ONE distribution framework and the ONE package verifier.
+    // Distribution MOVES experiences; it never classifies trust, never
+    // enforces policy and never activates a runtime â€” each of those has an
+    // owner already. See docs/architecture/EXPERIENCE_DISTRIBUTION_ARCHITECTURE.md.
+    const packageVerifier = ExperiencePackageVerifier();
+    final distribution = ExperienceDistributionFramework(
+      repository: experienceRepository,
+      verifier: packageVerifier,
+    );
 
     final capabilityPlatform = CapabilityPlatform(
       governance: governance,
@@ -265,11 +283,11 @@ class AppComposition {
       ..register(KnowledgeCapability(provider: KnowledgeAcquisitionProviderAdapter(knowledgeEngine)))
       // Implementation Specification IS-R49: the last two production Fake*
       // registrations are gone. Both now resolve to real services, each
-      // constructed exactly once here — there is no alternate composition
+      // constructed exactly once here â€” there is no alternate composition
       // root and no conditional production graph.
       //
       // RealNotificationService persists schedules durably (SharedPreferences,
-      // the backend ActivityRepository already uses — no new storage system),
+      // the backend ActivityRepository already uses â€” no new storage system),
       // enforces per-Experience ownership, computes real due state, and
       // delivers in-app through the EXISTING EventBus as the EXISTING R35
       // `NotificationGenerated` event. No new event hierarchy, no second
@@ -281,7 +299,7 @@ class AppComposition {
       // platform plugin plus native Android/iOS configuration that cannot be
       // exercised by `flutter test` and cannot be verified without a device.
       // It is left as one explicit seam (`NotificationPresenter`) rather than
-      // shipped unverified — see IS-R49's report and gap G-20.
+      // shipped unverified â€” see IS-R49's report and gap G-20.
       ..register(NotificationCapability(
         service: RealNotificationService(
           presenter: EventBusNotificationPresenter(bus: eventBus),
@@ -297,7 +315,7 @@ class AppComposition {
 
     // Implementation Milestone R16: built before `kernel` so the SAME
     // instance is shared with `AnythingKernel`'s autonomous discovery step
-    // AND `ExperienceCreationCoordinator`'s manual-reference path below —
+    // AND `ExperienceCreationCoordinator`'s manual-reference path below â€”
     // never a second Software Cognition Engine.
     final softwareCognition = SoftwareCognitionCoordinator();
     final kernel = AnythingKernel(
@@ -310,8 +328,8 @@ class AppComposition {
     final engineeringMemory = EngineeringMemoryRepository(experienceRepository: experienceRepository);
 
     // Implementation Specification IS-R36: the real "AI Operating System"
-    // service graph (R31-R35), constructed here — the single production
-    // composition root — in real dependency order. REALITY before R36:
+    // service graph (R31-R35), constructed here â€” the single production
+    // composition root â€” in real dependency order. REALITY before R36:
     // none of these 8 services was reachable from `AppComposition`;
     // `ExperienceCreationCoordinator` was instead constructed locally,
     // disconnected, inside `HomeScreen.initState()` (confirmed by grep
@@ -334,23 +352,23 @@ class AppComposition {
     final workspaceRuntime = AutonomousWorkspaceRuntime(workspace: workspaceManager);
     // `eventBus` itself is now constructed earlier (above `capabilityPlatform`),
     // because IS-R49's real notification presenter delivers through it. It is
-    // still the SAME single instance every consumer below receives — moving
+    // still the SAME single instance every consumer below receives â€” moving
     // the construction point changes ordering, never cardinality.
     final eventPublisher = WorkspaceEventPublisher(bus: eventBus);
 
     // Implementation Specification IS-R37: the one canonical production
-    // path from an Intent to engineering execution — composed from
+    // path from an Intent to engineering execution â€” composed from
     // [intentRouter]/[eventPublisher] above, never a second router.
     final intentExecutionPipeline = IntentExecutionPipeline(router: intentRouter, eventPublisher: eventPublisher);
 
     // Implementation Specification IS-R41: the one shared runtime-controller
-    // registry, composed from [eventPublisher] above — never a second
+    // registry, composed from [eventPublisher] above â€” never a second
     // supervisor. `WorkspaceRuntimeSupervisor` itself is unmodified since R40.
     final workspaceRuntimeSupervisor = WorkspaceRuntimeSupervisor(eventPublisher: eventPublisher);
 
     // Implementation Specification IS-R43: the one shared scheduling
     // coordinator, composed from [workspaceRuntime]/[workspaceRuntimeSupervisor]/
-    // [workspaceManager]/[eventPublisher] above — never a second scheduler.
+    // [workspaceManager]/[eventPublisher] above â€” never a second scheduler.
     // `WorkspaceLifecyclePolicyEngine` is genuinely stateless (a `const`
     // constructor with no mutable fields, R39) so constructing one here
     // inline is behaviorally identical to sharing a single instance.
@@ -364,7 +382,7 @@ class AppComposition {
 
     // Implementation Specification IS-R44: the one shared activation
     // coordinator, composed from [workspaceSchedulingEngine]/[eventPublisher]
-    // above — never a second scheduler, never a second Navigator.
+    // above â€” never a second scheduler, never a second Navigator.
     final experienceActivationManager = ExperienceActivationManager(scheduler: workspaceSchedulingEngine, eventPublisher: eventPublisher);
 
     // Implementation Specification IS-R45: the one shared entry pipeline,
@@ -372,7 +390,7 @@ class AppComposition {
     // the other already-shared services above, plus a dedicated, real
     // `ExperienceOpeningCoordinator` (stateless-ish, same reasoning as
     // `WorkspaceLifecyclePolicyEngine`'s own shared-inline-instance
-    // precedent) — never a second scheduler, never a second Navigator.
+    // precedent) â€” never a second scheduler, never a second Navigator.
     final experienceEntryPipeline = ExperienceEntryPipeline(
       intentExecutionPipeline: intentExecutionPipeline,
       openingCoordinator: ExperienceOpeningCoordinator(),
@@ -411,6 +429,7 @@ class AppComposition {
       workspaceSchedulingEngine: workspaceSchedulingEngine,
       experienceActivationManager: experienceActivationManager,
       experienceEntryPipeline: experienceEntryPipeline,
+      experienceDistribution: distribution,
     );
   }
 }
