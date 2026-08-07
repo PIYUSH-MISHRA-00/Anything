@@ -1343,6 +1343,159 @@ final x = 1;
           reason: 'distribution must commit THROUGH the one installer');
     });
 
+    // ── IS-R55 — COMMIT OWNERSHIP (I-68 … I-74) ──────────────────────────
+    //
+    // R54 closed one of five commit paths and recorded the rest as gap G-30,
+    // severity A. These invariants are what closing G-30 actually means: not
+    // "a commit framework exists" but "nothing else can write".
+
+    test('exactly ONE commit framework and ONE transaction coordinator exist (IS-R55 Task 10)', () {
+      final committers = libFiles
+          .expand((f) => RegExp(r'\bclass\s+(\w*Commit\w*(?:Framework|Engine|Coordinator|Manager|Service)|\w*Transaction\w*Coordinator)\b')
+              .allMatches(f.code)
+              .map((m) => '${f.path}:${m.group(1)}'))
+          .toList()
+        ..sort();
+      expect(committers, [
+        'lib/app/experience_commit.dart:ExperienceCommitFramework',
+        'lib/app/experience_commit.dart:RepositoryTransactionCoordinator',
+      ], reason: 'a second commit framework or transaction coordinator appeared: $committers');
+    });
+
+    test('NOBODY OUTSIDE THE COMMIT FRAMEWORK WRITES TO THE EXPERIENCE REPOSITORY — G-30 (IS-R55 Task 10)', () {
+      // THE invariant of this milestone. Before R55 there were six writers:
+      // creation, modification (x3, including its rollback), evolution,
+      // protection (x3), installation, and — found by the R55 audit, not on
+      // R54's list — a UI screen calling delete() directly.
+      //
+      // `touchLastUsed` is DELIBERATELY EXCLUDED and pinned here rather than
+      // silently omitted. It stamps an access time on an existing row: it
+      // persists no package, no metadata record and no state any rollback
+      // could need to restore. Routing four call sites through a commit
+      // framework to bump a timestamp would add ownership ceremony with no
+      // ownership benefit. Recorded as G-34 so the exclusion is reviewable.
+      const writeMethods = [
+        'savePackage', 'saveMetadata', 'deletePackage',
+        'saveProtectedEnvelope', 'deleteProtectedEnvelope', 'updateProtectionState',
+      ];
+      final offenders = <String>[];
+      for (final f in libFiles) {
+        if (f.path == 'lib/app/experience_commit.dart') continue;
+        if (f.path == 'lib/storage/sqlite_experience_repository.dart') continue;
+        for (final method in writeMethods) {
+          for (final m in RegExp('\\.\\s*$method\\s*\\(').allMatches(f.code)) {
+            offenders.add('${f.path}:$method@${m.start}');
+          }
+        }
+        // `delete(` is too common a word to scan bare, so this targets a
+        // delete called on something named like the Experience repository.
+        for (final m in RegExp(r'\b_?repo(?:sitory)?\s*\.\s*delete\s*\(').allMatches(f.code)) {
+          offenders.add('${f.path}:delete@${m.start}');
+        }
+      }
+      expect(offenders, isEmpty,
+          reason: 'gap G-30 reopened — these write Experience state without going through the ONE commit owner: $offenders');
+    });
+
+    test('EVERY write inside the commit framework runs in a transaction (IS-R55 Task 7)', () {
+      // Task 7's whole justification. A write that forgot `using:` would
+      // silently fall back to the raw database and reopen G-28's crash window
+      // for that path only — the hardest kind of regression to notice, because
+      // everything would still pass.
+      final commit = libFiles.firstWhere((f) => f.path == 'lib/app/experience_commit.dart');
+      final writes = RegExp(r'repository\.\s*(savePackage|saveMetadata|deletePackage|delete|saveProtectedEnvelope|deleteProtectedEnvelope|updateProtectionState)\s*\(([^;]*)\)')
+          .allMatches(commit.code)
+          .toList();
+      expect(writes.length, greaterThanOrEqualTo(7),
+          reason: 'the write scan found ${writes.length} sites — if this collapsed, the check below is vacuous');
+      for (final w in writes) {
+        expect(w.group(2), contains('using:'),
+            reason: 'commit-framework write "${w.group(1)}" does not pass a transaction executor; '
+                'it would fall back to the raw database and reopen G-28 for that path');
+      }
+      expect(commit.code.contains('db.transaction'), isTrue,
+          reason: 'the transaction coordinator must use sqflite\'s own transaction, not a hand-rolled one');
+    });
+
+    test('the COMMIT FRAMEWORK persists and does nothing else (IS-R55 Task 10)', () {
+      final commit = libFiles.firstWhere((f) => f.path == 'lib/app/experience_commit.dart');
+      for (final forbidden in [
+        // It never creates, installs, moves or changes an Experience.
+        'CreationEngine', 'ExperienceInstallationFramework', 'ExperienceDistributionFramework',
+        'ModificationEngine', 'EvolutionExecutor',
+        // It never decides anything about an Experience.
+        'ExperienceTrustClassifier', 'ExperienceTrustLevel',
+        'OperatingSystemGovernanceEngine', 'GovernanceEvaluation',
+        'ExperienceCompatibilityEvaluator', 'ExperienceDependencyPlanner',
+        'CapabilityPlatform',
+        // It never encrypts and never migrates.
+        'KaalkaService', 'ProtectionProvider', 'ExperienceProtectionService',
+        'encrypt(', 'decrypt(', 'MigrationExecutor', 'ALTER TABLE',
+        // It never activates or navigates.
+        'ExperienceEntryPipeline', 'ExperienceHostScreen', 'Navigator', 'AnythingRuntime',
+      ]) {
+        expect(commit.code.contains(forbidden), isFalse,
+            reason: 'the commit framework persists finished state; referencing $forbidden would make it a second owner of that subsystem');
+      }
+    });
+
+    test('EXACTLY ONE ROLLBACK OWNER — every other rollback delegates (IS-R55 Task 9)', () {
+      // There are four `rollback` methods in lib/, and that is correct: three
+      // are façades in their own vocabulary (installation result, modification
+      // result, transaction state). What makes ONE owner true is that only the
+      // commit framework can write — so only it can actually restore anything.
+      //
+      // This asserts the façades really do reach it, rather than relying on
+      // I-70 alone to prove they cannot write.
+      final rollbackFiles = libFiles
+          .where((f) => RegExp(r'\b(Future<[^>]*>|void)\s+rollback\w*\s*\(').hasMatch(f.code))
+          .map((f) => f.path)
+          .toList()
+        ..sort();
+      expect(rollbackFiles, [
+        'lib/app/experience_commit.dart',
+        'lib/app/experience_installation.dart',
+        'lib/app/experience_modification_coordinator.dart',
+      ], reason: 'a rollback appeared somewhere new: $rollbackFiles');
+
+      for (final path in ['lib/app/experience_installation.dart', 'lib/app/experience_modification_coordinator.dart']) {
+        final f = libFiles.firstWhere((f) => f.path == path);
+        expect(RegExp(r'(_?commits|commitFramework)\s*\.\s*(rollback|commit)\s*\(').hasMatch(f.code), isTrue,
+            reason: '$path declares a rollback that must terminate inside the ONE commit owner');
+      }
+    });
+
+    test('EXACTLY ONE REPAIR OWNER — the installer requests, the framework coordinates (IS-R55 Task 8)', () {
+      final repairFiles = libFiles
+          .where((f) => RegExp(r'\bFuture<[^>]*>\s+repair\s*\(').hasMatch(f.code))
+          .map((f) => f.path)
+          .toList()
+        ..sort();
+      expect(repairFiles, [
+        'lib/app/experience_commit.dart',
+        'lib/app/experience_installation.dart',
+      ], reason: 'a repair appeared somewhere new: $repairFiles');
+
+      final installer = libFiles.firstWhere((f) => f.path == 'lib/app/experience_installation.dart');
+      expect(RegExp(r'commits\s*\.\s*repair\s*\(').hasMatch(installer.code), isTrue,
+          reason: 'the installer must REQUEST repair, not perform it');
+    });
+
+    test('the REPOSITORY still stores only — it does not know the commit framework exists (IS-R55)', () {
+      // The dependency must run one way. A repository that reached back into
+      // the commit framework would make the ownership circular and let a
+      // future write re-enter through the bottom.
+      final repo = libFiles.firstWhere((f) => f.path == 'lib/storage/sqlite_experience_repository.dart');
+      for (final forbidden in ['ExperienceCommitFramework', 'RepositoryTransactionCoordinator', 'CommitResult', 'CommitOrigin']) {
+        expect(repo.code.contains(forbidden), isFalse,
+            reason: 'the repository stores; referencing $forbidden would invert the ownership R55 established');
+      }
+      // It accepts an executor but must never open a transaction itself —
+      // that is the coordinator's single job.
+      expect(repo.code.contains('.transaction('), isFalse,
+          reason: 'transaction control belongs to RepositoryTransactionCoordinator, not the repository');
+    });
+
     test('neither the Kernel nor any UI file imports an external cognition/protection package directly', () {
       final offenders = libFiles
           .where((f) => f.path.startsWith('lib/kernel/') || f.path.startsWith('lib/features/') || f.path.startsWith('lib/screens/'))
