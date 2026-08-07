@@ -56,6 +56,7 @@ import 'package:file_picker/file_picker.dart' as picker_pkg;
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
+import '../../app/retention_policy_engine.dart';
 import '../builtin/file_capability.dart';
 
 /// A file the user chose, before Anything owns it.
@@ -133,14 +134,21 @@ class RealFileService implements FileService {
   final Directory? _rootOverride;
   Directory? _resolvedRoot;
 
+  /// THE canonical retention owner (IS-R50). This service owns no retention
+  /// rule of its own; see [applyRetention].
+  final RetentionPolicyEngine retention;
+
   /// Picked-but-not-yet-adopted references, by id. Adoption is what makes a
   /// file durable; before that the reference only points at wherever the OS
   /// dialog left it.
   final Map<String, PickedFile> _pendingPicks = {};
 
-  RealFileService({FilePicker? picker, Directory? rootOverride})
-    : _picker = picker ?? const PlatformFilePicker(),
-      _rootOverride = rootOverride;
+  RealFileService({
+    FilePicker? picker,
+    Directory? rootOverride,
+    this.retention = const RetentionPolicyEngine(),
+  }) : _picker = picker ?? const PlatformFilePicker(),
+       _rootOverride = rootOverride;
 
   /// The sandbox root. Everything this service touches lives inside it.
   Future<Directory> get rootDirectory async {
@@ -254,6 +262,58 @@ class RealFileService implements FileService {
     final root = await rootDirectory;
     final tmp = Directory(p.join(root.path, 'tmp'));
     if (tmp.existsSync()) tmp.deleteSync(recursive: true);
+  }
+
+  /// Applies the ONE canonical retention policy to scratch and export areas
+  /// (IS-R50 Task 6).
+  ///
+  /// This service owns no retention rule of its own: it reports each file's
+  /// age and size to `RetentionPolicyEngine` and deletes exactly what the
+  /// engine decides. `clearTemporaryFiles()` above remains an unconditional,
+  /// caller-initiated wipe — an explicit user/caller action, not a policy
+  /// outcome, which is why it is deliberately NOT routed through the engine.
+  ///
+  /// Experience assets are NEVER reclaimed here. An adopted file is a user's
+  /// own document; deleting it is an explicit action through
+  /// `deleteAdoptedFile`, never a retention side effect.
+  ///
+  /// Returns the deleted paths.
+  Future<List<String>> applyRetention({DateTime? now}) async {
+    final root = await rootDirectory;
+    final deleted = <String>[];
+
+    for (final entry in {
+      LifecycleDomain.temporaryFiles: 'tmp',
+      LifecycleDomain.exports: 'exports',
+    }.entries) {
+      final dir = Directory(p.join(root.path, entry.value));
+      if (!dir.existsSync()) continue;
+
+      final files = [for (final e in dir.listSync(recursive: true)) if (e is File) e];
+      if (files.isEmpty) continue;
+
+      final evaluation = retention.evaluate(
+        domain: entry.key,
+        candidates: [
+          for (final f in files)
+            LifecycleCandidate(
+              id: f.path,
+              timestamp: f.statSync().modified,
+              sizeBytes: f.lengthSync(),
+            ),
+        ],
+        now: now,
+      );
+
+      for (final path in evaluation.reclaimedIds) {
+        final file = File(path);
+        if (file.existsSync()) {
+          file.deleteSync();
+          deleted.add(path);
+        }
+      }
+    }
+    return deleted;
   }
 
   /// WORKSPACE ASSETS — shared, Experience-neutral storage.

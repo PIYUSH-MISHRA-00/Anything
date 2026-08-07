@@ -20,6 +20,7 @@ library;
 
 import 'package:uuid/uuid.dart';
 
+import 'package:anything/app/retention_policy_engine.dart';
 import 'package:anything/kernel/specification/experience_spec.dart';
 import 'package:anything/storage/knowledge_repository.dart';
 import 'knowledge_resource.dart';
@@ -311,9 +312,19 @@ class KnowledgeCache {
   /// imports `package:webweavex` (R46 invariant I-21b, I-21d).
   final WebWeaveXAdapter? _canonicalizer;
 
+  /// THE canonical retention owner (IS-R50), closing gap G-18.
+  ///
+  /// R48 deliberately shipped persistence with NO retention policy, because
+  /// none existed to reuse and inventing one was out of scope. R50 created the
+  /// canonical owner, so knowledge finally has bounds — and this cache asks
+  /// for them rather than deciding them. `KnowledgeRepository` remains storage
+  /// only: it is told which ids to drop, it never decides.
+  final RetentionPolicyEngine retention;
+
   KnowledgeCache({
     KnowledgeRepository? repository,
     WebWeaveXAdapter? canonicalizer,
+    this.retention = const RetentionPolicyEngine(),
   }) : _repository = repository,
        _canonicalizer = canonicalizer;
 
@@ -346,6 +357,39 @@ class KnowledgeCache {
           ),
         ),
     ]);
+    await applyRetention();
+  }
+
+  /// Applies the ONE canonical retention policy to persisted knowledge
+  /// (IS-R50, closing gap G-18).
+  ///
+  /// The engine decides which cache keys to reclaim; this method applies that
+  /// decision by asking the repository to remove them. The repository owns no
+  /// policy and the engine owns no storage — which is exactly the separation
+  /// invariants I-44/I-45 certify.
+  ///
+  /// Returns the reclaimed cache keys. A no-op when persistence is off.
+  Future<List<String>> applyRetention({DateTime? now}) async {
+    final repository = _repository;
+    if (repository == null) return const [];
+
+    final summaries = await repository.keySummaries();
+    if (summaries.isEmpty) return const [];
+
+    final evaluation = retention.evaluate(
+      domain: LifecycleDomain.knowledge,
+      candidates: [
+        for (final s in summaries)
+          LifecycleCandidate(id: s.cacheKey, timestamp: s.newestRetrievedAt, sizeBytes: s.totalBytes),
+      ],
+      now: now,
+    );
+
+    for (final key in evaluation.reclaimedIds) {
+      await repository.removeKey(key);
+      _cache.remove(key);
+    }
+    return evaluation.reclaimedIds;
   }
 
   /// Memory first; on a miss, hydrate exactly this ONE key from storage and

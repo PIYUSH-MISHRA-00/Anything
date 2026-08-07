@@ -53,6 +53,7 @@ import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../app/retention_policy_engine.dart';
 import '../../core/events/events.dart';
 import '../builtin/notification_capability.dart';
 
@@ -151,14 +152,18 @@ class RealNotificationService implements NotificationService {
 
   final NotificationPresenter _presenter;
 
-  /// Ceiling on stored records, mirroring `ActivityRepository`'s own
-  /// `_maxEvents` convention so a runaway Experience cannot grow storage
-  /// without bound. Oldest-by-scheduled-time is dropped first.
-  final int maxScheduled;
+  /// THE canonical retention owner (IS-R50).
+  ///
+  /// R49 shipped this class with its own `maxScheduled = 200` field — a
+  /// fourth independently-invented retention rule. R50 removed it: this
+  /// service no longer decides how many schedules to keep, it asks. The bound
+  /// is unchanged (still 200) and now lives in `RetentionPolicyEngine`'s
+  /// single table.
+  final RetentionPolicyEngine retention;
 
   RealNotificationService({
     NotificationPresenter? presenter,
-    this.maxScheduled = 200,
+    this.retention = const RetentionPolicyEngine(),
   }) : _presenter = presenter ?? const NoOpNotificationPresenter();
 
   @override
@@ -183,10 +188,21 @@ class RealNotificationService implements NotificationService {
       ),
     );
     all.sort((a, b) => a.scheduledTime.compareTo(b.scheduledTime));
-    if (all.length > maxScheduled) {
-      all.removeRange(0, all.length - maxScheduled);
-    }
-    await _write(all);
+    await _write(_applyRetention(all));
+  }
+
+  /// Delegates every retention decision to the ONE canonical engine. This
+  /// service decides nothing about how many schedules to keep.
+  List<ScheduledNotification> _applyRetention(List<ScheduledNotification> all) {
+    final evaluation = retention.evaluate(
+      domain: LifecycleDomain.notifications,
+      candidates: [
+        for (final n in all) LifecycleCandidate(id: n.id, timestamp: n.scheduledTime),
+      ],
+    );
+    if (!evaluation.reclaimsAnything) return all;
+    final reclaimed = evaluation.reclaimedIds.toSet();
+    return [for (final n in all) if (!reclaimed.contains(n.id)) n];
   }
 
   @override

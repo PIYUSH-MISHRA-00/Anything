@@ -65,6 +65,22 @@ class PersistedKnowledgeResource {
   });
 }
 
+/// Size and recency of one persisted cache key. A reported FACT, never a
+/// retention decision — see [KnowledgeRepository.keySummaries].
+class KnowledgeKeySummary {
+  final String cacheKey;
+  final int entryCount;
+  final int totalBytes;
+  final DateTime newestRetrievedAt;
+
+  const KnowledgeKeySummary({
+    required this.cacheKey,
+    required this.entryCount,
+    required this.totalBytes,
+    required this.newestRetrievedAt,
+  });
+}
+
 class KnowledgeRepository {
   Database? _database;
   final String _dbName;
@@ -186,6 +202,38 @@ class KnowledgeRepository {
     } catch (_) {
       return null;
     }
+  }
+
+  /// Per-key size and recency, WITHOUT loading any resource content.
+  ///
+  /// IS-R50: this is the input `KnowledgeCache` hands to
+  /// `RetentionPolicyEngine`. It is deliberately a plain aggregate query and
+  /// NOT a retention decision — this repository still owns no policy, has no
+  /// bounds of its own, and reclaims nothing on its own initiative. It reports
+  /// facts; something else decides. (Certified by invariants I-44/I-45.)
+  ///
+  /// Uses SQL aggregation so evaluating retention never materialises stored
+  /// content, keeping the cost proportional to key count rather than corpus
+  /// size.
+  Future<List<KnowledgeKeySummary>> keySummaries() async {
+    final db = await database;
+    final rows = await db.rawQuery(
+      'SELECT cache_key, '
+      'COUNT(*) AS entries, '
+      'SUM(LENGTH(resource_json)) AS bytes, '
+      'MAX(retrieved_at) AS newest '
+      'FROM knowledge_resources GROUP BY cache_key ORDER BY cache_key ASC',
+    );
+    return [
+      for (final row in rows)
+        KnowledgeKeySummary(
+          cacheKey: row['cache_key'] as String,
+          entryCount: (row['entries'] as int?) ?? 0,
+          totalBytes: (row['bytes'] as int?) ?? 0,
+          newestRetrievedAt:
+              DateTime.tryParse(row['newest'] as String? ?? '') ?? DateTime.fromMillisecondsSinceEpoch(0),
+        ),
+    ];
   }
 
   /// Every persisted cache key. Used for diagnostics and by certification —

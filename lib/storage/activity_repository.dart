@@ -4,6 +4,8 @@ library;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../app/retention_policy_engine.dart';
+
 /// An activity event record.
 class ActivityEvent {
   final String id;
@@ -54,19 +56,36 @@ class ActivityEvent {
 }
 
 /// Activity repository using SharedPreferences.
+///
+/// IS-R50: this repository no longer owns retention. It previously carried
+/// `static const int _maxEvents = 200` and enforced it inline. The bound is
+/// unchanged (still 200), but it now lives in `RetentionPolicyEngine`'s single
+/// table. Storage stays here; policy does not.
 class ActivityRepository {
   static const String _storageKey = 'anything_activity';
-  static const int _maxEvents = 200;
+
+  /// The canonical retention owner. Injectable for tests; defaults to the
+  /// canonical engine so every existing caller is unaffected.
+  final RetentionPolicyEngine retention;
+
+  const ActivityRepository({this.retention = const RetentionPolicyEngine()});
 
   /// Record an activity event.
   Future<void> record(ActivityEvent event) async {
     final prefs = await SharedPreferences.getInstance();
-    final events = await list();
+    final events = await list(limit: 1 << 30);
     events.insert(0, event);
-    if (events.length > _maxEvents) {
-      events.removeRange(_maxEvents, events.length);
-    }
-    final jsonList = events.map((e) => e.toJson()).toList();
+
+    final evaluation = retention.evaluate(
+      domain: LifecycleDomain.activity,
+      candidates: [
+        for (final e in events) LifecycleCandidate(id: e.id, timestamp: e.timestamp),
+      ],
+    );
+    final reclaimed = evaluation.reclaimedIds.toSet();
+    final retained = [for (final e in events) if (!reclaimed.contains(e.id)) e];
+
+    final jsonList = retained.map((e) => e.toJson()).toList();
     await prefs.setString(_storageKey, jsonEncode(jsonList));
   }
 

@@ -6,6 +6,7 @@ library;
 
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../app/retention_policy_engine.dart';
 import '../core/contracts/intent.dart';
 
 /// Persistent record of a submitted Intent.
@@ -113,13 +114,25 @@ class AttachmentRecord {
 }
 
 /// Repository for persisting Intent records locally.
+///
+/// IS-R50: this repository no longer owns retention. It previously carried
+/// `static const int _maxRecords = 100` and enforced it inline — one of three
+/// independently-invented retention rules in the codebase. The bound is
+/// unchanged (still 100), but it now lives in `RetentionPolicyEngine`'s single
+/// table and is applied by delegating to it. Storage stays here; policy does
+/// not.
 class IntentRepository {
   static const String _storageKey = 'anything_intent_history';
-  static const int _maxRecords = 100;
+
+  /// The canonical retention owner. Injectable for tests; defaults to the
+  /// canonical engine so every existing caller is unaffected (no API break).
+  final RetentionPolicyEngine retention;
+
+  const IntentRepository({this.retention = const RetentionPolicyEngine()});
 
   /// Save an intent record.
   Future<void> save(IntentRecord record) async {
-    final records = await list();
+    final records = await list(limit: 1 << 30);
 
     // Remove existing record with same ID
     records.removeWhere((r) => r.id == record.id);
@@ -127,12 +140,21 @@ class IntentRepository {
     // Add new record at the beginning
     records.insert(0, record);
 
-    // Enforce max records
-    if (records.length > _maxRecords) {
-      records.removeRange(_maxRecords, records.length);
-    }
+    await _saveRecords(_applyRetention(records));
+  }
 
-    await _saveRecords(records);
+  /// Delegates every retention decision to the ONE canonical engine. This
+  /// repository decides nothing about how much history to keep.
+  List<IntentRecord> _applyRetention(List<IntentRecord> records) {
+    final evaluation = retention.evaluate(
+      domain: LifecycleDomain.intents,
+      candidates: [
+        for (final r in records) LifecycleCandidate(id: r.id, timestamp: r.createdAt),
+      ],
+    );
+    if (!evaluation.reclaimsAnything) return records;
+    final reclaimed = evaluation.reclaimedIds.toSet();
+    return [for (final r in records) if (!reclaimed.contains(r.id)) r];
   }
 
   /// Update the status of an intent record.
