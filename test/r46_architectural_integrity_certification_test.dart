@@ -809,6 +809,77 @@ final x = 1;
       }
     });
 
+    test('exactly ONE retention policy engine exists, and it is disjoint from the runtime lifecycle engine (IS-R50 Task 7)', () {
+      // TWO engines, TWO disjoint domains — certified rather than asserted:
+      //   WorkspaceLifecyclePolicyEngine -> runtime lifecycle (R39)
+      //   RetentionPolicyEngine          -> data retention     (R50)
+      // A third would be a parallel lifecycle manager. Overlap between these
+      // two would be parallel ownership. Both are forbidden.
+      final policyEngines = libFiles
+          .expand((f) => RegExp(r'\bclass\s+(\w*(?:Retention|Lifecycle)\w*Engine)\b')
+              .allMatches(f.code)
+              .map((m) => '${f.path}:${m.group(1)}'))
+          .toList()
+        ..sort();
+      expect(policyEngines, [
+        'lib/app/retention_policy_engine.dart:RetentionPolicyEngine',
+        'lib/app/workspace_lifecycle_policy_engine.dart:WorkspaceLifecyclePolicyEngine',
+      ], reason: 'A parallel lifecycle/retention engine appeared: $policyEngines');
+
+      // Disjointness, in both directions.
+      final retention = libFiles.firstWhere((f) => f.path == 'lib/app/retention_policy_engine.dart');
+      for (final runtimeConcept in ['ExperienceRuntimeController', 'AppLifecycleState', 'RuntimePolicyAction']) {
+        expect(retention.code.contains(runtimeConcept), isFalse,
+            reason: 'the retention engine must not reach into the runtime lifecycle domain ($runtimeConcept)');
+      }
+      final runtime = libFiles.firstWhere((f) => f.path == 'lib/app/workspace_lifecycle_policy_engine.dart');
+      for (final retentionConcept in ['RetentionClass', 'LifecycleCandidate', 'maxEntries']) {
+        expect(runtime.code.contains(retentionConcept), isFalse,
+            reason: 'the runtime lifecycle engine must not reach into the retention domain ($retentionConcept)');
+      }
+    });
+
+    test('the retention engine DECIDES but never DELETES — it holds no storage handle and performs no I/O (IS-R50)', () {
+      final retention = libFiles.firstWhere((f) => f.path == 'lib/app/retention_policy_engine.dart');
+      for (final forbidden in ['sqflite', 'Database', 'SharedPreferences', 'dart:io', 'File(', 'Directory(', 'Timer']) {
+        expect(retention.code.contains(forbidden), isFalse,
+            reason: 'the retention engine must stay pure; $forbidden would give it storage or scheduling power it must not have');
+      }
+      expect(retention.raw.contains("import 'dart:io'"), isFalse);
+    });
+
+    test('NO repository or capability service owns a retention rule of its own (IS-R50 Task 7)', () {
+      // The concrete pre-R50 defect: three hardcoded bounds invented
+      // independently in three files. Each of these delegates now, and this
+      // stops any of them quietly re-inventing one.
+      const delegators = [
+        'lib/storage/intent_repository.dart',
+        'lib/storage/activity_repository.dart',
+        'lib/capabilities/adapters/notification_service_adapter.dart',
+        'lib/capabilities/adapters/file_service_adapter.dart',
+        'lib/storage/knowledge_repository.dart',
+      ];
+      for (final path in delegators) {
+        final file = libFiles.firstWhere((f) => f.path == path);
+        // No private retention constant of its own.
+        final ownBounds = RegExp(r'static\s+const\s+int\s+_max(?:Records|Events|Scheduled|Entries|Retained)\b')
+            .allMatches(file.code)
+            .map((m) => m.group(0)!)
+            .toList();
+        expect(ownBounds, isEmpty,
+            reason: '$path re-invented a retention bound: $ownBounds — retention belongs to RetentionPolicyEngine');
+      }
+    });
+
+    test('KnowledgeRepository never owns retention — it reports facts and is told what to drop (IS-R50)', () {
+      final repo = libFiles.firstWhere((f) => f.path == 'lib/storage/knowledge_repository.dart');
+      expect(repo.code.contains('RetentionPolicyEngine'), isFalse,
+          reason: 'the repository must not evaluate policy; KnowledgeCache asks the engine and tells the repository what to remove');
+      expect(repo.code.contains('LifecycleDomain'), isFalse);
+      expect(repo.code.contains('keySummaries'), isTrue,
+          reason: 'it must still be able to REPORT the facts retention is decided from');
+    });
+
     test('neither the Kernel nor any UI file imports an external cognition/protection package directly', () {
       final offenders = libFiles
           .where((f) => f.path.startsWith('lib/kernel/') || f.path.startsWith('lib/features/') || f.path.startsWith('lib/screens/'))

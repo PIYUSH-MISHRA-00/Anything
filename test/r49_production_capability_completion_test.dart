@@ -22,6 +22,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:anything/app/retention_policy_engine.dart';
 import 'package:anything/capabilities/adapters/file_service_adapter.dart';
 import 'package:anything/capabilities/adapters/notification_service_adapter.dart';
 import 'package:anything/capabilities/builtin/file_capability.dart';
@@ -192,7 +193,17 @@ void main() {
     });
 
     test('the stored set is bounded, so a runaway Experience cannot grow storage without limit', () async {
-      final service = RealNotificationService(maxScheduled: 3);
+      // IS-R50: the bound moved out of this service and into the canonical
+      // `RetentionPolicyEngine`. R49 expressed it as `maxScheduled: 3`; the
+      // same behaviour is now expressed as a retention policy for the
+      // notifications domain. The assertions below are unchanged, which is
+      // the point — ownership moved, behaviour did not.
+      final service = RealNotificationService(
+        retention: const RetentionPolicyEngine(policies: {
+          LifecycleDomain.notifications:
+              LifecyclePolicy(retentionClass: RetentionClass.bounded, maxEntries: 3),
+        }),
+      );
       for (var i = 0; i < 6; i++) {
         await service.schedule(id: 'n$i', experienceId: 'e', title: 'T$i', body: '', scheduledTime: DateTime(2026, 1, 1 + i));
       }
