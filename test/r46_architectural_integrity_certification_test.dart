@@ -345,6 +345,26 @@ const List<String> permittedKnowledgeRepositoryFiles = [
   'lib/knowledge/knowledge_acquisition_engine.dart',
 ];
 
+/// Fake implementations that may exist in `lib/` because something real
+/// depends on them, mapped to WHY (IS-R49 Task 1 audit).
+///
+/// Existence in `lib/` is not the problem — REGISTRATION IN THE PRODUCTION
+/// COMPOSITION is, and that is certified separately below. R49 removed the
+/// last two production registrations.
+const Map<String, String> auditedFakeImplementations = {
+  // Test doubles that live in lib/ beside the abstraction they double.
+  // None is wired in production.
+  'lib/capabilities/builtin/notification_capability.dart': 'FakeNotificationService — test double only since IS-R49',
+  'lib/capabilities/builtin/file_capability.dart': 'FakeFileService — test double only since IS-R49',
+  'lib/capabilities/builtin/knowledge_capability.dart': 'FakeKnowledgeProvider — unused; real adapter wired (gap G-09)',
+  'lib/capabilities/builtin/http_capability.dart': 'FakeHttpTransport — unused; RealHttpTransport wired',
+  'lib/capabilities/builtin/ai_capability.dart': 'FakeAiProvider — unused; ModelProviderAiAdapter wired',
+  // Deliberate, private fakes inside the R23 compiler-certification runner:
+  // it compares the legacy and compiler pipelines with a fixed reasoner and
+  // no provider, by design.
+  'lib/compiler_certification/certification_runner.dart': '_FakeProviderRegistry/_FixedReasoner — R23 certification fixtures',
+};
+
 /// External protection/knowledge packages must stay behind their single
 /// documented adapter boundary.
 const List<String> permittedKaalkaImportFiles = ['lib/security/kaalka_service.dart'];
@@ -717,6 +737,76 @@ final x = 1;
       expect(adapter.code.contains('millisecondsSinceEpoch'), isFalse);
       expect(adapter.code.contains('_deterministicId'), isTrue,
           reason: 'the canonical identity derivation must still be present');
+    });
+
+    test('NO Fake* implementation is registered in the production composition (IS-R49 Task 5)', () {
+      // THE R49 INVARIANT. `AppComposition` registered FakeNotificationService
+      // and FakeFileService into the REAL capability platform until R49. This
+      // is the mechanical form of "no production Fake* services remain".
+      //
+      // Scoped to the composition root deliberately: a Fake* CLASS may exist
+      // in lib/ as a test double beside its abstraction (see
+      // auditedFakeImplementations); constructing one in the production graph
+      // is the actual defect.
+      final composition = libFiles.firstWhere((f) => f.path == 'lib/app/app_composition.dart');
+      final fakeConstructions = RegExp(r'(?<![A-Za-z0-9_$.])(Fake\w+)\s*\(')
+          .allMatches(composition.code)
+          .map((m) => m.group(1)!)
+          .toSet()
+          .toList()
+        ..sort();
+      expect(fakeConstructions, isEmpty,
+          reason: 'AppComposition constructs Fake* implementation(s) in the real production graph: $fakeConstructions');
+    });
+
+    test('the real notification and file services are each registered EXACTLY ONCE in production (IS-R49 Task 5)', () {
+      final composition = libFiles.firstWhere((f) => f.path == 'lib/app/app_composition.dart');
+      for (final type in ['RealNotificationService', 'RealFileService', 'NotificationCapability', 'FileCapability']) {
+        final count = RegExp('(?<![A-Za-z0-9_\$.])$type\\s*\\(').allMatches(composition.code).length;
+        expect(count, 1, reason: '$type must be constructed exactly once in the composition root; found $count');
+      }
+    });
+
+    test('there is exactly ONE implementation of NotificationService and ONE of FileService wired for production', () {
+      // No duplicate service: a second Real*/production implementation of
+      // either abstraction would mean two owners of the same capability.
+      final notificationImpls = libFiles
+          .expand((f) => RegExp(r'\bclass\s+(\w+)\s+implements\s+NotificationService\b')
+              .allMatches(f.code)
+              .map((m) => m.group(1)!))
+          .toList()
+        ..sort();
+      final fileImpls = libFiles
+          .expand((f) => RegExp(r'\bclass\s+(\w+)\s+implements\s+FileService\b')
+              .allMatches(f.code)
+              .map((m) => m.group(1)!))
+          .toList()
+        ..sort();
+
+      expect(notificationImpls, ['FakeNotificationService', 'RealNotificationService'],
+          reason: 'exactly one real implementation plus the test double');
+      expect(fileImpls, ['FakeFileService', 'RealFileService'],
+          reason: 'exactly one real implementation plus the test double');
+    });
+
+    test('the real notification service introduces no second notification framework — it reuses the existing EventBus and event type', () {
+      final adapter = libFiles.firstWhere((f) => f.path == 'lib/capabilities/adapters/notification_service_adapter.dart');
+      expect(adapter.code.contains('NotificationGenerated'), isTrue,
+          reason: 'delivery must reuse the EXISTING R35 event subtype');
+      // No new AnythingEvent subtype may be declared here.
+      expect(RegExp(r'class\s+\w+\s+extends\s+AnythingEvent').hasMatch(adapter.code), isFalse,
+          reason: 'a new event subtype here would be a second notification hierarchy');
+      // And no scheduler/timer of its own.
+      expect(adapter.code.contains('Timer.periodic'), isFalse,
+          reason: 'a self-driving timer here would be a second scheduler; BackgroundCoordinator owns planning');
+    });
+
+    test('the real file service introduces no duplicate storage system', () {
+      final adapter = libFiles.firstWhere((f) => f.path == 'lib/capabilities/adapters/file_service_adapter.dart');
+      for (final forbidden in ['sqflite', 'SqliteExperienceRepository', 'KnowledgeRepository', 'SharedPreferences']) {
+        expect(adapter.code.contains(forbidden), isFalse,
+            reason: 'the file service must own only user-imported files; $forbidden belongs to another owner');
+      }
     });
 
     test('neither the Kernel nor any UI file imports an external cognition/protection package directly', () {
