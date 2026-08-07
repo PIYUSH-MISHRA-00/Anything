@@ -1,4 +1,4 @@
-# Remaining Gap Matrix — IS-R46, updated through IS-R53
+# Remaining Gap Matrix — IS-R46, updated through IS-R54
 
 Everything the repository-wide audit surfaced that is **not** resolved. Each
 row cites real evidence; nothing here is hypothetical.
@@ -33,6 +33,28 @@ Severity: **A** = architectural integrity, **B** = correctness/UX,
 |---|---|---|
 | G-18 | Persisted knowledge had no retention policy — unbounded growth | **CLOSED.** `RetentionPolicyEngine` now owns it: 500 entries / 20 MB / 30 days. `KnowledgeCache.applyRetention()` asks the engine and tells `KnowledgeRepository` which keys to drop; the repository still owns no policy (I-47). R48 deliberately did not invent a policy because none existed to reuse — R50 created the canonical owner first, then applied it. |
 | G-22 | Retention was invented independently three times with three magic numbers (`_maxRecords=100`, `_maxEvents=200`, `maxScheduled=200`) | **CLOSED.** All three delegate to the ONE engine. Values unchanged — three tests assert 100/200/200 exactly, so ownership moved without behaviour moving. No repository or capability service may hold a retention rule any more (I-46), mutation-proven. |
+
+## CLOSED BY IS-R54
+
+| # | Gap | How it was closed |
+|---|---|---|
+| G-27 (part) | R53's `dependencies` were transported and resolved by nothing | **PARTIALLY CLOSED.** `ExperienceDependencyPlanner` is the field's first reader: an import declaring a dependency that is not installed is now REFUSED, tested. The other half of G-27 (protection state transported but not restored) remains open and deliberate — see below. Nothing fetches a dependency, and nothing can: that is G-31. |
+
+## OPENED BY IS-R54 — recorded at the moment they were created
+
+| # | Sev | Gap | Evidence | Status |
+|---|---|---|---|---|
+| G-28 | **A** | **The installation transaction is COMPENSATING, not atomic.** It snapshots prior state at `prepare`, writes at `commit`, and restores the snapshot on failure. If the process dies BETWEEN the two writes, the snapshot dies with it and nothing is left to call `rollback()`. | `InstallationTransaction`; `SqliteExperienceRepository.savePackage`/`saveMetadata` are separate `INSERT … ConflictAlgorithm.replace` calls and `db.transaction` is not exposed. | **Open, and structurally forced.** IS-R54 Task 5 says "Repository unchanged" and Task 12 forbids a persistence migration, so one real SQL transaction was not available. This is exactly why `repair()` exists and why it is tested against the torn state a crash produces. Closing it properly means exposing a transaction on the repository — a real change to a canonical type, correctly deferred to a milestone that is allowed to make it. |
+| G-29 | B | **`currentRuntimeVersion` is hand-maintained and can silently drift from `pubspec.yaml`,** which still reads `1.0.0+1` while the branch is v2.0.0. | `ExperienceCompatibilityEvaluator.currentRuntimeVersion = '2.0.0'`. | **Open, deliberately.** Reading the pubspec at runtime needs `package_info_plus`; IS-R54 adds no dependency. It is declared in exactly ONE place and every entry point takes an override, so the blast radius is one line — but nothing mechanically ties it to the pubspec, and a compatibility check against a wrong runtime version is worse than none. Worth a build-time generated constant. |
+| G-30 | **A** | **Committing is NOT unified.** Four sites still write to the repository directly: creation (`creation_coordinator.dart:442`), modification (`experience_modification_coordinator.dart:136, 295, 379`), evolution (`evolution_coordinator.dart:79`) and protection (`protection_service.dart:289`). | Repository-wide `savePackage` scan. | **Open, deliberately and explicitly.** R54 established the owner and moved the ONE path Task 8 names (distribution). Rerouting four coordinators — each with genuinely different pre-conditions — would be replacing architecture, which this milestone's rules forbid. Stated rather than implied, because "there is now one installer" reads as "everything installs through it" and that is false. |
+| G-31 | C | **Dependencies are planned but can never be fetched.** A package declaring an uninstalled dependency is simply refused; nothing can supply it. | `ExperienceDependencyPlanner` — no networking, by instruction (Task 4 is architecture only). | **Open by design.** There is no transport for a dependency to arrive on. Refusing is the correct conservative behaviour until one exists. |
+| G-32 | C | **Platform compatibility is not actually checked.** `IncompatibilityReason.platformUnsupported` exists and is never emitted. | `ExperienceCompatibilityEvaluator.evaluate`. | **Open, deliberately.** `NetworkMode`/`StorageMode` exist on the manifest, but no device policy exists to check them against. Inventing one would be a fabricated check that looks like enforcement. The reason code is declared so the vocabulary does not need widening later; that it is unused is recorded here rather than left for someone to discover. |
+
+## Gaps IS-R54 found and closed within the same milestone
+
+| # | What happened |
+|---|---|
+| G-33 | **`experiencePackageVersion` was declared TWICE** — `experience_package.dart:10` and `package_validator.dart:221`, both `const int = 1`, independent. The validator's local declaration shadowed the canonical one, so bumping the package-format version in one place would have left the validator silently enforcing the other. Invisible for as long as nothing imported both libraries; the new installer does, and could not compile (`ambiguous_import`). **The ANALYZER caught it — the fifth time across R46–R54 that something other than the certification layer found the real defect.** Fixed by deleting the duplicate; no consumer imported it from there. |
 
 ## OPENED BY IS-R53 — recorded at the moment they were created
 

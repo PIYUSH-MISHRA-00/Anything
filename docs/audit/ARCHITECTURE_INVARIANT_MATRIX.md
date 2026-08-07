@@ -437,3 +437,48 @@ second verifier) failed I-57. Probe B (a `trustFor()` on the verifier) first
 failed to COMPILE — distribution has no import for `ExperienceTrustLevel`, so
 the type system caught it before certification did — then, with the import
 added, failed I-58 explicitly. Both removed; tree clean.
+
+## IS-R54 — Canonical Experience Installation Framework (I-61 … I-67)
+
+| # | Invariant | Mechanism | Status |
+|---|---|---|---|
+| I-61 | Exactly ONE installation framework, ONE compatibility evaluator, ONE dependency planner | STATIC | CERTIFIED |
+| I-62 | The installer never computes trust, enforces governance or performs distribution | STATIC | CERTIFIED |
+| I-63 | The evaluator and the planner are PURE — they cannot install | STATIC | CERTIFIED |
+| I-64 | INSTALL NEVER ACTIVATES | STATIC | CERTIFIED |
+| I-65 | The transaction DELEGATES structural validation to the canonical validator | STATIC | CERTIFIED |
+| I-66 | No second migration engine; the installer executes none | STATIC | CERTIFIED |
+| I-67 | DISTRIBUTION NEVER COMMITS — the commit moved to the installer | STATIC | CERTIFIED |
+| — | The installer REQUESTS protection and never performs it (Task 7) | STATIC | CERTIFIED |
+
+**I-57 tripped on itself, and was widened rather than narrowed.** R53's pattern
+already matched `Install`, so `ExperienceInstallationFramework` failed it on the
+first run — the invariant working, not a false positive. The pinned set moved
+from two entries to three with the reason recorded in the test; the regex was
+not touched, so a fourth mover still fails. Fifth occurrence of this pattern
+across R47–R54.
+
+**I-63 is a class-body check, not a file check.** The framework, the evaluator
+and the planner share one file and the framework legitimately holds a
+repository, so a whole-file assertion would be either impossible to satisfy or
+vacuous. Certification brace-matches each class body and asserts non-empty
+first, so a rename fails loudly instead of certifying nothing.
+
+**I-66 exists because the migration engine already did.** `MigrationExecutor`
+and `DataMigrationPlan`/`MigrationValidator` run real transactional operations
+against a real database. R54's `MigrationRequirement` RECORDS that a boundary
+was crossed and executes nothing — certified both ways: exactly one engine
+exists, and the installer may not name `MigrationExecutor`, `DataMigrationPlan`,
+`MigrationOperation` or `ALTER TABLE`.
+
+**R54 mutation evidence.** Seven probes, all failed as required. A (parallel
+installer), A2 (duplicate compatibility evaluator) and A3 (duplicate dependency
+planner) were run SEPARATELY because `expect` short-circuits — probing only the
+first clause would have left the other two unproven. B (installer computing
+trust) failed I-62. C (installer naming `Navigator`) and D (installer holding a
+`ProtectionProvider`) both failed to COMPILE first — the type system enforcing
+the boundary ahead of certification, as in R53 — then failed I-64 and the Task 7
+boundary once their imports were added. E (restoring `savePackage` in
+distribution) failed I-67. Everything was `git add`-ed BEFORE probing this time,
+so `git checkout --` could actually revert each one; on R53 the target file was
+untracked and the revert silently no-opped.

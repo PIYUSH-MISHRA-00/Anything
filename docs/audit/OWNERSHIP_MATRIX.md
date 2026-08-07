@@ -219,3 +219,49 @@ action through `ExperienceEntryPipeline`.
 The envelope records whether the source was protected; an imported Experience
 is persisted unprotected. Distribution must not fabricate a protected state it
 cannot honour.
+
+## IS-R54 — Installation
+
+| Verb | Owner | Added |
+|---|---|---|
+| MOVES | `ExperienceDistributionFramework` | R53 |
+| **COMMITS** | **`ExperienceInstallationFramework`** | **R54** |
+| EVALUATES compatibility | `ExperienceCompatibilityEvaluator` | R54 |
+| PLANS dependencies | `ExperienceDependencyPlanner` | R54 |
+| VALIDATES structure | `ExperiencePackageValidator` | canonical, delegated to |
+| MIGRATES | `MigrationExecutor` | canonical, untouched |
+| STORES | `SqliteExperienceRepository` | canonical |
+| PROTECTS | `ExperienceProtectionService` | Kaalka |
+| ACTIVATES | `ExperienceEntryPipeline` | R45 |
+
+### Distribution no longer commits
+
+R53's `import()` wrote both repository rows itself. It now delegates to the ONE
+installer. Signatures, return types and observable behaviour are unchanged —
+the ownership moved, the behaviour did not, and every R53 test passes
+untouched. The installer takes `ExperiencePackage` + `ExperienceProvenance`
+rather than a distribution package, so it knows nothing about transport and the
+dependency runs one way: distribution -> installer -> repository.
+
+### Install never activates
+
+`install()` commits and stops. The installer may not name the entry pipeline,
+the host screen, the activation manager, `Navigator`, `AnythingRuntime` or
+`ExperienceRenderer`. Installing something must not run it — the property R53
+established for import, enforced one layer lower where the temptation is
+stronger.
+
+### The installer requests protection; it never performs it
+
+Task 7 wires `ExperienceProtectionService` INTO the installer, so this is a
+"must not reach past it" rule rather than the usual "must not reference" rule.
+`isProtected` commits as `false` and only the protection service can make it
+true. A protection request with no service wired is REPORTED, never silently
+ignored.
+
+### Committing is NOT yet unified — stated plainly
+
+Four sites still commit directly: creation, modification, evolution and
+protection. R54 established the owner and moved the one path Task 8 names.
+Rerouting the rest would have redesigned four coordinators in a milestone
+forbidden from replacing architecture. Recorded as gap G-30.
