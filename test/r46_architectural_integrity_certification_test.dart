@@ -225,6 +225,31 @@ bool _declaresClass(_SourceFile f, String type) =>
 List<String> _declaringFiles(List<_SourceFile> files, String type) =>
     files.where((f) => _declaresClass(f, type)).map((f) => f.path).toList()..sort();
 
+/// The source of ONE class body, by brace matching from its declaration.
+///
+/// Needed because IS-R54 declares the framework, the evaluator and the planner
+/// in one file, and "the evaluator cannot install" is a claim about the
+/// EVALUATOR, not about the file. A whole-file check would be vacuous here —
+/// the framework legitimately holds a repository three classes away.
+///
+/// Returns '' when the class is not found, so a caller must assert non-empty
+/// rather than silently certify nothing.
+String _classBody(String code, String type) {
+  final start = RegExp('\\bclass\\s+$type\\b').firstMatch(code);
+  if (start == null) return '';
+  final open = code.indexOf('{', start.end);
+  if (open < 0) return '';
+  var depth = 0;
+  for (var i = open; i < code.length; i++) {
+    if (code[i] == '{') depth++;
+    if (code[i] == '}') {
+      depth--;
+      if (depth == 0) return code.substring(open, i + 1);
+    }
+  }
+  return '';
+}
+
 /// Every `path:line` where [pattern] really occurs in stripped source.
 List<String> _matchSites(List<_SourceFile> files, RegExp pattern) =>
     _matchSitesIn(files, pattern, raw: false);
@@ -1105,8 +1130,14 @@ final x = 1;
           .toList()
         ..sort();
       expect(movers, [
+        // IS-R54 added the third entry. This invariant's pattern has always
+        // included `Install`, so the new framework tripped it on its first run
+        // — which is the invariant working, not a false positive. The set is
+        // widened deliberately with the reason recorded, never by narrowing
+        // the regex until it passes: a fourth mover must still fail here.
         'lib/app/experience_distribution.dart:ExperienceDistributionFramework',
         'lib/app/experience_distribution.dart:ExperiencePackageVerifier',
+        'lib/app/experience_installation.dart:ExperienceInstallationFramework',
       ], reason: 'a duplicate importer/exporter/installer/verifier appeared: $movers');
     });
 
@@ -1152,6 +1183,164 @@ final x = 1;
       final distribution = libFiles.firstWhere((f) => f.path == 'lib/app/experience_distribution.dart');
       expect(RegExp(r'final\s+ExperienceManifest\s+manifest;').hasMatch(distribution.code), isTrue,
           reason: 'the envelope must CARRY the canonical manifest, not duplicate its fields');
+    });
+
+    // ── IS-R54 — INSTALLATION OWNERSHIP (I-61 … I-67) ────────────────────
+    //
+    // The installer is the most dangerous kind of component in this system: it
+    // is the last thing to touch a package before it becomes real, so every
+    // other subsystem is one convenience call away from being absorbed into
+    // it. These seven invariants exist to keep that from happening quietly.
+
+    test('exactly ONE installation framework, ONE compatibility evaluator and ONE dependency planner exist (IS-R54 Task 10)', () {
+      final installers = libFiles
+          .expand((f) => RegExp(r'\bclass\s+(\w*Install\w*(?:Framework|Engine|Pipeline|Manager|Service|Coordinator))\b')
+              .allMatches(f.code)
+              .map((m) => '${f.path}:${m.group(1)}'))
+          .toList()
+        ..sort();
+      expect(installers, ['lib/app/experience_installation.dart:ExperienceInstallationFramework'],
+          reason: 'a second installer/updater appeared: $installers');
+
+      // COMPATIBILITY. `CompatibilityCheck` is pinned rather than excluded:
+      // it is a cross-artifact invariant record in the compiler/artifact
+      // pipeline, a genuinely different domain from Experience installability.
+      // Pinning keeps the distinction deliberate and still fails on a second
+      // EXPERIENCE compatibility engine.
+      final compat = libFiles
+          .expand((f) => RegExp(r'\bclass\s+(\w*Compatibility\w*)\b')
+              .allMatches(f.code)
+              .map((m) => '${f.path}:${m.group(1)}'))
+          .toList()
+        ..sort();
+      expect(compat, [
+        'lib/app/experience_installation.dart:CompatibilityEvaluation',
+        'lib/app/experience_installation.dart:CompatibilityFinding',
+        'lib/app/experience_installation.dart:ExperienceCompatibilityEvaluator',
+        'lib/artifact_intelligence/artifact_intelligence.dart:CompatibilityCheck',
+      ], reason: 'a second compatibility engine appeared: $compat');
+
+      // DEPENDENCIES. The eight pre-existing types expand a FEATURE CANDIDATE
+      // into capability/permission/storage/navigation primitives during
+      // design, or analyse the world graph. The planner added here plans
+      // EXPERIENCE-TO-EXPERIENCE package dependencies at install time.
+      // Different inputs, outputs and lifecycle stage — pinned, with the
+      // reason recorded, so the distinction survives review.
+      final planners = libFiles
+          .expand((f) => RegExp(r'\bclass\s+(\w*Depend\w*(?:Planner|Resolver|Analyzer|Builder|Engine))\b')
+              .allMatches(f.code)
+              .map((m) => '${f.path}:${m.group(1)}'))
+          .toList()
+        ..sort();
+      expect(planners, [
+        'lib/app/experience_installation.dart:ExperienceDependencyPlanner',
+        'lib/feature_discovery/dependency_resolver.dart:CapabilityDependencyResolver',
+        'lib/feature_discovery/dependency_resolver.dart:DependencyGraphBuilder',
+        'lib/feature_discovery/dependency_resolver.dart:DependencyResolver',
+        'lib/feature_discovery/dependency_resolver.dart:NavigationDependencyResolver',
+        'lib/feature_discovery/dependency_resolver.dart:OfflineDependencyResolver',
+        'lib/feature_discovery/dependency_resolver.dart:PermissionDependencyResolver',
+        'lib/feature_discovery/dependency_resolver.dart:StorageDependencyResolver',
+        'lib/world_model/dependency_analyzer.dart:DependencyAnalyzer',
+      ], reason: 'a second dependency planner appeared: $planners');
+    });
+
+    test('the INSTALLER never computes trust, enforces governance or performs distribution (IS-R54 Task 10)', () {
+      final installer = libFiles.firstWhere((f) => f.path == 'lib/app/experience_installation.dart');
+      for (final forbidden in [
+        // Trust belongs to R52.
+        'ExperienceTrustClassifier', 'ExperienceTrustLevel', 'classify(',
+        // Policy belongs to R51.
+        'OperatingSystemGovernanceEngine', 'GovernanceDecision', 'GovernanceEvaluation',
+        // Movement belongs to R53. The installer must not become a second
+        // importer just because it already holds the package.
+        'ExperienceDistributionFramework', 'DistributionSource', 'ExperienceDistributionPackage',
+        // Enforcement belongs to R49/R51.
+        'CapabilityPlatform',
+      ]) {
+        expect(installer.code.contains(forbidden), isFalse,
+            reason: 'the installer commits only; referencing $forbidden would make it a second owner of that subsystem');
+      }
+    });
+
+    test('the EVALUATOR and the PLANNER are pure — they evaluate and plan, they cannot install (IS-R54 Tasks 3/4)', () {
+      final installer = libFiles.firstWhere((f) => f.path == 'lib/app/experience_installation.dart');
+
+      // Both are declared in the same file as the framework, so a field-level
+      // check is what proves purity: neither may hold a repository, a
+      // protection service or a transaction.
+      for (final pure in ['ExperienceCompatibilityEvaluator', 'ExperienceDependencyPlanner']) {
+        final body = _classBody(installer.code, pure);
+        expect(body, isNotEmpty, reason: '$pure must exist to be certified pure');
+        for (final forbidden in ['SqliteExperienceRepository', 'ExperienceProtectionService', 'InstallationTransaction', 'savePackage', 'saveMetadata']) {
+          expect(body.contains(forbidden), isFalse,
+              reason: '$pure must only evaluate/plan; holding or calling $forbidden would let it install');
+        }
+      }
+    });
+
+    test('INSTALL NEVER ACTIVATES — the installer may not name the activation layer at all (IS-R54 Task 9)', () {
+      final installer = libFiles.firstWhere((f) => f.path == 'lib/app/experience_installation.dart');
+      for (final forbidden in [
+        'ExperienceEntryPipeline', 'ExperienceHostScreen', 'ExperienceActivationManager',
+        'Navigator', 'AnythingRuntime', 'ExperienceRenderer',
+      ]) {
+        expect(installer.code.contains(forbidden), isFalse,
+            reason: 'installing something must not run it; referencing $forbidden would make install an activation path');
+      }
+    });
+
+    test('the INSTALLER REQUESTS protection and never performs it (IS-R54 Task 7)', () {
+      final installer = libFiles.firstWhere((f) => f.path == 'lib/app/experience_installation.dart');
+
+      // Task 7 explicitly wires the protection SERVICE into the installer, so
+      // this is not a "must not reference" rule like the others — it is a
+      // "must not reach past it" rule. The installer asks; Kaalka performs.
+      expect(installer.code.contains('ExperienceProtectionService'), isTrue,
+          reason: 'Task 7 requires the installer to be able to REQUEST protection after a commit');
+      for (final forbidden in ['KaalkaService', 'ProtectionProvider', 'TimeSeed', 'encrypt(', 'decrypt(']) {
+        expect(installer.code.contains(forbidden), isFalse,
+            reason: 'the installer requests protection; touching $forbidden would open a second crypto path');
+      }
+    });
+
+    test('the TRANSACTION delegates structural validation to the canonical validator (IS-R54 Task 5)', () {
+      final installer = libFiles.firstWhere((f) => f.path == 'lib/app/experience_installation.dart');
+      expect(installer.code.contains('ExperiencePackageValidator.validate'), isTrue,
+          reason: 'structural validation must be delegated, never re-implemented — the "no second verifier" rule at the install layer');
+    });
+
+    test('NO SECOND MIGRATION ENGINE — the installer records requirements and executes none (IS-R54 Task 6)', () {
+      final engines = libFiles
+          .expand((f) => RegExp(r'\bclass\s+(\w*Migrat\w*(?:Engine|Executor|Runner|Service|Manager))\b')
+              .allMatches(f.code)
+              .map((m) => '${f.path}:${m.group(1)}'))
+          .toList()
+        ..sort();
+      expect(engines, ['lib/storage/migration_executor.dart:MigrationExecutor'],
+          reason: 'the canonical migration engine already existed; a second one appeared: $engines');
+
+      // And the installer must not execute one. `MigrationRequirement` records
+      // that a boundary was crossed; running operations is MigrationExecutor's
+      // job and nothing else's.
+      final installer = libFiles.firstWhere((f) => f.path == 'lib/app/experience_installation.dart');
+      for (final forbidden in ['MigrationExecutor', 'DataMigrationPlan', 'MigrationOperation', 'ALTER TABLE']) {
+        expect(installer.code.contains(forbidden), isFalse,
+            reason: 'the installer prepares migrations; executing $forbidden would make it a second migration engine');
+      }
+    });
+
+    test('DISTRIBUTION NEVER COMMITS — the commit moved to the installer (IS-R54 Task 8)', () {
+      // R53 wrote both repository rows from the distribution framework. R54
+      // took that back. This is the invariant that keeps it taken: distribution
+      // MOVES, the installer COMMITS, the repository STORES.
+      final distribution = libFiles.firstWhere((f) => f.path == 'lib/app/experience_distribution.dart');
+      for (final forbidden in ['savePackage', 'saveMetadata', 'repository.delete']) {
+        expect(distribution.code.contains(forbidden), isFalse,
+            reason: 'distribution moves experiences; calling $forbidden would restore the second commit path R54 removed');
+      }
+      expect(distribution.code.contains('ExperienceInstallationFramework'), isTrue,
+          reason: 'distribution must commit THROUGH the one installer');
     });
 
     test('neither the Kernel nor any UI file imports an external cognition/protection package directly', () {
