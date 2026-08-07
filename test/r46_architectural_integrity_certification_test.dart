@@ -1097,6 +1097,63 @@ final x = 1;
       ], reason: 'a parallel identity framework appeared: $identityTypes');
     });
 
+    test('exactly ONE distribution framework and ONE package verifier exist (IS-R53 Task 11)', () {
+      final movers = libFiles
+          .expand((f) => RegExp(r'\bclass\s+(\w*(?:Distribution|Import|Export|Install)\w*(?:Framework|Engine|Pipeline|Manager|Service)|\w*Package\w*Verifier)\b')
+              .allMatches(f.code)
+              .map((m) => '${f.path}:${m.group(1)}'))
+          .toList()
+        ..sort();
+      expect(movers, [
+        'lib/app/experience_distribution.dart:ExperienceDistributionFramework',
+        'lib/app/experience_distribution.dart:ExperiencePackageVerifier',
+      ], reason: 'a duplicate importer/exporter/installer/verifier appeared: $movers');
+    });
+
+    test('DISTRIBUTION never computes trust, enforces governance or activates a runtime (IS-R53 Task 11)', () {
+      final distribution = libFiles.firstWhere((f) => f.path == 'lib/app/experience_distribution.dart');
+      for (final forbidden in [
+        // Trust classification belongs to R52.
+        'ExperienceTrustClassifier', 'ExperienceTrustLevel', 'classify(',
+        // Policy belongs to R51.
+        'OperatingSystemGovernanceEngine', 'GovernanceDecision', 'GovernanceEvaluation',
+        // Activation belongs to R45.
+        'ExperienceEntryPipeline', 'ExperienceHostScreen', 'Navigator',
+        // Protection belongs to ExperienceProtectionService.
+        'ExperienceProtectionService', 'KaalkaService',
+      ]) {
+        expect(distribution.code.contains(forbidden), isFalse,
+            reason: 'distribution moves experiences only; referencing $forbidden would make it a second owner of that subsystem');
+      }
+    });
+
+    test('the VERIFIER delegates structural validation and never computes trust (IS-R53 Task 6/11)', () {
+      final distribution = libFiles.firstWhere((f) => f.path == 'lib/app/experience_distribution.dart');
+      // It must DELEGATE to the pre-existing validator rather than
+      // re-implementing one — the "no second verifier" rule in practice.
+      expect(distribution.code.contains('ExperiencePackageValidator.validate'), isTrue,
+          reason: 'structural validation must be delegated to the canonical validator, never re-implemented');
+      // And a valid package must not be able to earn authority by being valid.
+      expect(distribution.code.contains('ExperienceTrustLevel'), isFalse);
+    });
+
+    test('the distribution manifest EMBEDS the canonical ExperienceManifest rather than re-declaring it (IS-R53 Task 3)', () {
+      // "Exactly one Experience Manifest" made mechanical: there must still be
+      // exactly one class named ExperienceManifest in lib/, and the transport
+      // envelope must hold a field OF that type rather than copying its
+      // fields into a parallel record.
+      final manifests = libFiles
+          .expand((f) => RegExp(r'\bclass\s+(ExperienceManifest)\b').allMatches(f.code).map((m) => '${f.path}:${m.group(1)}'))
+          .toList()
+        ..sort();
+      expect(manifests, ['lib/creation/experience_package.dart:ExperienceManifest'],
+          reason: 'a second Experience manifest appeared: $manifests');
+
+      final distribution = libFiles.firstWhere((f) => f.path == 'lib/app/experience_distribution.dart');
+      expect(RegExp(r'final\s+ExperienceManifest\s+manifest;').hasMatch(distribution.code), isTrue,
+          reason: 'the envelope must CARRY the canonical manifest, not duplicate its fields');
+    });
+
     test('neither the Kernel nor any UI file imports an external cognition/protection package directly', () {
       final offenders = libFiles
           .where((f) => f.path.startsWith('lib/kernel/') || f.path.startsWith('lib/features/') || f.path.startsWith('lib/screens/'))
