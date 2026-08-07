@@ -278,6 +278,12 @@ List<(int, int)> _callRanges(String code, String name) {
   return ranges;
 }
 
+/// `ActivityRepository` -> `activity_repository`, so a repository's own file
+/// can be excluded from its own construction scan.
+String _snake(String type) => type
+    .replaceAllMapped(RegExp(r'(?<!^)([A-Z])'), (m) => '_${m.group(1)}')
+    .toLowerCase();
+
 /// Every `path:line` where [pattern] really occurs in stripped source.
 List<String> _matchSites(List<_SourceFile> files, RegExp pattern) =>
     _matchSitesIn(files, pattern, raw: false);
@@ -1611,6 +1617,83 @@ final x = 1;
             reason: 'present() must run AFTER the claim commits, never inside the mutation that claims — '
                 'presenting from inside the critical section is the R49 double-delivery defect');
       }
+    });
+
+    // ── IS-R57 — REPOSITORY COMPOSITION OWNERSHIP (I-78 … I-80) ──────────
+    //
+    // R56's audit found ActivityRepository was the ONE repository with no
+    // composition owner: nine construction sites, absent from AppComposition.
+    // R56 proved that was not a correctness defect (the class is stateless and
+    // SharedPreferences is a process singleton), so R57 is ownership
+    // canonicalisation with behaviour deliberately unchanged.
+
+    test('every repository is constructed ONLY in its approved sites (IS-R57 Phase 8)', () {
+      // Approved = the composition root, the repository's own file (its
+      // constructor), and a constructor DEFAULT of the form
+      // `x ?? Repository()`. That last one is not rogue construction: it is the
+      // optional-injection seam this codebase has used since R32, and removing
+      // it would break every test that relies on defaults — an API change this
+      // milestone forbids. What it must never be is a bare construction with
+      // no seam, which is what nine ActivityRepository sites had.
+      const repositories = [
+        'ActivityRepository',
+        'IntentRepository',
+        'KnowledgeRepository',
+        'WorldModelRepository',
+        'EngineeringMemoryRepository',
+      ];
+      final rogue = <String>[];
+      for (final f in libFiles) {
+        if (f.path == 'lib/app/app_composition.dart') continue;
+        for (final repo in repositories) {
+          if (f.path.endsWith('/${_snake(repo)}.dart')) continue;
+          for (final m in RegExp('(?<![?:]\\s{0,4})\\b$repo\\s*\\(').allMatches(f.code)) {
+            // A construction preceded by `??` or `:` is a defaulted seam.
+            final before = f.code.substring((m.start - 24).clamp(0, m.start), m.start);
+            if (before.contains('??') || before.contains('const ')) continue;
+            rogue.add('${f.path}:$repo');
+          }
+        }
+      }
+      expect(rogue, isEmpty,
+          reason: 'these construct a repository with NO injection seam, so production cannot '
+              'share the composition instance and a test cannot substitute one: $rogue');
+    });
+
+    test('AppComposition owns exactly ONE ActivityRepository and hands it out (IS-R57 Phase 3)', () {
+      final composition = libFiles.firstWhere((f) => f.path == 'lib/app/app_composition.dart');
+      final constructions = RegExp(r'\bActivityRepository\s*\(').allMatches(composition.code).length;
+      expect(constructions, 1,
+          reason: 'the composition must build exactly one activity repository; found $constructions');
+      expect(RegExp(r'final\s+ActivityRepository\s+activityRepository;').hasMatch(composition.code), isTrue,
+          reason: 'the composition must EXPOSE it, or consumers cannot receive it');
+      // And it must actually be handed to the coordinators it builds, or
+      // exposing it would be decoration.
+      expect(RegExp(r'activity:\s*activityRepository').allMatches(composition.code).length,
+          greaterThanOrEqualTo(4),
+          reason: 'the composition must pass its instance to the coordinators it constructs');
+    });
+
+    test('the dead repository contracts and MinimalKernel are gone and stay gone (IS-R57 Phase 4)', () {
+      // Deleted by R57: four abstract contracts with twenty methods, ZERO
+      // implementations, reachable only through a barrel re-export — and one
+      // of them (`IntentRepository`) collided by name with the live storage
+      // repository, so importing both would have failed to compile. Same shape
+      // as the dead `runtime.dart` R47 removed.
+      for (final removed in [
+        'lib/core/contracts/repository.dart',
+        'lib/kernel/minimal_kernel.dart',
+      ]) {
+        expect(libFiles.map((f) => f.path), isNot(contains(removed)),
+            reason: '$removed was deleted as dead code; it must not return');
+      }
+      // The barrel must not re-export it again — the dangling-export mistake
+      // R47's deletion made, which only the analyzer caught.
+      final barrel = libFiles.firstWhere((f) => f.path == 'lib/core/contracts/contracts.dart');
+      expect(RegExp(r"export\s+'repository\.dart'").hasMatch(barrel.raw), isFalse);
+      // `IntentRepository` must now declare exactly once, repository-wide.
+      expect(_declaringFiles(libFiles, 'IntentRepository'), ['lib/storage/intent_repository.dart'],
+          reason: 'the name collision R57 removed must not come back');
     });
 
     test('neither the Kernel nor any UI file imports an external cognition/protection package directly', () {
