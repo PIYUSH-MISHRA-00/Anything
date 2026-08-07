@@ -7,6 +7,7 @@ import 'dart:convert';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart' as p;
 
+import '../app/experience_provenance.dart';
 import '../creation/experience_package.dart';
 
 /// Convert SQLite integer/bool to Dart bool.
@@ -30,6 +31,17 @@ class ExperienceMetadataRecord {
   final String? packagePath;
   final bool isProtected;
 
+  /// IS-R52: canonical provenance. ONE field carrying the whole provenance
+  /// value object rather than ten loose columns' worth of primitives on this
+  /// class — so there is exactly one provenance model, and adding a future
+  /// field (marketplace id, cloud id, signature) changes `ExperienceProvenance`
+  /// and nothing here.
+  ///
+  /// Defaults to unknown-origin provenance, which is exactly what a row
+  /// written before R52 truthfully has. The repository stores it; it never
+  /// computes trust from it (certified I-55).
+  final ExperienceProvenance provenance;
+
   const ExperienceMetadataRecord({
     required this.id,
     required this.name,
@@ -41,7 +53,28 @@ class ExperienceMetadataRecord {
     this.packageVersion = '1.0.0',
     this.packagePath,
     this.isProtected = false,
+    this.provenance = const ExperienceProvenance(),
   });
+
+  /// The canonical identity of this Experience (IS-R52 Task 3).
+  ExperienceIdentity get identity =>
+      ExperienceIdentity(experienceId: id, provenance: provenance);
+
+  ExperienceMetadataRecord copyWith({ExperienceProvenance? provenance}) {
+    return ExperienceMetadataRecord(
+      id: id,
+      name: name,
+      description: description,
+      category: category,
+      createdAt: createdAt,
+      updatedAt: updatedAt,
+      lastUsedAt: lastUsedAt,
+      packageVersion: packageVersion,
+      packagePath: packagePath,
+      isProtected: isProtected,
+      provenance: provenance ?? this.provenance,
+    );
+  }
 
   Map<String, dynamic> toJson() => {
     'id': id,
@@ -54,6 +87,7 @@ class ExperienceMetadataRecord {
     'package_version': packageVersion,
     'package_path': packagePath,
     'is_protected': isProtected,
+    'provenance': jsonEncode(provenance.toJson()),
   };
 
   factory ExperienceMetadataRecord.fromJson(Map<String, dynamic> json) {
@@ -70,7 +104,23 @@ class ExperienceMetadataRecord {
       packageVersion: json['package_version'] as String? ?? '1.0.0',
       packagePath: json['package_path'] as String?,
       isProtected: _jsonToBool(json['is_protected']),
+      provenance: _provenanceFrom(json['provenance']),
     );
+  }
+}
+
+/// Decodes a stored provenance blob. A row written before IS-R52 has no such
+/// column, and a corrupt one is unreadable — both yield unknown-origin
+/// provenance, which is the truthful answer rather than a fabricated origin.
+/// Never throws: a metadata read must not fail because provenance is absent.
+ExperienceProvenance _provenanceFrom(dynamic raw) {
+  if (raw is! String || raw.isEmpty) return const ExperienceProvenance();
+  try {
+    final decoded = jsonDecode(raw);
+    if (decoded is! Map) return const ExperienceProvenance();
+    return ExperienceProvenance.fromJson(Map<String, dynamic>.from(decoded));
+  } catch (_) {
+    return const ExperienceProvenance();
   }
 }
 
@@ -91,7 +141,7 @@ class SqliteExperienceRepository {
   Future<Database> _initDatabase() async {
     final dbPath = await getDatabasesPath();
     final path = p.join(dbPath, _dbName);
-    return await openDatabase(path, version: 2, onCreate: _createTables, onUpgrade: _upgradeTables);
+    return await openDatabase(path, version: 3, onCreate: _createTables, onUpgrade: _upgradeTables);
   }
 
   Future<void> _createTables(Database db, int version) async {
@@ -106,7 +156,8 @@ class SqliteExperienceRepository {
         last_used_at TEXT,
         package_version TEXT,
         package_path TEXT,
-        is_protected INTEGER DEFAULT 0
+        is_protected INTEGER DEFAULT 0,
+        provenance TEXT
       )
     ''');
 
@@ -141,6 +192,16 @@ class SqliteExperienceRepository {
     if (oldVersion < 2) {
       await _createIndexes(db);
     }
+    // IS-R52: provenance column, added additively.
+    //
+    // ADD COLUMN with no NOT NULL and no default is the whole migration: every
+    // existing row keeps its data and reads back as unknown-origin provenance,
+    // which is truthful — those Experiences really do predate provenance
+    // tracking. No row is rewritten, nothing is backfilled with a guess, and
+    // an interrupted upgrade cannot corrupt anything.
+    if (oldVersion < 3) {
+      await db.execute('ALTER TABLE experiences ADD COLUMN provenance TEXT');
+    }
   }
 
   /// `listAll()` orders by `last_used_at DESC, created_at DESC` — this
@@ -165,6 +226,7 @@ class SqliteExperienceRepository {
       'package_version': record.packageVersion,
       'package_path': record.packagePath,
       'is_protected': record.isProtected ? 1 : 0,
+      'provenance': jsonEncode(record.provenance.toJson()),
     }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
@@ -232,6 +294,7 @@ class SqliteExperienceRepository {
                 : null,
             packageVersion: row['package_version'] as String? ?? '1.0.0',
             isProtected: _jsonToBool(row['is_protected']),
+            provenance: _provenanceFrom(row['provenance']),
           ),
         )
         .toList();

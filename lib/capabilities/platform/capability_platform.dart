@@ -3,6 +3,7 @@ library;
 
 import 'dart:async';
 
+import '../../app/experience_provenance.dart';
 import '../../app/governance_engine.dart';
 
 /// Status of a capability invocation.
@@ -82,7 +83,25 @@ class CapabilityPlatform {
   /// engine.
   final OperatingSystemGovernanceEngine? governance;
 
-  CapabilityPlatform({this.governance});
+  /// THE trust classifier (IS-R52). Supplied so a caller may hand in an
+  /// Experience's PROVENANCE and have trust COMPUTED, rather than passing a
+  /// trust level it decided for itself — which would put classification back
+  /// in the caller and defeat R52 entirely.
+  ///
+  /// This platform never classifies and never decides: it asks the classifier
+  /// for a level, asks governance for a verdict, and enforces the answer.
+  final ExperienceTrustClassifier? trustClassifier;
+
+  CapabilityPlatform({this.governance, this.trustClassifier});
+
+  /// Computes the trust level for [provenance] using THE canonical classifier
+  /// (IS-R52 Task 5). Falls back to the default when no classifier is
+  /// configured, so a platform built without one behaves exactly as pre-R52.
+  ExperienceTrustLevel trustFor(ExperienceProvenance provenance) {
+    final classifier = trustClassifier;
+    if (classifier == null) return ExperienceTrustLevel.local;
+    return classifier.classify(provenance);
+  }
 
   void register(PlatformCapability capability) {
     _capabilities[capability.id] = capability;
@@ -102,6 +121,10 @@ class CapabilityPlatform {
     List<String>? declaredCapabilities,
     String? sessionId,
     ExperienceTrustLevel trustLevel = ExperienceTrustLevel.local,
+    /// IS-R52: hand in PROVENANCE and trust is COMPUTED by the canonical
+    /// classifier. Takes precedence over [trustLevel], which remains only so
+    /// pre-R52 callers and tests keep working unchanged.
+    ExperienceProvenance? provenance,
     String? experienceId,
     bool isOffline = false,
     bool privacyMode = false,
@@ -149,10 +172,13 @@ class CapabilityPlatform {
     // no caller's switch became incomplete.
     final governanceEngine = governance;
     if (governanceEngine != null) {
+      // Provenance wins when supplied: trust must be COMPUTED, not asserted
+      // by whoever happens to be calling.
+      final effectiveTrust = provenance == null ? trustLevel : trustFor(provenance);
       final evaluation = governanceEngine.authorizeCapability(
         capabilityId: capabilityId,
         operation: operation,
-        trustLevel: trustLevel,
+        trustLevel: effectiveTrust,
         experienceId: experienceId,
         sessionId: sessionId,
         isOffline: isOffline,

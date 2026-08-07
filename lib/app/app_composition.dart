@@ -26,6 +26,7 @@ import 'package:anything/app/engineering_lifecycle_coordinator.dart';
 import 'package:anything/app/experience_activation_manager.dart';
 import 'package:anything/app/experience_entry_pipeline.dart';
 import 'package:anything/app/experience_opening_coordinator.dart';
+import 'package:anything/app/experience_provenance.dart';
 import 'package:anything/app/experience_workspace_manager.dart';
 import 'package:anything/app/governance_engine.dart';
 import 'package:anything/app/intent_execution_pipeline.dart';
@@ -248,7 +249,16 @@ class AppComposition {
       ],
     );
 
-    final capabilityPlatform = CapabilityPlatform(governance: governance)
+    // IS-R52: the ONE trust classifier. It COMPUTES trust from provenance;
+    // governance CONSUMES it; the capability platform ENFORCES the resulting
+    // decision. Four verbs, four owners — see docs/architecture/
+    // EXPERIENCE_IDENTITY_ARCHITECTURE.md.
+    const trustClassifier = ExperienceTrustClassifier();
+
+    final capabilityPlatform = CapabilityPlatform(
+      governance: governance,
+      trustClassifier: trustClassifier,
+    )
       ..register(ClockCapability())
       ..register(HttpCapability(transport: RealHttpTransport(), allowedHosts: _defaultHttpAllowedHosts))
       ..register(AiCapability(provider: ModelProviderAiAdapter(providerRegistry), experienceId: ''))

@@ -13,6 +13,7 @@ import 'package:anything/kernel/anything_kernel.dart';
 import 'package:anything/kernel/outcomes/kernel_outcome.dart';
 import 'package:anything/kernel/specification/experience_spec.dart';
 import 'package:anything/knowledge/knowledge_resource.dart';
+import 'package:anything/app/experience_provenance.dart';
 import 'package:anything/creation/creation_engine.dart';
 import 'package:anything/creation/creation_context.dart';
 import 'package:anything/creation/experience_package.dart';
@@ -415,13 +416,28 @@ class ExperienceCreationCoordinator {
 
       // Persist
       _state = CreationState.persisting;
+      // IS-R52: the ONE production creation site now records real provenance
+      // instead of leaving it blank. This is what makes trust COMPUTED rather
+      // than assumed: an Experience authored here is genuinely
+      // `createdLocally`, and the classifier derives `local` from that fact
+      // rather than from a default nobody chose.
+      //
+      // The fingerprint reuses the EXISTING `ExperiencePackage.computeIntegrityHash`
+      // — R52 introduces no second hashing implementation.
+      final createdAt = DateTime.now();
       final metadata = ExperienceMetadataRecord(
         id: package.manifest.experienceId,
         name: package.manifest.name,
         description: package.manifest.description,
         category: package.manifest.category,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
+        createdAt: createdAt,
+        updatedAt: createdAt,
+        provenance: ExperienceProvenance.createdLocally(
+          at: createdAt,
+          fingerprint: ExperienceFingerprint(
+            ExperiencePackage.computeIntegrityHash(package),
+          ),
+        ),
       );
       await _repository.savePackage(package);
       await _repository.saveMetadata(metadata);
