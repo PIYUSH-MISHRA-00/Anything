@@ -39,8 +39,17 @@
 ///     did not exist: fingerprint agreement and envelope/manifest consistency.
 ///     It re-implements nothing.
 ///
-/// Both choices are certified (I-57…I-62), so neither can silently become a
+/// Both choices are certified (I-57…I-60), so neither can silently become a
 /// duplicate later.
+///
+/// IS-R54 UPDATE — DISTRIBUTION NO LONGER COMMITS.
+///
+/// R53 wrote to the repository from [ExperienceDistributionFramework.import].
+/// R54 introduced `ExperienceInstallationFramework` as the ONE owner of
+/// committing, and this file now delegates to it: distribution MOVES, the
+/// installer COMMITS, the repository STORES. Public signatures, return types
+/// and observable behaviour are unchanged — only the ownership moved
+/// (certified I-67: no `savePackage`/`saveMetadata` call may appear here).
 ///
 /// WHAT DISTRIBUTION OWNS, AND WHAT IT MUST NOT TOUCH.
 ///
@@ -61,6 +70,7 @@ library;
 import '../creation/experience_package.dart';
 import '../creation/package_validator.dart';
 import '../storage/sqlite_experience_repository.dart';
+import 'experience_installation.dart';
 import 'experience_provenance.dart';
 
 /// Where a distributed Experience came from, as a TRANSPORT fact.
@@ -365,9 +375,18 @@ class ExperienceDistributionFramework {
   final SqliteExperienceRepository repository;
   final ExperiencePackageVerifier verifier;
 
+  /// IS-R54 Task 8: distribution MOVES, the installer COMMITS.
+  ///
+  /// Optional so no existing caller breaks. When absent, [import] builds one
+  /// over the same repository — the commit still goes through the installer,
+  /// never back through a second write path in this file. The composition root
+  /// supplies the shared instance so there is one installer in production.
+  final ExperienceInstallationFramework? installer;
+
   const ExperienceDistributionFramework({
     required this.repository,
     this.verifier = const ExperiencePackageVerifier(),
+    this.installer,
   });
 
   /// Maps a transport CHANNEL to the R52 PROVENANCE it earns.
@@ -467,29 +486,26 @@ class ExperienceDistributionFramework {
     );
 
     final manifest = distribution.package.manifest;
-    final now = at ?? DateTime.now();
 
-    try {
-      await repository.savePackage(distribution.package);
-      await repository.saveMetadata(
-        ExperienceMetadataRecord(
-          id: manifest.experienceId,
-          name: manifest.name,
-          description: manifest.description,
-          category: manifest.category,
-          createdAt: manifest.createdAt,
-          updatedAt: now,
-          packageVersion: manifest.version,
-          provenance: provenance,
-          // Protection state is NOT carried across: an imported package is
-          // not protected on this device until this device protects it.
-          // `ExperienceProtectionService` owns that, and distribution must not
-          // fabricate a protected state it cannot honour.
-          isProtected: false,
-        ),
-      );
-    } catch (e) {
-      return ImportResult.failed(e.toString());
+    // IS-R54 TASK 8 — DISTRIBUTION NEVER COMMITS.
+    //
+    // R53 wrote both repository rows here. R54 hands that to the ONE installer,
+    // which owns compatibility evaluation, dependency preparation, the
+    // transaction and the commit. This method's signature, return type and
+    // observable behaviour are unchanged — the ownership moved, the behaviour
+    // did not. (Protection state is still deliberately not carried across: the
+    // installer commits `isProtected: false` and only
+    // `ExperienceProtectionService` can make it true.)
+    final target = installer ?? ExperienceInstallationFramework(repository: repository);
+    final installation = await target.install(
+      package: distribution.package,
+      provenance: provenance,
+      dependencies: distribution.envelope.dependencies,
+      at: at,
+    );
+
+    if (!installation.succeeded) {
+      return ImportResult.failed(installation.messages.join('; '));
     }
 
     return ImportResult.success(experienceId: manifest.experienceId, provenance: provenance);

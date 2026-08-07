@@ -218,4 +218,10 @@ class ComponentTreeValidator {
   }
 }
 
-const int experiencePackageVersion = 1;
+// `experiencePackageVersion` was ALSO declared here, shadowing the canonical
+// `const int experiencePackageVersion = 1` in experience_package.dart (which
+// this library already imports). Two independent sources of truth for the
+// package-format version: bump one and the validator silently kept enforcing
+// the other. Removed in IS-R54 — found because a new importer of both
+// libraries could not compile (`ambiguous_import`), which is the only reason
+// this was ever visible. No consumer imported it from here.

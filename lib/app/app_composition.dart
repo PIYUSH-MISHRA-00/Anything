@@ -27,6 +27,7 @@ import 'package:anything/app/experience_activation_manager.dart';
 import 'package:anything/app/experience_entry_pipeline.dart';
 import 'package:anything/app/experience_opening_coordinator.dart';
 import 'package:anything/app/experience_distribution.dart';
+import 'package:anything/app/experience_installation.dart';
 import 'package:anything/app/experience_provenance.dart';
 import 'package:anything/app/experience_workspace_manager.dart';
 import 'package:anything/app/governance_engine.dart';
@@ -56,6 +57,7 @@ import 'package:anything/knowledge/search_provider.dart';
 import 'package:anything/knowledge/webweavex_adapter.dart';
 import 'package:anything/runtime_intelligence/runtime_intelligence_coordinator.dart';
 import 'package:anything/security/credential_vault.dart';
+import 'package:anything/security/protection_service.dart';
 import 'package:anything/services/provider_registry.dart';
 import 'package:anything/software_cognition/software_cognition_coordinator.dart';
 import 'package:anything/storage/engineering_memory_repository.dart';
@@ -186,6 +188,13 @@ class AppComposition {
   /// enforces policy or activates a runtime.
   final ExperienceDistributionFramework experienceDistribution;
 
+  /// The shared Experience Installation Framework (IS-R54) — the ONE owner of
+  /// COMMITTING an Experience to this device: install, upgrade, downgrade,
+  /// repair, rollback, dependency preparation and compatibility validation.
+  /// It never activates, never classifies trust, never enforces policy and
+  /// never encrypts — it asks `ExperienceProtectionService` to protect.
+  final ExperienceInstallationFramework experienceInstallation;
+
   AppComposition._({
     required this.experienceRepository,
     required this.worldModel,
@@ -211,6 +220,7 @@ class AppComposition {
     required this.experienceActivationManager,
     required this.experienceEntryPipeline,
     required this.experienceDistribution,
+    required this.experienceInstallation,
   });
 
   /// Builds the real, production composition graph. Every dependency below
@@ -268,9 +278,25 @@ class AppComposition {
     // enforces policy and never activates a runtime â€” each of those has an
     // owner already. See docs/architecture/EXPERIENCE_DISTRIBUTION_ARCHITECTURE.md.
     const packageVerifier = ExperiencePackageVerifier();
+
+    // IS-R54: the ONE installation framework. Distribution MOVES, the
+    // installer COMMITS, the repository STORES — see
+    // docs/architecture/EXPERIENCE_INSTALLATION_ARCHITECTURE.md.
+    //
+    // The protection service is given the SAME repository rather than being
+    // left to construct its own (its constructor defaults to a fresh
+    // `SqliteExperienceRepository`), so protecting an installed Experience
+    // writes through the one store this composition owns. The installer asks;
+    // that service performs. There is still exactly one crypto importer.
+    final installer = ExperienceInstallationFramework(
+      repository: experienceRepository,
+      protectionService: ExperienceProtectionService(repository: experienceRepository),
+    );
+
     final distribution = ExperienceDistributionFramework(
       repository: experienceRepository,
       verifier: packageVerifier,
+      installer: installer,
     );
 
     final capabilityPlatform = CapabilityPlatform(
@@ -430,6 +456,7 @@ class AppComposition {
       experienceActivationManager: experienceActivationManager,
       experienceEntryPipeline: experienceEntryPipeline,
       experienceDistribution: distribution,
+      experienceInstallation: installer,
     );
   }
 }
