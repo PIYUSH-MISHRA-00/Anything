@@ -880,6 +880,115 @@ final x = 1;
           reason: 'it must still be able to REPORT the facts retention is decided from');
     });
 
+    test('exactly ONE governance engine exists, and it is disjoint from the other two policy engines (IS-R51 Task 11)', () {
+      // THREE policy engines, THREE disjoint domains:
+      //   WorkspaceLifecyclePolicyEngine  -> runtime lifecycle  (R39)
+      //   RetentionPolicyEngine           -> data retention     (R50)
+      //   OperatingSystemGovernanceEngine -> system governance  (R51)
+      // A FOURTH would be a parallel governance/policy manager.
+      final engines = libFiles
+          .expand((f) => RegExp(r'\bclass\s+(\w*(?:Retention|Lifecycle|Governance)\w*Engine)\b')
+              .allMatches(f.code)
+              .map((m) => '${f.path}:${m.group(1)}'))
+          .toList()
+        ..sort();
+      expect(engines, [
+        'lib/app/governance_engine.dart:OperatingSystemGovernanceEngine',
+        'lib/app/retention_policy_engine.dart:RetentionPolicyEngine',
+        'lib/app/workspace_lifecycle_policy_engine.dart:WorkspaceLifecyclePolicyEngine',
+      ], reason: 'A parallel governance/policy engine appeared: $engines');
+
+      // Governance must not reach into the other two domains' vocabularies.
+      final governance = libFiles.firstWhere((f) => f.path == 'lib/app/governance_engine.dart');
+      for (final foreign in [
+        'RetentionClass', 'LifecycleCandidate', 'RetentionPolicyEngine',
+        'RuntimePolicyAction', 'ExperienceRuntimeController', 'AppLifecycleState',
+        'AnythingKernel', 'CapabilityPlatform',
+      ]) {
+        expect(governance.code.contains(foreign), isFalse,
+            reason: 'governance must own POLICY only; referencing $foreign would make it a second owner of that subsystem');
+      }
+      // And they must not reach into governance.
+      for (final path in ['lib/app/retention_policy_engine.dart', 'lib/app/workspace_lifecycle_policy_engine.dart']) {
+        final file = libFiles.firstWhere((f) => f.path == path);
+        for (final governanceConcept in ['GovernanceDomain', 'GovernanceDecision', 'ExperienceTrustLevel']) {
+          expect(file.code.contains(governanceConcept), isFalse,
+              reason: '$path must not absorb governance ($governanceConcept)');
+        }
+      }
+    });
+
+    test('the governance engine DECIDES but never ENFORCES — no I/O, no storage, no Timer, no capability execution (IS-R51)', () {
+      final governance = libFiles.firstWhere((f) => f.path == 'lib/app/governance_engine.dart');
+      for (final forbidden in ['sqflite', 'Database', 'SharedPreferences', 'dart:io', 'File(', 'Directory(', 'Timer', 'http.', 'ModelProvider']) {
+        expect(governance.code.contains(forbidden), isFalse,
+            reason: 'governance must stay pure; $forbidden would give it enforcement power it must not have');
+      }
+      expect(governance.raw.contains("import 'dart:io'"), isFalse);
+      // Its only imports should be none at all — it is a pure policy library.
+      final imports = RegExp(r'''^import\s+['"]([^'"]+)''', multiLine: true)
+          .allMatches(governance.raw)
+          .map((m) => m.group(1)!)
+          .toList();
+      expect(imports, isEmpty,
+          reason: 'the governance engine imports nothing: a policy that depends on a subsystem is not a policy. Found: $imports');
+    });
+
+    test('exactly ONE trust model exists — no duplicate trust or permission framework (IS-R51 Task 11)', () {
+      // TWO enums in lib/ carry "Trust" in their name, and they are NOT
+      // duplicates — they grade different subjects:
+      //
+      //   ExperienceTrustLevel (R51)  how much authority an EXPERIENCE has.
+      //                               Governs capability access.
+      //   TrustLevel (knowledge)      how reliable a RETRIEVED WEB SOURCE is
+      //                               (official/community/unknown...). Feeds
+      //                               ranking, never authority.
+      //
+      // Collapsing them would be worse than leaving them separate: an
+      // Experience's privileges and a web page's credibility are not the same
+      // scale, and one enum serving both would inevitably be misapplied.
+      // Pinned explicitly so the distinction is visible in CI rather than
+      // rediscovered, and so a genuinely duplicate EXPERIENCE trust model
+      // still fails.
+      final trustModels = libFiles
+          .expand((f) => RegExp(r'\benum\s+(\w*Trust\w*)\b').allMatches(f.code).map((m) => '${f.path}:${m.group(1)}'))
+          .toList()
+        ..sort();
+      expect(trustModels, [
+        'lib/app/governance_engine.dart:ExperienceTrustLevel',
+        'lib/knowledge/knowledge_resource.dart:TrustLevel',
+      ], reason: 'a second trust model appeared: $trustModels');
+
+      // No parallel permission manager.
+      final permissionManagers = libFiles
+          .expand((f) => RegExp(r'\bclass\s+(\w*Permission\w*(?:Manager|Engine|Service)|\w*Authorization\w*)\b')
+              .allMatches(f.code)
+              .map((m) => '${f.path}:${m.group(1)}'))
+          .toList()
+        ..sort();
+      expect(permissionManagers, isEmpty,
+          reason: 'a duplicate permission/authorization framework appeared: $permissionManagers');
+    });
+
+    test('the Kernel and the repositories never own governance (IS-R51 Task 11/12)', () {
+      // Governance is policy; the Kernel is reasoning; repositories are
+      // storage. None of them may evaluate governance.
+      const mustNotGovern = [
+        'lib/kernel/anything_kernel.dart',
+        'lib/storage/knowledge_repository.dart',
+        'lib/storage/intent_repository.dart',
+        'lib/storage/activity_repository.dart',
+        'lib/storage/sqlite_experience_repository.dart',
+      ];
+      for (final path in mustNotGovern) {
+        final file = libFiles.firstWhere((f) => f.path == path);
+        for (final concept in ['OperatingSystemGovernanceEngine', 'GovernanceDecision', 'GovernanceDomain', 'ExperienceTrustLevel']) {
+          expect(file.code.contains(concept), isFalse,
+              reason: '$path must not own or evaluate governance ($concept)');
+        }
+      }
+    });
+
     test('neither the Kernel nor any UI file imports an external cognition/protection package directly', () {
       final offenders = libFiles
           .where((f) => f.path.startsWith('lib/kernel/') || f.path.startsWith('lib/features/') || f.path.startsWith('lib/screens/'))
