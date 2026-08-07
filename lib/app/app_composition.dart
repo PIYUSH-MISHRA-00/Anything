@@ -27,6 +27,7 @@ import 'package:anything/app/experience_activation_manager.dart';
 import 'package:anything/app/experience_entry_pipeline.dart';
 import 'package:anything/app/experience_opening_coordinator.dart';
 import 'package:anything/app/experience_workspace_manager.dart';
+import 'package:anything/app/governance_engine.dart';
 import 'package:anything/app/intent_execution_pipeline.dart';
 import 'package:anything/app/intent_session_manager.dart';
 import 'package:anything/app/universal_intent_router.dart';
@@ -236,7 +237,18 @@ class AppComposition {
     // one EventBus still exists in the production graph.
     final eventBus = EventBus();
 
-    final capabilityPlatform = CapabilityPlatform()
+    // Implementation Specification IS-R51: the ONE governance engine. It
+    // DECIDES; every existing owner keeps enforcing. Its canonical rule set
+    // additionally carries the host allowlist below, so network policy is
+    // stated once — `HttpCapability` continues to enforce it, unchanged.
+    final governance = OperatingSystemGovernanceEngine(
+      rules: [
+        ...OperatingSystemGovernanceEngine.canonicalRules,
+        const NetworkHostAllowlistRule(allowedHosts: _defaultHttpAllowedHosts),
+      ],
+    );
+
+    final capabilityPlatform = CapabilityPlatform(governance: governance)
       ..register(ClockCapability())
       ..register(HttpCapability(transport: RealHttpTransport(), allowedHosts: _defaultHttpAllowedHosts))
       ..register(AiCapability(provider: ModelProviderAiAdapter(providerRegistry), experienceId: ''))

@@ -3,6 +3,8 @@ library;
 
 import 'dart:async';
 
+import '../../app/governance_engine.dart';
+
 /// Status of a capability invocation.
 enum CapabilityResultStatus {
   success,
@@ -58,11 +60,29 @@ abstract class PlatformCapability {
 }
 
 /// The Capability Platform.
+///
+/// IS-R51: the platform now ASKS governance and ENFORCES the answer. It gains
+/// no permission manager, no second registry and no authorization path of its
+/// own — `governance.authorizeCapability()` returns a verdict, and `invoke()`
+/// obeys it. Every check that was already here (declaration, registration,
+/// session budget, supported operation) is unchanged and stays exactly where
+/// it was: those are enforcement, and moving them would have broken both
+/// ownership and backward compatibility.
+///
+/// With no governance engine supplied — the default — behaviour is identical
+/// to pre-R51, which is what keeps every existing caller and test intact.
 class CapabilityPlatform {
   final Map<String, PlatformCapability> _capabilities = {};
   final Map<String, Map<String, int>> _sessionCounts =
       {}; // sessionId -> capId -> count
   static const int _maxInvocationsPerCapability = 100;
+
+  /// THE governance decision-maker (IS-R51). Optional so the platform stays
+  /// usable standalone; the production composition supplies the canonical
+  /// engine.
+  final OperatingSystemGovernanceEngine? governance;
+
+  CapabilityPlatform({this.governance});
 
   void register(PlatformCapability capability) {
     _capabilities[capability.id] = capability;
@@ -81,6 +101,10 @@ class CapabilityPlatform {
     Map<String, dynamic> params, {
     List<String>? declaredCapabilities,
     String? sessionId,
+    ExperienceTrustLevel trustLevel = ExperienceTrustLevel.local,
+    String? experienceId,
+    bool isOffline = false,
+    bool privacyMode = false,
   }) async {
     if (declaredCapabilities != null &&
         !declaredCapabilities.contains(capabilityId)) {
@@ -113,6 +137,37 @@ class CapabilityPlatform {
         error: 'Unsupported operation: $operation',
       );
     }
+
+    // IS-R51: GOVERNANCE DECIDES, THIS PLATFORM ENFORCES.
+    //
+    // Asked last, after the cheap structural checks, so a governance denial is
+    // never reported for a request that was malformed anyway — the caller gets
+    // the most specific reason available.
+    //
+    // A denial maps to the EXISTING `permissionDenied` status and an approval
+    // requirement to the EXISTING `policyDenied`; no new status was added, so
+    // no caller's switch became incomplete.
+    final governanceEngine = governance;
+    if (governanceEngine != null) {
+      final evaluation = governanceEngine.authorizeCapability(
+        capabilityId: capabilityId,
+        operation: operation,
+        trustLevel: trustLevel,
+        experienceId: experienceId,
+        sessionId: sessionId,
+        isOffline: isOffline,
+        privacyMode: privacyMode,
+      );
+      if (!evaluation.isAllowed) {
+        return CapabilityInvocationResult(
+          status: evaluation.outcome == GovernanceOutcome.deny
+              ? CapabilityResultStatus.permissionDenied
+              : CapabilityResultStatus.policyDenied,
+          error: evaluation.reason,
+        );
+      }
+    }
+
     try {
       _sessionCounts[sid]![capabilityId] = count + 1;
       return await cap.execute(operation, params);
