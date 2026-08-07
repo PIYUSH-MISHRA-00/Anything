@@ -19,6 +19,7 @@ import 'package:anything/creation/creation_context.dart';
 import 'package:anything/creation/experience_package.dart';
 import 'package:anything/creation/package_validator.dart';
 import 'package:anything/kernel/planning/execution_plan.dart';
+import 'package:anything/app/experience_commit.dart';
 import 'package:anything/storage/sqlite_experience_repository.dart';
 import 'package:anything/storage/activity_repository.dart';
 import 'package:anything/storage/engineering_memory_repository.dart';
@@ -93,7 +94,14 @@ class CreationFailed extends CreationResult {
 class ExperienceCreationCoordinator {
   final AnythingKernel _kernel;
   final CreationEngine _creationEngine;
-  final SqliteExperienceRepository _repository;
+  /// The ONE commit owner (IS-R55). Creation CREATES; it does not persist.
+  ///
+  /// This coordinator no longer holds a repository AT ALL. Once its two writes
+  /// moved here, the analyzer reported the field as unused — which is the
+  /// cleanest possible evidence that creation is now fully decoupled from
+  /// persistence rather than merely routed around it.
+  final ExperienceCommitFramework _commits;
+
   final ActivityRepository _activity;
 
   /// Optional shared World Graph (Implementation Milestone R1). When
@@ -131,9 +139,11 @@ class ExperienceCreationCoordinator {
     WorldModelCoordinator? worldModel,
     SoftwareCognitionCoordinator? softwareCognition,
     EngineeringMemoryRepository? engineeringMemory,
+    ExperienceCommitFramework? commitFramework,
   }) : _kernel = kernel,
        _creationEngine = creationEngine ?? CreationEngine(),
-       _repository = repository ?? SqliteExperienceRepository(),
+       _commits = commitFramework ??
+           ExperienceCommitFramework(repository: repository ?? SqliteExperienceRepository()),
        _activity = activity ?? ActivityRepository(),
        _worldModel = worldModel,
        _softwareCognition = softwareCognition,
@@ -439,8 +449,25 @@ class ExperienceCreationCoordinator {
           ),
         ),
       );
-      await _repository.savePackage(package);
-      await _repository.saveMetadata(metadata);
+      // IS-R55 TASK 2 — CREATION PREPARES, THE COMMIT FRAMEWORK COMMITS.
+      //
+      // These were two separate writes with no atomicity: a failure between
+      // them left a package with no metadata (or the reverse), which is
+      // precisely the torn state R54's repair() was built to clean up. They
+      // now land inside ONE transaction, so that state can no longer be
+      // produced here.
+      final committed = await _commits.commit(
+        experienceId: package.manifest.experienceId,
+        origin: CommitOrigin.creation,
+        package: package,
+        metadata: metadata,
+      );
+      if (!committed.succeeded) {
+        return CreationFailed(
+          error: committed.error ?? 'commit failed',
+          message: "I couldn't save that app.",
+        );
+      }
 
       // World Graph ingestion (Implementation Milestone R1) — best-effort,
       // never allowed to fail creation itself; see AnythingKernel's

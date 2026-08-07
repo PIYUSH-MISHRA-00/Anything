@@ -10,6 +10,7 @@
 /// "Do NOT automatically execute" directive.
 library;
 
+import '../app/experience_commit.dart';
 import '../app/experience_modification_coordinator.dart';
 import '../creation/modification/experience_modification_spec.dart';
 import '../creation/modification/modification_engine.dart';
@@ -28,12 +29,18 @@ class EvolutionCoordinator {
   final EvolutionExecutor _executor;
   final EvolutionValidator _validator;
 
+  /// The ONE commit owner (IS-R55). Evolution EVOLVES; it does not persist.
+  final ExperienceCommitFramework _commits;
+
   EvolutionCoordinator({
     SqliteExperienceRepository? repository,
     ActivityRepository? activity,
     EvolutionExecutor? executor,
     EvolutionValidator? validator,
+    ExperienceCommitFramework? commitFramework,
   }) : _repository = repository ?? SqliteExperienceRepository(),
+       _commits = commitFramework ??
+           ExperienceCommitFramework(repository: repository ?? SqliteExperienceRepository()),
        _activity = activity ?? ActivityRepository(),
        _executor = executor ?? EvolutionExecutor(),
        _validator = validator ?? const EvolutionValidator();
@@ -76,7 +83,12 @@ class EvolutionCoordinator {
             if (!validation.isValid) {
               return const ModificationCoordinatorFailed(message: "I couldn't apply that change.");
             }
-            await _repository.savePackage(result.updatedPackage);
+            // IS-R55 Task 4 — evolution prepares, the commit framework commits.
+            await _commits.commit(
+              experienceId: result.updatedPackage.manifest.experienceId,
+              origin: CommitOrigin.evolution,
+              package: result.updatedPackage,
+            );
             await _activity.record(
               ActivityEvent(
                 id: 'evt-${DateTime.now().millisecondsSinceEpoch}',

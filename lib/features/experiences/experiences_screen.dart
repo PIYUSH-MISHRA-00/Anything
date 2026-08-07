@@ -4,6 +4,7 @@ library;
 import 'package:flutter/material.dart';
 
 import '../../app/app_composition.dart';
+import '../../app/experience_commit.dart';
 import '../../app/experience_entry_pipeline.dart';
 import '../../app/experience_opening_coordinator.dart';
 import '../../core/contracts/protection_provider.dart';
@@ -56,6 +57,12 @@ class ExperiencesScreen extends StatefulWidget {
 class _ExperiencesScreenState extends State<ExperiencesScreen> {
   late final AppComposition _composition;
   late final SqliteExperienceRepository _repo;
+
+  /// IS-R55: found by the Task 1 audit. This screen was calling
+  /// `repository.delete` directly — a UI widget was a repository writer, and
+  /// it was not on R54's list of four known commit sites. It now asks the ONE
+  /// commit owner to remove the Experience.
+  late final ExperienceCommitFramework _commits;
   late final ActivityRepository _activity;
 
   /// Real, resolved Unified Experience Entry Pipeline (Implementation
@@ -70,6 +77,7 @@ class _ExperiencesScreenState extends State<ExperiencesScreen> {
     super.initState();
     _composition = widget.composition ?? AppComposition.production();
     _repo = widget.repository ?? SqliteExperienceRepository();
+    _commits = ExperienceCommitFramework(repository: _repo);
     _activity = ActivityRepository();
     _entryPipeline = widget.entryPipeline ?? _composition.experienceEntryPipeline;
     _loadExperiences();
@@ -267,7 +275,7 @@ class _ExperiencesScreenState extends State<ExperiencesScreen> {
           timestamp: DateTime.now(),
         ),
       );
-      await _repo.delete(exp.id);
+      await _commits.remove(exp.id);
       _loadExperiences();
     }
   }

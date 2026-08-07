@@ -213,8 +213,22 @@ class SqliteExperienceRepository {
   }
 
   /// Save experience metadata.
-  Future<void> saveMetadata(ExperienceMetadataRecord record) async {
-    final db = await database;
+  ///
+  /// IS-R54 documented that this and [savePackage] were separate writes with
+  /// no way to make them atomic, and IS-R54's `InstallationTransaction` had to
+  /// compensate rather than transact (gap G-28).
+  ///
+  /// IS-R55 closes that with the smallest possible change: an OPTIONAL
+  /// [using] executor. `Transaction` and `Database` are both
+  /// `DatabaseExecutor`, so `RepositoryTransactionCoordinator` can now run
+  /// several of these writes inside ONE real SQLite transaction, while every
+  /// existing caller — which passes nothing — behaves exactly as before.
+  ///
+  /// This is deliberately NOT a transaction API on the repository. The
+  /// repository still owns every table name and every statement; it merely
+  /// accepts the executor it should write through. Ownership did not move.
+  Future<void> saveMetadata(ExperienceMetadataRecord record, {DatabaseExecutor? using}) async {
+    final db = using ?? await database;
     await db.insert('experiences', {
       'id': record.id,
       'name': record.name,
@@ -231,8 +245,8 @@ class SqliteExperienceRepository {
   }
 
   /// Save a complete ExperiencePackage.
-  Future<void> savePackage(ExperiencePackage package) async {
-    final db = await database;
+  Future<void> savePackage(ExperiencePackage package, {DatabaseExecutor? using}) async {
+    final db = using ?? await database;
     final jsonStr = jsonEncode(package.toJson());
     final hash = ExperiencePackage.computeIntegrityHash(package);
 
@@ -312,8 +326,8 @@ class SqliteExperienceRepository {
   }
 
   /// Delete experience and its package.
-  Future<void> delete(String experienceId) async {
-    final db = await database;
+  Future<void> delete(String experienceId, {DatabaseExecutor? using}) async {
+    final db = using ?? await database;
     await db.delete('experiences', where: 'id = ?', whereArgs: [experienceId]);
     await db.delete(
       'experience_packages',
@@ -328,8 +342,8 @@ class SqliteExperienceRepository {
   }
 
   /// Delete only the plaintext package data (used after protection).
-  Future<void> deletePackage(String experienceId) async {
-    final db = await database;
+  Future<void> deletePackage(String experienceId, {DatabaseExecutor? using}) async {
+    final db = using ?? await database;
     await db.delete(
       'experience_packages',
       where: 'experience_id = ?',
@@ -340,9 +354,10 @@ class SqliteExperienceRepository {
   /// Update the protection state flag on the experience metadata.
   Future<void> updateProtectionState(
     String experienceId,
-    bool isProtected,
-  ) async {
-    final db = await database;
+    bool isProtected, {
+    DatabaseExecutor? using,
+  }) async {
+    final db = using ?? await database;
     await db.update(
       'experiences',
       {'is_protected': isProtected ? 1 : 0},
@@ -354,9 +369,10 @@ class SqliteExperienceRepository {
   /// Save a protected envelope (Kaalka ciphertext + metadata).
   Future<void> saveProtectedEnvelope(
     String experienceId,
-    dynamic envelope,
-  ) async {
-    final db = await database;
+    dynamic envelope, {
+    DatabaseExecutor? using,
+  }) async {
+    final db = using ?? await database;
     final jsonStr = envelope is String ? envelope : _safeJsonEncode(envelope);
     await db.insert('protected_envelopes', {
       'experience_id': experienceId,
@@ -380,8 +396,8 @@ class SqliteExperienceRepository {
   }
 
   /// Delete a protected envelope (used after successful unprotection).
-  Future<void> deleteProtectedEnvelope(String experienceId) async {
-    final db = await database;
+  Future<void> deleteProtectedEnvelope(String experienceId, {DatabaseExecutor? using}) async {
+    final db = using ?? await database;
     await db.delete(
       'protected_envelopes',
       where: 'experience_id = ?',

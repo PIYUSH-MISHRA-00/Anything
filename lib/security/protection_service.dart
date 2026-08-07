@@ -17,6 +17,7 @@ import '../core/contracts/protection_provider.dart';
 import '../creation/experience_package.dart';
 import '../creation/package_validator.dart';
 import '../legacy/kaalka_adapter.dart';
+import '../app/experience_commit.dart';
 import '../storage/sqlite_experience_repository.dart';
 
 /// Typed result for protection operations.
@@ -134,11 +135,19 @@ class ExperienceProtectionService {
   final ProtectionProvider _provider;
   final SqliteExperienceRepository _repository;
 
+  /// The ONE commit owner (IS-R55 Task 5). Protection still owns the crypto —
+  /// it is the only thing in this system that encrypts — but it no longer owns
+  /// persistence. It hands finished ciphertext over to be written.
+  final ExperienceCommitFramework _commits;
+
   ExperienceProtectionService({
     ProtectionProvider? provider,
     SqliteExperienceRepository? repository,
+    ExperienceCommitFramework? commitFramework,
   }) : _provider = provider ?? KaalkaProtectionProvider(),
-       _repository = repository ?? SqliteExperienceRepository();
+       _repository = repository ?? SqliteExperienceRepository(),
+       _commits = commitFramework ??
+           ExperienceCommitFramework(repository: repository ?? SqliteExperienceRepository());
 
   /// Expose the provider for testing/introspection.
   ProtectionProvider get provider => _provider;
@@ -199,15 +208,25 @@ class ExperienceProtectionService {
         protectedAt: DateTime.now(),
       );
 
-      // 5. Persist: store the envelope, update metadata, remove plaintext package.
-      await _repository.saveProtectedEnvelope(
-        experienceId,
-        envelope.serialize(),
+      // 5. IS-R55 TASK 5 — PROTECTION PREPARES, THE COMMIT FRAMEWORK COMMITS.
+      //
+      // These were three sequential writes: store the envelope, flip the flag,
+      // drop the plaintext. A failure between the second and third left an
+      // Experience MARKED PROTECTED WITH ITS PLAINTEXT STILL ON DISK — the
+      // worst torn state in the system, because it looks secure and is not.
+      //
+      // They now land inside ONE transaction. Either the whole protection is
+      // durable or none of it is. Protection still performs every byte of the
+      // crypto above; it just no longer writes.
+      final committed = await _commits.commitProtection(
+        experienceId: experienceId,
+        serializedEnvelope: envelope.serialize(),
       );
-      await _repository.updateProtectionState(experienceId, true);
-
-      // Remove the plaintext package — only the envelope is stored.
-      await _repository.deletePackage(experienceId);
+      if (!committed.succeeded) {
+        return ProtectionFailed(
+          message: 'Protection failed: ${committed.error ?? "could not be saved"}',
+        );
+      }
 
       return ProtectionSucceeded(envelope: envelope);
     } catch (e) {
@@ -285,8 +304,11 @@ class ExperienceProtectionService {
         );
       }
 
-      // 7. Persist the unprotected package back to the repository.
-      await _repository.savePackage(candidatePackage);
+      // 7. IS-R55 Task 5 — the commit framework persists the recovered package.
+      await _commits.commitUnprotection(
+        experienceId: experienceId,
+        package: candidatePackage,
+      );
 
       return UnprotectionSucceeded(
         package: candidatePackage,

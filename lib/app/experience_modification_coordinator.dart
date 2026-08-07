@@ -1,6 +1,7 @@
 /// Experience Modification Coordinator — connects product UI to ModificationEngine.
 library;
 
+import 'package:anything/app/experience_commit.dart';
 import 'package:anything/creation/experience_package.dart';
 import 'package:anything/creation/experience_package_diff.dart';
 import 'package:anything/creation/package_validator.dart';
@@ -66,12 +67,20 @@ class ExperienceModificationCoordinator {
   /// optional-out — so the graph-aware pre-check below always runs for
   /// every real call path (Vision Milestone V10: "No caller should ever
   /// bypass it").
+  /// The ONE commit owner (IS-R55). Modification MODIFIES; it does not
+  /// persist, and — since R55 — it does not own rollback either. Both
+  /// terminate inside the commit framework.
+  final ExperienceCommitFramework _commits;
+
   ExperienceModificationCoordinator({
     SqliteExperienceRepository? repository,
     ActivityRepository? activity,
     WorldModelCoordinator? worldModel,
     EngineeringMemoryRepository? engineeringMemory,
+    ExperienceCommitFramework? commitFramework,
   }) : _repository = repository ?? SqliteExperienceRepository(),
+       _commits = commitFramework ??
+           ExperienceCommitFramework(repository: repository ?? SqliteExperienceRepository()),
        _activity = activity ?? ActivityRepository(),
        _engine = ModificationEngine(),
        _worldModel = worldModel ?? WorldModelCoordinator(),
@@ -133,7 +142,12 @@ class ExperienceModificationCoordinator {
         }
 
         // 5. Persist new version
-        await _repository.savePackage(result.updatedPackage);
+        // IS-R55 Task 3 — modification prepares, the commit framework commits.
+        await _commits.commit(
+          experienceId: experienceId,
+          origin: CommitOrigin.modification,
+          package: result.updatedPackage,
+        );
 
         // 5.5. World Model ingestion (Implementation Milestone R4): every
         // ACCEPTED modification updates the canonical, shared World Graph
@@ -292,7 +306,12 @@ class ExperienceModificationCoordinator {
       return const ModificationCoordinatorFailed(message: "I couldn't apply that change.");
     }
 
-    await _repository.savePackage(candidate);
+    // IS-R55 Task 3 — modification prepares, the commit framework commits.
+    await _commits.commit(
+      experienceId: plan.experienceId,
+      origin: CommitOrigin.modification,
+      package: candidate,
+    );
 
     // World Model ingestion on ACCEPTED evolution only — a rejected plan
     // returns above, before this line is ever reached, so World state is
@@ -376,7 +395,16 @@ class ExperienceModificationCoordinator {
     }
 
     final currentPackage = await _repository.getPackage(experienceId);
-    await _repository.savePackage(previousPackage);
+
+    // IS-R55 Task 9 — EVERY rollback terminates inside the commit framework.
+    // This one predates it and already had the right shape (the caller holds
+    // the prior package, because the repository keeps no version history);
+    // R55 makes it the SAME owner as installation rollback rather than a
+    // second implementation that happens to agree.
+    await _commits.rollback(
+      experienceId: experienceId,
+      previousPackage: previousPackage,
+    );
 
     stopwatch.stop();
     await _activity.record(

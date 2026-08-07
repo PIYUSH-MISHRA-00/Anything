@@ -26,6 +26,7 @@ import 'package:anything/app/engineering_lifecycle_coordinator.dart';
 import 'package:anything/app/experience_activation_manager.dart';
 import 'package:anything/app/experience_entry_pipeline.dart';
 import 'package:anything/app/experience_opening_coordinator.dart';
+import 'package:anything/app/experience_commit.dart';
 import 'package:anything/app/experience_distribution.dart';
 import 'package:anything/app/experience_installation.dart';
 import 'package:anything/app/experience_provenance.dart';
@@ -188,6 +189,11 @@ class AppComposition {
   /// enforces policy or activates a runtime.
   final ExperienceDistributionFramework experienceDistribution;
 
+  /// The shared Experience Commit Framework (IS-R55) — the ONE owner of
+  /// writing Experience state. Creation, modification, evolution, protection,
+  /// installation and removal all terminate here; nothing else writes.
+  final ExperienceCommitFramework experienceCommit;
+
   /// The shared Experience Installation Framework (IS-R54) — the ONE owner of
   /// COMMITTING an Experience to this device: install, upgrade, downgrade,
   /// repair, rollback, dependency preparation and compatibility validation.
@@ -221,6 +227,7 @@ class AppComposition {
     required this.experienceEntryPipeline,
     required this.experienceDistribution,
     required this.experienceInstallation,
+    required this.experienceCommit,
   });
 
   /// Builds the real, production composition graph. Every dependency below
@@ -288,9 +295,19 @@ class AppComposition {
     // `SqliteExperienceRepository`), so protecting an installed Experience
     // writes through the one store this composition owns. The installer asks;
     // that service performs. There is still exactly one crypto importer.
+    // IS-R55: the ONE commit framework. Every path that changes Experience
+    // state — creation, modification, evolution, protection, installation and
+    // removal — writes through this and nothing else. See
+    // docs/architecture/EXPERIENCE_COMMIT_ARCHITECTURE.md.
+    final commitFramework = ExperienceCommitFramework(repository: experienceRepository);
+
     final installer = ExperienceInstallationFramework(
       repository: experienceRepository,
-      protectionService: ExperienceProtectionService(repository: experienceRepository),
+      protectionService: ExperienceProtectionService(
+        repository: experienceRepository,
+        commitFramework: commitFramework,
+      ),
+      commitFramework: commitFramework,
     );
 
     final distribution = ExperienceDistributionFramework(
@@ -363,6 +380,12 @@ class AppComposition {
     // for the full real service graph and dependency-lifetime analysis.
     final experienceCreationCoordinator = ExperienceCreationCoordinator(
       kernel: kernel,
+      // IS-R55: this previously took neither, so it built its OWN
+      // SqliteExperienceRepository. Same database file, but a second instance
+      // and — more importantly — a commit path outside the shared framework.
+      // Both are now the composition's.
+      repository: experienceRepository,
+      commitFramework: commitFramework,
       worldModel: worldModel,
       softwareCognition: softwareCognition,
       engineeringMemory: engineeringMemory,
@@ -457,6 +480,7 @@ class AppComposition {
       experienceEntryPipeline: experienceEntryPipeline,
       experienceDistribution: distribution,
       experienceInstallation: installer,
+      experienceCommit: commitFramework,
     );
   }
 }

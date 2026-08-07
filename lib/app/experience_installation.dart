@@ -57,6 +57,7 @@ import '../creation/experience_package.dart';
 import '../creation/package_validator.dart';
 import '../security/protection_service.dart';
 import '../storage/sqlite_experience_repository.dart';
+import 'experience_commit.dart';
 import 'experience_provenance.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -441,37 +442,35 @@ List<MigrationRequirement> migrationRequirements({
 
 enum TransactionState { open, prepared, committed, rolledBack, cancelled }
 
-/// An atomic-completion wrapper around the two writes an install performs
-/// (IS-R54 Task 5).
+/// The install-side transaction (IS-R54 Task 5), now DELEGATING every write to
+/// the ONE commit framework (IS-R55 Task 6).
 ///
-/// HOW ATOMICITY IS ACHIEVED, AND WHAT IT IS NOT.
+/// WHAT CHANGED IN R55, AND WHY IT MATTERS.
 ///
-/// This is a COMPENSATING transaction, not a database transaction. It captures
-/// the prior package and metadata at [prepare], writes at [commit], and on
-/// failure restores exactly what it captured — deleting instead, when the
-/// prepare found nothing there.
+/// R54 built this as a COMPENSATING transaction — snapshot, write, restore on
+/// failure — because `savePackage` and `saveMetadata` each resolved their own
+/// `Database` and sqflite's `db.transaction` was unreachable through them. R54
+/// recorded the residual crash window as gap G-28: a process death between the
+/// two writes stranded torn state with no snapshot left to undo it.
 ///
-/// It is built this way because of two hard constraints that are worth stating
-/// rather than discovering later:
+/// R55 closes that. `ExperienceCommitFramework` writes both rows inside ONE
+/// real SQLite transaction (see `RepositoryTransactionCoordinator`), so there
+/// is no longer a window in which one row has landed and the other has not.
+/// Either the whole commit is durable or none of it is.
 ///
-///   1. `SqliteExperienceRepository` exposes `savePackage` and `saveMetadata`
-///      as separate `INSERT … ConflictAlgorithm.replace` calls and does not
-///      expose sqflite's `db.transaction`. IS-R54 Task 5 says "Repository
-///      unchanged" and Task 12 forbids a persistence migration, so wrapping
-///      both writes in one real SQL transaction was not available.
+/// This class keeps its public shape — prepare / validate / commit / rollback /
+/// cancel, and the prior-state accessors — because R54's suite and the
+/// installer are written against it, and IS-R55 forbids an API break. What it
+/// no longer has is a repository write of its own: it holds a commit framework
+/// and asks.
 ///
-///   2. The repository keeps NO version history — one row per experience_id,
-///      replace-on-write. (`ExperienceModificationCoordinator.rollback` already
-///      documents this and solves it the same way: the caller holds the prior
-///      package.) So "roll back to the previous version" can only mean "restore
-///      the snapshot this transaction captured", never "look up version N-1".
-///
-/// THE HONEST CONSEQUENCE: if the process dies between the two writes, the
-/// snapshot dies with it and nothing is left to call [rollback]. That torn
-/// state is real, it is why [ExperienceInstallationFramework.repair] exists,
-/// and it is recorded as gap G-28 rather than implied to be solved.
+/// The prior-state snapshot survives for a DIFFERENT reason than before. It is
+/// no longer a crash-recovery mechanism; it is what a caller needs to undo a
+/// SUCCESSFUL install later, because the repository keeps no version history
+/// and "the version before this one" cannot be looked up after the fact.
 class InstallationTransaction {
   final SqliteExperienceRepository repository;
+  final ExperienceCommitFramework commitFramework;
   final String experienceId;
 
   TransactionState _state = TransactionState.open;
@@ -479,7 +478,11 @@ class InstallationTransaction {
   ExperienceMetadataRecord? _priorMetadata;
   bool _existed = false;
 
-  InstallationTransaction({required this.repository, required this.experienceId});
+  InstallationTransaction({
+    required this.repository,
+    required this.experienceId,
+    ExperienceCommitFramework? commitFramework,
+  }) : commitFramework = commitFramework ?? ExperienceCommitFramework(repository: repository);
 
   TransactionState get state => _state;
 
@@ -490,11 +493,12 @@ class InstallationTransaction {
   ExperiencePackage? get priorPackage => _priorPackage;
   ExperienceMetadataRecord? get priorMetadata => _priorMetadata;
 
-  /// Captures the state a [rollback] would have to restore.
+  /// Captures the state a later [rollback] would have to restore.
   Future<void> prepare() async {
     _require(TransactionState.open, 'prepare');
-    _priorPackage = await repository.getPackage(experienceId);
-    _priorMetadata = await repository.getMetadata(experienceId);
+    final prior = await commitFramework.currentState(experienceId);
+    _priorPackage = prior.package;
+    _priorMetadata = prior.metadata;
     _existed = _priorPackage != null || _priorMetadata != null;
     _state = TransactionState.prepared;
   }
@@ -504,32 +508,38 @@ class InstallationTransaction {
   PackageValidationResult validate(ExperiencePackage package) =>
       ExperiencePackageValidator.validate(package);
 
-  /// Writes both rows. On any failure it restores the snapshot before
-  /// rethrowing, so a caller never has to reason about a half-written install.
+  /// Writes both rows through the ONE commit owner, atomically.
   Future<void> commit({
     required ExperiencePackage package,
     required ExperienceMetadataRecord metadata,
   }) async {
     _require(TransactionState.prepared, 'commit');
-    try {
-      await repository.savePackage(package);
-      await repository.saveMetadata(metadata);
-    } catch (_) {
-      // The write failed midway. Put back exactly what prepare() saw, then let
-      // the caller see the original error.
-      await _restore();
+    final result = await commitFramework.commit(
+      experienceId: experienceId,
+      origin: CommitOrigin.installation,
+      package: package,
+      metadata: metadata,
+    );
+    if (!result.succeeded) {
+      // SQLite rolled the whole transaction back; nothing partial survived, so
+      // there is nothing to compensate for. Surface the failure unchanged.
       _state = TransactionState.rolledBack;
-      rethrow;
+      throw StateError('commit failed: ${result.error}');
     }
     _state = TransactionState.committed;
   }
 
-  /// Undoes a committed transaction by restoring the prepared snapshot.
+  /// Undoes a committed transaction by restoring the prepared snapshot —
+  /// through the ONE rollback owner (IS-R55 Task 9).
   Future<void> rollback() async {
     if (_state != TransactionState.committed && _state != TransactionState.prepared) {
       throw StateError('cannot roll back a transaction in state ${_state.name}');
     }
-    await _restore();
+    await commitFramework.rollback(
+      experienceId: experienceId,
+      previousPackage: _priorPackage,
+      previousMetadata: _priorMetadata,
+    );
     _state = TransactionState.rolledBack;
   }
 
@@ -537,18 +547,6 @@ class InstallationTransaction {
   void cancel() {
     _require(TransactionState.prepared, 'cancel', alsoAllow: TransactionState.open);
     _state = TransactionState.cancelled;
-  }
-
-  Future<void> _restore() async {
-    if (!_existed) {
-      // Nothing was there before: the correct undo is removal, not a write.
-      await repository.delete(experienceId);
-      return;
-    }
-    final package = _priorPackage;
-    final metadata = _priorMetadata;
-    if (package != null) await repository.savePackage(package);
-    if (metadata != null) await repository.saveMetadata(metadata);
   }
 
   void _require(TransactionState expected, String action, {TransactionState? alsoAllow}) {
@@ -662,12 +660,25 @@ class ExperienceInstallationFramework {
   /// records instead of shipping.
   final ExperienceProtectionService? protectionService;
 
+  /// The ONE commit owner (IS-R55). The installer PREPARES — evaluates
+  /// compatibility, plans dependencies, derives migrations, decides what kind
+  /// of install this is — and this commits. It is optional so no existing
+  /// caller breaks; when absent one is built over the same repository, so the
+  /// write still goes through a commit framework and never through a second
+  /// path in this file.
+  final ExperienceCommitFramework? commitFramework;
+
   const ExperienceInstallationFramework({
     required this.repository,
     this.compatibility = const ExperienceCompatibilityEvaluator(),
     this.dependencyPlanner = const ExperienceDependencyPlanner(),
     this.protectionService,
+    this.commitFramework,
   });
+
+  /// The commit owner this installer writes through.
+  ExperienceCommitFramework get commits =>
+      commitFramework ?? ExperienceCommitFramework(repository: repository);
 
   /// INSTALL — the single commit path (Tasks 2, 5, 7, 8).
   ///
@@ -721,7 +732,11 @@ class ExperienceInstallationFramework {
       );
     }
 
-    final transaction = InstallationTransaction(repository: repository, experienceId: id);
+    final transaction = InstallationTransaction(
+      repository: repository,
+      experienceId: id,
+      commitFramework: commits,
+    );
     await transaction.prepare();
 
     final validation = transaction.validate(package);
@@ -847,14 +862,18 @@ class ExperienceInstallationFramework {
         at: at,
       );
 
-  /// ROLLBACK (Task 2) — restores a package the caller still holds.
+  /// ROLLBACK — restores a package the caller still holds (IS-R54 Task 2),
+  /// terminating inside the ONE rollback owner (IS-R55 Task 9).
   ///
   /// Takes [previousPackage] rather than looking up "the version before this
-  /// one" for the reason documented on [InstallationTransaction]: the
-  /// repository keeps no version history. This mirrors
-  /// `ExperienceModificationCoordinator.rollback`, which solved the identical
-  /// constraint the same way — deliberately the same shape, so there are not
-  /// two different rollback contracts in one system.
+  /// one" because the repository keeps no version history.
+  ///
+  /// It rolls back by RE-INSTALLING, which is deliberate and worth keeping:
+  /// the prior package is re-validated and re-checked for compatibility on the
+  /// way back in, so a rollback cannot restore something this build can no
+  /// longer run. The write itself still lands in
+  /// `ExperienceCommitFramework.commit` — the installer performs no write of
+  /// its own here or anywhere else.
   Future<InstallationResult> rollback({
     required String experienceId,
     required ExperiencePackage previousPackage,
@@ -875,74 +894,41 @@ class ExperienceInstallationFramework {
     );
   }
 
-  /// REPAIR (Task 2) — fixes a TORN install.
+  /// REPAIR — the installer REQUESTS; the commit framework COORDINATES
+  /// (IS-R55 Task 8).
   ///
-  /// The two rows an install writes can disagree, because they are two writes
-  /// (see [InstallationTransaction]). Repair detects and fixes the cases that
-  /// are genuinely fixable from data still on the device:
+  /// R54 implemented the reconciliation here. R55 moves it to
+  /// `ExperienceCommitFramework.repair`, because repair is entirely a
+  /// persistence-consistency operation: it looks at what is on disk and
+  /// reconciles rows. The installer still decides WHEN to repair and how to
+  /// report it in installation vocabulary; it no longer decides what repairing
+  /// means, and it no longer writes.
   ///
-  ///   * package present, metadata missing  -> rebuild metadata from the manifest
-  ///   * metadata present, package missing  -> NOT repairable; the package is
-  ///                                           gone and nothing here can invent
-  ///                                           it. Reported, never faked.
-  ///
-  /// This is the counterpart to the compensating transaction's known weakness:
-  /// if a crash tore an install apart, the snapshot that would have undone it
-  /// is gone, and this is what is left to put the device back in a consistent
-  /// state.
+  /// Behaviour is unchanged — package-without-metadata is rebuilt from the
+  /// manifest with provenance recorded as unknown, metadata-without-package is
+  /// reported unrepairable rather than faked.
   Future<InstallationResult> repair(String experienceId, {DateTime? at}) async {
-    final package = await repository.getPackage(experienceId);
-    final metadata = await repository.getMetadata(experienceId);
+    final result = await commits.repair(experienceId, at: at);
 
-    if (package == null && metadata == null) {
-      return InstallationResult.rejected(
-        InstallationFailure.notInstalled,
-        ['$experienceId is not installed'],
-      );
+    switch (result.outcome) {
+      case RepairOutcome.notInstalled:
+        return InstallationResult.rejected(
+          InstallationFailure.notInstalled,
+          ['$experienceId is not installed'],
+        );
+      case RepairOutcome.unrepairable:
+        return InstallationResult.rejected(
+          InstallationFailure.notInstalled,
+          ['$experienceId ${result.message}'],
+        );
+      case RepairOutcome.healthy:
+      case RepairOutcome.repaired:
+        return InstallationResult.success(
+          kind: InstallationKind.repair,
+          experienceId: experienceId,
+          messages: [result.message],
+        );
     }
-
-    if (package == null) {
-      return InstallationResult.rejected(
-        InstallationFailure.notInstalled,
-        ['$experienceId has metadata but no package; the package data is gone '
-            'and cannot be reconstructed — reinstall it'],
-      );
-    }
-
-    if (metadata != null) {
-      return InstallationResult.success(
-        kind: InstallationKind.repair,
-        experienceId: experienceId,
-        messages: const ['nothing to repair: package and metadata are both present'],
-      );
-    }
-
-    // Package without metadata — rebuild the metadata from the package's own
-    // manifest. Every field below comes from data actually on the device.
-    final now = at ?? DateTime.now();
-    await repository.saveMetadata(
-      ExperienceMetadataRecord(
-        id: experienceId,
-        name: package.manifest.name,
-        description: package.manifest.description,
-        category: package.manifest.category,
-        createdAt: package.manifest.createdAt,
-        updatedAt: now,
-        packageVersion: package.manifest.version,
-        // Provenance is NOT invented. The row that carried it is the row that
-        // is missing, so the truthful answer is unknown origin — which is what
-        // the default `ExperienceProvenance` means, and what R52's classifier
-        // will treat as untrusted.
-        isProtected: false,
-      ),
-    );
-
-    return InstallationResult.success(
-      kind: InstallationKind.repair,
-      experienceId: experienceId,
-      messages: const ['rebuilt missing metadata from the installed package; '
-          'provenance could not be recovered and is recorded as unknown'],
-    );
   }
 
   /// Decides what this install IS from the versions, rather than trusting a
