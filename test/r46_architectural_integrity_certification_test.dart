@@ -250,6 +250,34 @@ String _classBody(String code, String type) {
   return '';
 }
 
+/// Every `(start, end)` span of a `name(...)` call in [code], where `end` is
+/// just past the balanced closing parenthesis.
+///
+/// Needed because IS-R56's ordering invariant is really a CONTAINMENT
+/// question: "does presentation happen inside the critical section?" A
+/// text-order comparison answered that wrongly on the first attempt and the
+/// mutation probe caught it — moving the call inside the callback still put it
+/// textually after `store.update(`.
+List<(int, int)> _callRanges(String code, String name) {
+  final ranges = <(int, int)>[];
+  for (final m in RegExp('${RegExp.escape(name)}\\s*[(<]').allMatches(code)) {
+    var i = code.indexOf('(', m.start);
+    if (i < 0) continue;
+    var depth = 0;
+    for (var j = i; j < code.length; j++) {
+      if (code[j] == '(') depth++;
+      if (code[j] == ')') {
+        depth--;
+        if (depth == 0) {
+          ranges.add((m.start, j + 1));
+          break;
+        }
+      }
+    }
+  }
+  return ranges;
+}
+
 /// Every `path:line` where [pattern] really occurs in stripped source.
 List<String> _matchSites(List<_SourceFile> files, RegExp pattern) =>
     _matchSitesIn(files, pattern, raw: false);
@@ -1494,6 +1522,95 @@ final x = 1;
       // that is the coordinator's single job.
       expect(repo.code.contains('.transaction('), isFalse,
           reason: 'transaction control belongs to RepositoryTransactionCoordinator, not the repository');
+    });
+
+    // ── IS-R56 — DURABLE COLLECTION OWNERSHIP (I-75 … I-77) ──────────────
+    //
+    // Derived from a MEASURED defect, not an anticipated one. Three
+    // repositories each implemented read-the-whole-list / mutate / write-the-
+    // whole-list with awaits in between and nothing serialising them. A probe
+    // recorded ten concurrent schedules landing as ONE, and one due
+    // notification being presented TWICE.
+
+    test('exactly ONE durable collection store, and nothing else touches SharedPreferences for a collection (IS-R56)', () {
+      final stores = libFiles
+          .expand((f) => RegExp(r'\bclass\s+(\w*Durable\w*|\w*CollectionStore\w*)\b')
+              .allMatches(f.code)
+              .map((m) => '${f.path}:${m.group(1)}'))
+          .toList()
+        ..sort();
+      expect(stores, ['lib/storage/durable_collection_store.dart:DurableCollectionStore'],
+          reason: 'a second durable-collection owner appeared: $stores');
+
+      // Import scan runs on RAW source — import URIs are string literals and
+      // do not survive stripping. (The R46 lesson: both boundary scans once
+      // reported ZERO sites because they ran on stripped source.)
+      final users = libFiles
+          .where((f) => RegExp(r'''import\s+['"]package:shared_preferences''').hasMatch(f.raw))
+          .map((f) => f.path)
+          .toList()
+        ..sort();
+      expect(users, [
+        // THE owner.
+        'lib/storage/durable_collection_store.dart',
+        // PINNED, not overlooked: the theme provider stores ONE scalar key
+        // (the selected theme mode). It performs no read-modify-write, holds
+        // no collection, and has nothing to serialise — routing it through a
+        // collection store would be ceremony. Recorded as G-39.
+        'lib/design_system/theme/theme_provider.dart',
+      ]..sort(), reason: 'a new direct SharedPreferences user appeared: $users');
+      expect(users, isNotEmpty, reason: 'the raw import scan must actually match something');
+    });
+
+    test('every durable COLLECTION mutates through the ONE store (IS-R56)', () {
+      // The three that were duplicating the pattern must now delegate, and
+      // must not have kept a private write path.
+      for (final path in [
+        'lib/storage/activity_repository.dart',
+        'lib/storage/intent_repository.dart',
+        'lib/capabilities/adapters/notification_service_adapter.dart',
+      ]) {
+        final f = libFiles.firstWhere((f) => f.path == path);
+        expect(f.code.contains('DurableCollectionStore'), isTrue,
+            reason: '$path must mutate through the ONE store');
+        for (final forbidden in ['SharedPreferences', 'prefs.setString', 'prefs.remove']) {
+          expect(f.code.contains(forbidden), isFalse,
+              reason: '$path must not reach past the store to $forbidden — that is the unserialised path R56 removed');
+        }
+      }
+    });
+
+    test('deliverDue CLAIMS before it PRESENTS — the ordering that makes exactly-once possible (IS-R56)', () {
+      // The subtlest property in the milestone. Presenting first and
+      // persisting after is what let a second concurrent caller re-read the
+      // same due set and deliver it again. Code that still compiles, still
+      // passes every single-threaded test, and silently double-delivers.
+      final f = libFiles.firstWhere(
+          (f) => f.path == 'lib/capabilities/adapters/notification_service_adapter.dart');
+      final body = _classBody(f.code, 'RealNotificationService');
+      expect(body, isNotEmpty);
+
+      final presentIndex = body.indexOf('_presenter.present');
+      expect(presentIndex, greaterThanOrEqualTo(0), reason: 'presentation must still happen');
+      expect(body.contains('store.update'), isTrue,
+          reason: 'the due set must be claimed through the store');
+
+      // MECHANISM NOTE — this check was WRONG on its first attempt, and the
+      // mutation probe is what found it.
+      //
+      // The first version asserted `indexOf(present) > lastIndexOf(update)`.
+      // That passes trivially when presentation is moved INSIDE the mutation
+      // callback, because the callback's text begins after `store.update(`
+      // starts. It was a false negative: green, and checking nothing.
+      //
+      // The real property is containment, not ordering. Presentation must lie
+      // OUTSIDE every `store.update(...)` argument list, so it cannot run
+      // while the claim is still uncommitted.
+      for (final range in _callRanges(body, 'store.update')) {
+        expect(presentIndex >= range.$1 && presentIndex < range.$2, isFalse,
+            reason: 'present() must run AFTER the claim commits, never inside the mutation that claims — '
+                'presenting from inside the critical section is the R49 double-delivery defect');
+      }
     });
 
     test('neither the Kernel nor any UI file imports an external cognition/protection package directly', () {
