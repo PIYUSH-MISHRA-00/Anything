@@ -368,3 +368,42 @@ I-40 Expected: <1> / Actual: <2>
 ```
 
 Both probes were reverted and the tree confirmed clean.
+
+## IS-R51 — Governance invariants
+
+| # | Invariant | Evidence | Status |
+|---|---|---|---|
+| I-48 | Exactly **three** policy engines — runtime lifecycle (R39), retention (R50), governance (R51) — mutually **disjoint** | STATIC | CERTIFIED |
+| I-49 | The governance engine **decides but never enforces** — no I/O, no storage, no `Timer`, no provider, and an **empty import list** | STATIC | CERTIFIED |
+| I-50 | Exactly **one** Experience trust model; **no** duplicate permission/authorization framework | STATIC | CERTIFIED |
+| I-51 | The **Kernel** and the **repositories** never own or evaluate governance | STATIC | CERTIFIED |
+
+**I-49 contains the strongest clause in the whole matrix:** the governance
+engine must import NOTHING. A policy that depends on a subsystem is not a
+policy, it is that subsystem''s extension. Forbidding every import is a cheap,
+absolute way to keep governance a pure decision layer — the same bargain that
+made R50''s retention engine safe to trust with every retention decision.
+
+**I-48 keeps three engines from becoming three overlapping owners.** Governance
+may not name `CapabilityPlatform`, deliberately: the platform asks governance,
+never the reverse. A dependency in the other direction would make governance a
+second capability platform.
+
+**I-50 pins TWO trust enums, and that is correct.** `ExperienceTrustLevel`
+(R51) grades an Experience''s authority; `TrustLevel` in
+`knowledge_resource.dart` grades a retrieved web source''s reliability and
+feeds ranking. Collapsing them would be worse than leaving them separate — an
+Experience''s privileges and a web page''s credibility are not the same scale.
+The first draft of this invariant asserted exactly one and failed on the
+pre-existing enum; the fix was to pin both with rationale, NOT to narrow the
+regex until the failure disappeared, which would have destroyed the
+invariant''s ability to catch a real duplicate.
+
+**R51 mutation evidence.** Probe A (a `ParallelGovernanceEngine` plus a
+duplicate trust enum) failed I-48 and I-50. Probe B (a `PermissionManager`
+alone) failed I-50''s permission clause independently, proving it is not
+masked by the trust assertion preceding it. Both reverted; tree clean.
+
+Full detail: `docs/audit/GOVERNANCE_CERTIFICATION.md`,
+`docs/architecture/GOVERNANCE_ARCHITECTURE.md`,
+`docs/audit/GOVERNANCE_USAGE_MATRIX.md`.

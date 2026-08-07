@@ -144,3 +144,40 @@ merely forbidden, it is not addressable.
    `package:kaalka` (I-21a).
 6. **Adapters exclusively own external cognition.** Kernel and UI never import
    `package:webweavex` or `package:kaalka` (I-21b, I-21c).
+
+## Governance ownership (IS-R51)
+
+THREE policy engines, three **disjoint** domains. A fourth, or any overlap,
+fails certification (I-48).
+
+| Engine | Owns | Vocabulary | Acts on |
+|---|---|---|---|
+| `WorkspaceLifecyclePolicyEngine` (R39) | runtime lifecycle | pause/resume/terminate/restore | `ExperienceRuntimeController` |
+| `RetentionPolicyEngine` (R50) | data retention | retain/evict/expire | nothing — decides only |
+| `OperatingSystemGovernanceEngine` (R51) | system governance | allow/deny/requireApproval | nothing — decides only |
+
+**Governance imports nothing** (I-49). Composition wires decision to enforcer;
+governance never reaches across.
+
+### Decision vs enforcement
+
+| Decision (governance) | Enforcement (unchanged owner) |
+|---|---|
+| may this Experience use this capability | `CapabilityPlatform.invoke()` |
+| is this host reachable | `HttpCapability` |
+| may this Experience reach a model | `AnythingKernel` still owns reasoning |
+| may this Experience run in background | `WorkspaceSchedulingEngine` still owns scheduling |
+| may this Experience be auto-restored | (decision surface; no consumer yet) |
+| what is retained, for how long | `RetentionPolicyEngine` (R50), unchanged |
+| when a runtime pauses/resumes | `WorkspaceLifecyclePolicyEngine` (R39), unchanged |
+| protection (Kaalka) | `ExperienceProtectionService` — governance has a `security` hook, no rule |
+
+### Experience trust model
+
+`untrusted < experimental < imported < local < verified < trusted`, ordered so
+`atLeast()` is meaningful. Governance decides; `CapabilityPlatform` enforces.
+
+**Not yet assigned in production:** every Experience is `local` (the default)
+because nothing computes provenance yet. The model, rules and enforcement are
+real and tested; the classifier is future work. See
+`docs/audit/GOVERNANCE_USAGE_MATRIX.md` §6.
