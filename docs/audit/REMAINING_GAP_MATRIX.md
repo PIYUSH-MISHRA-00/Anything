@@ -21,6 +21,18 @@ Severity: **A** = architectural integrity, **B** = correctness/UX,
 |---|---|---|
 | G-13 | `KnowledgeCache` in-memory only; no cross-restart persistence | **CLOSED.** Persistence added *inside* `KnowledgeCache` as an implementation detail, backed by a new `KnowledgeRepository` following the same per-domain pattern as the ten repositories already in `lib/storage/`. Canonical ids, hashes and representations are proven byte-identical across a genuine restart. Restoration is lazy and per-key — no startup scan, no eager load. |
 
+## CLOSED BY IS-R49
+
+| # | Gap | How it was closed |
+|---|---|---|
+| G-03 | Two production `Fake*` services registered in the real composition | **CLOSED.** `FakeNotificationService` → `RealNotificationService` (durable schedules, real ownership, real due computation, real foreground delivery on the existing `EventBus` via R35's `NotificationGenerated`). `FakeFileService` → `RealFileService` (real picking via the already-present `file_picker`, real sandboxed adoption/export/temp/workspace assets via `path_provider` + `dart:io`). No `Fake*` is constructed in the composition root any more (I-39), mutation-proven. |
+
+## Gaps IS-R49 found and closed within the same milestone
+
+| # | What happened |
+|---|---|
+| G-21 | **A file id could carry `..`.** `_idFor()` collapsed non-`[A-Za-z0-9._-]` to `_`, which removes path separators — but `.` is in that safe set, so a display name of `../../evil` survived as `.._.._evil`. The path was still *contained* (one segment, so `p.normalize` does not treat it as traversal, and `_resolveInside` would reject it regardless), but an id carrying `..` is a latent hazard the moment any future code joins it with a non-normalising API. Found by a test asserting the stronger property; fixed by collapsing runs of dots rather than by weakening the assertion. |
+
 ## Gaps IS-R48 found and closed within the same milestone
 
 | # | What happened |
@@ -42,7 +54,7 @@ Severity: **A** = architectural integrity, **B** = correctness/UX,
 | # | Sev | Gap | Evidence | Status |
 |---|---|---|---|---|
 | G-02 | C | **`MinimalKernel` is dead.** `lib/kernel/minimal_kernel.dart` declares it; nothing constructs it. | Repository-wide construction scan: 1 occurrence, its own declaration. | **Still open.** R47's spec scoped Task 1 to the runtime contract specifically. Unlike G-01 this name collides with nothing, so it is inert. Deletion is a candidate for R48 review. |
-| G-03 | A | **Two production `Fake*` services are registered in the real composition.** `AppComposition` lines 229–230 register `FakeNotificationService()` and `FakeFileService()`. | `lib/app/app_composition.dart:229-230`. | These are real product gaps (notifications and file access are genuinely unimplemented), not architectural violations. Fixing them is feature work, not certification. |
+| G-20 | B | **OS-level BACKGROUND notification delivery is not implemented.** `RealNotificationService` schedules durably, computes due state and delivers in-app (foreground) through the existing `EventBus`. A notification that fires while Anything is not running still requires a platform plugin (`flutter_local_notifications` + timezone database, Android manifest permissions/receivers, iOS `AppDelegate` registration, a notification icon asset). | `lib/capabilities/adapters/notification_service_adapter.dart`. | **Open, deliberately and explicitly.** None of that native configuration can be exercised by `flutter test` (no platform channels) and no device or emulator is available in this environment. Shipping it unverified would LOOK complete while silently never delivering — strictly worse than a documented gap. `background_coordinator.dart` already drew this exact line in its own words ("never fabricating live execution"). The seam is singular and named: `NotificationPresenter`. **R50 should implement it and verify on a real device.** |
 | G-04 | A | **`EncryptionManager` bypasses the `ProtectionProvider` contract** (path K-B), reaching `KaalkaService` directly. | `security/encryption_manager.dart:40,45`; consumers `memory/memory_manager.dart`, `screens/kaalka_security_screen.dart`. | Collapsing it into the canonical contract is a real architectural change requiring review. Does **not** violate I-21a — there is still exactly one crypto importer. See `KAALKA_USAGE_MATRIX.md` §2. |
 | G-05 | B | **`savePackage()` stores Experience packages in plaintext by default.** Kaalka protection is opt-in per Experience. | `storage/sqlite_experience_repository.dart:172` vs `:292`. | Confirmed deliberate product design, cited in three places in `lib/`. Restated because "Kaalka is canonical" is easily misread as "everything is encrypted". Not a defect; a disclosure. |
 | G-06 | B | **`IntentRepository` stores raw user intent text unprotected.** User-authored natural language can be sensitive. | Persistence audit, `KAALKA_USAGE_MATRIX.md` §3. | Product/security decision, out of certification scope. Worth explicit review. |

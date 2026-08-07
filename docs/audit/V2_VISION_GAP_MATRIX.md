@@ -600,3 +600,27 @@ Statuses: VERIFIED (directly confirmed by source/test execution), PARTIAL (real 
 | All certification passes | **VERIFIED** — 46 tests (was 41), all green, ~0.4s. |
 | A scanner blind spot found and fixed | **VERIFIED** — a mutation probe reintroducing timestamp ids inside a string interpolation PASSED certification, because the stripper blanked string contents wholesale, making ALL code inside `${...}` invisible to EVERY static invariant. The instrument was fixed rather than the test, and self-certification I-31b added. Third scanner defect found by tooling rather than inspection. |
 | `flutter test` / `flutter analyze` independently re-run | **VERIFIED** — analyze: 71, unchanged baseline, zero in any R48 file. test: **1827 passed, 3 skipped**, exit 0. The 3 skips are pre-existing network-dependent tests that self-skip when offline (they passed in R47's run); 1827 + 3 = 1830 = 1808 + 22 new, so nothing silently stopped running. `git status --porcelain`: clean. |
+
+## R49
+
+| Item | Status |
+|---|---|
+| No production Fake* services remain | **VERIFIED, MUTATION-PROVEN** — invariant I-39. `AppComposition` no longer constructs any `Fake*`. Scoped to the composition root deliberately: a `Fake*` CLASS may live in `lib/` as a test double beside its abstraction; CONSTRUCTING one in the production graph was the defect. Probe A reintroduced `FakeFileService` and failed I-39 and I-40. |
+| Every Fake* audited (Task 1) | **VERIFIED** — six exist in `lib/`; only two were production-registered. `FakeKnowledgeProvider`/`FakeHttpTransport`/`FakeAiProvider` are unused test doubles (real adapters wired); `_FakeProviderRegistry`/`_FixedReasoner` are deliberate private R23 certification fixtures. Inventory pinned in `auditedFakeImplementations` so it cannot drift. |
+| Real notification service | **VERIFIED** — durable schedules surviving restart (proven via a new instance reading storage back), real per-Experience ownership, real due computation, replace-on-reschedule, bounded storage, corrupt-record tolerance, and exactly-once delivery. 10 tests against real `SharedPreferences`. |
+| No second notification framework | **VERIFIED** — invariant I-42: the adapter declares no `AnythingEvent` subtype and runs no `Timer.periodic`. Delivery reuses the EXISTING `EventBus` and R35's EXISTING `NotificationGenerated` event, with `EventCategory.notification` asserted. `NotificationPlanner`/`BackgroundCoordinator` remain the canonical planning layer, untouched. |
+| Real file service | **VERIFIED** — real picking (`file_picker`, already a dependency), real sandboxed adoption COPYING bytes, export, temporary files, workspace/Experience assets, real deletion. 9 tests against a real temp directory via `dart:io`. Adoption proven durable by deleting the ORIGINAL and confirming the adopted copy still reads. |
+| Sandbox-safe | **VERIFIED** — traversal rejected (not sanitised) through every path-taking entry point, with an additional assertion that nothing was created outside the sandbox. A malicious display name cannot smuggle a separator or `..` into an id. |
+| No duplicate storage system | **VERIFIED** — invariant I-43: the file adapter references no sqflite, no experience/knowledge repository and no `SharedPreferences`. It owns exactly one thing: user-imported files. |
+| Single composition root preserved | **VERIFIED, MUTATION-PROVEN** — invariant I-40: each real service and capability constructed EXACTLY once. Probe B registered `FileCapability` twice and failed with `Expected: <1> / Actual: <2>`. No alternate root, no conditional production graph. |
+| Exactly one production registration | **VERIFIED** — I-40 plus I-41 (exactly one real implementation of each abstraction alongside its test double). |
+| Backward compatibility | **VERIFIED** — no existing API changed; `Fake*` classes remain for tests; full suite green with zero regressions. |
+| Single reasoning boundary preserved | **VERIFIED** — I-18/I-19/I-20 unchanged; zero new LLM calls. |
+| Single cache preserved | **VERIFIED** — I-35 unchanged and green. |
+| Single persistence layer preserved | **VERIFIED** — I-36 unchanged; the file service adds no persistence of its own (I-43). |
+| WebWeaveX boundaries unchanged | **VERIFIED** — I-21b/c/d/e untouched and green; importer count still 4. |
+| Kaalka boundaries unchanged | **VERIFIED** — untouched; I-21a green. No crypto change, no second protection path. |
+| Repository certification remains green | **VERIFIED** — 51 tests (was 46), all passing. |
+| A real defect found and fixed properly | **VERIFIED** — `_idFor()` let `..` survive into a file id because `.` was in the safe-character set. Contained in practice, but a latent hazard. The stronger assertion was KEPT and the code made true, rather than the test weakened (gap G-21). |
+| An honest limitation stated rather than papered over | **VERIFIED** — OS-level BACKGROUND notification delivery is NOT implemented (gap G-20). It needs a platform plugin plus native Android/iOS configuration that `flutter test` cannot exercise and no device here can verify; shipping it blind would look complete while silently never delivering. One named seam (`NotificationPresenter`); recommended for R50 **with device verification**. |
+| Analyzer baseline unchanged | **VERIFIED** — 71, zero in any R49 file. One new warning was introduced during development (`unnecessary_non_null_assertion`, briefly 72) and fixed before completion. |

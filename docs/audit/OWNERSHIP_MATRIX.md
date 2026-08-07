@@ -56,6 +56,34 @@ anywhere in `lib/` fails CI.
 | Subsystem | Declared in | Constructed by | Boundary |
 |---|---|---|---|
 | `KnowledgeAcquisitionEngine` | `knowledge/knowledge_acquisition_engine.dart` | `AppComposition` | called only by `AnythingKernel` |
+| `KnowledgeCache` | `knowledge/knowledge_acquisition_engine.dart` | `AppComposition` | THE single cache (I-35) |
+| `KnowledgeRepository` | `storage/knowledge_repository.dart` | `AppComposition` | durable store for the cache only (I-36) |
+
+## Platform capabilities (IS-R49)
+
+Every capability the runtime exposes to Experiences, and the ONE service
+backing it in production. Registered exactly once each, in `AppComposition`.
+
+| Capability | Production service | Owner of | Notes |
+|---|---|---|---|
+| `clock` | `ClockCapability` | time | — |
+| `http` | `RealHttpTransport` | outbound HTTP | host allowlist enforced by the capability |
+| `ai` | `ModelProviderAiAdapter` | runtime model access | not the creation-path reasoning boundary |
+| `knowledge` | `KnowledgeAcquisitionProviderAdapter` | knowledge retrieval | real WebWeaveX path |
+| `notifications` | **`RealNotificationService`** (IS-R49) | durable notification schedules | delivery seam: `NotificationPresenter`; default publishes R35's `NotificationGenerated` on the existing `EventBus` |
+| `files` | **`RealFileService`** (IS-R49) | user-imported files only | sandboxed under `anything_files/`; owns no other persistence (I-43) |
+
+Before IS-R49 the last two rows read `FakeNotificationService` and
+`FakeFileService` — both registered in the REAL production graph. No `Fake*`
+implementation is constructed in the composition root any more (I-39).
+
+**Ownership boundary that matters most here:** `RealFileService` owns exactly
+one thing — files a user imported. It does not persist Experiences (that is
+`SqliteExperienceRepository`), knowledge (`KnowledgeRepository`), memory,
+activity or intents, and I-43 certifies it never reaches for any of them.
+Per-Experience ownership is the directory path itself: an adopted file lives
+under `experiences/<experienceId>/`, so another Experience's file is not
+merely forbidden, it is not addressable.
 | `WebWeaveXAdapter` | `knowledge/webweavex_adapter.dart` | `AppComposition` | imports `package:webweavex` |
 | `DuckDuckGoSearchProvider` | `knowledge/search_provider.dart` | `AppComposition` | query → URLs |
 | `SoftwareCognition` analyzers | `software_cognition/{repository,package,component}_analyzer.dart` | `SoftwareCognitionCoordinator` | import `package:webweavex` |

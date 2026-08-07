@@ -127,6 +127,25 @@ The four permitted model-invocation files, and why each is permitted:
 | I-36 | `KnowledgeRepository` is referenced **only** by `KnowledgeCache` and the composition root — persistence cannot be bypassed | STATIC | CERTIFIED (IS-R48) |
 | I-37 | The durable store never imports WebWeaveX and hand-rolls no canonical encoder — it persists the canonical form it is *given* | STATIC | CERTIFIED (IS-R48) |
 | I-38 | Resource identity is never timestamp-derived — no `microsecondsSinceEpoch`/`millisecondsSinceEpoch` in the adapter, and `_deterministicId` still exists | STATIC | CERTIFIED (IS-R48) |
+| I-39 | **No `Fake*` implementation is constructed in the production composition** | STATIC | CERTIFIED (IS-R49) |
+| I-40 | `RealNotificationService`, `RealFileService`, `NotificationCapability` and `FileCapability` are each constructed **exactly once** in the composition root | STATIC | CERTIFIED (IS-R49) |
+| I-41 | Exactly one real implementation of `NotificationService` and one of `FileService` exist (plus their test doubles) | STATIC | CERTIFIED (IS-R49) |
+| I-42 | The real notification service adds **no second notification framework** — it reuses the existing `EventBus` and R35's `NotificationGenerated`, declares no new `AnythingEvent` subtype, and runs no timer of its own | STATIC | CERTIFIED (IS-R49) |
+| I-43 | The real file service adds **no duplicate storage system** — it references no sqflite, no experience/knowledge repository and no `SharedPreferences` | STATIC | CERTIFIED (IS-R49) |
+
+**I-39 is deliberately scoped to the composition root.** A `Fake*` *class* may
+legitimately live in `lib/` beside the abstraction it doubles — what mattered,
+and what was true until R49, is that `AppComposition` **constructed** two of
+them into the real capability platform. The audited inventory of remaining
+`Fake*` classes and why each is permitted is pinned in
+`auditedFakeImplementations`.
+
+**I-42 and I-43 are anti-duplication guards, not feature checks.** They exist
+because the easiest way to "complete" a capability is to bring a whole second
+framework with it. I-42 forbids the notification adapter from declaring an
+event subtype or driving its own timer (`NotificationPlanner` and
+`BackgroundCoordinator` remain the canonical planning layer); I-43 forbids the
+file adapter from touching any other owner's persistence.
 
 **I-35** is enforced structurally rather than by blacklisting names: exactly
 one class in all of `lib/` may match `class \w*Cache`. That catches a
@@ -272,3 +291,24 @@ stored value, so it would have passed with timestamp ids too. A stronger test
 was added that re-extracts the same page in the second session and requires
 the fresh id to equal the persisted one — which is only true if identity is
 genuinely canonical.
+
+**R49 probe A — reintroduce a production fake.** Changing the composition root
+back to `FileCapability(service: FakeFileService(), ...)` failed **two**
+invariants:
+
+```
+I-39 Expected: empty / Actual: ['FakeFileService']
+     AppComposition constructs Fake* implementation(s) in the real production graph
+I-40 Expected: <1> / Actual: <0>
+     RealFileService must be constructed exactly once in the composition root
+```
+
+**R49 probe B — duplicate registration.** Registering `FileCapability` twice
+failed I-40:
+
+```
+I-40 Expected: <1> / Actual: <2>
+     RealFileService must be constructed exactly once in the composition root; found 2
+```
+
+Both probes were reverted and the tree confirmed clean.

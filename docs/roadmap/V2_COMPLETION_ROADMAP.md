@@ -2542,5 +2542,74 @@ are pre-existing network-dependent tests that self-skip when offline (they
 passed during R47's run, when the network was up); 1827 + 3 = 1830 = R47's
 1808 + 22 new, so every test is accounted for. `git status --porcelain`: clean.
 
-**DO NOT START R49 — per this specification's own stop condition, wait
+**R49 has since been implemented — see below.**
+
+## Implementation Specification IS-R49 — Production Capability Completion
+
+The first milestone whose primary objective is product completion rather than
+architectural construction: replace every remaining production `Fake*` with a
+real service, preserving every R46–R48 invariant.
+
+**Task 1 — audit.** Six `Fake*` implementations exist in `lib/`. Only **two**
+were registered in the real production graph: `FakeNotificationService` and
+`FakeFileService`. `FakeKnowledgeProvider`, `FakeHttpTransport` and
+`FakeAiProvider` are unused test doubles beside their abstractions (the real
+adapters are wired); `_FakeProviderRegistry`/`_FixedReasoner` are deliberate,
+private R23 certification fixtures. The full inventory is pinned in the
+certification so it cannot drift silently.
+
+**Task 2 — `RealNotificationService`.** The fake appended to an in-memory list
+and delivered nothing. The real service persists schedules durably via
+`SharedPreferences` (the backend `ActivityRepository` already uses — no new
+storage system, no new dependency), enforces per-Experience ownership,
+computes genuine due state, replaces on re-schedule, bounds its stored set,
+drops corrupt records, and delivers in-app through the **existing** `EventBus`
+as the **existing** R35 `NotificationGenerated` event. No new event hierarchy;
+`NotificationPlanner`/`BackgroundCoordinator` remain the canonical planning
+layer and are untouched.
+
+**Honest scope, stated rather than implied.** OS-level BACKGROUND delivery
+still requires a platform plugin plus Android/iOS native configuration that
+`flutter test` cannot exercise (no platform channels) and that no device here
+can verify. Shipping it blind would look complete while silently never
+delivering — strictly worse than a documented gap.
+`background_coordinator.dart` had already drawn this exact line in its own
+words, "never fabricating live execution", and R49 holds it. The seam is
+singular and named (`NotificationPresenter`), recorded as gap **G-20**, and
+recommended for R50 **with device verification**.
+
+**Task 3 — `RealFileService`.** Genuinely complete, with zero new
+dependencies: real picking via `file_picker` (already present), real sandboxed
+adoption that COPIES bytes into `experiences/<experienceId>/`, export,
+temporary files, and workspace/Experience assets via `path_provider` +
+`dart:io`. Ownership IS the path — another Experience's file is not merely
+forbidden, it is not addressable. Every path is resolved and verified inside
+the sandbox root; traversal attempts are **rejected rather than sanitised**,
+because quietly rewriting one hides that it was made.
+
+**A real finding, fixed properly.** `_idFor()` collapsed unsafe characters to
+`_`, but `.` was in the safe set — so `../../evil` survived as `.._.._evil`.
+The path was still contained, but an id carrying `..` is a latent hazard. The
+assertion was kept and the code made true (dot-runs now collapse), rather than
+the test weakened to match. Recorded as G-21.
+
+**Task 4 — one composition root.** Both services are constructed exactly once
+in `AppComposition`. No alternate root, no conditional production graph. The
+`EventBus` construction moved earlier so the real presenter can use it —
+ordering changed, cardinality did not.
+
+**Tasks 5/6 — certification extended** to 51 tests with five new invariants:
+no `Fake*` constructed in the production composition (I-39); the real services
+and their capabilities each registered exactly once (I-40); exactly one real
+implementation of each abstraction (I-41); no second notification framework —
+no new event subtype, no self-driving timer (I-42); no duplicate storage
+system in the file service (I-43). Probe A (reintroduce `FakeFileService`)
+failed two invariants; probe B (duplicate registration) failed I-40. Both
+reverted.
+
+**Execution result:** `flutter analyze`: 71 issues, unchanged baseline, zero
+in any R49 file. `flutter test`: full suite green, zero regressions.
+`git status --porcelain`: clean. WebWeaveX and Kaalka untouched.
+
+**DO NOT START R50 — per this specification's own stop condition, wait
 for external architectural review.**

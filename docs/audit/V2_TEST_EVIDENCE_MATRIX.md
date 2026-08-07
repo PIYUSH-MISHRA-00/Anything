@@ -2629,3 +2629,88 @@ pre-existing network-dependent tests that self-skip when offline; they passed
 during R47's run when the network was up. 1827 + 3 = 1830 = R47's 1808 + 22
 new, so every test is accounted for and nothing silently stopped running.
 `git status --porcelain`: clean.
+
+## R49 — Production Capability Completion
+
+`test/r49_production_capability_completion_test.dart` (new, 20 tests) plus a
+certification extension (46 -> 51 tests).
+
+**Task 1 audit.** Six `Fake*` implementations exist in `lib/`; only TWO were
+registered in the real production graph (`FakeNotificationService`,
+`FakeFileService`). `FakeKnowledgeProvider`, `FakeHttpTransport` and
+`FakeAiProvider` are unused test doubles beside their abstractions;
+`_FakeProviderRegistry`/`_FixedReasoner` are deliberate private R23
+certification fixtures. The inventory is pinned in
+`auditedFakeImplementations` so it cannot drift silently.
+
+**RealNotificationService (10 tests).** These run against real
+`SharedPreferences` storage, so durability is genuinely exercised rather than
+asserted. A scheduled notification SURVIVES restart — proven by reading it
+back through an entirely new service instance, which is precisely what the
+fake's in-memory list could never do. `cancel()` really removes it, and a
+cancelled notification is proven never to resurface as due.
+`cancelAllForExperience()` removes exactly that Experience and leaves others
+untouched, so ownership is real rather than advisory. Re-scheduling an
+existing id replaces rather than duplicates. `dueAt()` computes genuine due
+state at three different clock positions. `deliverDue()` publishes the
+EXISTING R35 `NotificationGenerated` event on the EXISTING `EventBus`, with
+`eventCategory` asserted to be the pre-existing `EventCategory.notification`
+— no new event hierarchy. Delivery happens exactly once: a second
+`deliverDue()` at the same instant returns empty while the not-yet-due
+notification survives. Corrupt stored records are dropped rather than
+crashing, and one bad record does not discard the good ones. The stored set
+is bounded, oldest-by-scheduled-time first. Finally the real
+`NotificationCapability` path is driven end to end: schedule via the
+capability, verify it reached DURABLE storage, cancel via the capability,
+verify it is gone.
+
+**RealFileService (9 tests).** These run against a real temporary directory
+through `dart:io`, so adoption, export, deletion, ownership and sandbox
+containment are all genuinely exercised; only the OS dialog is replaced,
+through the same injectable-seam pattern `RealHttpTransport` and
+`WebWeaveXAdapter` already established. Adoption COPIES real bytes into the
+sandbox — verified by reading the copied file's contents, then DELETING the
+original and confirming the adopted copy still reads correctly, which is the
+concrete proof Anything now owns its own copy. A cancelled pick returns null
+and adopting an unknown id fails rather than throwing. `pickImage` really
+propagates the images-only flag.
+
+OWNERSHIP IS REAL: Experience B cannot delete Experience A's file, A's file
+still exists afterwards, and B's listing is empty; when A deletes it, the real
+bytes are gone from disk — not merely a map entry. SANDBOX CONTAINMENT is
+tested through every path-taking entry point (`exportFile`,
+`createTemporaryFile`, `workspaceAsset`, `deleteAdoptedFile`) with `../../`
+payloads, and the test additionally asserts nothing was created outside the
+sandbox. A malicious display name cannot smuggle a path separator OR `..` into
+an id. Export writes real bytes back out and refuses another Experience's
+file. Temporary files are written, read back and cleared. Through the real
+`FileCapability`, the size policy is still enforced by the capability — the
+service reports size and deliberately does not enforce it twice.
+
+**Certification extension (46 -> 51).** No `Fake*` is constructed in the
+production composition (I-39); `RealNotificationService`, `RealFileService`,
+`NotificationCapability` and `FileCapability` are each constructed exactly
+once in the composition root (I-40); exactly one real implementation of
+`NotificationService` and one of `FileService` exist alongside their test
+doubles (I-41); the notification adapter declares no `AnythingEvent` subtype
+and runs no `Timer.periodic`, so it is not a second notification framework
+(I-42); the file adapter references no sqflite, no experience/knowledge
+repository and no `SharedPreferences`, so it is not a duplicate storage
+system (I-43).
+
+**Mutation evidence.** Probe A reverted the composition root to
+`FileCapability(service: FakeFileService(), ...)`; I-39 and I-40 both failed
+and named it. Probe B registered `FileCapability` twice; I-40 failed with
+`Expected: <1> / Actual: <2>`. Both were reverted and the tree confirmed
+clean.
+
+**A real finding, fixed properly.** `_idFor()` collapsed unsafe characters to
+`_`, but `.` was in the safe set, so `../../evil` survived as `.._.._evil`.
+The path was still contained (one segment; `p.normalize` does not treat it as
+traversal, and `_resolveInside` would reject it anyway), but an id carrying
+`..` is a latent hazard. The assertion was KEPT and the code made true, rather
+than the test weakened to match.
+
+**Execution result:** `flutter analyze`: 71, unchanged baseline, zero in any
+R49 file. `flutter test`: full suite green, zero regressions.
+`git status --porcelain`: clean.
