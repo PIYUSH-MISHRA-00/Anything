@@ -181,3 +181,41 @@ governance never reaches across.
 because nothing computes provenance yet. The model, rules and enforcement are
 real and tested; the classifier is future work. See
 `docs/audit/GOVERNANCE_USAGE_MATRIX.md` §6.
+
+## Distribution ownership (IS-R53)
+
+The producer layer R50–R52 were waiting for.
+
+| Owner | Verb | Notes |
+|---|---|---|
+| `ExperienceCreationCoordinator` | CREATES | pre-R53, unchanged |
+| `ExperienceDistributionFramework` | MOVES | import, export, packaging, preparation |
+| `ExperiencePackageVerifier` | VERIFIES | delegates structure/integrity to `ExperiencePackageValidator` |
+| `ExperienceTrustClassifier` | COMPUTES trust | R52 |
+| `OperatingSystemGovernanceEngine` | CONSUMES trust | R51 |
+| `CapabilityPlatform` | ENFORCES | R49/R51 |
+| `SqliteExperienceRepository` | STORES | canonical |
+| `ExperienceEntryPipeline` | ACTIVATES | R45 |
+| `ExperienceProtectionService` | PROTECTS | Kaalka |
+
+**Distribution touches none of the last five.** Certified (I-58).
+
+### Two canonical types EXTENDED, not duplicated
+
+IS-R53 asked to "introduce" `ExperienceManifest` and
+`ExperiencePackageVerifier`; both already existed. R53 embedded the first in a
+transport envelope and delegated to the existing validator from the second —
+because the same specification forbids a second manifest and a second
+verifier. Certified by I-59 and I-60.
+
+### Import never activates
+
+`import()` returns a persisted, provenance-bearing Experience and stops.
+Importing something must not run it — activation requires a deliberate user
+action through `ExperienceEntryPipeline`.
+
+### Protection is not carried across
+
+The envelope records whether the source was protected; an imported Experience
+is persisted unprotected. Distribution must not fabricate a protected state it
+cannot honour.

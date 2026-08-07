@@ -407,3 +407,33 @@ masked by the trust assertion preceding it. Both reverted; tree clean.
 Full detail: `docs/audit/GOVERNANCE_CERTIFICATION.md`,
 `docs/architecture/GOVERNANCE_ARCHITECTURE.md`,
 `docs/audit/GOVERNANCE_USAGE_MATRIX.md`.
+
+## IS-R53 — Distribution invariants
+
+| # | Invariant | Evidence | Status |
+|---|---|---|---|
+| I-57 | Exactly ONE distribution framework and ONE package verifier | STATIC | CERTIFIED |
+| I-58 | Distribution never computes trust, enforces governance, activates a runtime, or protects | STATIC | CERTIFIED |
+| I-59 | The verifier DELEGATES structural validation to `ExperiencePackageValidator` and never computes trust | STATIC | CERTIFIED |
+| I-60 | The distribution manifest EMBEDS the canonical `ExperienceManifest` rather than re-declaring it | STATIC | CERTIFIED |
+
+**I-58 has a deliberately long forbidden list** — trust (R52), governance
+(R51), activation (R45) and protection (Kaalka). A distribution layer is the
+most tempting place in the system to "just also" do the next step, because it
+already holds the package.
+
+**I-59 makes "no second verifier" mechanical** by requiring the literal
+`ExperiencePackageValidator.validate` call to be present. Delegation is
+required, not merely intended.
+
+**I-60 makes "exactly one Experience Manifest" mechanical** with two clauses:
+exactly one class of that name exists, AND the envelope declares a field of
+that type. The second clause is what distinguishes embedding from
+duplicating — a parallel record copying `experienceId`/`name`/`version` would
+pass the first and fail the second.
+
+**R53 mutation evidence.** Probe A (an `ExperienceImportPipeline` plus a
+second verifier) failed I-57. Probe B (a `trustFor()` on the verifier) first
+failed to COMPILE — distribution has no import for `ExperienceTrustLevel`, so
+the type system caught it before certification did — then, with the import
+added, failed I-58 explicitly. Both removed; tree clean.
