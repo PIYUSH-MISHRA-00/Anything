@@ -525,3 +525,56 @@ B2 (protection writing directly) and C (the UI delete restored) both failed
 I-69. D (one `using: txn` dropped inside the framework) failed I-70 — and is
 the probe worth remembering, because the code still worked and every functional
 test still passed; only the guarantee was gone.
+
+## IS-R56 — Durable Collection Ownership (I-75 … I-77)
+
+| # | Invariant | Mechanism | Status |
+|---|---|---|---|
+| I-75 | Exactly ONE durable collection store; nothing else imports `SharedPreferences` for a collection | STATIC (raw source) | CERTIFIED |
+| I-76 | Every durable collection mutates through the ONE store | STATIC | CERTIFIED |
+| I-77 | `deliverDue` CLAIMS before it PRESENTS | STATIC (containment) | CERTIFIED |
+
+**R56 was an audit-first milestone and the audit overrode its own title.** It
+is specified as "Canonical Runtime Import Framework"; the scan found runtime
+creation ALREADY singular (one construction site) and import settled in
+R53/R54. Per the specification's first principle, R56 implemented what the
+evidence showed instead.
+
+**The defect was MEASURED before any code was written**: ten concurrent
+`schedule()` calls stored ONE, and two concurrent `deliverDue()` calls
+presented the same notification TWICE, breaking the exactly-once contract in
+that method's own doc comment. The same probe showed `ActivityRepository` did
+NOT lose events — disproving half the hypothesis — so R56 claims a proven
+defect only for the notification paths.
+
+**I-75's import scan runs on RAW source**, because import URIs are string
+literals that do not survive stripping. This is R46's lesson applied by
+default; both of that milestone's boundary scans once reported ZERO sites for
+exactly this reason.
+
+**I-77 WAS WRONG ON ITS FIRST ATTEMPT AND THE MUTATION PROBE CAUGHT IT.** It
+originally asserted `indexOf(present) > lastIndexOf(store.update)`. Moving
+presentation INSIDE the mutation callback — the exact defect — still satisfies
+that, because the callback text begins after `store.update(` starts. A false
+negative: green, checking nothing. Rewritten as a CONTAINMENT check over
+balanced-parenthesis call ranges, after which the probe failed as required.
+Generalised lesson: an ordering assertion is not a containment assertion, and
+text position is a poor proxy for scope.
+
+**R56 mutation evidence.** Three probes, all failed as required. A (presentation
+moved back inside the critical section) failed I-77 — and with the shipped
+design the R49 shape cannot even be written, because the store's mutation
+callback is synchronous and an `await` inside it does not compile; the probe
+calls `present` unawaited instead, and I-77 still catches it. B (a second
+durable collection store) failed I-75. C (a repository reaching past the store
+to `SharedPreferences`) failed I-76.
+
+**A DESIGN THAT SHIPPED IN REVIEW AND FAILED, recorded so it is not retried.**
+R56's first store serialised callers through a STATIC per-key future chain with
+an async mutation callback. It DEADLOCKED: `flutter_test` disposes a zone
+between tests, and a chain entry left by one test was awaited forever by the
+next. The suite went from 2 minutes to 12 with eleven failures, and a single
+14-test file ran past ten minutes. The fix was not a better lock — the lock
+existed only to survive a yield that its own async callback reintroduced.
+Making the callback synchronous removed the yield, the lock, the static state
+and the deadlock together.

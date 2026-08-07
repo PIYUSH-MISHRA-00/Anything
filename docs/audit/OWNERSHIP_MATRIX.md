@@ -312,3 +312,47 @@ SQLite transaction. Repository writes paired with World Model ingestion,
 engineering-memory persistence or activity records are still separate and
 best-effort — cross-store, never in scope, and unchanged since before R55.
 G-28 is closed for repository commits and only for those.
+
+## IS-R56 — Durable collections
+
+| Verb | Owner | Added |
+|---|---|---|
+| **READ-MODIFY-WRITE on a durable key, with no yield between** | **`DurableCollectionStore`** | **R56** |
+| Notification semantics | `RealNotificationService` | R49, unchanged |
+| Activity / intent history semantics | their repositories | canonical, unchanged |
+| Retention bounds | `RetentionPolicyEngine` | R50, unchanged |
+| Theme preference (one scalar key) | `ThemeProvider` | canonical, PINNED |
+
+### One critical section, three collections
+
+```
+RealNotificationService ─┐
+ActivityRepository      ─┼──> DurableCollectionStore ──> SharedPreferences
+IntentRepository        ─┘
+```
+
+The store owns ONLY the critical section. Each repository keeps its own types,
+its own JSON and its own semantics; the store knows nothing about what any
+collection means.
+
+### No lock — the yield is removed instead
+
+`update` resolves `SharedPreferences` first, then runs the mutation and the
+write with NO `await` between them. Dart is single-threaded, so with no yield
+point inside the critical section concurrent callers cannot interleave. The
+callback is a plain SYNCHRONOUS function, so an await inside it does not
+compile — the type system is the enforcement.
+
+An earlier design used a static per-key future chain and DEADLOCKED across
+`flutter_test` zones; it is recorded in the store's doc comment and in the ADR
+so it is not retried. The lock existed only to survive a yield that its own
+async callback reintroduced. The store is stateless and `const`-constructible,
+so existing `const` call sites are untouched.
+
+### Claim first, present second
+
+`deliverDue` removes the due set INSIDE the critical section and presents
+OUTSIDE it. R49 did the reverse, and two concurrent callers delivered the same
+notification twice. The trade is that delivery is now at-most-once rather than
+at-least-once — correct for a contract that promises exactly once, and recorded
+as G-38.
