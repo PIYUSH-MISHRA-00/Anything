@@ -989,6 +989,114 @@ final x = 1;
       }
     });
 
+    test('exactly ONE trust classifier and ONE provenance model exist (IS-R52 Task 11)', () {
+      final classifiers = libFiles
+          .expand((f) => RegExp(r'\bclass\s+(\w*Trust\w*Classifier|\w*Provenance\w*Engine)\b')
+              .allMatches(f.code)
+              .map((m) => '${f.path}:${m.group(1)}'))
+          .toList()
+        ..sort();
+      expect(classifiers, ['lib/app/experience_provenance.dart:ExperienceTrustClassifier'],
+          reason: 'a duplicate trust classifier or provenance engine appeared: $classifiers');
+
+      // FOUR types carry "Provenance", and they are NOT duplicates — each
+      // records the origin of a different subject:
+      //
+      //   ExperienceProvenance (R52)  where an EXPERIENCE came from -> trust
+      //   PackageProvenance           how a PACKAGE was generated
+      //                               (engine/spec version)
+      //   ResourceProvenance          where a KNOWLEDGE RESOURCE was fetched
+      //   SoftwareProvenance          how a SOFTWARE ANALYSIS was produced
+      //
+      // Only the first feeds trust classification. Collapsing them would be
+      // worse than leaving them separate — a package's build metadata and an
+      // Experience's origin are not the same fact. Pinned explicitly so the
+      // distinction is visible in CI while a genuine duplicate EXPERIENCE
+      // provenance model still fails, exactly as I-50 handles the two
+      // TrustLevels.
+      final provenanceModels = libFiles
+          .expand((f) => RegExp(r'\bclass\s+(\w*Provenance\w*)\b').allMatches(f.code).map((m) => '${f.path}:${m.group(1)}'))
+          .toList()
+        ..sort();
+      expect(provenanceModels, [
+        'lib/app/experience_provenance.dart:ExperienceProvenance',
+        'lib/creation/experience_package.dart:PackageProvenance',
+        'lib/knowledge/knowledge_resource.dart:ResourceProvenance',
+        'lib/software_cognition/software_provenance.dart:SoftwareProvenance',
+      ], reason: 'a second provenance model appeared: $provenanceModels');
+    });
+
+    test('GOVERNANCE NEVER COMPUTES TRUST — it consumes what the classifier produced (IS-R52 Task 11)', () {
+      // The load-bearing separation of this milestone. If governance could
+      // classify, "governance consumes trust" would collapse into "governance
+      // decides everything" and R51's clean split would be gone.
+      final governance = libFiles.firstWhere((f) => f.path == 'lib/app/governance_engine.dart');
+      for (final concept in ['ExperienceTrustClassifier', 'ExperienceProvenance', 'ExperienceOrigin', 'VerificationState', 'classify']) {
+        expect(governance.code.contains(concept), isFalse,
+            reason: 'the governance engine must not compute trust ($concept) — it consumes ExperienceTrustLevel only');
+      }
+      // R51's I-49 must still hold: governance imports nothing at all.
+      final imports = RegExp(r'''^import\s+['"]([^'"]+)''', multiLine: true)
+          .allMatches(governance.raw).map((m) => m.group(1)!).toList();
+      expect(imports, isEmpty, reason: 'R52 must not have given governance a dependency. Found: $imports');
+    });
+
+    test('THE CLASSIFIER NEVER ENFORCES POLICY — it computes a level and nothing else (IS-R52 Task 11)', () {
+      final classifier = libFiles.firstWhere((f) => f.path == 'lib/app/experience_provenance.dart');
+      for (final forbidden in [
+        'CapabilityPlatform', 'CapabilityInvocationResult', 'GovernanceDecision', 'GovernanceEvaluation',
+        'GovernanceRule', 'sqflite', 'Database', 'SharedPreferences', 'dart:io', 'Timer',
+      ]) {
+        expect(classifier.code.contains(forbidden), isFalse,
+            reason: 'the classifier must not enforce, decide or store ($forbidden) — it computes trust only');
+      }
+      // Its ONLY dependency is the governance vocabulary, one-way.
+      final imports = RegExp(r'''^import\s+['"]([^'"]+)''', multiLine: true)
+          .allMatches(classifier.raw).map((m) => m.group(1)!).toList();
+      expect(imports, ['governance_engine.dart'],
+          reason: 'the classifier depends on the trust VOCABULARY only. Found: $imports');
+    });
+
+    test('the ExperienceRepository STORES provenance and never computes trust from it (IS-R52 Task 11)', () {
+      final repo = libFiles.firstWhere((f) => f.path == 'lib/storage/sqlite_experience_repository.dart');
+      expect(repo.code.contains('ExperienceProvenance'), isTrue,
+          reason: 'it must be able to STORE provenance');
+      for (final concept in ['ExperienceTrustClassifier', 'ExperienceTrustLevel', 'classify(']) {
+        expect(repo.code.contains(concept), isFalse,
+            reason: 'the repository must remain storage only; computing trust ($concept) would make it a second classifier');
+      }
+    });
+
+    test('the two "identity" libraries remain distinct subjects, both pinned (IS-R52)', () {
+      // lib/experience_identity/ (R22) owns ScreenIdentity/ActionIdentity —
+      // identity of screens and actions INSIDE an Experience, for compiler
+      // equivalence comparison. lib/app/experience_provenance.dart (R52) owns
+      // ExperienceIdentity — the identity of an Experience ITSELF. Different
+      // subjects sharing a word; pinned so the near-collision is visible
+      // rather than rediscovered, exactly as I-50 handles the two TrustLevels.
+      final identityTypes = libFiles
+          .expand((f) => RegExp(r'\bclass\s+(\w*Identity)\b').allMatches(f.code).map((m) => '${f.path}:${m.group(1)}'))
+          .toList()
+        ..sort();
+      // SIX identity types, each identifying a different KIND of thing:
+      //   ExperienceIdentity (R52)   an Experience itself      -> provenance
+      //   Screen/ActionIdentity(R22) parts INSIDE an Experience -> compiler
+      //                              equivalence comparison
+      //   Entity/RelationshipIdentity world-model graph nodes
+      //   SoftwareIdentity           analysed software
+      // Only the first participates in trust. Pinned so the near-collision is
+      // visible rather than rediscovered, while a genuine parallel EXPERIENCE
+      // identity framework still fails.
+      expect(identityTypes, [
+        'lib/app/experience_provenance.dart:ExperienceIdentity',
+        'lib/experience_identity/experience_identity.dart:ActionIdentity',
+        'lib/experience_identity/experience_identity.dart:ScreenIdentity',
+        'lib/software_cognition/software_identity.dart:SoftwareIdentity',
+        'lib/world_model/entity_identity.dart:EntityIdentity',
+        'lib/world_model/relationship_identity.dart:RelationshipIdentity',
+      ], reason: 'a parallel identity framework appeared: $identityTypes');
+    });
+
     test('neither the Kernel nor any UI file imports an external cognition/protection package directly', () {
       final offenders = libFiles
           .where((f) => f.path.startsWith('lib/kernel/') || f.path.startsWith('lib/features/') || f.path.startsWith('lib/screens/'))
