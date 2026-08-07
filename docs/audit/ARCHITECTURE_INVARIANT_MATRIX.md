@@ -482,3 +482,46 @@ boundary once their imports were added. E (restoring `savePackage` in
 distribution) failed I-67. Everything was `git add`-ed BEFORE probing this time,
 so `git checkout --` could actually revert each one; on R53 the target file was
 untracked and the revert silently no-opped.
+
+## IS-R55 — Canonical Experience Commit Framework (I-68 … I-74)
+
+| # | Invariant | Mechanism | Status |
+|---|---|---|---|
+| I-68 | Exactly ONE commit framework and ONE transaction coordinator | STATIC | CERTIFIED |
+| I-69 | **NOBODY outside the commit framework writes to the Experience repository** | STATIC | CERTIFIED |
+| I-70 | EVERY write inside the commit framework runs in a transaction | STATIC | CERTIFIED |
+| I-71 | The commit framework persists and does nothing else | STATIC | CERTIFIED |
+| I-72 | Exactly ONE rollback owner — every other rollback delegates | STATIC | CERTIFIED |
+| I-73 | Exactly ONE repair owner — the installer requests | STATIC | CERTIFIED |
+| I-74 | The repository stores only and does not know the framework exists | STATIC | CERTIFIED |
+
+**I-69 is what closing G-30 actually means** — not "a commit framework exists"
+but "nothing else can write". The audit found SIX writers, one more than R54
+listed: a UI screen was calling `repository.delete` directly.
+
+**`touchLastUsed` is PINNED, not omitted.** It stamps an access time on an
+existing row and holds no state a rollback could need. The exclusion and its
+reason live in the test, and it is recorded as G-34 for review.
+
+**I-70 exists because a dropped `using:` would ship silently.** Both rows would
+still land, every functional test would still pass, and only the atomicity
+guarantee would be gone. Certification extracts each write's arguments and
+requires the executor — after first asserting the scan found at least seven
+sites, so a regex that stopped matching fails loudly instead of certifying
+nothing.
+
+**I-72/I-73 pin FILES, not method counts.** Four rollbacks and two repairs
+exist, correctly: the extras are façades in installation, modification and
+transaction vocabulary. An invariant demanding one method would have forced
+deleting API callers legitimately use. Combined with I-69 — only one file can
+write — "exactly one owner" is mechanically true.
+
+**R55 mutation evidence.** Five probes, all failed as required. A (a second
+commit framework) failed I-68. B (creation writing directly) **would not
+compile** — creation's repository field was removed once its writes moved, so a
+direct commit does not typecheck; the type system is the guard there and
+certification is the guard for paths that still hold a repository for reads.
+B2 (protection writing directly) and C (the UI delete restored) both failed
+I-69. D (one `using: txn` dropped inside the framework) failed I-70 — and is
+the probe worth remembering, because the code still worked and every functional
+test still passed; only the guarantee was gone.

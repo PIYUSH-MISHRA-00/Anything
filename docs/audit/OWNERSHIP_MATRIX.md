@@ -265,3 +265,50 @@ Four sites still commit directly: creation, modification, evolution and
 protection. R54 established the owner and moved the one path Task 8 names.
 Rerouting the rest would have redesigned four coordinators in a milestone
 forbidden from replacing architecture. Recorded as gap G-30.
+
+## IS-R55 — Commit
+
+| Verb | Owner | Added |
+|---|---|---|
+| **COMMITS / ROLLS BACK / REPAIRS** | **`ExperienceCommitFramework`** | **R55** |
+| RUNS TRANSACTIONS | `RepositoryTransactionCoordinator` | R55 |
+| STORES | `SqliteExperienceRepository` | canonical, unchanged |
+| INSTALLS | `ExperienceInstallationFramework` | R54 |
+| MOVES | `ExperienceDistributionFramework` | R53 |
+| ENCRYPTS | `ExperienceProtectionService` | canonical, unchanged |
+
+### One writer, enforced
+
+```
+creation \ modification \ evolution \ protection \ installation \ removal
+                              |
+                  ExperienceCommitFramework
+                              |
+                   SqliteExperienceRepository
+```
+
+The audit found SIX pre-R55 writers, not the four R54 listed — a UI screen was
+deleting Experiences directly. All six now terminate here, and certification
+forbids every other file in `lib/` from naming a repository write method.
+
+### What each subsystem kept, and what it gave up
+
+Creation kept package construction, provenance, World Model and engineering
+memory; it gave up ALL persistence — the analyzer then reported its repository
+field as unused, which is the cleanest evidence that it is decoupled rather
+than merely routed around, so the field was deleted.
+
+Modification kept diffing, validation and the modification engine; it gave up
+persistence and rollback. Evolution kept proposals, executor and validator.
+Protection kept **all crypto** — it is still the only thing that encrypts — and
+gave up persistence only. Installation kept compatibility, dependencies,
+migrations, kind derivation and the protection request; it gave up persistence,
+rollback and repair.
+
+### Atomicity, precisely scoped
+
+Package + metadata, and envelope + flag + plaintext removal, are now each ONE
+SQLite transaction. Repository writes paired with World Model ingestion,
+engineering-memory persistence or activity records are still separate and
+best-effort — cross-store, never in scope, and unchanged since before R55.
+G-28 is closed for repository commits and only for those.
