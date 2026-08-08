@@ -71,5 +71,8 @@ class GraphConfidence {
 
   const GraphConfidence({required this.score, required this.reason});
 
-  static const GraphConfidence full = GraphConfidence(score: 1.0, reason: 'Directly and unambiguously derived from a real source graph.');
+  static const GraphConfidence full = GraphConfidence(
+    score: 1.0,
+    reason: 'Directly and unambiguously derived from a real source graph.',
+  );
 }

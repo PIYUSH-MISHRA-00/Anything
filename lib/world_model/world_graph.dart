@@ -16,16 +16,23 @@ class WorldGraph {
 
   const WorldGraph({this.nodes = const [], this.edges = const []});
 
-  WorldNode? nodeById(EntityIdentity id) => nodes.where((n) => n.identity == id).firstOrNull;
+  WorldNode? nodeById(EntityIdentity id) =>
+      nodes.where((n) => n.identity == id).firstOrNull;
 
-  List<WorldEdge> edgesFrom(EntityIdentity id) => edges.where((e) => e.fromId == id).toList();
+  List<WorldEdge> edgesFrom(EntityIdentity id) =>
+      edges.where((e) => e.fromId == id).toList();
 
-  List<WorldEdge> edgesTo(EntityIdentity id) => edges.where((e) => e.toId == id).toList();
+  List<WorldEdge> edgesTo(EntityIdentity id) =>
+      edges.where((e) => e.toId == id).toList();
 
-  List<WorldNode> nodesOfKind(WorldNodeKind kind) => nodes.where((n) => n.kind == kind).toList();
+  List<WorldNode> nodesOfKind(WorldNodeKind kind) =>
+      nodes.where((n) => n.kind == kind).toList();
 
   /// Combines this graph with another, without deduplicating — callers
   /// wanting deduplication should use GraphMerge, which reuses this
   /// concatenation and then resolves conflicts explicitly.
-  WorldGraph concat(WorldGraph other) => WorldGraph(nodes: [...nodes, ...other.nodes], edges: [...edges, ...other.edges]);
+  WorldGraph concat(WorldGraph other) => WorldGraph(
+    nodes: [...nodes, ...other.nodes],
+    edges: [...edges, ...other.edges],
+  );
 }

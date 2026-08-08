@@ -531,31 +531,34 @@ void main() {
       },
     );
 
-    test('GenericPackageBuilder derives structural category from archetypes', () {
-      final blueprint = AppBlueprint(
-        id: 'test-bp',
-        name: 'Test Blueprint',
-        description: 'Test',
-        archetypes: const [AppArchetype.tracker],
-        entities: const [
-          BlueprintEntity(
-            id: 'habit',
-            name: 'Habit',
-            fields: [
-              BlueprintField(
-                id: 'habit_name',
-                name: 'Name',
-                type: BlueprintFieldType.text,
-              ),
-            ],
-          ),
-        ],
-      );
-      final pkg = GenericPackageBuilder.build(blueprint);
-      // Structural category — tracker maps to 'tracker', not 'health'
-      expect(pkg.manifest.category, equals('tracker'));
-      expect(pkg.manifest.tags, isEmpty);
-    });
+    test(
+      'GenericPackageBuilder derives structural category from archetypes',
+      () {
+        final blueprint = AppBlueprint(
+          id: 'test-bp',
+          name: 'Test Blueprint',
+          description: 'Test',
+          archetypes: const [AppArchetype.tracker],
+          entities: const [
+            BlueprintEntity(
+              id: 'habit',
+              name: 'Habit',
+              fields: [
+                BlueprintField(
+                  id: 'habit_name',
+                  name: 'Name',
+                  type: BlueprintFieldType.text,
+                ),
+              ],
+            ),
+          ],
+        );
+        final pkg = GenericPackageBuilder.build(blueprint);
+        // Structural category — tracker maps to 'tracker', not 'health'
+        expect(pkg.manifest.category, equals('tracker'));
+        expect(pkg.manifest.tags, isEmpty);
+      },
+    );
 
     test('GenericPackageBuilder passes blueprint tags to manifest', () {
       final blueprint = AppBlueprint(

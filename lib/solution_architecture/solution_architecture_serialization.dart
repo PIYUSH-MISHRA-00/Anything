@@ -22,38 +22,60 @@ extension SolutionComponentJson on SolutionComponent {
   };
 }
 
-SolutionComponent solutionComponentFromJson(Map<String, dynamic> json) => SolutionComponent(
-  id: json['id'] as String,
-  name: json['name'] as String,
-  responsibility: json['responsibility'] as String,
-  hasBackendPresence: json['hasBackendPresence'] as bool,
-  storageKind: json['storageKind'] as String,
-  dependsOnComponentIds: (json['dependsOnComponentIds'] as List).cast<String>(),
-  contractIds: (json['contractIds'] as List).cast<String>(),
-);
+SolutionComponent solutionComponentFromJson(Map<String, dynamic> json) =>
+    SolutionComponent(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      responsibility: json['responsibility'] as String,
+      hasBackendPresence: json['hasBackendPresence'] as bool,
+      storageKind: json['storageKind'] as String,
+      dependsOnComponentIds: (json['dependsOnComponentIds'] as List)
+          .cast<String>(),
+      contractIds: (json['contractIds'] as List).cast<String>(),
+    );
 
 extension SemanticSolutionArchitectureJson on SemanticSolutionArchitecture {
   Map<String, dynamic> toJson() => {
     'frontend': frontend.toJson(),
     'backend': backend.toJson(),
     'components': components.map((c) => c.toJson()).toList(),
-    'caching': {'employsCaching': caching.employsCaching, 'sourceStrategy': caching.sourceStrategy.name},
-    'unmodeledConcepts': unmodeledConcepts.map((u) => {'name': u.name, 'reason': u.reason}).toList(),
+    'caching': {
+      'employsCaching': caching.employsCaching,
+      'sourceStrategy': caching.sourceStrategy.name,
+    },
+    'unmodeledConcepts': unmodeledConcepts
+        .map((u) => {'name': u.name, 'reason': u.reason})
+        .toList(),
   };
 }
 
-SemanticSolutionArchitecture semanticSolutionArchitectureFromJson(Map<String, dynamic> json) {
+SemanticSolutionArchitecture semanticSolutionArchitectureFromJson(
+  Map<String, dynamic> json,
+) {
   final cachingJson = json['caching'] as Map<String, dynamic>;
   return SemanticSolutionArchitecture(
-    frontend: ArchitectureCandidateJson.fromJson(json['frontend'] as Map<String, dynamic>),
-    backend: backendEngineeringPlanFromJson(json['backend'] as Map<String, dynamic>),
-    components: (json['components'] as List).map((c) => solutionComponentFromJson(c as Map<String, dynamic>)).toList(),
+    frontend: ArchitectureCandidateJson.fromJson(
+      json['frontend'] as Map<String, dynamic>,
+    ),
+    backend: backendEngineeringPlanFromJson(
+      json['backend'] as Map<String, dynamic>,
+    ),
+    components: (json['components'] as List)
+        .map((c) => solutionComponentFromJson(c as Map<String, dynamic>))
+        .toList(),
     caching: CachingModel(
       employsCaching: cachingJson['employsCaching'] as bool,
-      sourceStrategy: SyncStrategy.values.byName(cachingJson['sourceStrategy'] as String),
+      sourceStrategy: SyncStrategy.values.byName(
+        cachingJson['sourceStrategy'] as String,
+      ),
     ),
     unmodeledConcepts: (json['unmodeledConcepts'] as List)
-        .map((u) => UnmodeledConcept(name: (u as Map<String, dynamic>)['name'] as String, reason: u['reason'] as String))
+        .map(
+          (u) => UnmodeledConcept(
+            name: (u as Map<String, dynamic>)['name'] as String,
+            reason: u['reason'] as String,
+          ),
+        )
         .toList(),
   );
 }

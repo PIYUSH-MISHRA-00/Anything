@@ -14,10 +14,12 @@ library;
 
 import '../application_engineering/engineering_candidate.dart';
 import '../application_engineering/engineering_plan.dart';
-import '../application_engineering/engineering_types.dart' show BindingEdge, BindingGraph;
+import '../application_engineering/engineering_types.dart'
+    show BindingEdge, BindingGraph;
 import '../feature_discovery/dependency_types.dart';
 import '../solution_reasoning/solution_types.dart';
-import '../solution_reasoning/solution_variation_types.dart' show EngineeringVariation;
+import '../solution_reasoning/solution_variation_types.dart'
+    show EngineeringVariation;
 import 'design_reviewer.dart';
 import 'review_budget.dart';
 import 'review_context.dart';
@@ -43,7 +45,8 @@ class ReviewRefinement {
     // (removing a duplicate/dead edge) is valuable even when the finding
     // is only a warning, not just when it blocks approval outright.
     var i = 0;
-    while (iteration.autoFixableIssues.isNotEmpty && i < _budget.maxIterations) {
+    while (iteration.autoFixableIssues.isNotEmpty &&
+        i < _budget.maxIterations) {
       context = _applyFixes(context, iteration.autoFixableIssues);
       i++;
       iteration = _reviewer.review(context, iteration: i);
@@ -52,14 +55,24 @@ class ReviewRefinement {
 
     final outcome = !iteration.hasCriticalIssues
         ? ReviewOutcome.approved
-        : (i >= _budget.maxIterations ? ReviewOutcome.budgetExhausted : ReviewOutcome.refinementRequired);
+        : (i >= _budget.maxIterations
+              ? ReviewOutcome.budgetExhausted
+              : ReviewOutcome.refinementRequired);
 
-    return ReviewResult(iterations: iterations, finalContext: context, outcome: outcome);
+    return ReviewResult(
+      iterations: iterations,
+      finalContext: context,
+      outcome: outcome,
+    );
   }
 
   ReviewContext _applyFixes(ReviewContext context, List<ReviewIssue> fixes) {
-    final bindingEdges = List<BindingEdge>.from(context.engineering.bindingGraph.edges);
-    final dependencyEdges = List<DependencyEdge>.from(context.dependencyGraph.edges);
+    final bindingEdges = List<BindingEdge>.from(
+      context.engineering.bindingGraph.edges,
+    );
+    final dependencyEdges = List<DependencyEdge>.from(
+      context.dependencyGraph.edges,
+    );
     final bindingIndicesToRemove = <int>{};
     final dependencyIndicesToRemove = <int>{};
     final bindingPairsToRemove = <String>{};
@@ -67,11 +80,14 @@ class ReviewRefinement {
 
     for (final issue in fixes) {
       final trailingIndex = int.tryParse(issue.id.split(':').last);
-      if (issue.id.startsWith('engineering:duplicate:') && trailingIndex != null) {
+      if (issue.id.startsWith('engineering:duplicate:') &&
+          trailingIndex != null) {
         bindingIndicesToRemove.add(trailingIndex);
-      } else if (issue.id.startsWith('engineering:unused:') || issue.id.startsWith('binding:dead:')) {
+      } else if (issue.id.startsWith('engineering:unused:') ||
+          issue.id.startsWith('binding:dead:')) {
         bindingPairsToRemove.add(issue.evidence.affectedNodeId);
-      } else if (issue.id.startsWith('dependency:redundant:') && trailingIndex != null) {
+      } else if (issue.id.startsWith('dependency:redundant:') &&
+          trailingIndex != null) {
         dependencyIndicesToRemove.add(trailingIndex);
       } else if (issue.id.startsWith('dependency:missing:')) {
         dependencyPairsToRemove.add(issue.evidence.affectedNodeId);
@@ -80,26 +96,33 @@ class ReviewRefinement {
 
     final newBindingEdges = <BindingEdge>[
       for (var i = 0; i < bindingEdges.length; i++)
-        if (!bindingIndicesToRemove.contains(i) && !bindingPairsToRemove.contains('${bindingEdges[i].fromId}->${bindingEdges[i].toId}'))
+        if (!bindingIndicesToRemove.contains(i) &&
+            !bindingPairsToRemove.contains(
+              '${bindingEdges[i].fromId}->${bindingEdges[i].toId}',
+            ))
           bindingEdges[i],
     ];
     final newDependencyEdges = <DependencyEdge>[
       for (var i = 0; i < dependencyEdges.length; i++)
         if (!dependencyIndicesToRemove.contains(i) &&
-            !dependencyPairsToRemove.contains('${dependencyEdges[i].fromId}->${dependencyEdges[i].toId}'))
+            !dependencyPairsToRemove.contains(
+              '${dependencyEdges[i].fromId}->${dependencyEdges[i].toId}',
+            ))
           dependencyEdges[i],
     ];
 
-    final EngineeringCandidate newEngineeringCandidate = context.engineering.copyWith(
-      bindingGraph: BindingGraph(edges: newBindingEdges),
-    );
+    final EngineeringCandidate newEngineeringCandidate = context.engineering
+        .copyWith(bindingGraph: BindingGraph(edges: newBindingEdges));
     final oldPlan = context.solution.engineeringVariation.plan;
     final newPlan = EngineeringPlan(
       finalCandidate: newEngineeringCandidate,
       reviewHistory: oldPlan.reviewHistory,
       outcome: oldPlan.outcome,
     );
-    final newDependencyGraph = DependencyGraph(nodes: context.dependencyGraph.nodes, edges: newDependencyEdges);
+    final newDependencyGraph = DependencyGraph(
+      nodes: context.dependencyGraph.nodes,
+      edges: newDependencyEdges,
+    );
     final old = context.solution;
     final newSolution = SolutionCandidate(
       id: old.id,

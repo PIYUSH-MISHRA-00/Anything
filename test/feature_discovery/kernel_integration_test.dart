@@ -72,7 +72,14 @@ SemanticApp _hiveApp() {
         id: 'inspection',
         name: 'Inspection',
         displayField: 'notes',
-        fields: [SemanticField(id: 'notes', name: 'Notes', type: BlueprintFieldType.text, required: true)],
+        fields: [
+          SemanticField(
+            id: 'notes',
+            name: 'Notes',
+            type: BlueprintFieldType.text,
+            required: true,
+          ),
+        ],
       ),
     ],
     views: const [
@@ -85,7 +92,13 @@ SemanticApp _hiveApp() {
         isDefault: true,
       ),
     ],
-    actions: const [SemanticAction(id: 'add_inspection', name: 'Add Inspection', targetEntityId: 'inspection')],
+    actions: const [
+      SemanticAction(
+        id: 'add_inspection',
+        name: 'Add Inspection',
+        targetEntityId: 'inspection',
+      ),
+    ],
   );
 }
 
@@ -95,43 +108,60 @@ Future<ExecutionPlanReady> _runKernel() async {
     capabilityRegistry: _registryWithStorage(),
     reasoner: _FixedReasoner(_hiveApp()),
   );
-  final outcome = await kernel.processIntent(Intent.create(expression: 'track my hive inspections'));
+  final outcome = await kernel.processIntent(
+    Intent.create(expression: 'track my hive inspections'),
+  );
   expect(outcome, isA<ExecutionPlanReady>());
   return outcome as ExecutionPlanReady;
 }
 
 void main() {
-  test('processIntent runs FeatureDiscoveryEngine+Refinement and returns an approved plan', () async {
-    final ready = await _runKernel();
-    expect(ready.featurePlan, isNotNull);
-    expect(ready.featurePlan!.outcome, FeatureRefinementOutcome.approved);
-  });
+  test(
+    'processIntent runs FeatureDiscoveryEngine+Refinement and returns an approved plan',
+    () async {
+      final ready = await _runKernel();
+      expect(ready.featurePlan, isNotNull);
+      expect(ready.featurePlan!.outcome, FeatureRefinementOutcome.approved);
+    },
+  );
 
-  test('the discovered FeatureGraph contains the expected structural features', () {
-    // Re-derive from the same fixed app via a second run for a focused
-    // shape assertion (kept separate from the plan-object identity test
-    // above for clarity).
-    return _runKernel().then((ready) {
-      final graph = ready.featurePlan!.finalGraph;
-      expect(graph.nodesOfCategory(FeatureCategory.persistence), isNotEmpty);
-      expect(graph.nodesOfCategory(FeatureCategory.search), isNotEmpty);
-      expect(graph.nodesOfCategory(FeatureCategory.indexing), isNotEmpty);
-    });
-  });
+  test(
+    'the discovered FeatureGraph contains the expected structural features',
+    () {
+      // Re-derive from the same fixed app via a second run for a focused
+      // shape assertion (kept separate from the plan-object identity test
+      // above for clarity).
+      return _runKernel().then((ready) {
+        final graph = ready.featurePlan!.finalGraph;
+        expect(graph.nodesOfCategory(FeatureCategory.persistence), isNotEmpty);
+        expect(graph.nodesOfCategory(FeatureCategory.search), isNotEmpty);
+        expect(graph.nodesOfCategory(FeatureCategory.indexing), isNotEmpty);
+      });
+    },
+  );
 
-  test('Engineering genuinely consumes the FeatureGraph — index decision is corroborated end-to-end', () async {
-    final ready = await _runKernel();
-    final indexDecision = ready.engineeringPlan!.finalCandidate.data.indexes
-        .firstWhere((i) => i.entityId == 'inspection')
-        .decision;
-    expect(indexDecision.rationale, contains('Confirmed by Feature Discovery'));
-  });
+  test(
+    'Engineering genuinely consumes the FeatureGraph — index decision is corroborated end-to-end',
+    () async {
+      final ready = await _runKernel();
+      final indexDecision = ready.engineeringPlan!.finalCandidate.data.indexes
+          .firstWhere((i) => i.entityId == 'inspection')
+          .decision;
+      expect(
+        indexDecision.rationale,
+        contains('Confirmed by Feature Discovery'),
+      );
+    },
+  );
 
-  test('Engineering genuinely consumes the FeatureGraph — offline decision cites it end-to-end', () async {
-    final ready = await _runKernel();
-    expect(
-      ready.engineeringPlan!.finalCandidate.offline.decision.rationale,
-      contains("Feature Discovery's Offline Strategy feature"),
-    );
-  });
+  test(
+    'Engineering genuinely consumes the FeatureGraph — offline decision cites it end-to-end',
+    () async {
+      final ready = await _runKernel();
+      expect(
+        ready.engineeringPlan!.finalCandidate.offline.decision.rationale,
+        contains("Feature Discovery's Offline Strategy feature"),
+      );
+    },
+  );
 }

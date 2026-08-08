@@ -19,7 +19,8 @@
 library;
 
 import '../design_review/review_types.dart' show ReviewCategory, ReviewSeverity;
-import '../software_architect/architecture_types.dart' show OfflineCapability, SyncStrategy;
+import '../software_architect/architecture_types.dart'
+    show OfflineCapability, SyncStrategy;
 import '../software_architect/confidence.dart';
 import '../feature_discovery/feature_types.dart' show FeaturePriority;
 import 'evolution_context.dart';
@@ -50,10 +51,15 @@ class EvolutionObserver {
   /// capability or workflow this design chose not to build yet — the
   /// most direct, non-fabricated source of "what could this support
   /// next?".
-  List<EvolutionOpportunity> _deferredFeatureOpportunities(EvolutionContext context) {
+  List<EvolutionOpportunity> _deferredFeatureOpportunities(
+    EvolutionContext context,
+  ) {
     final opportunities = <EvolutionOpportunity>[];
     for (final node in context.featureGraph.nodes) {
-      if (node.priority == FeaturePriority.mandatory || node.priority == FeaturePriority.recommended) continue;
+      if (node.priority == FeaturePriority.mandatory ||
+          node.priority == FeaturePriority.recommended) {
+        continue;
+      }
 
       final isCapability = node.category.name == 'capability';
       opportunities.add(
@@ -62,9 +68,11 @@ class EvolutionObserver {
           category: isCapability
               ? EvolutionOpportunityCategory.missingCapability
               : EvolutionOpportunityCategory.missingWorkflow,
-          description: '${node.name} was discovered but deferred (priority: ${node.priority.name})',
+          description:
+              '${node.name} was discovered but deferred (priority: ${node.priority.name})',
           reason: EvolutionReason(
-            summary: node.explanation.whyOptional ?? node.explanation.whyDiscovered,
+            summary:
+                node.explanation.whyOptional ?? node.explanation.whyDiscovered,
             evidence: EvolutionEvidence(
               affectedGraph: 'FeatureGraph',
               affectedNodeId: node.id,
@@ -82,9 +90,14 @@ class EvolutionObserver {
   /// blueprint view of any kind — a genuinely missing entry point, not a
   /// defect (SCARE's NavigationReviewer already guards reachability of
   /// views that DO exist; this looks for entities with none at all).
-  List<EvolutionOpportunity> _navigationOpportunities(EvolutionContext context) {
+  List<EvolutionOpportunity> _navigationOpportunities(
+    EvolutionContext context,
+  ) {
     final opportunities = <EvolutionOpportunity>[];
-    final entitiesWithViews = context.blueprint.views.map((v) => v.sourceEntityId).whereType<String>().toSet();
+    final entitiesWithViews = context.blueprint.views
+        .map((v) => v.sourceEntityId)
+        .whereType<String>()
+        .toSet();
 
     for (final interaction in context.architecture.interactions) {
       if (!interaction.canRead) continue;
@@ -94,11 +107,16 @@ class EvolutionObserver {
         EvolutionOpportunity(
           id: 'evolution:missingNavigation:${interaction.entityId}',
           category: EvolutionOpportunityCategory.missingNavigation,
-          description: '"${interaction.entityId}" is readable but has no view of any kind',
+          description:
+              '"${interaction.entityId}" is readable but has no view of any kind',
           reason: EvolutionReason(
-            summary: 'ArchitectureCandidate.interactions allows reading this entity, but no '
+            summary:
+                'ArchitectureCandidate.interactions allows reading this entity, but no '
                 'blueprint view exposes it to the user',
-            evidence: EvolutionEvidence(affectedGraph: 'ArchitectureCandidate.interactions', affectedNodeId: interaction.entityId),
+            evidence: EvolutionEvidence(
+              affectedGraph: 'ArchitectureCandidate.interactions',
+              affectedNodeId: interaction.entityId,
+            ),
             confidence: Confidence.full,
           ),
         ),
@@ -109,11 +127,14 @@ class EvolutionObserver {
 
   /// Entities with enough fields that search/filtering would genuinely
   /// help, but the real InteractionDecision doesn't support it yet.
-  List<EvolutionOpportunity> _searchAndFilterOpportunities(EvolutionContext context) {
+  List<EvolutionOpportunity> _searchAndFilterOpportunities(
+    EvolutionContext context,
+  ) {
     final opportunities = <EvolutionOpportunity>[];
     final fieldCountByEntity = <String, int>{};
     for (final field in context.architecture.fields) {
-      fieldCountByEntity[field.entityId] = (fieldCountByEntity[field.entityId] ?? 0) + 1;
+      fieldCountByEntity[field.entityId] =
+          (fieldCountByEntity[field.entityId] ?? 0) + 1;
     }
     final referenceFieldsByEntity = <String, bool>{};
     for (final rel in context.architecture.relationships) {
@@ -124,33 +145,52 @@ class EvolutionObserver {
       if (!interaction.canRead) continue;
       final fieldCount = fieldCountByEntity[interaction.entityId] ?? 0;
 
-      if (!interaction.supportsSearch && fieldCount >= _searchWorthwhileFieldCount) {
+      if (!interaction.supportsSearch &&
+          fieldCount >= _searchWorthwhileFieldCount) {
         opportunities.add(
           EvolutionOpportunity(
             id: 'evolution:missingSearch:${interaction.entityId}',
             category: EvolutionOpportunityCategory.missingSearch,
-            description: '"${interaction.entityId}" has $fieldCount fields but no search',
+            description:
+                '"${interaction.entityId}" has $fieldCount fields but no search',
             reason: EvolutionReason(
-              summary: 'Entities with $_searchWorthwhileFieldCount+ fields are structurally likely to '
+              summary:
+                  'Entities with $_searchWorthwhileFieldCount+ fields are structurally likely to '
                   'benefit from search once records accumulate',
-              evidence: EvolutionEvidence(affectedGraph: 'ArchitectureCandidate.interactions', affectedNodeId: interaction.entityId),
-              confidence: const Confidence(score: 0.6, reason: 'Field-count heuristic, not a guaranteed need.'),
+              evidence: EvolutionEvidence(
+                affectedGraph: 'ArchitectureCandidate.interactions',
+                affectedNodeId: interaction.entityId,
+              ),
+              confidence: const Confidence(
+                score: 0.6,
+                reason: 'Field-count heuristic, not a guaranteed need.',
+              ),
             ),
           ),
         );
       }
 
-      if (!interaction.supportsFilter && (referenceFieldsByEntity[interaction.entityId] ?? false)) {
+      if (!interaction.supportsFilter &&
+          (referenceFieldsByEntity[interaction.entityId] ?? false)) {
         opportunities.add(
           EvolutionOpportunity(
             id: 'evolution:missingFiltering:${interaction.entityId}',
             category: EvolutionOpportunityCategory.missingFiltering,
-            description: '"${interaction.entityId}" has reference fields but no filtering',
+            description:
+                '"${interaction.entityId}" has reference fields but no filtering',
             reason: EvolutionReason(
-              summary: 'Entities with relationships are structurally likely to benefit from '
+              summary:
+                  'Entities with relationships are structurally likely to benefit from '
                   'filtering by the related entity',
-              evidence: EvolutionEvidence(affectedGraph: 'ArchitectureCandidate.interactions', affectedNodeId: interaction.entityId),
-              confidence: const Confidence(score: 0.6, reason: 'Relationship-presence heuristic, not a guaranteed need.'),
+              evidence: EvolutionEvidence(
+                affectedGraph: 'ArchitectureCandidate.interactions',
+                affectedNodeId: interaction.entityId,
+              ),
+              confidence: const Confidence(
+                score: 0.6,
+                reason:
+                    'Relationship-presence heuristic, not a guaranteed need.',
+              ),
             ),
           ),
         );
@@ -171,25 +211,34 @@ class EvolutionObserver {
         EvolutionOpportunity(
           id: 'evolution:missingOffline:${offline.decision.id}',
           category: EvolutionOpportunityCategory.missingOffline,
-          description: 'Offline posture is ${offline.capability.name}, not fullyOffline',
+          description:
+              'Offline posture is ${offline.capability.name}, not fullyOffline',
           reason: EvolutionReason(
             summary: offline.decision.rationale,
-            evidence: EvolutionEvidence(affectedGraph: 'ArchitectureCandidate.offline', affectedNodeId: offline.decision.id),
+            evidence: EvolutionEvidence(
+              affectedGraph: 'ArchitectureCandidate.offline',
+              affectedNodeId: offline.decision.id,
+            ),
             confidence: offline.decision.confidence,
           ),
         ),
       );
     }
 
-    if (sync.strategy == SyncStrategy.none && offline.capability != OfflineCapability.onlineRequired) {
+    if (sync.strategy == SyncStrategy.none &&
+        offline.capability != OfflineCapability.onlineRequired) {
       opportunities.add(
         EvolutionOpportunity(
           id: 'evolution:missingSynchronization:${sync.decision.id}',
           category: EvolutionOpportunityCategory.missingSynchronization,
-          description: 'Offline data exists but synchronization strategy is none',
+          description:
+              'Offline data exists but synchronization strategy is none',
           reason: EvolutionReason(
             summary: sync.decision.rationale,
-            evidence: EvolutionEvidence(affectedGraph: 'ArchitectureCandidate.synchronization', affectedNodeId: sync.decision.id),
+            evidence: EvolutionEvidence(
+              affectedGraph: 'ArchitectureCandidate.synchronization',
+              affectedNodeId: sync.decision.id,
+            ),
             confidence: sync.decision.confidence,
           ),
         ),
@@ -203,11 +252,16 @@ class EvolutionObserver {
   /// already identified but that didn't block approval. This is the
   /// literal "reuse SCARE, don't duplicate review logic" directive: no
   /// second accessibility/performance checker is written here.
-  List<EvolutionOpportunity> _reviewSignalOpportunities(EvolutionContext context) {
+  List<EvolutionOpportunity> _reviewSignalOpportunities(
+    EvolutionContext context,
+  ) {
     const categoryMap = {
-      ReviewCategory.accessibility: EvolutionOpportunityCategory.missingAccessibility,
-      ReviewCategory.performance: EvolutionOpportunityCategory.missingPerformance,
-      ReviewCategory.maintainability: EvolutionOpportunityCategory.missingMaintainability,
+      ReviewCategory.accessibility:
+          EvolutionOpportunityCategory.missingAccessibility,
+      ReviewCategory.performance:
+          EvolutionOpportunityCategory.missingPerformance,
+      ReviewCategory.maintainability:
+          EvolutionOpportunityCategory.missingMaintainability,
     };
 
     final opportunities = <EvolutionOpportunity>[];

@@ -41,9 +41,11 @@ const Set<String> _knownFrameworks = {
   'echo',
 };
 
-Map<String, dynamic> _asMap(dynamic v) => v is Map ? Map<String, dynamic>.from(v) : <String, dynamic>{};
+Map<String, dynamic> _asMap(dynamic v) =>
+    v is Map ? Map<String, dynamic>.from(v) : <String, dynamic>{};
 
-List<String> _asStringList(dynamic v) => v is List ? v.map((e) => e.toString()).toList() : <String>[];
+List<String> _asStringList(dynamic v) =>
+    v is List ? v.map((e) => e.toString()).toList() : <String>[];
 
 /// Fetches a page and returns WebWeaveX's `renderPage` shape, matching
 /// `WebWeaveXAdapter.PageFetcher` exactly so both share one real HTTP
@@ -53,13 +55,18 @@ typedef PageFetcher = Future<Map<String, dynamic>> Function(String url);
 class RepositoryAnalyzer {
   final PageFetcher _fetchPage;
 
-  RepositoryAnalyzer({PageFetcher? fetchPage}) : _fetchPage = fetchPage ?? wwx.renderPage;
+  RepositoryAnalyzer({PageFetcher? fetchPage})
+    : _fetchPage = fetchPage ?? wwx.renderPage;
 
   /// Core, network-free translation: real acquired source text (and
   /// optionally a file-path listing, for infra/CI/test detection) in,
   /// typed RepositoryModel out.
   RepositoryModel analyze(RepositoryContext context) {
-    final ir = wwx.compileRepository(context.source, path: context.path, files: context.files);
+    final ir = wwx.compileRepository(
+      context.source,
+      path: context.path,
+      files: context.files,
+    );
     final raw = _asMap(ir['raw'] ?? ir['_raw']);
     final language = (raw['language'] as String?) ?? 'text';
     final dependencies = _asStringList(ir['dependencies']);
@@ -75,43 +82,101 @@ class RepositoryAnalyzer {
 
     final services = _asMap(raw['services']);
     final serviceNodes = _asStringList(services['nodes']);
-    final serviceEdgesRaw = services['edges'] is List ? services['edges'] as List : const [];
+    final serviceEdgesRaw = services['edges'] is List
+        ? services['edges'] as List
+        : const [];
 
     final confidenceMap = _asMap(ir['confidence']);
     final confidenceScore = (confidenceMap['score'] as num?)?.toDouble() ?? 0.0;
     final confidenceBasis = _asStringList(confidenceMap['basis']);
 
-    final frameworks = dependencies.map((d) => d.toLowerCase()).where(_knownFrameworks.contains).toList()..sort();
+    final frameworks =
+        dependencies
+            .map((d) => d.toLowerCase())
+            .where(_knownFrameworks.contains)
+            .toList()
+          ..sort();
 
     final structure = RepositoryStructure(
-      entries: context.files.map((f) => RepositoryNode(path: f, isDirectory: f.endsWith('/'))).toList(),
+      entries: context.files
+          .map((f) => RepositoryNode(path: f, isDirectory: f.endsWith('/')))
+          .toList(),
     );
 
     final summary = RepositorySummary(
-      purpose: context.metadata.description.isNotEmpty ? context.metadata.description : context.metadata.name,
+      purpose: context.metadata.description.isNotEmpty
+          ? context.metadata.description
+          : context.metadata.name,
       primaryLanguage: language,
       dependencyCount: dependencies.length,
       entrypointCount: entrypoints.length,
       hasTests: structure.hasTests,
-      hasCi: structure.hasCi || infra.any((f) => f.contains('.github/workflows')),
-      hasDocker: structure.hasDocker || infra.any((f) => f.toLowerCase().contains('docker')),
+      hasCi:
+          structure.hasCi || infra.any((f) => f.contains('.github/workflows')),
+      hasDocker:
+          structure.hasDocker ||
+          infra.any((f) => f.toLowerCase().contains('docker')),
     );
 
-    final repoIdentity = SoftwareIdentity.stable(SoftwareNodeKind.repository, context.metadata.name);
-    final nodes = <SoftwareNode>[SoftwareNode(identity: repoIdentity, kind: SoftwareNodeKind.repository, label: context.metadata.name)];
+    final repoIdentity = SoftwareIdentity.stable(
+      SoftwareNodeKind.repository,
+      context.metadata.name,
+    );
+    final nodes = <SoftwareNode>[
+      SoftwareNode(
+        identity: repoIdentity,
+        kind: SoftwareNodeKind.repository,
+        label: context.metadata.name,
+      ),
+    ];
     final edges = <SoftwareEdge>[];
-    final evidence = SoftwareEvidence(sourceUrl: context.metadata.provenance.sourceUrl, sourceArtifact: context.path);
+    final evidence = SoftwareEvidence(
+      sourceUrl: context.metadata.provenance.sourceUrl,
+      sourceArtifact: context.path,
+    );
 
     for (final dep in dependencies) {
-      final depIdentity = SoftwareIdentity.stable(SoftwareNodeKind.package, dep);
-      nodes.add(SoftwareNode(identity: depIdentity, kind: SoftwareNodeKind.package, label: dep));
-      edges.add(SoftwareEdge(fromId: repoIdentity, toId: depIdentity, kind: SoftwareRelationshipKind.dependsOn, evidence: evidence));
+      final depIdentity = SoftwareIdentity.stable(
+        SoftwareNodeKind.package,
+        dep,
+      );
+      nodes.add(
+        SoftwareNode(
+          identity: depIdentity,
+          kind: SoftwareNodeKind.package,
+          label: dep,
+        ),
+      );
+      edges.add(
+        SoftwareEdge(
+          fromId: repoIdentity,
+          toId: depIdentity,
+          kind: SoftwareRelationshipKind.dependsOn,
+          evidence: evidence,
+        ),
+      );
     }
 
     for (final serviceNode in serviceNodes) {
-      final nodeIdentity = SoftwareIdentity.stable(SoftwareNodeKind.component, serviceNode);
-      nodes.add(SoftwareNode(identity: nodeIdentity, kind: SoftwareNodeKind.component, label: serviceNode));
-      edges.add(SoftwareEdge(fromId: repoIdentity, toId: nodeIdentity, kind: SoftwareRelationshipKind.contains, evidence: evidence));
+      final nodeIdentity = SoftwareIdentity.stable(
+        SoftwareNodeKind.component,
+        serviceNode,
+      );
+      nodes.add(
+        SoftwareNode(
+          identity: nodeIdentity,
+          kind: SoftwareNodeKind.component,
+          label: serviceNode,
+        ),
+      );
+      edges.add(
+        SoftwareEdge(
+          fromId: repoIdentity,
+          toId: nodeIdentity,
+          kind: SoftwareRelationshipKind.contains,
+          evidence: evidence,
+        ),
+      );
     }
     for (final edgeRaw in serviceEdgesRaw) {
       final e = _asMap(edgeRaw);
@@ -142,7 +207,9 @@ class RepositoryAnalyzer {
       graph: RepositoryGraph(SemanticSoftwareGraph(nodes: nodes, edges: edges)),
       confidence: SoftwareConfidence(
         score: confidenceScore,
-        reason: confidenceBasis.isNotEmpty ? confidenceBasis.join(', ') : 'no parser evidence available',
+        reason: confidenceBasis.isNotEmpty
+            ? confidenceBasis.join(', ')
+            : 'no parser evidence available',
       ),
     );
   }
@@ -151,7 +218,11 @@ class RepositoryAnalyzer {
   /// HTTP fetch and real HTML extraction, then analyzes the extracted
   /// text. Returns null (never throws) when the page is unreachable or
   /// empty — matching WebWeaveXAdapter's own failure contract.
-  Future<RepositoryModel?> acquireFromUrl(String url, {required String name, String description = ''}) async {
+  Future<RepositoryModel?> acquireFromUrl(
+    String url, {
+    required String name,
+    String description = '',
+  }) async {
     final uri = Uri.tryParse(url);
     if (uri == null || !uri.scheme.startsWith('http')) return null;
 
@@ -166,8 +237,11 @@ class RepositoryAnalyzer {
     if (html.isEmpty) return null;
 
     final semanticContent = wwx.extractSemanticContent(html);
-    final paragraphs = (semanticContent['paragraphs'] as List? ?? []).cast<String>();
-    final text = paragraphs.isNotEmpty ? paragraphs.join('\n\n') : (wwx.extractSemanticHtml(html)['text'] as String? ?? '');
+    final paragraphs = (semanticContent['paragraphs'] as List? ?? [])
+        .cast<String>();
+    final text = paragraphs.isNotEmpty
+        ? paragraphs.join('\n\n')
+        : (wwx.extractSemanticHtml(html)['text'] as String? ?? '');
     if (text.isEmpty) return null;
 
     final metadata = RepositoryMetadata(
@@ -179,10 +253,16 @@ class RepositoryAnalyzer {
         repositoryUrl: url,
         retrievedAt: DateTime.now(),
         provider: 'webweavex',
-        license: const LicenseMetadata(policy: LicensePolicy.unknownReviewRequired, source: 'webweavex', confidence: 0.5),
+        license: const LicenseMetadata(
+          policy: LicensePolicy.unknownReviewRequired,
+          source: 'webweavex',
+          confidence: 0.5,
+        ),
       ),
     );
 
-    return analyze(RepositoryContext(source: text, metadata: metadata, path: uri.path));
+    return analyze(
+      RepositoryContext(source: text, metadata: metadata, path: uri.path),
+    );
   }
 }

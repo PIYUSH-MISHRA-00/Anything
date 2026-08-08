@@ -32,9 +32,13 @@ class ReviewContext {
   });
 
   ArchitectureCandidate get architecture => solution.architecture;
-  EngineeringCandidate get engineering => solution.engineeringVariation.plan.finalCandidate;
+  EngineeringCandidate get engineering =>
+      solution.engineeringVariation.plan.finalCandidate;
 
-  ReviewContext copyWith({AppBlueprint? blueprint, SolutionCandidate? solution}) {
+  ReviewContext copyWith({
+    AppBlueprint? blueprint,
+    SolutionCandidate? solution,
+  }) {
     return ReviewContext(
       app: app,
       requirements: requirements,

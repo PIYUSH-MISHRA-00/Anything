@@ -16,7 +16,10 @@ class FeatureClassifier {
         byId[candidate.id] = candidate;
         continue;
       }
-      final mergedSources = {...existing.sourceNodeIds, ...candidate.sourceNodeIds}.toList();
+      final mergedSources = {
+        ...existing.sourceNodeIds,
+        ...candidate.sourceNodeIds,
+      }.toList();
       byId[candidate.id] = FeatureCandidate(
         id: existing.id,
         name: existing.name,

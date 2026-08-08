@@ -30,7 +30,11 @@ class GenerationPipeline {
     required GeneratorTarget target,
     GeneratorOptions options = GeneratorOptions.empty,
   }) {
-    final context = GeneratorContext(buildGraph: buildGraph, target: target, options: options);
+    final context = GeneratorContext(
+      buildGraph: buildGraph,
+      target: target,
+      options: options,
+    );
     return generator.generate(context);
   }
 }

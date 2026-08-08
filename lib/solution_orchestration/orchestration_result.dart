@@ -12,12 +12,7 @@ import '../generator_framework/artifact.dart';
 /// `ExperiencePackageValidator` — never a boolean rubber stamp over just
 /// one of those three (Implementation Specification IS-R25's "Completion
 /// Criteria").
-enum StageStatus {
-  succeeded,
-  failed,
-  skippedNotApplicable,
-  skippedNoGenerator,
-}
+enum StageStatus { succeeded, failed, skippedNotApplicable, skippedNoGenerator }
 
 /// One target's real, structured execution outcome.
 class StageOutcome {
@@ -75,11 +70,19 @@ class OrchestrationReport {
   final bool levelOrderingComplete;
   final List<StageOutcome> stages;
 
-  const OrchestrationReport({required this.levels, required this.levelOrderingComplete, required this.stages});
+  const OrchestrationReport({
+    required this.levels,
+    required this.levelOrderingComplete,
+    required this.stages,
+  });
 
-  bool get succeeded => levelOrderingComplete && stages.every((s) => s.status != StageStatus.failed);
+  bool get succeeded =>
+      levelOrderingComplete &&
+      stages.every((s) => s.status != StageStatus.failed);
 
-  List<StageOutcome> get failedStages => stages.where((s) => s.status == StageStatus.failed).toList();
+  List<StageOutcome> get failedStages =>
+      stages.where((s) => s.status == StageStatus.failed).toList();
 
-  StageOutcome? outcomeFor(ExecutionTargetKind target) => stages.where((s) => s.target == target).firstOrNull;
+  StageOutcome? outcomeFor(ExecutionTargetKind target) =>
+      stages.where((s) => s.target == target).firstOrNull;
 }

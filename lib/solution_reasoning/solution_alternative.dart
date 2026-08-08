@@ -8,5 +8,8 @@ class SolutionAlternative {
   final SolutionCandidate candidate;
   final String whyNotSelected;
 
-  const SolutionAlternative({required this.candidate, required this.whyNotSelected});
+  const SolutionAlternative({
+    required this.candidate,
+    required this.whyNotSelected,
+  });
 }

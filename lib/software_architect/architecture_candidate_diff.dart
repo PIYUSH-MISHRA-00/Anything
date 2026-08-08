@@ -28,7 +28,8 @@ class ArchitectureDiff {
   final List<PermissionDecision> removedPermissions;
   final (SecurityDecision, SecurityDecision)? securityChange;
   final (OfflineDecision, OfflineDecision)? offlineChange;
-  final (SynchronizationDecision, SynchronizationDecision)? synchronizationChange;
+  final (SynchronizationDecision, SynchronizationDecision)?
+  synchronizationChange;
 
   const ArchitectureDiff({
     this.addedEntities = const [],
@@ -67,7 +68,10 @@ class ArchitectureDiff {
 class ArchitectureDiffer {
   const ArchitectureDiffer();
 
-  ArchitectureDiff diff(ArchitectureCandidate before, ArchitectureCandidate after) {
+  ArchitectureDiff diff(
+    ArchitectureCandidate before,
+    ArchitectureCandidate after,
+  ) {
     final entityDiff = _diffById<EntityDecision, String>(
       before.entities,
       after.entities,
@@ -112,13 +116,15 @@ class ArchitectureDiffer {
       removedPermissions: permissionDiff.removed,
       securityChange:
           before.security.networkMode == after.security.networkMode &&
-              before.security.requiresCredentialVault == after.security.requiresCredentialVault
+              before.security.requiresCredentialVault ==
+                  after.security.requiresCredentialVault
           ? null
           : (before.security, after.security),
       offlineChange: before.offline.capability == after.offline.capability
           ? null
           : (before.offline, after.offline),
-      synchronizationChange: before.synchronization.strategy == after.synchronization.strategy
+      synchronizationChange:
+          before.synchronization.strategy == after.synchronization.strategy
           ? null
           : (before.synchronization, after.synchronization),
     );

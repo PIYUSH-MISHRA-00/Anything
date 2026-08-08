@@ -61,7 +61,8 @@ class CapabilityDependencyResolver extends DependencyResolver {
         dependsOnKind: DependencyNodeKind.capability,
         dependsOnId: 'capability:$capId',
         dependsOnLabel: capId,
-        rationale: 'Credential storage is required because capability "$capId" resolves credentials.',
+        rationale:
+            'Credential storage is required because capability "$capId" resolves credentials.',
       );
     }).toList();
   }
@@ -85,7 +86,8 @@ class PermissionDependencyResolver extends DependencyResolver {
         dependsOnKind: DependencyNodeKind.permission,
         dependsOnId: 'permission:$capId',
         dependsOnLabel: '$capId permission',
-        rationale: 'Capability "$capId" requires a declared platform permission.',
+        rationale:
+            'Capability "$capId" requires a declared platform permission.',
       );
     }).toList();
   }
@@ -101,7 +103,8 @@ class NavigationDependencyResolver extends DependencyResolver {
     required FeatureCandidate candidate,
     required List<FeatureCandidate> allCandidates,
   }) {
-    if (candidate.category != FeatureCategory.search && candidate.category != FeatureCategory.relational) {
+    if (candidate.category != FeatureCategory.search &&
+        candidate.category != FeatureCategory.relational) {
       return const [];
     }
     return [
@@ -110,7 +113,8 @@ class NavigationDependencyResolver extends DependencyResolver {
         dependsOnKind: DependencyNodeKind.navigation,
         dependsOnId: 'navigation:global',
         dependsOnLabel: 'App navigation graph',
-        rationale: 'Search/relational results need to navigate to a detail or target screen.',
+        rationale:
+            'Search/relational results need to navigate to a detail or target screen.',
       ),
     ];
   }
@@ -127,7 +131,9 @@ class OfflineDependencyResolver extends DependencyResolver {
     required List<FeatureCandidate> allCandidates,
   }) {
     if (candidate.category != FeatureCategory.offline) return const [];
-    final hasPersistence = allCandidates.any((c) => c.category == FeatureCategory.persistence);
+    final hasPersistence = allCandidates.any(
+      (c) => c.category == FeatureCategory.persistence,
+    );
     if (!hasPersistence) return const [];
     return [
       FeatureDependency(
@@ -135,7 +141,8 @@ class OfflineDependencyResolver extends DependencyResolver {
         dependsOnKind: DependencyNodeKind.storage,
         dependsOnId: 'storage:sqlite',
         dependsOnLabel: 'SQLite generic storage',
-        rationale: 'Offline behavior depends on local persistence remaining available without network.',
+        rationale:
+            'Offline behavior depends on local persistence remaining available without network.',
       ),
     ];
   }
@@ -160,19 +167,39 @@ class DependencyGraphBuilder {
 
   DependencyGraph build(List<FeatureCandidate> candidates) {
     final nodes = <DependencyNode>[
-      for (final c in candidates) DependencyNode(id: c.id, kind: DependencyNodeKind.feature, label: c.name),
+      for (final c in candidates)
+        DependencyNode(
+          id: c.id,
+          kind: DependencyNodeKind.feature,
+          label: c.name,
+        ),
     ];
     final nodeIds = nodes.map((n) => n.id).toSet();
     final edges = <DependencyEdge>[];
 
     for (final candidate in candidates) {
       for (final resolver in resolvers) {
-        final dependencies = resolver.resolve(candidate: candidate, allCandidates: candidates);
+        final dependencies = resolver.resolve(
+          candidate: candidate,
+          allCandidates: candidates,
+        );
         for (final dep in dependencies) {
           if (nodeIds.add(dep.dependsOnId)) {
-            nodes.add(DependencyNode(id: dep.dependsOnId, kind: dep.dependsOnKind, label: dep.dependsOnLabel));
+            nodes.add(
+              DependencyNode(
+                id: dep.dependsOnId,
+                kind: dep.dependsOnKind,
+                label: dep.dependsOnLabel,
+              ),
+            );
           }
-          edges.add(DependencyEdge(fromId: dep.featureId, toId: dep.dependsOnId, relation: dep.relation));
+          edges.add(
+            DependencyEdge(
+              fromId: dep.featureId,
+              toId: dep.dependsOnId,
+              relation: dep.relation,
+            ),
+          );
         }
       }
     }

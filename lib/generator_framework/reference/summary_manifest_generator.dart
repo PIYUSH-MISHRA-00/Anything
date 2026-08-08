@@ -38,14 +38,19 @@ import '../generator.dart';
 class SummaryManifestGenerator implements Generator {
   final GenerationSpecification specification;
 
-  const SummaryManifestGenerator({this.specification = GenerationSpecification.defaultReference});
+  const SummaryManifestGenerator({
+    this.specification = GenerationSpecification.defaultReference,
+  });
 
   @override
   GeneratorMetadata get metadata => const GeneratorMetadata(
     id: 'reference.summary-manifest',
     name: 'Summary Manifest (Reference Generator)',
     version: GeneratorVersion(major: 1, minor: 0, patch: 0),
-    capabilities: [GeneratorCapability.documentation, GeneratorCapability.manifests],
+    capabilities: [
+      GeneratorCapability.documentation,
+      GeneratorCapability.manifests,
+    ],
   );
 
   @override
@@ -63,7 +68,8 @@ class SummaryManifestGenerator implements Generator {
         const GenerationDiagnostic(
           severity: DiagnosticSeverity.info,
           category: DiagnosticCategory.general,
-          message: 'No entities in the supplied CanonicalImplementationModel — nothing to summarize.',
+          message:
+              'No entities in the supplied CanonicalImplementationModel — nothing to summarize.',
         ),
       );
       return GenerationResult(diagnostics: diagnostics);
@@ -76,13 +82,26 @@ class SummaryManifestGenerator implements Generator {
     final entityArtifacts = <Artifact>[];
     if (entityRule != null) {
       for (final entity in model.entities) {
-        final lines = <String>['Entity: ${entity.name} (${entity.id})', 'Fields:'];
+        final lines = <String>[
+          'Entity: ${entity.name} (${entity.id})',
+          'Fields:',
+        ];
         for (final field in entity.fields) {
-          lines.add('  - ${field.name} (${field.type.name}${field.required ? ', required' : ''})');
+          lines.add(
+            '  - ${field.name} (${field.type.name}${field.required ? ', required' : ''})',
+          );
         }
-        final path = entityRule.mapping.pathTemplate.resolve(id: entity.id, label: entity.name);
+        final path = entityRule.mapping.pathTemplate.resolve(
+          id: entity.id,
+          label: entity.name,
+        );
         entityArtifacts.add(
-          Artifact(id: '${entity.id}.summary', path: path, kind: ArtifactKind.file, content: lines.join('\n')),
+          Artifact(
+            id: '${entity.id}.summary',
+            path: path,
+            kind: ArtifactKind.file,
+            content: lines.join('\n'),
+          ),
         );
       }
     } else {
@@ -90,7 +109,8 @@ class SummaryManifestGenerator implements Generator {
         const GenerationDiagnostic(
           severity: DiagnosticSeverity.info,
           category: DiagnosticCategory.skippedFeature,
-          message: 'Specification declares no rule for BuildNodeKind.entity — entity summaries skipped.',
+          message:
+              'Specification declares no rule for BuildNodeKind.entity — entity summaries skipped.',
         ),
       );
     }
@@ -102,7 +122,8 @@ class SummaryManifestGenerator implements Generator {
         const GenerationDiagnostic(
           severity: DiagnosticSeverity.info,
           category: DiagnosticCategory.skippedFeature,
-          message: 'No Service groupings present — manifest lists entities only.',
+          message:
+              'No Service groupings present — manifest lists entities only.',
         ),
       );
     }
@@ -119,7 +140,10 @@ class SummaryManifestGenerator implements Generator {
     ];
     final manifestArtifact = Artifact(
       id: 'manifest',
-      path: specification.manifestPathTemplate.resolve(id: 'manifest', label: 'manifest'),
+      path: specification.manifestPathTemplate.resolve(
+        id: 'manifest',
+        label: 'manifest',
+      ),
       kind: ArtifactKind.manifest,
       content: manifestLines.join('\n'),
     );

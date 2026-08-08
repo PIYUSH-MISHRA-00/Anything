@@ -6,7 +6,8 @@ library;
 
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:anything/application_engineering/behavior_engineering.dart' show BehaviorEngineeringResult;
+import 'package:anything/application_engineering/behavior_engineering.dart'
+    show BehaviorEngineeringResult;
 import 'package:anything/application_engineering/engineering_types.dart';
 import 'package:anything/design_review/review_types.dart';
 import 'package:anything/design_review/reviewers/specification_reviewer.dart';
@@ -27,7 +28,10 @@ void main() {
 
     test('every real screen is reachable', () {
       final issues = reviewer.review(context);
-      expect(issues.any((i) => i.category == ReviewCategory.navigation), isFalse);
+      expect(
+        issues.any((i) => i.category == ReviewCategory.navigation),
+        isFalse,
+      );
     });
 
     test(
@@ -45,7 +49,8 @@ void main() {
         final multiEntityContext = buildReviewContext(multiEntityApp());
         final issues = reviewer.review(multiEntityContext);
         expect(issues, isEmpty);
-    });
+      },
+    );
 
     test(
       'a dashboard-type entry view anchors its entity\'s form screen, same as a list view',
@@ -59,7 +64,8 @@ void main() {
         final dashboardContext = buildReviewContext(dashboardApp());
         final issues = reviewer.review(dashboardContext);
         expect(issues, isEmpty);
-    });
+      },
+    );
   });
 
   group('BehaviorReviewer', () {
@@ -74,7 +80,8 @@ void main() {
       final behavior = context.engineering.behaviors.first;
       final brokenEventGraph = EventGraph(
         entityId: behavior.eventGraph.entityId,
-        events: const [], // no events at all -> every action becomes unreachable
+        events:
+            const [], // no events at all -> every action becomes unreachable
         actions: behavior.eventGraph.actions,
       );
       final brokenBehavior = BehaviorEngineeringResult(
@@ -82,8 +89,12 @@ void main() {
         stateMachine: behavior.stateMachine,
         decision: behavior.decision,
       );
-      final brokenEngineering = context.engineering.copyWith(behaviors: [brokenBehavior]);
-      final issues = reviewer.review(withEngineering(context, brokenEngineering));
+      final brokenEngineering = context.engineering.copyWith(
+        behaviors: [brokenBehavior],
+      );
+      final issues = reviewer.review(
+        withEngineering(context, brokenEngineering),
+      );
       expect(issues.any((i) => i.id.startsWith('behavior:dead:')), isTrue);
     });
   });

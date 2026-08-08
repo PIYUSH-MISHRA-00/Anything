@@ -14,7 +14,10 @@ class ComponentDifference {
   final String category;
   final String description;
 
-  const ComponentDifference({required this.category, required this.description});
+  const ComponentDifference({
+    required this.category,
+    required this.description,
+  });
 }
 
 class EquivalenceReport {

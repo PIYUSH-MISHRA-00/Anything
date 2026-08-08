@@ -49,7 +49,9 @@ class BehaviorEngineering {
     void addCrud(String verb, EffectKind effectKind, GenericState working) {
       final eventId = 'evt:${entity.entityId}:$verb';
       final actionId = 'action:${entity.entityId}:$verb';
-      events.add(Event(id: eventId, name: '$verb ${entity.name}', actionId: actionId));
+      events.add(
+        Event(id: eventId, name: '$verb ${entity.name}', actionId: actionId),
+      );
       actions.add(
         Action(
           id: actionId,
@@ -57,13 +59,31 @@ class BehaviorEngineering {
           entityId: entity.entityId,
           trigger: const Trigger(kind: TriggerKind.userAction, sourceId: 'ui'),
           effects: [
-            Effect(kind: effectKind, targetId: entity.entityId, description: '$verb record(s)'),
+            Effect(
+              kind: effectKind,
+              targetId: entity.entityId,
+              description: '$verb record(s)',
+            ),
           ],
         ),
       );
-      transitions.add(Transition(eventId: eventId, from: GenericState.idle, to: working));
-      transitions.add(Transition(eventId: '$eventId:done', from: working, to: GenericState.completed));
-      transitions.add(Transition(eventId: '$eventId:failed', from: working, to: GenericState.error));
+      transitions.add(
+        Transition(eventId: eventId, from: GenericState.idle, to: working),
+      );
+      transitions.add(
+        Transition(
+          eventId: '$eventId:done',
+          from: working,
+          to: GenericState.completed,
+        ),
+      );
+      transitions.add(
+        Transition(
+          eventId: '$eventId:failed',
+          from: working,
+          to: GenericState.error,
+        ),
+      );
     }
 
     if (interaction?.canCreate ?? false) {
@@ -88,7 +108,11 @@ class BehaviorEngineering {
       addCrud('sort', EffectKind.dataQuery, GenericState.sorting);
     }
 
-    final eventGraph = EventGraph(entityId: entity.entityId, events: events, actions: actions);
+    final eventGraph = EventGraph(
+      entityId: entity.entityId,
+      events: events,
+      actions: actions,
+    );
     final stateMachine = StateMachineDefinition(
       entityId: entity.entityId,
       transitions: transitions,
@@ -109,11 +133,14 @@ class BehaviorEngineering {
             'every action maps to a real BehaviorInterpreter operation '
             '(dataMutation/dataQuery), every state is generic '
             '(GenericState), never entity-specific.',
-        confidence: interaction != null ? Confidence.full : const Confidence(
-          score: 0.6,
-          reason: 'No InteractionDecision found for this entity; assumed read-only.',
-          risk: RiskLevel.low,
-        ),
+        confidence: interaction != null
+            ? Confidence.full
+            : const Confidence(
+                score: 0.6,
+                reason:
+                    'No InteractionDecision found for this entity; assumed read-only.',
+                risk: RiskLevel.low,
+              ),
       ),
     );
   }

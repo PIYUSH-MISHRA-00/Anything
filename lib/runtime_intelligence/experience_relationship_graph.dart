@@ -33,22 +33,39 @@ class ExperienceRelationshipEdge {
   final ExperienceRelationshipKind kind;
   final String rationale;
 
-  const ExperienceRelationshipEdge({required this.fromId, required this.toId, required this.kind, required this.rationale});
+  const ExperienceRelationshipEdge({
+    required this.fromId,
+    required this.toId,
+    required this.kind,
+    required this.rationale,
+  });
 }
 
 class ExperienceRelationshipGraph {
   final List<RilNode> nodes;
   final List<ExperienceRelationshipEdge> edges;
 
-  const ExperienceRelationshipGraph({this.nodes = const [], this.edges = const []});
+  const ExperienceRelationshipGraph({
+    this.nodes = const [],
+    this.edges = const [],
+  });
 
-  List<ExperienceRelationshipEdge> edgesFrom(String experienceId) => edges.where((e) => e.fromId == experienceId).toList();
+  List<ExperienceRelationshipEdge> edgesFrom(String experienceId) =>
+      edges.where((e) => e.fromId == experienceId).toList();
 
   /// Infers relationships purely from structural overlap between
   /// fingerprints — never a hardcoded pair, never a keyword match.
-  factory ExperienceRelationshipGraph.infer(List<ExperienceFingerprint> fingerprints) {
+  factory ExperienceRelationshipGraph.infer(
+    List<ExperienceFingerprint> fingerprints,
+  ) {
     final nodes = fingerprints
-        .map((f) => RilNode(id: f.experienceId, kind: RilNodeKind.experience, label: f.name))
+        .map(
+          (f) => RilNode(
+            id: f.experienceId,
+            kind: RilNodeKind.experience,
+            label: f.name,
+          ),
+        )
         .toList();
 
     final edges = <ExperienceRelationshipEdge>[];
@@ -57,7 +74,9 @@ class ExperienceRelationshipGraph {
         final a = fingerprints[i];
         final b = fingerprints[j];
 
-        final sharedCapabilities = a.capabilityIds.toSet().intersection(b.capabilityIds.toSet());
+        final sharedCapabilities = a.capabilityIds.toSet().intersection(
+          b.capabilityIds.toSet(),
+        );
         if (sharedCapabilities.isNotEmpty) {
           edges.add(
             ExperienceRelationshipEdge(
@@ -69,14 +88,17 @@ class ExperienceRelationshipGraph {
           );
         }
 
-        final sharedFieldTypes = a.entityFieldTypeNames.toSet().intersection(b.entityFieldTypeNames.toSet());
+        final sharedFieldTypes = a.entityFieldTypeNames.toSet().intersection(
+          b.entityFieldTypeNames.toSet(),
+        );
         if (sharedFieldTypes.length >= 2) {
           edges.add(
             ExperienceRelationshipEdge(
               fromId: a.experienceId,
               toId: b.experienceId,
               kind: ExperienceRelationshipKind.sharesDataShape,
-              rationale: 'Both have entities with field types: ${sharedFieldTypes.join(', ')}',
+              rationale:
+                  'Both have entities with field types: ${sharedFieldTypes.join(', ')}',
             ),
           );
         }

@@ -7,7 +7,8 @@ library;
 
 import '../feature_discovery/feature_types.dart';
 import '../software_architect/architecture_candidate.dart';
-import '../software_architect/architecture_types.dart' show OfflineCapability, SyncStrategy;
+import '../software_architect/architecture_types.dart'
+    show OfflineCapability, SyncStrategy;
 import '../software_architect/confidence.dart';
 import 'engineering_types.dart';
 
@@ -24,7 +25,10 @@ class PersistenceEngineeringResult {
 class PersistenceEngineering {
   const PersistenceEngineering();
 
-  PersistenceEngineeringResult plan(ArchitectureCandidate candidate, EngineeringDecision migrationDecision) {
+  PersistenceEngineeringResult plan(
+    ArchitectureCandidate candidate,
+    EngineeringDecision migrationDecision,
+  ) {
     final decisions = candidate.entities.map((e) {
       return EngineeringDecision(
         id: 'persistence:${e.entityId}',
@@ -43,7 +47,13 @@ class PersistenceEngineering {
   }
 }
 
-enum OfflineStrategy { offlineFirst, cacheFirst, onlineRequired, deferredSync, readOnly }
+enum OfflineStrategy {
+  offlineFirst,
+  cacheFirst,
+  onlineRequired,
+  deferredSync,
+  readOnly,
+}
 
 enum ConflictStrategy { lastWriteWins, none }
 
@@ -67,7 +77,10 @@ class OfflineEngineering {
   /// corroborate/cite the discovered Offline Strategy feature's priority
   /// in the rationale; the strategy itself is still decided from the real
   /// ArchitectureCandidate, exactly as before this cross-reference existed.
-  OfflineEngineeringResult plan(ArchitectureCandidate candidate, {FeatureGraph? featureGraph}) {
+  OfflineEngineeringResult plan(
+    ArchitectureCandidate candidate, {
+    FeatureGraph? featureGraph,
+  }) {
     final strategy = switch (candidate.offline.capability) {
       OfflineCapability.fullyOffline => OfflineStrategy.offlineFirst,
       OfflineCapability.cacheThenOnline => OfflineStrategy.cacheFirst,
@@ -105,7 +118,10 @@ class SynchronizationEngineeringResult {
   final SyncStrategy strategy;
   final EngineeringDecision decision;
 
-  const SynchronizationEngineeringResult({required this.strategy, required this.decision});
+  const SynchronizationEngineeringResult({
+    required this.strategy,
+    required this.decision,
+  });
 }
 
 class SynchronizationEngineering {
@@ -118,7 +134,8 @@ class SynchronizationEngineering {
         id: 'synchronization:plan',
         category: EngineeringDecisionCategory.synchronization,
         subjectId: 'synchronization',
-        decision: 'Synchronization strategy: ${candidate.synchronization.strategy.name} '
+        decision:
+            'Synchronization strategy: ${candidate.synchronization.strategy.name} '
             '(architecture-only — no server/cloud sync implementation exists or is planned here)',
         rationale:
             'Anything has no server component today. This decision records '

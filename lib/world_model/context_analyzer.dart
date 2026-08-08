@@ -17,7 +17,11 @@ class WorldContext {
 class ContextAnalyzer {
   const ContextAnalyzer();
 
-  GraphView? relevantView(WorldGraph graph, WorldContext context, {int maxDepth = 3}) {
+  GraphView? relevantView(
+    WorldGraph graph,
+    WorldContext context, {
+    int maxDepth = 3,
+  }) {
     final focus = context.focusIdentity;
     if (focus == null) return null;
     return GraphView.centeredOn(graph, focus, maxDepth: maxDepth);

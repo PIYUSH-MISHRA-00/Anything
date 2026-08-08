@@ -21,7 +21,10 @@ import 'evolution_executor.dart';
 import 'evolution_validator.dart';
 
 export '../app/experience_modification_coordinator.dart'
-    show ModificationCoordinatorResult, ModificationCoordinatorSucceeded, ModificationCoordinatorFailed;
+    show
+        ModificationCoordinatorResult,
+        ModificationCoordinatorSucceeded,
+        ModificationCoordinatorFailed;
 
 class EvolutionCoordinator {
   final SqliteExperienceRepository _repository;
@@ -39,8 +42,11 @@ class EvolutionCoordinator {
     EvolutionValidator? validator,
     ExperienceCommitFramework? commitFramework,
   }) : _repository = repository ?? SqliteExperienceRepository(),
-       _commits = commitFramework ??
-           ExperienceCommitFramework(repository: repository ?? SqliteExperienceRepository()),
+       _commits =
+           commitFramework ??
+           ExperienceCommitFramework(
+             repository: repository ?? SqliteExperienceRepository(),
+           ),
        _activity = activity ?? ActivityRepository(),
        _executor = executor ?? EvolutionExecutor(),
        _validator = validator ?? const EvolutionValidator();
@@ -69,19 +75,27 @@ class EvolutionCoordinator {
       approvedForExecution: true,
     );
 
-    final plan = _executor.compile(approvedProposal, experienceId, currentPackage.manifest.version);
+    final plan = _executor.compile(
+      approvedProposal,
+      experienceId,
+      currentPackage.manifest.version,
+    );
     switch (plan) {
       case EvolutionNotExecutable():
         return ModificationCoordinatorFailed(message: plan.reason);
       case EvolutionExecutable():
-        final spec = userObjective == null ? plan.spec : _mergeWithUserObjective(plan.spec, userObjective);
+        final spec = userObjective == null
+            ? plan.spec
+            : _mergeWithUserObjective(plan.spec, userObjective);
         final result = await _executor.execute(currentPackage, spec);
 
         switch (result) {
           case ModificationReady():
             final validation = _validator.validate(result.updatedPackage);
             if (!validation.isValid) {
-              return const ModificationCoordinatorFailed(message: "I couldn't apply that change.");
+              return const ModificationCoordinatorFailed(
+                message: "I couldn't apply that change.",
+              );
             }
             // IS-R55 Task 4 — evolution prepares, the commit framework commits.
             await _commits.commit(
@@ -95,7 +109,8 @@ class EvolutionCoordinator {
                 type: 'evolved',
                 experienceId: experienceId,
                 experienceName: metadata.name,
-                message: 'Applied evolution proposal to ${metadata.name}: ${proposal.candidate.opportunity.description}',
+                message:
+                    'Applied evolution proposal to ${metadata.name}: ${proposal.candidate.opportunity.description}',
                 timestamp: DateTime.now(),
               ),
             );
@@ -107,12 +122,17 @@ class EvolutionCoordinator {
             );
           case ModificationFailed():
           case ModificationUnsupported():
-            return const ModificationCoordinatorFailed(message: "I couldn't apply that change.");
+            return const ModificationCoordinatorFailed(
+              message: "I couldn't apply that change.",
+            );
         }
     }
   }
 
-  ExperienceModificationSpec _mergeWithUserObjective(ExperienceModificationSpec base, String userObjective) {
+  ExperienceModificationSpec _mergeWithUserObjective(
+    ExperienceModificationSpec base,
+    String userObjective,
+  ) {
     return ExperienceModificationSpec(
       targetExperienceId: base.targetExperienceId,
       basePackageVersion: base.basePackageVersion,

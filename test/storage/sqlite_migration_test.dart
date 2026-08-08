@@ -15,8 +15,12 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:anything/storage/sqlite_experience_repository.dart';
 
 Future<void> _createLegacyV1Database(String path) async {
-  final db = await databaseFactory.openDatabase(path, options: OpenDatabaseOptions(version: 1, onCreate: (db, version) async {
-    await db.execute('''
+  final db = await databaseFactory.openDatabase(
+    path,
+    options: OpenDatabaseOptions(
+      version: 1,
+      onCreate: (db, version) async {
+        await db.execute('''
       CREATE TABLE experiences (
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
@@ -30,7 +34,7 @@ Future<void> _createLegacyV1Database(String path) async {
         is_protected INTEGER DEFAULT 0
       )
     ''');
-    await db.execute('''
+        await db.execute('''
       CREATE TABLE experience_packages (
         experience_id TEXT PRIMARY KEY,
         package_data TEXT NOT NULL,
@@ -38,14 +42,16 @@ Future<void> _createLegacyV1Database(String path) async {
         created_at TEXT NOT NULL
       )
     ''');
-    await db.execute('''
+        await db.execute('''
       CREATE TABLE protected_envelopes (
         experience_id TEXT PRIMARY KEY,
         envelope_data TEXT NOT NULL,
         created_at TEXT NOT NULL
       )
     ''');
-  }));
+      },
+    ),
+  );
 
   // Seed one real row, exactly like a real pre-existing installation
   // would have, to prove the upgrade never loses data.
@@ -73,26 +79,30 @@ void main() {
     databaseFactory = databaseFactoryFfiNoIsolate;
   });
 
-  test('a real pre-existing version-1 database upgrades to version 2 (indexes added) with zero data loss', () async {
-    final dbName = 'legacy_migration_${DateTime.now().microsecondsSinceEpoch}.db';
-    final dbPath = p.join(await databaseFactory.getDatabasesPath(), dbName);
+  test(
+    'a real pre-existing version-1 database upgrades to version 2 (indexes added) with zero data loss',
+    () async {
+      final dbName =
+          'legacy_migration_${DateTime.now().microsecondsSinceEpoch}.db';
+      final dbPath = p.join(await databaseFactory.getDatabasesPath(), dbName);
 
-    await _createLegacyV1Database(dbPath);
+      await _createLegacyV1Database(dbPath);
 
-    // Opening via the real repository requests version 2 — sqflite
-    // invokes onUpgrade(db, 1, 2) automatically since the file already
-    // exists at version 1.
-    final repository = SqliteExperienceRepository(dbName: dbName);
-    final metadata = await repository.getMetadata('legacy-exp');
+      // Opening via the real repository requests version 2 — sqflite
+      // invokes onUpgrade(db, 1, 2) automatically since the file already
+      // exists at version 1.
+      final repository = SqliteExperienceRepository(dbName: dbName);
+      final metadata = await repository.getMetadata('legacy-exp');
 
-    expect(metadata, isNotNull);
-    expect(metadata!.name, 'Legacy App');
+      expect(metadata, isNotNull);
+      expect(metadata!.name, 'Legacy App');
 
-    // The new index must now exist and be usable — listAll() still
-    // returns the pre-existing row correctly ordered.
-    final all = await repository.listAll();
-    expect(all.any((m) => m.id == 'legacy-exp'), isTrue);
+      // The new index must now exist and be usable — listAll() still
+      // returns the pre-existing row correctly ordered.
+      final all = await repository.listAll();
+      expect(all.any((m) => m.id == 'legacy-exp'), isTrue);
 
-    await repository.close();
-  });
+      await repository.close();
+    },
+  );
 }

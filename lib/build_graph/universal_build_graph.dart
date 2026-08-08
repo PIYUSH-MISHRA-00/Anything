@@ -16,11 +16,16 @@ class UniversalBuildGraph {
   final List<BuildGraphEdge> edges;
   final CanonicalImplementationModel sourceModel;
 
-  const UniversalBuildGraph({required this.nodes, required this.edges, required this.sourceModel});
+  const UniversalBuildGraph({
+    required this.nodes,
+    required this.edges,
+    required this.sourceModel,
+  });
 
   bool get isEmpty => nodes.isEmpty;
 
-  List<BuildGraphEdge> outgoingFrom(String nodeId) => edges.where((e) => e.fromId == nodeId).toList();
+  List<BuildGraphEdge> outgoingFrom(String nodeId) =>
+      edges.where((e) => e.fromId == nodeId).toList();
 }
 
 class BuildGraphBuilder {
@@ -31,11 +36,18 @@ class BuildGraphBuilder {
   /// `CanonicalImplementationModel` data, nothing fabricated.
   UniversalBuildGraph build(CanonicalImplementationModel model) {
     final nodes = <BuildGraphNode>[
-      for (final e in model.entities) BuildGraphNode(id: e.id, kind: BuildNodeKind.entity, label: e.name),
-      for (final r in model.repositories) BuildGraphNode(id: r.id, kind: BuildNodeKind.repository, label: r.id),
-      for (final c in model.controllers) BuildGraphNode(id: c.id, kind: BuildNodeKind.controller, label: c.id),
+      for (final e in model.entities)
+        BuildGraphNode(id: e.id, kind: BuildNodeKind.entity, label: e.name),
+      for (final r in model.repositories)
+        BuildGraphNode(id: r.id, kind: BuildNodeKind.repository, label: r.id),
+      for (final c in model.controllers)
+        BuildGraphNode(id: c.id, kind: BuildNodeKind.controller, label: c.id),
       for (final c in model.capabilityAdapters)
-        BuildGraphNode(id: c.capabilityId, kind: BuildNodeKind.capability, label: c.capabilityId),
+        BuildGraphNode(
+          id: c.capabilityId,
+          kind: BuildNodeKind.capability,
+          label: c.capabilityId,
+        ),
     ];
     final nodeIds = nodes.map((n) => n.id).toSet();
 
@@ -44,16 +56,28 @@ class BuildGraphBuilder {
       // computed by CanonicalImplementationPlanner (R9).
       for (final d in model.dependencies)
         if (nodeIds.contains(d.fromId) && nodeIds.contains(d.toId))
-          BuildGraphEdge(fromId: d.fromId, toId: d.toId, kind: BuildRelationshipKind.dependsOn),
+          BuildGraphEdge(
+            fromId: d.fromId,
+            toId: d.toId,
+            kind: BuildRelationshipKind.dependsOn,
+          ),
       // Real: a repository is generated FROM its entity — the repository
       // depends on the entity existing first.
       for (final r in model.repositories)
         if (nodeIds.contains(r.entityId))
-          BuildGraphEdge(fromId: r.id, toId: r.entityId, kind: BuildRelationshipKind.dependsOn),
+          BuildGraphEdge(
+            fromId: r.id,
+            toId: r.entityId,
+            kind: BuildRelationshipKind.dependsOn,
+          ),
       // Real: a controller depends on its entity existing first.
       for (final c in model.controllers)
         if (nodeIds.contains(c.entityId))
-          BuildGraphEdge(fromId: c.id, toId: c.entityId, kind: BuildRelationshipKind.dependsOn),
+          BuildGraphEdge(
+            fromId: c.id,
+            toId: c.entityId,
+            kind: BuildRelationshipKind.dependsOn,
+          ),
     ];
 
     return UniversalBuildGraph(nodes: nodes, edges: edges, sourceModel: model);

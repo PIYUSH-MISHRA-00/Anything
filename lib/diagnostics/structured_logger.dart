@@ -21,27 +21,50 @@ class StructuredLogger {
   /// the first place; this is a last-resort safety net, documented as
   /// such, never oversold as complete.
   static String redact(String message) {
-    var result = message.replaceAll(RegExp(r'[\w.+-]+@[\w-]+\.[\w.-]+'), '[redacted-email]');
-    result = result.replaceAll(RegExp(r'\b(?:Bearer|token)[:=]?\s*[A-Za-z0-9._-]{8,}', caseSensitive: false), '[redacted-token]');
+    var result = message.replaceAll(
+      RegExp(r'[\w.+-]+@[\w-]+\.[\w.-]+'),
+      '[redacted-email]',
+    );
+    result = result.replaceAll(
+      RegExp(
+        r'\b(?:Bearer|token)[:=]?\s*[A-Za-z0-9._-]{8,}',
+        caseSensitive: false,
+      ),
+      '[redacted-token]',
+    );
     return result;
   }
 
   void log(LogSeverity severity, LogCategory category, String message) {
-    final entry = LogEntry(severity: severity, category: category, message: redact(message));
+    final entry = LogEntry(
+      severity: severity,
+      category: category,
+      message: redact(message),
+    );
     _buffer.add(entry);
     if (_buffer.length > _maxBuffer) _buffer.removeAt(0);
 
-    developer.log(entry.message, name: category.name, level: _levelFor(severity), time: entry.timestamp);
+    developer.log(
+      entry.message,
+      name: category.name,
+      level: _levelFor(severity),
+      time: entry.timestamp,
+    );
   }
 
-  void debug(LogCategory category, String message) => log(LogSeverity.debug, category, message);
-  void info(LogCategory category, String message) => log(LogSeverity.info, category, message);
-  void warning(LogCategory category, String message) => log(LogSeverity.warning, category, message);
-  void error(LogCategory category, String message) => log(LogSeverity.error, category, message);
+  void debug(LogCategory category, String message) =>
+      log(LogSeverity.debug, category, message);
+  void info(LogCategory category, String message) =>
+      log(LogSeverity.info, category, message);
+  void warning(LogCategory category, String message) =>
+      log(LogSeverity.warning, category, message);
+  void error(LogCategory category, String message) =>
+      log(LogSeverity.error, category, message);
 
   List<LogEntry> get recent => List.unmodifiable(_buffer);
 
-  List<LogEntry> recentOfCategory(LogCategory category) => _buffer.where((e) => e.category == category).toList();
+  List<LogEntry> recentOfCategory(LogCategory category) =>
+      _buffer.where((e) => e.category == category).toList();
 
   int _levelFor(LogSeverity severity) => switch (severity) {
     LogSeverity.debug => 500,

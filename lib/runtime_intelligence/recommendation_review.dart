@@ -26,11 +26,20 @@ class RecommendationDecision {
 class RecommendationReview {
   const RecommendationReview();
 
-  RecommendationDecision review(Recommendation recommendation, LearningMemory learningMemory) {
-    final stillReal = learningMemory.latestForPattern(recommendation.reason.evidence.patternId) != null;
+  RecommendationDecision review(
+    Recommendation recommendation,
+    LearningMemory learningMemory,
+  ) {
+    final stillReal =
+        learningMemory.latestForPattern(
+          recommendation.reason.evidence.patternId,
+        ) !=
+        null;
     return RecommendationDecision(
       subjectId: recommendation.id,
-      kind: stillReal ? RecommendationDecisionKind.accepted : RecommendationDecisionKind.rejected,
+      kind: stillReal
+          ? RecommendationDecisionKind.accepted
+          : RecommendationDecisionKind.rejected,
       rationale: stillReal
           ? 'Sourced from a real, still-present pattern in LearningMemory.'
           : 'The pattern this recommendation was based on is no longer present in LearningMemory.',

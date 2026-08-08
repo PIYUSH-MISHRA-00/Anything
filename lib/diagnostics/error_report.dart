@@ -15,7 +15,12 @@ class ErrorReport {
   final bool recoverable;
   final DateTime timestamp;
 
-  ErrorReport({required this.category, required this.safeMessage, this.recoverable = true, DateTime? timestamp}) : timestamp = timestamp ?? DateTime.now();
+  ErrorReport({
+    required this.category,
+    required this.safeMessage,
+    this.recoverable = true,
+    DateTime? timestamp,
+  }) : timestamp = timestamp ?? DateTime.now();
 
   /// Logs the real exception (developer-facing only, via the given
   /// logger) and returns a report carrying ONLY the safe, pre-written
@@ -30,6 +35,10 @@ class ErrorReport {
     StackTrace? stackTrace,
   }) {
     logger?.error(category, 'Handled exception: ${error.runtimeType}');
-    return ErrorReport(category: category, safeMessage: userFacingMessage, recoverable: recoverable);
+    return ErrorReport(
+      category: category,
+      safeMessage: userFacingMessage,
+      recoverable: recoverable,
+    );
   }
 }

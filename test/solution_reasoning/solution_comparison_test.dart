@@ -8,9 +8,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:anything/feature_discovery/dependency_resolver.dart';
 import 'package:anything/feature_discovery/feature_discovery_context.dart';
 import 'package:anything/feature_discovery/feature_discovery_engine.dart';
-import 'package:anything/feature_discovery/feature_types.dart' show ComplexityLevel, FeatureComplexity;
+import 'package:anything/feature_discovery/feature_types.dart'
+    show ComplexityLevel, FeatureComplexity;
 import 'package:anything/kernel/classification/intent_category.dart';
-import 'package:anything/kernel/specification/experience_spec.dart' show NetworkNeed;
+import 'package:anything/kernel/specification/experience_spec.dart'
+    show NetworkNeed;
 import 'package:anything/kernel/understanding/intent_understanding.dart';
 import 'package:anything/software_architect/architecture_planner.dart';
 import 'package:anything/software_architect/confidence.dart';
@@ -37,7 +39,9 @@ IntentUnderstanding _understanding() {
     intentId: 'test-${DateTime.now().microsecondsSinceEpoch}',
     objective: 'test',
     category: IntentCategory.create,
-    existingExperience: const ExistingExperienceResolution(status: ExistingExperienceStatus.notChecked),
+    existingExperience: const ExistingExperienceResolution(
+      status: ExistingExperienceStatus.notChecked,
+    ),
     desiredOutcome: '',
     confidence: 0.9,
     networkNeed: NetworkNeed.none,
@@ -51,7 +55,17 @@ SemanticApp _app() {
     name: 'Field Survey Log',
     purpose: 'p',
     entities: [
-      const SemanticEntity(id: 'entry', name: 'Entry', fields: [SemanticField(id: 'title', name: 'Title', type: BlueprintFieldType.text)]),
+      const SemanticEntity(
+        id: 'entry',
+        name: 'Entry',
+        fields: [
+          SemanticField(
+            id: 'title',
+            name: 'Title',
+            type: BlueprintFieldType.text,
+          ),
+        ],
+      ),
     ],
   );
 }
@@ -73,7 +87,12 @@ SolutionScore _uniformScore(double v) {
   );
 }
 
-SolutionCandidate _fixture(SolutionCandidate base, {required String id, required double score, required ComplexityLevel level}) {
+SolutionCandidate _fixture(
+  SolutionCandidate base, {
+  required String id,
+  required double score,
+  required ComplexityLevel level,
+}) {
   final complexity = FeatureComplexity(
     implementation: level,
     engineering: level,
@@ -108,11 +127,24 @@ SolutionCandidate _fixture(SolutionCandidate base, {required String id, required
 
 void main() {
   final app = _app();
-  final requirements = _requirementExtractor.extract(app: app, understanding: _understanding());
-  final featureGraph = _featureEngine.plan(FeatureDiscoveryContext(app: app, requirements: requirements));
-  final dependencyGraph = const DependencyGraphBuilder().build(featureGraph.nodes.map((n) => n.candidate).toList());
-  final context = SolutionExplorationContext(app: app, featureGraph: featureGraph, dependencyGraph: dependencyGraph);
-  final baseline = _refinementPlanner.refine(_architecturePlanner.plan(app)).finalCandidate;
+  final requirements = _requirementExtractor.extract(
+    app: app,
+    understanding: _understanding(),
+  );
+  final featureGraph = _featureEngine.plan(
+    FeatureDiscoveryContext(app: app, requirements: requirements),
+  );
+  final dependencyGraph = const DependencyGraphBuilder().build(
+    featureGraph.nodes.map((n) => n.candidate).toList(),
+  );
+  final context = SolutionExplorationContext(
+    app: app,
+    featureGraph: featureGraph,
+    dependencyGraph: dependencyGraph,
+  );
+  final baseline = _refinementPlanner
+      .refine(_architecturePlanner.plan(app))
+      .finalCandidate;
   final real = _generator.build(
     baseline: baseline,
     variation: ArchitectureVariation(
@@ -126,29 +158,55 @@ void main() {
     context: context,
   );
 
-  test('a higher-scoring, no-more-complex candidate dominates a lower-scoring one', () {
-    final a = _fixture(real, id: 'a', score: 0.9, level: ComplexityLevel.low);
-    final b = _fixture(real, id: 'b', score: 0.5, level: ComplexityLevel.low);
-    final result = _comparison.compare([a, b]);
-    final edge = result.graph.edgesFrom('a').single;
-    expect(edge.kind, SolutionRelationKind.dominates);
-    expect(edge.toCandidateId, 'b');
-  });
+  test(
+    'a higher-scoring, no-more-complex candidate dominates a lower-scoring one',
+    () {
+      final a = _fixture(real, id: 'a', score: 0.9, level: ComplexityLevel.low);
+      final b = _fixture(real, id: 'b', score: 0.5, level: ComplexityLevel.low);
+      final result = _comparison.compare([a, b]);
+      final edge = result.graph.edgesFrom('a').single;
+      expect(edge.kind, SolutionRelationKind.dominates);
+      expect(edge.toCandidateId, 'b');
+    },
+  );
 
   test('equal score and equal complexity are equivalentTo', () {
-    final a = _fixture(real, id: 'a', score: 0.7, level: ComplexityLevel.medium);
-    final b = _fixture(real, id: 'b', score: 0.7, level: ComplexityLevel.medium);
+    final a = _fixture(
+      real,
+      id: 'a',
+      score: 0.7,
+      level: ComplexityLevel.medium,
+    );
+    final b = _fixture(
+      real,
+      id: 'b',
+      score: 0.7,
+      level: ComplexityLevel.medium,
+    );
     final result = _comparison.compare([a, b]);
-    expect(result.graph.edgesFrom('a').single.kind, SolutionRelationKind.equivalentTo);
+    expect(
+      result.graph.edgesFrom('a').single.kind,
+      SolutionRelationKind.equivalentTo,
+    );
   });
 
-  test('a higher score but also higher complexity is a genuine alternative, not dominance', () {
-    final a = _fixture(real, id: 'a', score: 0.9, level: ComplexityLevel.high);
-    final b = _fixture(real, id: 'b', score: 0.5, level: ComplexityLevel.low);
-    final result = _comparison.compare([a, b]);
-    final aToB = result.graph.edgesFrom('a').singleWhere((e) => e.toCandidateId == 'b');
-    expect(aToB.kind, SolutionRelationKind.alternativeTo);
-  });
+  test(
+    'a higher score but also higher complexity is a genuine alternative, not dominance',
+    () {
+      final a = _fixture(
+        real,
+        id: 'a',
+        score: 0.9,
+        level: ComplexityLevel.high,
+      );
+      final b = _fixture(real, id: 'b', score: 0.5, level: ComplexityLevel.low);
+      final result = _comparison.compare([a, b]);
+      final aToB = result.graph
+          .edgesFrom('a')
+          .singleWhere((e) => e.toCandidateId == 'b');
+      expect(aToB.kind, SolutionRelationKind.alternativeTo);
+    },
+  );
 
   test('every node carries its real overall score', () {
     final a = _fixture(real, id: 'a', score: 0.8, level: ComplexityLevel.low);

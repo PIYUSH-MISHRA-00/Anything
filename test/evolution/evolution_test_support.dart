@@ -17,7 +17,10 @@ export '../design_review/review_test_support.dart';
 /// Runs the full real V2-V6 pipeline (via `buildReviewContext`) plus a
 /// real Design Review pass, then wraps the result into an EvolutionContext
 /// — never a hand-rolled fake context.
-EvolutionContext buildEvolutionContext(SemanticApp app, {EvolutionStrategy strategy = EvolutionStrategy.balanced}) {
+EvolutionContext buildEvolutionContext(
+  SemanticApp app, {
+  EvolutionStrategy strategy = EvolutionStrategy.balanced,
+}) {
   final reviewContext = buildReviewContext(app);
   final reviewOutcome = const DesignReviewEngine().review(reviewContext);
   return EvolutionContext(

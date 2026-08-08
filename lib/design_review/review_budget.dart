@@ -7,5 +7,8 @@ class ReviewBudget {
   final int maxIterations;
   final int maxIssuesPerIteration;
 
-  const ReviewBudget({this.maxIterations = 3, this.maxIssuesPerIteration = 200});
+  const ReviewBudget({
+    this.maxIterations = 3,
+    this.maxIssuesPerIteration = 200,
+  });
 }

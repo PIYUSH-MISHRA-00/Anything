@@ -82,7 +82,10 @@ class CachingModel {
   final bool employsCaching;
   final SyncStrategy sourceStrategy;
 
-  const CachingModel({required this.employsCaching, required this.sourceStrategy});
+  const CachingModel({
+    required this.employsCaching,
+    required this.sourceStrategy,
+  });
 }
 
 /// An honest, named gap — a requested R17 concept with zero real signal

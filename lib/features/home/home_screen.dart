@@ -252,9 +252,13 @@ class HomeScreenState extends State<HomeScreen> {
     // `scheduler:` WITHOUT also supplying `workspaceManager:`, prefer the
     // scheduler's own real, already-bound workspace over the unrelated
     // composition default — the exact inverse of the case handled below.
-    _workspaceManager = widget.workspaceManager ?? widget.scheduler?.workspace ?? _composition.workspaceManager;
+    _workspaceManager =
+        widget.workspaceManager ??
+        widget.scheduler?.workspace ??
+        _composition.workspaceManager;
     _intentRouter = widget.intentRouter ?? _composition.intentRouter;
-    _workspaceRuntime = widget.workspaceRuntime ?? _composition.workspaceRuntime;
+    _workspaceRuntime =
+        widget.workspaceRuntime ?? _composition.workspaceRuntime;
     _eventBus = widget.eventBus ?? _composition.eventBus;
     // Implementation Specification IS-R37: sourced from the shared
     // `AppComposition` instead of calling `ExperienceCreationCoordinator`
@@ -263,7 +267,8 @@ class HomeScreenState extends State<HomeScreen> {
     // `UniversalIntentRouter` entirely. See
     // `docs/architecture/INTENT_EXECUTION_PIPELINE.md`.
     _pipeline = widget.pipeline ?? _composition.intentExecutionPipeline;
-    _runtimeSupervisor = widget.runtimeSupervisor ?? _composition.workspaceRuntimeSupervisor;
+    _runtimeSupervisor =
+        widget.runtimeSupervisor ?? _composition.workspaceRuntimeSupervisor;
     // IS-R45 fix: `_composition.workspaceSchedulingEngine` is bound to
     // `_composition`'s OWN `workspaceManager`/`workspaceRuntime`/`eventBus`
     // internally. If a caller overrides any of those three without also
@@ -279,9 +284,13 @@ class HomeScreenState extends State<HomeScreen> {
     // fresh scheduler — `_workspaceManager`'s own resolution above already
     // adopted `widget.scheduler.workspace`, so `widget.scheduler` itself is
     // already consistent and used directly.
-    final needsConsistentScheduler = widget.scheduler == null &&
-        (widget.workspaceManager != null || widget.workspaceRuntime != null || widget.eventBus != null);
-    _scheduler = widget.scheduler ??
+    final needsConsistentScheduler =
+        widget.scheduler == null &&
+        (widget.workspaceManager != null ||
+            widget.workspaceRuntime != null ||
+            widget.eventBus != null);
+    _scheduler =
+        widget.scheduler ??
         (needsConsistentScheduler
             ? WorkspaceSchedulingEngine(
                 workspaceRuntime: _workspaceRuntime,
@@ -291,10 +300,14 @@ class HomeScreenState extends State<HomeScreen> {
                 eventPublisher: WorkspaceEventPublisher(bus: _eventBus),
               )
             : _composition.workspaceSchedulingEngine);
-    _activationManager = widget.activationManager ??
+    _activationManager =
+        widget.activationManager ??
         (identical(_scheduler, _composition.workspaceSchedulingEngine)
             ? _composition.experienceActivationManager
-            : ExperienceActivationManager(scheduler: _scheduler, eventPublisher: WorkspaceEventPublisher(bus: _eventBus)));
+            : ExperienceActivationManager(
+                scheduler: _scheduler,
+                eventPublisher: WorkspaceEventPublisher(bus: _eventBus),
+              ));
     // Implementation Specification IS-R45: built from THIS screen's own
     // individually-resolved fields above (never from `_composition`
     // directly) so every existing, established per-field override
@@ -304,7 +317,8 @@ class HomeScreenState extends State<HomeScreen> {
     // callers/tests that want to inject the whole pipeline at once. A
     // fresh `ExperienceOpeningCoordinator()` matches this screen's own
     // pre-R45 behavior exactly (never shared, always constructed locally).
-    _entryPipeline = widget.entryPipeline ??
+    _entryPipeline =
+        widget.entryPipeline ??
         ExperienceEntryPipeline(
           intentExecutionPipeline: _pipeline,
           openingCoordinator: ExperienceOpeningCoordinator(
@@ -386,7 +400,10 @@ class HomeScreenState extends State<HomeScreen> {
     // independently creates a new experience; there is no "continue" UI
     // affordance on Home), while genuinely registering the resulting
     // session in `ExperienceWorkspaceManager` for the first time.
-    final routingResult = await _pipeline.execute(intent, target: const RouteTarget.newExperience());
+    final routingResult = await _pipeline.execute(
+      intent,
+      target: const RouteTarget.newExperience(),
+    );
     final result = routingResult.creationResult!;
 
     if (!mounted) return;
@@ -455,7 +472,10 @@ class HomeScreenState extends State<HomeScreen> {
   ) async {
     if (!mounted) return;
 
-    final result = await _entryPipeline.activateExperience(Navigator.of(context), experienceId);
+    final result = await _entryPipeline.activateExperience(
+      Navigator.of(context),
+      experienceId,
+    );
 
     if (!mounted) return;
 
@@ -864,39 +884,39 @@ class HomeScreenState extends State<HomeScreen> {
           ValueListenableBuilder<TextEditingValue>(
             valueListenable: _textController,
             builder: (context, value, _) => AnimatedSwitcher(
-            duration: const Duration(milliseconds: 100),
-            transitionBuilder: (child, animation) =>
-                ScaleTransition(scale: animation, child: child),
-            child: value.text.isNotEmpty
-                ? IconButton(
-                    key: const ValueKey('submit'),
-                    onPressed: _showBirth
-                        ? null
-                        : () => _handleSubmit(_textController.text),
-                    icon: Icon(
-                      Icons.arrow_upward,
-                      color: colorScheme.onPrimary,
-                      size: 22,
+              duration: const Duration(milliseconds: 100),
+              transitionBuilder: (child, animation) =>
+                  ScaleTransition(scale: animation, child: child),
+              child: value.text.isNotEmpty
+                  ? IconButton(
+                      key: const ValueKey('submit'),
+                      onPressed: _showBirth
+                          ? null
+                          : () => _handleSubmit(_textController.text),
+                      icon: Icon(
+                        Icons.arrow_upward,
+                        color: colorScheme.onPrimary,
+                        size: 22,
+                      ),
+                      style: IconButton.styleFrom(
+                        backgroundColor: colorScheme.primary,
+                        shape: const CircleBorder(),
+                        padding: const EdgeInsets.all(8),
+                      ),
+                      tooltip: 'Submit',
+                    )
+                  : IconButton(
+                      key: const ValueKey('voice'),
+                      onPressed: _handleVoiceTap,
+                      icon: Icon(
+                        _isListening ? Icons.mic : Icons.mic_none,
+                        color: _isListening
+                            ? colorScheme.error
+                            : colorScheme.onSurfaceVariant,
+                        size: 22,
+                      ),
+                      tooltip: 'Voice input',
                     ),
-                    style: IconButton.styleFrom(
-                      backgroundColor: colorScheme.primary,
-                      shape: const CircleBorder(),
-                      padding: const EdgeInsets.all(8),
-                    ),
-                    tooltip: 'Submit',
-                  )
-                : IconButton(
-                    key: const ValueKey('voice'),
-                    onPressed: _handleVoiceTap,
-                    icon: Icon(
-                      _isListening ? Icons.mic : Icons.mic_none,
-                      color: _isListening
-                          ? colorScheme.error
-                          : colorScheme.onSurfaceVariant,
-                      size: 22,
-                    ),
-                    tooltip: 'Voice input',
-                  ),
             ),
           ),
           const SizedBox(width: 8),

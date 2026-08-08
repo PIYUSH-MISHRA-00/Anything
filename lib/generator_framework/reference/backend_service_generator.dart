@@ -59,7 +59,10 @@ class BackendServiceGenerator implements Generator {
     id: 'reference.backend-service',
     name: 'Backend Service Generator',
     version: GeneratorVersion(major: 1, minor: 0, patch: 0),
-    capabilities: [GeneratorCapability.manifests, GeneratorCapability.configuration],
+    capabilities: [
+      GeneratorCapability.manifests,
+      GeneratorCapability.configuration,
+    ],
   );
 
   @override
@@ -71,7 +74,8 @@ class BackendServiceGenerator implements Generator {
         const GenerationDiagnostic(
           severity: DiagnosticSeverity.info,
           category: DiagnosticCategory.general,
-          message: 'No BackendEngineeringPlan supplied via GeneratorOptions — no backend service to generate.',
+          message:
+              'No BackendEngineeringPlan supplied via GeneratorOptions — no backend service to generate.',
         ),
       );
       return GenerationResult(diagnostics: diagnostics);
@@ -79,10 +83,16 @@ class BackendServiceGenerator implements Generator {
 
     final BackendEngineeringPlan plan;
     try {
-      plan = backendEngineeringPlanFromJson(jsonDecode(planJson) as Map<String, dynamic>);
+      plan = backendEngineeringPlanFromJson(
+        jsonDecode(planJson) as Map<String, dynamic>,
+      );
     } catch (e) {
       diagnostics.add(
-        GenerationDiagnostic(severity: DiagnosticSeverity.error, category: DiagnosticCategory.general, message: 'Malformed BackendEngineeringPlan supplied: $e'),
+        GenerationDiagnostic(
+          severity: DiagnosticSeverity.error,
+          category: DiagnosticCategory.general,
+          message: 'Malformed BackendEngineeringPlan supplied: $e',
+        ),
       );
       return GenerationResult(diagnostics: diagnostics);
     }
@@ -92,7 +102,8 @@ class BackendServiceGenerator implements Generator {
         const GenerationDiagnostic(
           severity: DiagnosticSeverity.info,
           category: DiagnosticCategory.general,
-          message: 'BackendEngineeringPlan has no database tables or API endpoints — nothing to generate.',
+          message:
+              'BackendEngineeringPlan has no database tables or API endpoints — nothing to generate.',
         ),
       );
       return GenerationResult(diagnostics: diagnostics);
@@ -104,10 +115,23 @@ class BackendServiceGenerator implements Generator {
     final content = jsonEncode({
       ...plan.toJson(),
       'repositories': [
-        for (final r in model.repositories) {'id': r.id, 'entityId': r.entityId, 'supportedOperations': r.supportedOperations.map((o) => o.name).toList()},
+        for (final r in model.repositories)
+          {
+            'id': r.id,
+            'entityId': r.entityId,
+            'supportedOperations': r.supportedOperations
+                .map((o) => o.name)
+                .toList(),
+          },
       ],
       'services': [
-        for (final s in model.services) {'id': s.id, 'entityId': s.entityId, 'repositoryId': s.repositoryId, 'controllerId': s.controllerId},
+        for (final s in model.services)
+          {
+            'id': s.id,
+            'entityId': s.entityId,
+            'repositoryId': s.repositoryId,
+            'controllerId': s.controllerId,
+          },
       ],
       // Real, structural migration DEFINITIONS — never literal SQL DDL.
       'migrations': [
@@ -115,15 +139,41 @@ class BackendServiceGenerator implements Generator {
           {
             'tableId': table.id,
             'tableName': table.name,
-            'columns': [for (final c in table.columns) {'id': c.id, 'name': c.name, 'type': c.type.name, 'required': c.required, 'isPrimaryKey': c.isPrimaryKey}],
-            'foreignKeys': [for (final fk in table.foreignKeys) {'columnId': fk.columnId, 'referencesTableId': fk.referencesTableId, 'onDelete': fk.onDelete}],
+            'columns': [
+              for (final c in table.columns)
+                {
+                  'id': c.id,
+                  'name': c.name,
+                  'type': c.type.name,
+                  'required': c.required,
+                  'isPrimaryKey': c.isPrimaryKey,
+                },
+            ],
+            'foreignKeys': [
+              for (final fk in table.foreignKeys)
+                {
+                  'columnId': fk.columnId,
+                  'referencesTableId': fk.referencesTableId,
+                  'onDelete': fk.onDelete,
+                },
+            ],
           },
       ],
     });
 
-    final artifact = Artifact(id: 'backend-service-artifacts', path: 'backend/${context.target.id}.json', kind: ArtifactKind.manifest, content: content);
+    final artifact = Artifact(
+      id: 'backend-service-artifacts',
+      path: 'backend/${context.target.id}.json',
+      kind: ArtifactKind.manifest,
+      content: content,
+    );
 
-    return GenerationResult(artifactGroups: [ArtifactGroup(id: 'backend-service', artifacts: [artifact])], diagnostics: diagnostics);
+    return GenerationResult(
+      artifactGroups: [
+        ArtifactGroup(id: 'backend-service', artifacts: [artifact]),
+      ],
+      diagnostics: diagnostics,
+    );
   }
 
   void _reportUnrepresentedConcepts(List<GenerationDiagnostic> diagnostics) {

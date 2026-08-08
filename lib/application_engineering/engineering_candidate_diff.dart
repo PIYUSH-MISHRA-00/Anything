@@ -66,9 +66,16 @@ class EngineeringDiff {
 class EngineeringDiffer {
   const EngineeringDiffer();
 
-  EngineeringDiff diff(EngineeringCandidate before, EngineeringCandidate after) {
-    final validationsBefore = {for (final v in before.validations) v.subjectId: v};
-    final validationsAfter = {for (final v in after.validations) v.subjectId: v};
+  EngineeringDiff diff(
+    EngineeringCandidate before,
+    EngineeringCandidate after,
+  ) {
+    final validationsBefore = {
+      for (final v in before.validations) v.subjectId: v,
+    };
+    final validationsAfter = {
+      for (final v in after.validations) v.subjectId: v,
+    };
     final addedValidations = <EngineeringValidationRule>[];
     final removedValidations = <EngineeringValidationRule>[];
     for (final entry in validationsAfter.entries) {
@@ -79,7 +86,9 @@ class EngineeringDiffer {
       }
     }
     for (final entry in validationsBefore.entries) {
-      if (!validationsAfter.containsKey(entry.key)) removedValidations.add(entry.value);
+      if (!validationsAfter.containsKey(entry.key)) {
+        removedValidations.add(entry.value);
+      }
     }
 
     final bindingsBefore = before.bindingGraph.edges.toSet();
@@ -87,13 +96,20 @@ class EngineeringDiffer {
     // BindingEdge has no `==` override, so compare via a real structural
     // key rather than object identity — matches RequirementGraphDiffer's
     // `_RelationKey` approach.
-    bool edgeIn(BindingEdge e, Iterable<BindingEdge> set) =>
-        set.any((o) => o.kind == e.kind && o.fromId == e.fromId && o.toId == e.toId);
-    final addedBindings = bindingsAfter.where((e) => !edgeIn(e, bindingsBefore)).toList();
-    final removedBindings = bindingsBefore.where((e) => !edgeIn(e, bindingsAfter)).toList();
+    bool edgeIn(BindingEdge e, Iterable<BindingEdge> set) => set.any(
+      (o) => o.kind == e.kind && o.fromId == e.fromId && o.toId == e.toId,
+    );
+    final addedBindings = bindingsAfter
+        .where((e) => !edgeIn(e, bindingsBefore))
+        .toList();
+    final removedBindings = bindingsBefore
+        .where((e) => !edgeIn(e, bindingsAfter))
+        .toList();
 
     (String, String)? changePair(String beforeDecision, String afterDecision) =>
-        beforeDecision == afterDecision ? null : (beforeDecision, afterDecision);
+        beforeDecision == afterDecision
+        ? null
+        : (beforeDecision, afterDecision);
 
     // Real, structural, deterministic — never a fabricated field. Two
     // result shapes (`interaction`/`security`) carry a LIST of decisions
@@ -101,29 +117,46 @@ class EngineeringDiffer {
     // signal is honestly coarser: a real, joined description of every
     // decision in the list, still a genuine content comparison, never a
     // guess.
-    String joinDecisions(List<EngineeringDecision> decisions) => decisions.map((d) => d.decision).join('|');
+    String joinDecisions(List<EngineeringDecision> decisions) =>
+        decisions.map((d) => d.decision).join('|');
 
     return EngineeringDiff(
       addedValidations: addedValidations,
       removedValidations: removedValidations,
       addedBindings: addedBindings,
       removedBindings: removedBindings,
-      dataChange: changePair(before.data.migrationDecision.decision, after.data.migrationDecision.decision),
-      navigationChange: changePair(before.navigation.decision.decision, after.navigation.decision.decision),
+      dataChange: changePair(
+        before.data.migrationDecision.decision,
+        after.data.migrationDecision.decision,
+      ),
+      navigationChange: changePair(
+        before.navigation.decision.decision,
+        after.navigation.decision.decision,
+      ),
       interactionChange: changePair(
-        joinDecisions(before.interaction.patterns.map((p) => p.decision).toList()),
-        joinDecisions(after.interaction.patterns.map((p) => p.decision).toList()),
+        joinDecisions(
+          before.interaction.patterns.map((p) => p.decision).toList(),
+        ),
+        joinDecisions(
+          after.interaction.patterns.map((p) => p.decision).toList(),
+        ),
       ),
       persistenceChange: changePair(
         before.persistence.migrationDecision.decision,
         after.persistence.migrationDecision.decision,
       ),
-      offlineChange: changePair(before.offline.decision.decision, after.offline.decision.decision),
+      offlineChange: changePair(
+        before.offline.decision.decision,
+        after.offline.decision.decision,
+      ),
       synchronizationChange: changePair(
         before.synchronization.decision.decision,
         after.synchronization.decision.decision,
       ),
-      securityChange: changePair(joinDecisions(before.security.decisions), joinDecisions(after.security.decisions)),
+      securityChange: changePair(
+        joinDecisions(before.security.decisions),
+        joinDecisions(after.security.decisions),
+      ),
     );
   }
 }

@@ -44,10 +44,19 @@ class RuntimeIntelligenceEngine {
     int minOccurrences = 2,
   }) {
     final usageGraph = UsageGraph.fromRecords(observationMemory.records);
-    final learned = _learningEngine.learn(usageGraph, learningMemory, minOccurrences: minOccurrences);
+    final learned = _learningEngine.learn(
+      usageGraph,
+      learningMemory,
+      minOccurrences: minOccurrences,
+    );
 
-    final recommendations = _recommendationEngine.recommend(learned, evolutionRoadmap: evolutionRoadmap);
-    final decisions = recommendations.map((r) => _recommendationReview.review(r, learningMemory)).toList();
+    final recommendations = _recommendationEngine.recommend(
+      learned,
+      evolutionRoadmap: evolutionRoadmap,
+    );
+    final decisions = recommendations
+        .map((r) => _recommendationReview.review(r, learningMemory))
+        .toList();
 
     final partial = RuntimeIntelligenceResult(
       usageGraph: usageGraph,
@@ -58,8 +67,13 @@ class RuntimeIntelligenceEngine {
       automationPlans: const [],
     );
 
-    final automationPlans = partial.acceptedRecommendations.map(_automationPlanner.plan).whereType<AutomationPlan>().toList();
-    final predictions = _predictionEngine.predictAutomationOpportunities(learned.map((l) => l.pattern).toList());
+    final automationPlans = partial.acceptedRecommendations
+        .map(_automationPlanner.plan)
+        .whereType<AutomationPlan>()
+        .toList();
+    final predictions = _predictionEngine.predictAutomationOpportunities(
+      learned.map((l) => l.pattern).toList(),
+    );
 
     return RuntimeIntelligenceResult(
       usageGraph: usageGraph,

@@ -32,27 +32,59 @@ import '../world_types.dart';
 class SolutionArchitectureGraphBridge {
   final EntityResolver _resolver;
 
-  const SolutionArchitectureGraphBridge({EntityResolver resolver = const EntityResolver()}) : _resolver = resolver;
+  const SolutionArchitectureGraphBridge({
+    EntityResolver resolver = const EntityResolver(),
+  }) : _resolver = resolver;
 
   GraphUpdate bridge(SemanticSolutionArchitecture architecture) {
     final nodes = <WorldNode>[];
     final edges = <WorldEdge>[];
 
     for (final entity in architecture.frontend.entities) {
-      nodes.add(WorldNode(identity: _resolver.resolve(WorldNodeKind.entity, stableId: entity.entityId), kind: WorldNodeKind.entity, label: entity.name));
+      nodes.add(
+        WorldNode(
+          identity: _resolver.resolve(
+            WorldNodeKind.entity,
+            stableId: entity.entityId,
+          ),
+          kind: WorldNodeKind.entity,
+          label: entity.name,
+        ),
+      );
     }
 
     for (final permission in architecture.frontend.permissions) {
-      final permissionIdentity = _resolver.resolve(WorldNodeKind.softwareComponent, stableId: 'permission:${permission.permission}');
-      final capabilityIdentity = _resolver.resolve(WorldNodeKind.capability, stableId: permission.requiredByCapabilityId);
-      nodes.add(WorldNode(identity: permissionIdentity, kind: WorldNodeKind.softwareComponent, label: 'permission:${permission.permission}'));
-      nodes.add(WorldNode(identity: capabilityIdentity, kind: WorldNodeKind.capability, label: permission.requiredByCapabilityId));
+      final permissionIdentity = _resolver.resolve(
+        WorldNodeKind.softwareComponent,
+        stableId: 'permission:${permission.permission}',
+      );
+      final capabilityIdentity = _resolver.resolve(
+        WorldNodeKind.capability,
+        stableId: permission.requiredByCapabilityId,
+      );
+      nodes.add(
+        WorldNode(
+          identity: permissionIdentity,
+          kind: WorldNodeKind.softwareComponent,
+          label: 'permission:${permission.permission}',
+        ),
+      );
+      nodes.add(
+        WorldNode(
+          identity: capabilityIdentity,
+          kind: WorldNodeKind.capability,
+          label: permission.requiredByCapabilityId,
+        ),
+      );
       edges.add(
         WorldEdge(
           fromId: permissionIdentity,
           toId: capabilityIdentity,
           kind: RelationshipKind.dependsOn,
-          evidence: const GraphEvidence(sourceGraph: 'SemanticSolutionArchitecture', sourceNodeId: 'permission'),
+          evidence: const GraphEvidence(
+            sourceGraph: 'SemanticSolutionArchitecture',
+            sourceNodeId: 'permission',
+          ),
         ),
       );
     }
@@ -60,7 +92,10 @@ class SolutionArchitectureGraphBridge {
     if (architecture.caching.employsCaching) {
       nodes.add(
         WorldNode(
-          identity: _resolver.resolve(WorldNodeKind.softwareComponent, stableId: 'caching:${architecture.caching.sourceStrategy.name}'),
+          identity: _resolver.resolve(
+            WorldNodeKind.softwareComponent,
+            stableId: 'caching:${architecture.caching.sourceStrategy.name}',
+          ),
           kind: WorldNodeKind.softwareComponent,
           label: 'caching:${architecture.caching.sourceStrategy.name}',
         ),

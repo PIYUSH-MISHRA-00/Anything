@@ -34,7 +34,10 @@ void main() {
     final sessionB = engine.review(contextB, memory: memory);
 
     expect(sessionA.session.fingerprint, sessionB.session.fingerprint);
-    expect(memory.decisionsFor(sessionA.session.fingerprint).length, greaterThanOrEqualTo(sessionA.session.decisions.length));
+    expect(
+      memory.decisionsFor(sessionA.session.fingerprint).length,
+      greaterThanOrEqualTo(sessionA.session.decisions.length),
+    );
   });
 
   test('ReviewHistory accumulates every session — nothing lost', () {
@@ -48,15 +51,18 @@ void main() {
     expect(history.snapshots, hasLength(2));
   });
 
-  test('ReviewMemory records future improvements from non-critical findings', () {
-    final memory = ReviewMemory();
-    final context = buildReviewContext(fieldSurveyApp());
+  test(
+    'ReviewMemory records future improvements from non-critical findings',
+    () {
+      final memory = ReviewMemory();
+      final context = buildReviewContext(fieldSurveyApp());
 
-    final outcome = engine.review(context, memory: memory);
+      final outcome = engine.review(context, memory: memory);
 
-    // Real solutions always carry at least a performance/maintainability
-    // note or two — never fabricated, but genuinely present for a
-    // realistic app.
-    expect(outcome.session.futureImprovements, isA<List<String>>());
-  });
+      // Real solutions always carry at least a performance/maintainability
+      // note or two — never fabricated, but genuinely present for a
+      // realistic app.
+      expect(outcome.session.futureImprovements, isA<List<String>>());
+    },
+  );
 }

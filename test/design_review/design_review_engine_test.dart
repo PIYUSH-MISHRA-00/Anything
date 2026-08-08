@@ -29,18 +29,29 @@ void main() {
     expect(engine.fingerprintOf(contextA), engine.fingerprintOf(contextB));
   });
 
-  test('ReviewApproval denies anything short of a real approved outcome, with a concrete reason', () {
-    final context = buildReviewContext(fieldSurveyApp());
-    // A missing security aspect is critical and not auto-fixable — the
-    // refinement loop can never resolve it, so the session never approves.
-    final strippedSecurity = SecurityEngineeringResult(
-      decisions: context.engineering.security.decisions.where((d) => d.subjectId != SecurityAspect.kaalka.name).toList(),
-    );
-    final broken = withEngineering(context, withSecurityDecisions(context.engineering, strippedSecurity));
+  test(
+    'ReviewApproval denies anything short of a real approved outcome, with a concrete reason',
+    () {
+      final context = buildReviewContext(fieldSurveyApp());
+      // A missing security aspect is critical and not auto-fixable — the
+      // refinement loop can never resolve it, so the session never approves.
+      final strippedSecurity = SecurityEngineeringResult(
+        decisions: context.engineering.security.decisions
+            .where((d) => d.subjectId != SecurityAspect.kaalka.name)
+            .toList(),
+      );
+      final broken = withEngineering(
+        context,
+        withSecurityDecisions(context.engineering, strippedSecurity),
+      );
 
-    final result = const ReviewRefinement().refine(broken);
+      final result = const ReviewRefinement().refine(broken);
 
-    expect(const ReviewApproval().isApproved(result), isFalse);
-    expect(const ReviewApproval().denialReason(result), contains('critical issue'));
-  });
+      expect(const ReviewApproval().isApproved(result), isFalse);
+      expect(
+        const ReviewApproval().denialReason(result),
+        contains('critical issue'),
+      );
+    },
+  );
 }

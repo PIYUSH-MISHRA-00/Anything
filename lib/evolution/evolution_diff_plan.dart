@@ -43,7 +43,11 @@ class HistoricalEngineeringMemory {
   final ArchitectureCandidate? architectureCandidate;
   final EngineeringMemorySummary? engineeringSummary;
 
-  const HistoricalEngineeringMemory({this.requirementGraph, this.architectureCandidate, this.engineeringSummary});
+  const HistoricalEngineeringMemory({
+    this.requirementGraph,
+    this.architectureCandidate,
+    this.engineeringSummary,
+  });
 }
 
 /// One deterministic mutation in the plan, always traceable to a real
@@ -157,8 +161,12 @@ class EvolutionDiffPlanBuilder {
               '${requirementDiff.removedNodes.length} removed.',
           sourceDiffDescription: 'RequirementGraphDiff',
           targetObject: 'RequirementGraph',
-          expectedImpact: _impactFor(requirementDiff.addedNodes.length + requirementDiff.removedNodes.length),
-          rollbackInfo: 'Swap addedNodes/removedNodes and addedRelations/removedRelations.',
+          expectedImpact: _impactFor(
+            requirementDiff.addedNodes.length +
+                requirementDiff.removedNodes.length,
+          ),
+          rollbackInfo:
+              'Swap addedNodes/removedNodes and addedRelations/removedRelations.',
         ),
       );
       previousStage = 'RequirementGraph';
@@ -180,7 +188,8 @@ class EvolutionDiffPlanBuilder {
           targetObject: 'ArchitectureCandidate',
           expectedImpact: _impactFor(changeCount),
           dependencies: previousStage != null ? [previousStage] : const [],
-          rollbackInfo: 'Swap added*/removed* lists and restore prior security/offline/synchronization decisions.',
+          rollbackInfo:
+              'Swap added*/removed* lists and restore prior security/offline/synchronization decisions.',
         ),
       );
       previousStage = 'ArchitectureCandidate';
@@ -195,9 +204,13 @@ class EvolutionDiffPlanBuilder {
               '${engineeringDiff.addedValidations.length} validation(s) changed.',
           sourceDiffDescription: 'EngineeringDiff',
           targetObject: 'EngineeringCandidate',
-          expectedImpact: _impactFor(engineeringDiff.addedBindings.length + engineeringDiff.removedBindings.length),
+          expectedImpact: _impactFor(
+            engineeringDiff.addedBindings.length +
+                engineeringDiff.removedBindings.length,
+          ),
           dependencies: previousStage != null ? [previousStage] : const [],
-          rollbackInfo: 'Swap addedBindings/removedBindings and restore prior *Change decision strings.',
+          rollbackInfo:
+              'Swap addedBindings/removedBindings and restore prior *Change decision strings.',
         ),
       );
       previousStage = 'EngineeringCandidate';
@@ -222,9 +235,15 @@ class EvolutionDiffPlanBuilder {
               '${experienceDiff.dataSchemaChanged ? '; data schema changed' : ''}.',
           sourceDiffDescription: 'ExperienceDiff',
           targetObject: 'ExperiencePackage',
-          expectedImpact: _impactFor(changeCount, structuralFlagsChanged: experienceDiff.behaviorChanged || experienceDiff.dataSchemaChanged),
+          expectedImpact: _impactFor(
+            changeCount,
+            structuralFlagsChanged:
+                experienceDiff.behaviorChanged ||
+                experienceDiff.dataSchemaChanged,
+          ),
           dependencies: previousStage != null ? [previousStage] : const [],
-          rollbackInfo: 'Restore the prior ExperiencePackage version (ModificationEngine keeps the old package until validation succeeds).',
+          rollbackInfo:
+              'Restore the prior ExperiencePackage version (ModificationEngine keeps the old package until validation succeeds).',
         ),
       );
     }

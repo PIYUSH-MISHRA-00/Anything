@@ -28,7 +28,8 @@ import 'package:anything/software_architect/requirement_graph.dart';
 import 'package:anything/solution_reasoning/solution_decision.dart';
 import 'package:anything/synthesis/app_blueprint.dart';
 import 'package:anything/software_cognition/software_cognition_coordinator.dart';
-import 'package:anything/software_cognition/software_cognition_engine.dart' show RepositoryCognitionResult;
+import 'package:anything/software_cognition/software_cognition_engine.dart'
+    show RepositoryCognitionResult;
 import 'package:anything/software_cognition/software_reasoner.dart';
 import 'package:anything/world_model/world_model_coordinator.dart';
 import 'package:anything/compiler_integration/compiler_pipeline_runner.dart';
@@ -94,6 +95,7 @@ class CreationFailed extends CreationResult {
 class ExperienceCreationCoordinator {
   final AnythingKernel _kernel;
   final CreationEngine _creationEngine;
+
   /// The ONE commit owner (IS-R55). Creation CREATES; it does not persist.
   ///
   /// This coordinator no longer holds a repository AT ALL. Once its two writes
@@ -142,8 +144,11 @@ class ExperienceCreationCoordinator {
     ExperienceCommitFramework? commitFramework,
   }) : _kernel = kernel,
        _creationEngine = creationEngine ?? CreationEngine(),
-       _commits = commitFramework ??
-           ExperienceCommitFramework(repository: repository ?? SqliteExperienceRepository()),
+       _commits =
+           commitFramework ??
+           ExperienceCommitFramework(
+             repository: repository ?? SqliteExperienceRepository(),
+           ),
        _activity = activity ?? ActivityRepository(),
        _worldModel = worldModel,
        _softwareCognition = softwareCognition,
@@ -199,7 +204,8 @@ class ExperienceCreationCoordinator {
         if (referenceUrl != null && referenceUrl.isNotEmpty) referenceUrl,
         ...?referenceUrls?.where((u) => u.isNotEmpty),
       }.toList();
-      final (seedKnowledge, corroboratingRecommendations) = await _acquireSoftwareCognitionSeeds(urls);
+      final (seedKnowledge, corroboratingRecommendations) =
+          await _acquireSoftwareCognitionSeeds(urls);
       final kernelOutcome = await _kernel.processIntent(
         intent,
         seedKnowledge: seedKnowledge,
@@ -227,7 +233,8 @@ class ExperienceCreationCoordinator {
             requirementGraph: kernelOutcome.requirementGraph,
             solutionDecision: kernelOutcome.solutionDecision,
             backendEngineeringPlan: kernelOutcome.backendEngineeringPlan,
-            canonicalImplementationModel: kernelOutcome.canonicalImplementationModel,
+            canonicalImplementationModel:
+                kernelOutcome.canonicalImplementationModel,
             useCompilerPipeline: useCompilerPipeline,
           );
 
@@ -301,9 +308,8 @@ class ExperienceCreationCoordinator {
   /// `GraphMerge`'s existing identity-keyed dedup (unchanged, V9) means
   /// two sources reporting the same real-world framework/dependency
   /// collapse into one World Model node, never two.
-  Future<(List<KnowledgeResource>, List<SoftwareRecommendation>)> _acquireSoftwareCognitionSeeds(
-    List<String> urls,
-  ) async {
+  Future<(List<KnowledgeResource>, List<SoftwareRecommendation>)>
+  _acquireSoftwareCognitionSeeds(List<String> urls) async {
     if (urls.isEmpty || _softwareCognition == null) {
       return (const <KnowledgeResource>[], const <SoftwareRecommendation>[]);
     }
@@ -311,10 +317,11 @@ class ExperienceCreationCoordinator {
     final soundResults = <RepositoryCognitionResult>[];
     for (final url in urls) {
       try {
-        final result = await _softwareCognition.engine.understandRepositoryFromUrl(
-          url,
-          name: Uri.tryParse(url)?.host ?? url,
-        );
+        final result = await _softwareCognition.engine
+            .understandRepositoryFromUrl(
+              url,
+              name: Uri.tryParse(url)?.host ?? url,
+            );
         if (result != null && result.isSound) soundResults.add(result);
       } catch (_) {
         // Deliberately swallowed — one failed source must never fail the
@@ -342,7 +349,8 @@ class ExperienceCreationCoordinator {
 
     final seedKnowledge = <KnowledgeResource>[
       for (final result in soundResults)
-        if (_softwareCognition.toKnowledgeResource(result) case final resource?) resource,
+        if (_softwareCognition.toKnowledgeResource(result) case final resource?)
+          resource,
     ];
 
     // Real multi-source corroboration (Implementation Milestone R15) —
@@ -352,7 +360,10 @@ class ExperienceCreationCoordinator {
     // 2) — filtered out below, matching R14's documented "single source
     // can never satisfy the acceptance gate" finding exactly.
     final candidates = soundResults.map((r) => r.model).toList();
-    final corroboratingRecommendations = _softwareCognition.reasoner.reasonAboutRepositories(candidates).where((r) => r.accepted).toList();
+    final corroboratingRecommendations = _softwareCognition.reasoner
+        .reasonAboutRepositories(candidates)
+        .where((r) => r.accepted)
+        .toList();
 
     return (seedKnowledge, corroboratingRecommendations);
   }
@@ -378,9 +389,16 @@ class ExperienceCreationCoordinator {
       // ExperiencePackageValidator the legacy package must also pass —
       // the flag can never silently break creation.
       ExperiencePackage? package;
-      if (useCompilerPipeline && canonicalImplementationModel != null && canonicalImplementationModel.entities.isNotEmpty) {
-        final outcome = runCompilerPipeline(canonicalImplementationModel, id: specification.id, name: specification.name);
-        if (outcome.succeeded && ExperiencePackageValidator.validate(outcome.package!).isValid) {
+      if (useCompilerPipeline &&
+          canonicalImplementationModel != null &&
+          canonicalImplementationModel.entities.isNotEmpty) {
+        final outcome = runCompilerPipeline(
+          canonicalImplementationModel,
+          id: specification.id,
+          name: specification.name,
+        );
+        if (outcome.succeeded &&
+            ExperiencePackageValidator.validate(outcome.package!).isValid) {
           package = outcome.package;
         }
       }
@@ -495,7 +513,9 @@ class ExperienceCreationCoordinator {
             experienceId: package.manifest.experienceId,
             requirementGraph: requirementGraph,
             architectureCandidate: solutionDecision?.selected.architecture,
-            engineeringSummary: engineeringPlan == null ? null : EngineeringMemorySummary.summarize(engineeringPlan),
+            engineeringSummary: engineeringPlan == null
+                ? null
+                : EngineeringMemorySummary.summarize(engineeringPlan),
             backendEngineeringPlan: backendEngineeringPlan,
             canonicalImplementationModel: canonicalImplementationModel,
           );

@@ -38,9 +38,14 @@ class DatabaseColumn {
 class ForeignKeyConstraint {
   final String columnId;
   final String referencesTableId;
-  final String onDelete; // 'restrict' | 'setNull' — mirrors RelationshipDeletePolicy.name
+  final String
+  onDelete; // 'restrict' | 'setNull' — mirrors RelationshipDeletePolicy.name
 
-  const ForeignKeyConstraint({required this.columnId, required this.referencesTableId, required this.onDelete});
+  const ForeignKeyConstraint({
+    required this.columnId,
+    required this.referencesTableId,
+    required this.onDelete,
+  });
 }
 
 class DatabaseTable {
@@ -49,7 +54,12 @@ class DatabaseTable {
   final List<DatabaseColumn> columns;
   final List<ForeignKeyConstraint> foreignKeys;
 
-  const DatabaseTable({required this.id, required this.name, this.columns = const [], this.foreignKeys = const []});
+  const DatabaseTable({
+    required this.id,
+    required this.name,
+    this.columns = const [],
+    this.foreignKeys = const [],
+  });
 }
 
 class DatabaseSchemaModel {
@@ -61,5 +71,6 @@ class DatabaseSchemaModel {
 
   bool get isEmpty => tables.isEmpty;
 
-  DatabaseTable? tableById(String id) => tables.where((t) => t.id == id).firstOrNull;
+  DatabaseTable? tableById(String id) =>
+      tables.where((t) => t.id == id).firstOrNull;
 }

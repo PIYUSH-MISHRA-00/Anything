@@ -25,19 +25,32 @@ class EvolutionPlanner {
     EvolutionBudget budget = const EvolutionBudget(),
   }) {
     final policy = EvolutionPolicy.forStrategy(context.strategy);
-    final ranked = [...reviewedProposals]..sort((a, b) => _compare(a.candidate, b.candidate));
+    final ranked = [...reviewedProposals]
+      ..sort((a, b) => _compare(a.candidate, b.candidate));
     final capped = ranked.take(budget.maxProposalsOnRoadmap).toList();
 
     final placed = capped.map((p) => _placeInPhase(p, policy)).toList();
 
     final milestones = EvolutionPhase.values
-        .map((phase) => EvolutionMilestone(phase: phase, proposals: placed.where((p) => p.phase == phase).toList()))
+        .map(
+          (phase) => EvolutionMilestone(
+            phase: phase,
+            proposals: placed.where((p) => p.phase == phase).toList(),
+          ),
+        )
         .toList();
 
-    return EvolutionRoadmap(fingerprint: fingerprint, milestones: milestones, generatedAt: DateTime.now());
+    return EvolutionRoadmap(
+      fingerprint: fingerprint,
+      milestones: milestones,
+      generatedAt: DateTime.now(),
+    );
   }
 
-  EvolutionProposal _placeInPhase(EvolutionProposal proposal, EvolutionPolicy policy) {
+  EvolutionProposal _placeInPhase(
+    EvolutionProposal proposal,
+    EvolutionPolicy policy,
+  ) {
     final risk = proposal.candidate.risk.highest;
     final benefit = proposal.candidate.benefit.overall;
 
@@ -49,7 +62,11 @@ class EvolutionPlanner {
         ? EvolutionPhase.next
         : EvolutionPhase.later;
 
-    return EvolutionProposal(candidate: proposal.candidate, phase: phase, reviewDecision: proposal.reviewDecision);
+    return EvolutionProposal(
+      candidate: proposal.candidate,
+      phase: phase,
+      reviewDecision: proposal.reviewDecision,
+    );
   }
 
   int _compare(EvolutionCandidate a, EvolutionCandidate b) {

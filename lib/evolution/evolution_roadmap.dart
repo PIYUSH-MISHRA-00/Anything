@@ -20,10 +20,17 @@ class EvolutionRoadmap {
   final List<EvolutionMilestone> milestones;
   final DateTime generatedAt;
 
-  const EvolutionRoadmap({required this.fingerprint, required this.milestones, required this.generatedAt});
+  const EvolutionRoadmap({
+    required this.fingerprint,
+    required this.milestones,
+    required this.generatedAt,
+  });
 
-  List<EvolutionProposal> proposalsFor(EvolutionPhase phase) =>
-      milestones.where((m) => m.phase == phase).expand((m) => m.proposals).toList();
+  List<EvolutionProposal> proposalsFor(EvolutionPhase phase) => milestones
+      .where((m) => m.phase == phase)
+      .expand((m) => m.proposals)
+      .toList();
 
-  List<EvolutionProposal> get allProposals => milestones.expand((m) => m.proposals).toList();
+  List<EvolutionProposal> get allProposals =>
+      milestones.expand((m) => m.proposals).toList();
 }

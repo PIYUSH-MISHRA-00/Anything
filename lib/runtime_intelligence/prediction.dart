@@ -21,5 +21,10 @@ class Prediction {
   final String description;
   final PredictionConfidence confidence;
 
-  const Prediction({required this.id, required this.kind, required this.description, required this.confidence});
+  const Prediction({
+    required this.id,
+    required this.kind,
+    required this.description,
+    required this.confidence,
+  });
 }

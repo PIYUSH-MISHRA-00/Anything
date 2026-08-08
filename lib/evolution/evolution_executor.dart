@@ -37,13 +37,20 @@ class EvolutionNotExecutable extends EvolutionExecutionPlan {
 class EvolutionExecutor {
   final ModificationEngine _engine;
 
-  EvolutionExecutor({ModificationEngine? engine}) : _engine = engine ?? ModificationEngine();
+  EvolutionExecutor({ModificationEngine? engine})
+    : _engine = engine ?? ModificationEngine();
 
   /// Compiles the proposal into a typed [ExperienceModificationSpec], or
   /// honestly reports why it cannot compile one today.
-  EvolutionExecutionPlan compile(EvolutionProposal proposal, String targetExperienceId, String basePackageVersion) {
+  EvolutionExecutionPlan compile(
+    EvolutionProposal proposal,
+    String targetExperienceId,
+    String basePackageVersion,
+  ) {
     if (!proposal.approvedForExecution) {
-      return const EvolutionNotExecutable(reason: 'Proposal has not been explicitly approved for execution.');
+      return const EvolutionNotExecutable(
+        reason: 'Proposal has not been explicitly approved for execution.',
+      );
     }
 
     final opportunity = proposal.candidate.opportunity;
@@ -53,7 +60,9 @@ class EvolutionExecutor {
       case EvolutionOpportunityCategory.missingCapability:
         final featureId = opportunity.reason.evidence.sourceFeatureId;
         if (featureId == null || !featureId.startsWith('feature:capability:')) {
-          return const EvolutionNotExecutable(reason: 'No capability id could be derived from this proposal.');
+          return const EvolutionNotExecutable(
+            reason: 'No capability id could be derived from this proposal.',
+          );
         }
         final capabilityId = featureId.replaceFirst('feature:capability:', '');
         return EvolutionExecutable(
@@ -78,7 +87,11 @@ class EvolutionExecutor {
             operations: [
               ModificationOperation(
                 type: ModificationType.addUiNode,
-                params: {'entityId': entityId, 'nodeType': 'button', 'label': opportunity.description},
+                params: {
+                  'entityId': entityId,
+                  'nodeType': 'button',
+                  'label': opportunity.description,
+                },
               ),
             ],
           ),
@@ -90,7 +103,8 @@ class EvolutionExecutor {
       case EvolutionOpportunityCategory.missingOffline:
       case EvolutionOpportunityCategory.missingSynchronization:
         return EvolutionNotExecutable(
-          reason: 'No ModificationOperation exists yet for ${opportunity.category.name} — this proposal is '
+          reason:
+              'No ModificationOperation exists yet for ${opportunity.category.name} — this proposal is '
               'roadmap-only until ModificationEngine gains a real operation for it.',
         );
     }
@@ -98,7 +112,10 @@ class EvolutionExecutor {
 
   /// Executes an already-compiled plan against the existing package —
   /// delegates entirely to the real ModificationEngine.
-  Future<ModificationResult> execute(ExperiencePackage package, ExperienceModificationSpec spec) {
+  Future<ModificationResult> execute(
+    ExperiencePackage package,
+    ExperienceModificationSpec spec,
+  ) {
     return _engine.modify(package, spec);
   }
 }

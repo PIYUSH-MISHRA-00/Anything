@@ -35,81 +35,118 @@ Map<String, dynamic> _decisionToJson(ArchitectureDecision d) => {
   'offlineImplication': d.offlineImplication,
 };
 
-ArchitectureDecision _decisionFromJson(Map<String, dynamic> json) => ArchitectureDecision(
-  id: json['id'] as String,
-  category: ArchitectureDecisionCategory.values.byName(json['category'] as String),
-  subjectId: json['subjectId'] as String,
-  decision: json['decision'] as String,
-  rationale: json['rationale'] as String,
-  confidence: _confidenceFromJson(json['confidence'] as Map<String, dynamic>),
-  alternatives: (json['alternatives'] as List).cast<String>(),
-  securityImplication: json['securityImplication'] as String?,
-  offlineImplication: json['offlineImplication'] as String?,
-);
+ArchitectureDecision _decisionFromJson(Map<String, dynamic> json) =>
+    ArchitectureDecision(
+      id: json['id'] as String,
+      category: ArchitectureDecisionCategory.values.byName(
+        json['category'] as String,
+      ),
+      subjectId: json['subjectId'] as String,
+      decision: json['decision'] as String,
+      rationale: json['rationale'] as String,
+      confidence: _confidenceFromJson(
+        json['confidence'] as Map<String, dynamic>,
+      ),
+      alternatives: (json['alternatives'] as List).cast<String>(),
+      securityImplication: json['securityImplication'] as String?,
+      offlineImplication: json['offlineImplication'] as String?,
+    );
 
 extension ArchitectureCandidateJson on ArchitectureCandidate {
   Map<String, dynamic> toJson() => {
     'id': id,
     'appName': appName,
     'iteration': iteration,
-    'entities': entities.map((e) => {
-      'entityId': e.entityId,
-      'name': e.name,
-      'fieldCount': e.fieldCount,
-      'storage': e.storage.name,
-      'storageDecision': _decisionToJson(e.storageDecision),
-    }).toList(),
-    'fields': fields.map((f) => {
-      'entityId': f.entityId,
-      'fieldId': f.fieldId,
-      'name': f.name,
-      'validationDecision': _decisionToJson(f.validationDecision),
-    }).toList(),
-    'relationships': relationships.map((r) => {
-      'fromEntityId': r.fromEntityId,
-      'toEntityId': r.toEntityId,
-      'fieldId': r.fieldId,
-      'deletePolicy': r.deletePolicy.name,
-      'decision': _decisionToJson(r.decision),
-    }).toList(),
-    'states': states.map((s) => {
-      'stateId': s.stateId,
-      'kind': s.kind.name,
-      'decision': _decisionToJson(s.decision),
-    }).toList(),
+    'entities': entities
+        .map(
+          (e) => {
+            'entityId': e.entityId,
+            'name': e.name,
+            'fieldCount': e.fieldCount,
+            'storage': e.storage.name,
+            'storageDecision': _decisionToJson(e.storageDecision),
+          },
+        )
+        .toList(),
+    'fields': fields
+        .map(
+          (f) => {
+            'entityId': f.entityId,
+            'fieldId': f.fieldId,
+            'name': f.name,
+            'validationDecision': _decisionToJson(f.validationDecision),
+          },
+        )
+        .toList(),
+    'relationships': relationships
+        .map(
+          (r) => {
+            'fromEntityId': r.fromEntityId,
+            'toEntityId': r.toEntityId,
+            'fieldId': r.fieldId,
+            'deletePolicy': r.deletePolicy.name,
+            'decision': _decisionToJson(r.decision),
+          },
+        )
+        .toList(),
+    'states': states
+        .map(
+          (s) => {
+            'stateId': s.stateId,
+            'kind': s.kind.name,
+            'decision': _decisionToJson(s.decision),
+          },
+        )
+        .toList(),
     'navigation': {
       'entryScreenId': navigation.entryScreenId,
       'screenIds': navigation.screenIds,
-      'edges': navigation.edges.map((e) => {
-        'fromScreenId': e.fromScreenId,
-        'toScreenId': e.toScreenId,
-        'trigger': e.trigger,
-        'isModal': e.isModal,
-      }).toList(),
+      'edges': navigation.edges
+          .map(
+            (e) => {
+              'fromScreenId': e.fromScreenId,
+              'toScreenId': e.toScreenId,
+              'trigger': e.trigger,
+              'isModal': e.isModal,
+            },
+          )
+          .toList(),
       'decision': _decisionToJson(navigation.decision),
     },
-    'interactions': interactions.map((i) => {
-      'entityId': i.entityId,
-      'canCreate': i.canCreate,
-      'canRead': i.canRead,
-      'canUpdate': i.canUpdate,
-      'canDelete': i.canDelete,
-      'supportsSearch': i.supportsSearch,
-      'supportsFilter': i.supportsFilter,
-      'supportsSort': i.supportsSort,
-      'supportsPagination': i.supportsPagination,
-      'decision': _decisionToJson(i.decision),
-    }).toList(),
-    'capabilities': capabilities.map((c) => {
-      'capabilityId': c.capabilityId,
-      'resolved': c.resolved,
-      'decision': _decisionToJson(c.decision),
-    }).toList(),
-    'permissions': permissions.map((p) => {
-      'permission': p.permission,
-      'requiredByCapabilityId': p.requiredByCapabilityId,
-      'decision': _decisionToJson(p.decision),
-    }).toList(),
+    'interactions': interactions
+        .map(
+          (i) => {
+            'entityId': i.entityId,
+            'canCreate': i.canCreate,
+            'canRead': i.canRead,
+            'canUpdate': i.canUpdate,
+            'canDelete': i.canDelete,
+            'supportsSearch': i.supportsSearch,
+            'supportsFilter': i.supportsFilter,
+            'supportsSort': i.supportsSort,
+            'supportsPagination': i.supportsPagination,
+            'decision': _decisionToJson(i.decision),
+          },
+        )
+        .toList(),
+    'capabilities': capabilities
+        .map(
+          (c) => {
+            'capabilityId': c.capabilityId,
+            'resolved': c.resolved,
+            'decision': _decisionToJson(c.decision),
+          },
+        )
+        .toList(),
+    'permissions': permissions
+        .map(
+          (p) => {
+            'permission': p.permission,
+            'requiredByCapabilityId': p.requiredByCapabilityId,
+            'decision': _decisionToJson(p.decision),
+          },
+        )
+        .toList(),
     'security': {
       'networkMode': security.networkMode.name,
       'requiresCredentialVault': security.requiresCredentialVault,
@@ -123,12 +160,16 @@ extension ArchitectureCandidateJson on ArchitectureCandidate {
       'strategy': synchronization.strategy.name,
       'decision': _decisionToJson(synchronization.decision),
     },
-    'validations': validations.map((v) => {
-      'entityId': v.entityId,
-      'fieldId': v.fieldId,
-      'type': v.type.name,
-      'description': v.description,
-    }).toList(),
+    'validations': validations
+        .map(
+          (v) => {
+            'entityId': v.entityId,
+            'fieldId': v.fieldId,
+            'type': v.type.name,
+            'description': v.description,
+          },
+        )
+        .toList(),
     'overallConfidence': _confidenceToJson(overallConfidence),
   };
 
@@ -149,7 +190,9 @@ extension ArchitectureCandidateJson on ArchitectureCandidate {
               name: e['name'] as String,
               fieldCount: e['fieldCount'] as int,
               storage: StorageKind.values.byName(e['storage'] as String),
-              storageDecision: _decisionFromJson(e['storageDecision'] as Map<String, dynamic>),
+              storageDecision: _decisionFromJson(
+                e['storageDecision'] as Map<String, dynamic>,
+              ),
             ),
           )
           .toList(),
@@ -159,7 +202,9 @@ extension ArchitectureCandidateJson on ArchitectureCandidate {
               entityId: f['entityId'] as String,
               fieldId: f['fieldId'] as String,
               name: f['name'] as String,
-              validationDecision: _decisionFromJson(f['validationDecision'] as Map<String, dynamic>),
+              validationDecision: _decisionFromJson(
+                f['validationDecision'] as Map<String, dynamic>,
+              ),
             ),
           )
           .toList(),
@@ -169,8 +214,12 @@ extension ArchitectureCandidateJson on ArchitectureCandidate {
               fromEntityId: r['fromEntityId'] as String,
               toEntityId: r['toEntityId'] as String,
               fieldId: r['fieldId'] as String,
-              deletePolicy: RelationshipDeletePolicy.values.byName(r['deletePolicy'] as String),
-              decision: _decisionFromJson(r['decision'] as Map<String, dynamic>),
+              deletePolicy: RelationshipDeletePolicy.values.byName(
+                r['deletePolicy'] as String,
+              ),
+              decision: _decisionFromJson(
+                r['decision'] as Map<String, dynamic>,
+              ),
             ),
           )
           .toList(),
@@ -179,7 +228,9 @@ extension ArchitectureCandidateJson on ArchitectureCandidate {
             (s) => StateDecision(
               stateId: s['stateId'] as String,
               kind: StateKind.values.byName(s['kind'] as String),
-              decision: _decisionFromJson(s['decision'] as Map<String, dynamic>),
+              decision: _decisionFromJson(
+                s['decision'] as Map<String, dynamic>,
+              ),
             ),
           )
           .toList(),
@@ -210,7 +261,9 @@ extension ArchitectureCandidateJson on ArchitectureCandidate {
               supportsFilter: i['supportsFilter'] as bool,
               supportsSort: i['supportsSort'] as bool,
               supportsPagination: i['supportsPagination'] as bool,
-              decision: _decisionFromJson(i['decision'] as Map<String, dynamic>),
+              decision: _decisionFromJson(
+                i['decision'] as Map<String, dynamic>,
+              ),
             ),
           )
           .toList(),
@@ -219,7 +272,9 @@ extension ArchitectureCandidateJson on ArchitectureCandidate {
             (c) => CapabilityDecision(
               capabilityId: c['capabilityId'] as String,
               resolved: c['resolved'] as bool,
-              decision: _decisionFromJson(c['decision'] as Map<String, dynamic>),
+              decision: _decisionFromJson(
+                c['decision'] as Map<String, dynamic>,
+              ),
             ),
           )
           .toList(),
@@ -228,7 +283,9 @@ extension ArchitectureCandidateJson on ArchitectureCandidate {
             (p) => PermissionDecision(
               permission: p['permission'] as String,
               requiredByCapabilityId: p['requiredByCapabilityId'] as String,
-              decision: _decisionFromJson(p['decision'] as Map<String, dynamic>),
+              decision: _decisionFromJson(
+                p['decision'] as Map<String, dynamic>,
+              ),
             ),
           )
           .toList(),
@@ -238,7 +295,9 @@ extension ArchitectureCandidateJson on ArchitectureCandidate {
         decision: _decisionFromJson(sec['decision'] as Map<String, dynamic>),
       ),
       offline: OfflineDecision(
-        capability: OfflineCapability.values.byName(off['capability'] as String),
+        capability: OfflineCapability.values.byName(
+          off['capability'] as String,
+        ),
         decision: _decisionFromJson(off['decision'] as Map<String, dynamic>),
       ),
       synchronization: SynchronizationDecision(
@@ -255,7 +314,9 @@ extension ArchitectureCandidateJson on ArchitectureCandidate {
             ),
           )
           .toList(),
-      overallConfidence: _confidenceFromJson(json['overallConfidence'] as Map<String, dynamic>),
+      overallConfidence: _confidenceFromJson(
+        json['overallConfidence'] as Map<String, dynamic>,
+      ),
     );
   }
 }

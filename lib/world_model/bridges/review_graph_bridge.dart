@@ -15,27 +15,52 @@ import '../world_types.dart';
 class ReviewGraphBridge {
   final EntityResolver _resolver;
 
-  const ReviewGraphBridge({EntityResolver resolver = const EntityResolver()}) : _resolver = resolver;
+  const ReviewGraphBridge({EntityResolver resolver = const EntityResolver()})
+    : _resolver = resolver;
 
   GraphUpdate bridge(ReviewSession session) {
     final nodes = <WorldNode>[];
     final edges = <WorldEdge>[];
 
     for (final issue in session.result.finalIteration.issues) {
-      final issueIdentity = _resolver.resolve(WorldNodeKind.review, stableId: issue.id);
-      nodes.add(WorldNode(identity: issueIdentity, kind: WorldNodeKind.review, label: issue.reason));
+      final issueIdentity = _resolver.resolve(
+        WorldNodeKind.review,
+        stableId: issue.id,
+      );
+      nodes.add(
+        WorldNode(
+          identity: issueIdentity,
+          kind: WorldNodeKind.review,
+          label: issue.reason,
+        ),
+      );
 
       final affectedNodeId = issue.evidence.affectedNodeId;
       if (affectedNodeId.isNotEmpty) {
-        final affectedIdentity = _resolver.resolve(WorldNodeKind.entity, stableId: affectedNodeId);
-        nodes.add(WorldNode(identity: affectedIdentity, kind: WorldNodeKind.entity, label: affectedNodeId));
+        final affectedIdentity = _resolver.resolve(
+          WorldNodeKind.entity,
+          stableId: affectedNodeId,
+        );
+        nodes.add(
+          WorldNode(
+            identity: affectedIdentity,
+            kind: WorldNodeKind.entity,
+            label: affectedNodeId,
+          ),
+        );
         edges.add(
           WorldEdge(
             fromId: issueIdentity,
             toId: affectedIdentity,
             kind: RelationshipKind.relatesTo,
-            evidence: GraphEvidence(sourceGraph: 'ReviewSession', sourceNodeId: issue.id),
-            confidence: GraphConfidence(score: issue.confidence.score, reason: issue.confidence.reason),
+            evidence: GraphEvidence(
+              sourceGraph: 'ReviewSession',
+              sourceNodeId: issue.id,
+            ),
+            confidence: GraphConfidence(
+              score: issue.confidence.score,
+              reason: issue.confidence.reason,
+            ),
           ),
         );
       }

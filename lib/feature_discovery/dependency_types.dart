@@ -7,7 +7,15 @@ library;
 import 'feature_types.dart' show FeatureRelationKind;
 
 /// What kind of concrete thing a DependencyNode represents.
-enum DependencyNodeKind { feature, capability, permission, storage, navigation, state, validation }
+enum DependencyNodeKind {
+  feature,
+  capability,
+  permission,
+  storage,
+  navigation,
+  state,
+  validation,
+}
 
 /// One node in the dependency graph — a feature, or one of the concrete
 /// primitives a feature bottoms out in.
@@ -16,7 +24,11 @@ class DependencyNode {
   final DependencyNodeKind kind;
   final String label;
 
-  const DependencyNode({required this.id, required this.kind, required this.label});
+  const DependencyNode({
+    required this.id,
+    required this.kind,
+    required this.label,
+  });
 }
 
 /// A typed edge between two dependency nodes.
@@ -25,7 +37,11 @@ class DependencyEdge {
   final String toId;
   final FeatureRelationKind relation;
 
-  const DependencyEdge({required this.fromId, required this.toId, required this.relation});
+  const DependencyEdge({
+    required this.fromId,
+    required this.toId,
+    required this.relation,
+  });
 }
 
 /// The complete, typed dependency graph.
@@ -35,9 +51,11 @@ class DependencyGraph {
 
   const DependencyGraph({this.nodes = const [], this.edges = const []});
 
-  DependencyNode? nodeById(String id) => nodes.where((n) => n.id == id).firstOrNull;
+  DependencyNode? nodeById(String id) =>
+      nodes.where((n) => n.id == id).firstOrNull;
 
-  List<DependencyEdge> edgesFrom(String id) => edges.where((e) => e.fromId == id).toList();
+  List<DependencyEdge> edgesFrom(String id) =>
+      edges.where((e) => e.fromId == id).toList();
 
   DependencyGraph merge(DependencyGraph other) {
     final nodeIds = nodes.map((n) => n.id).toSet();

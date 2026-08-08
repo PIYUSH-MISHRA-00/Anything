@@ -247,9 +247,7 @@ void main() {
   group('CompositeApplicationReasoner — deterministic path', () {
     test('handles simple collection intent without model', () async {
       final composite = CompositeApplicationReasoner();
-      final result = await composite.reason(
-        _context('Create a list of notes'),
-      );
+      final result = await composite.reason(_context('Create a list of notes'));
       expect(result, isA<ReasoningReady>());
       final ready = result as ReasoningReady;
       expect(ready.semanticApp.entities, isNotEmpty);
@@ -299,9 +297,7 @@ void main() {
 
     test('returns provider required for tracker pattern', () async {
       final reasoner = const DeterministicReasoner();
-      final result = await reasoner.reason(
-        _context('Track my daily habits'),
-      );
+      final result = await reasoner.reason(_context('Track my daily habits'));
       expect(result, isA<ReasoningProviderRequired>());
     });
 
@@ -326,9 +322,7 @@ void main() {
 
     test('returns provider required for planner pattern', () async {
       final reasoner = const DeterministicReasoner();
-      final result = await reasoner.reason(
-        _context('Plan my study schedule'),
-      );
+      final result = await reasoner.reason(_context('Plan my study schedule'));
       expect(result, isA<ReasoningProviderRequired>());
     });
   });
@@ -395,9 +389,7 @@ void main() {
     test('accepts valid JSON', () async {
       final provider = _FakeModelProvider(responseText: _validVinylJson);
       final reasoner = ModelApplicationReasoner(provider);
-      final result = await reasoner.reason(
-        _context('Track my vinyl records'),
-      );
+      final result = await reasoner.reason(_context('Track my vinyl records'));
       expect(result, isA<ReasoningReady>());
     });
   });
@@ -604,9 +596,7 @@ void main() {
       final reasoner = const DeterministicReasoner();
       final planner = SynthesisPlanner(reasoner);
 
-      final result = await planner.plan(
-        _context('Create a list of plants'),
-      );
+      final result = await planner.plan(_context('Create a list of plants'));
 
       final blueprint = result.blueprint;
       expect(blueprint.entities.length, greaterThanOrEqualTo(1));
@@ -695,14 +685,10 @@ void main() {
       );
       expect(collection, isA<ReasoningReady>());
 
-      final tracker = await reasoner.reason(
-        _context('Track my daily habits'),
-      );
+      final tracker = await reasoner.reason(_context('Track my daily habits'));
       expect(tracker, isA<ReasoningProviderRequired>());
 
-      final planner = await reasoner.reason(
-        _context('Plan my study schedule'),
-      );
+      final planner = await reasoner.reason(_context('Plan my study schedule'));
       expect(planner, isA<ReasoningProviderRequired>());
 
       final dashboard = await reasoner.reason(

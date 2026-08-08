@@ -15,6 +15,7 @@ export 'kernel.dart';
 export 'model_provider.dart';
 export 'knowledge_provider.dart';
 export 'protection_provider.dart';
+
 // `repository.dart` was removed by IS-R57 Phase 4 — four abstract contracts
 // (`ExperienceRepository`, `WorkspaceRepository`, `IntentRepository`,
 // `PreferencesRepository`) with TWENTY methods, ZERO implementations and zero

@@ -13,13 +13,16 @@ void main() {
   group('AccessibilityEngineering', () {
     const accessibilityEngineering = AccessibilityEngineering();
 
-    test('produces one decision per accessibility aspect, all grounded in Flutter defaults', () {
-      final result = accessibilityEngineering.plan();
-      expect(result.decisions, hasLength(AccessibilityAspect.values.length));
-      for (final d in result.decisions) {
-        expect(d.rationale, isNotEmpty);
-      }
-    });
+    test(
+      'produces one decision per accessibility aspect, all grounded in Flutter defaults',
+      () {
+        final result = accessibilityEngineering.plan();
+        expect(result.decisions, hasLength(AccessibilityAspect.values.length));
+        for (final d in result.decisions) {
+          expect(d.rationale, isNotEmpty);
+        }
+      },
+    );
   });
 
   group('PerformanceEngineering', () {
@@ -43,7 +46,9 @@ void main() {
         PerformanceAspect.memory,
         PerformanceAspect.database,
       ]) {
-        final d = result.decisions.firstWhere((d) => d.subjectId == aspect.name);
+        final d = result.decisions.firstWhere(
+          (d) => d.subjectId == aspect.name,
+        );
         expect(d.decision, contains('is real today'));
       }
     });
@@ -54,17 +59,22 @@ void main() {
 
     test('records Kaalka as the sole canonical protection mechanism', () {
       final result = securityEngineering.plan();
-      final kaalka = result.decisions.firstWhere((d) => d.subjectId == SecurityAspect.kaalka.name);
+      final kaalka = result.decisions.firstWhere(
+        (d) => d.subjectId == SecurityAspect.kaalka.name,
+      );
       expect(kaalka.rationale, contains('package:kaalka'));
       expect(kaalka.rationale, contains('canonical'));
     });
 
-    test('records that CredentialVault exists but is unused, not fabricated as wired up', () {
-      final result = securityEngineering.plan();
-      final credentialFlow = result.decisions.firstWhere(
-        (d) => d.subjectId == SecurityAspect.credentialFlow.name,
-      );
-      expect(credentialFlow.rationale, contains('unused'));
-    });
+    test(
+      'records that CredentialVault exists but is unused, not fabricated as wired up',
+      () {
+        final result = securityEngineering.plan();
+        final credentialFlow = result.decisions.firstWhere(
+          (d) => d.subjectId == SecurityAspect.credentialFlow.name,
+        );
+        expect(credentialFlow.rationale, contains('unused'));
+      },
+    );
   });
 }

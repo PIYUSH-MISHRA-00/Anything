@@ -18,7 +18,10 @@ class CycleDetectionResult {
   final bool hasCycle;
   final List<String> cycleNodeIds;
 
-  const CycleDetectionResult({required this.hasCycle, this.cycleNodeIds = const []});
+  const CycleDetectionResult({
+    required this.hasCycle,
+    this.cycleNodeIds = const [],
+  });
 
   static const none = CycleDetectionResult(hasCycle: false);
 }
@@ -43,7 +46,10 @@ class BuildGraphCycleDetector {
         final neighborState = state[neighbor];
         if (neighborState == _VisitState.visiting) {
           final cycleStart = path.indexOf(neighbor);
-          return CycleDetectionResult(hasCycle: true, cycleNodeIds: path.sublist(cycleStart));
+          return CycleDetectionResult(
+            hasCycle: true,
+            cycleNodeIds: path.sublist(cycleStart),
+          );
         }
         if (neighborState == _VisitState.unvisited) {
           final found = visit(neighbor);
@@ -68,7 +74,10 @@ class TopologicalOrderResult {
   final List<String> orderedNodeIds;
   final bool isComplete;
 
-  const TopologicalOrderResult({required this.orderedNodeIds, required this.isComplete});
+  const TopologicalOrderResult({
+    required this.orderedNodeIds,
+    required this.isComplete,
+  });
 }
 
 class BuildGraphOrderer {
@@ -89,14 +98,23 @@ class BuildGraphOrderer {
       inDegree[edge.fromId] = (inDegree[edge.fromId] ?? 0) + 1;
     }
 
-    final ready = [for (final n in graph.nodes) if (inDegree[n.id] == 0) n.id]..sort();
+    final ready = [
+      for (final n in graph.nodes)
+        if (inDegree[n.id] == 0) n.id,
+    ]..sort();
     final ordered = <String>[];
     final remainingInDegree = Map<String, int>.from(inDegree);
 
     while (ready.isNotEmpty) {
       final id = ready.removeAt(0);
       ordered.add(id);
-      final dependents = graph.edges.where((e) => e.toId == id).map((e) => e.fromId).toSet().toList()..sort();
+      final dependents =
+          graph.edges
+              .where((e) => e.toId == id)
+              .map((e) => e.fromId)
+              .toSet()
+              .toList()
+            ..sort();
       for (final dependent in dependents) {
         remainingInDegree[dependent] = (remainingInDegree[dependent] ?? 1) - 1;
         if (remainingInDegree[dependent] == 0) ready.add(dependent);
@@ -104,6 +122,9 @@ class BuildGraphOrderer {
       ready.sort();
     }
 
-    return TopologicalOrderResult(orderedNodeIds: ordered, isComplete: ordered.length == graph.nodes.length);
+    return TopologicalOrderResult(
+      orderedNodeIds: ordered,
+      isComplete: ordered.length == graph.nodes.length,
+    );
   }
 }

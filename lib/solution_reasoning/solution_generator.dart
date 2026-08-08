@@ -8,7 +8,8 @@ library;
 import '../application_engineering/engineering_context.dart';
 import '../application_engineering/engineering_planner.dart';
 import '../application_engineering/engineering_refinement.dart';
-import '../feature_discovery/feature_types.dart' show ComplexityLevel, FeatureComplexity;
+import '../feature_discovery/feature_types.dart'
+    show ComplexityLevel, FeatureComplexity;
 import '../software_architect/architecture_candidate.dart';
 import '../software_architect/architecture_types.dart';
 import 'solution_exploration_context.dart';
@@ -27,11 +28,18 @@ class SolutionGenerator {
     final architecture = _applyVariation(baseline, variation);
 
     final engineeringCandidate = const EngineeringPlanner().plan(
-      EngineeringContext(architecture: architecture, app: context.app, featureGraph: context.featureGraph),
+      EngineeringContext(
+        architecture: architecture,
+        app: context.app,
+        featureGraph: context.featureGraph,
+      ),
     );
-    final engineeringPlan = const EngineeringRefinement().refine(engineeringCandidate);
+    final engineeringPlan = const EngineeringRefinement().refine(
+      engineeringCandidate,
+    );
 
-    final id = 'solution:${variation.label.toLowerCase().replaceAll(RegExp(r'\s+'), '_')}';
+    final id =
+        'solution:${variation.label.toLowerCase().replaceAll(RegExp(r'\s+'), '_')}';
 
     return SolutionCandidate(
       id: id,
@@ -41,7 +49,8 @@ class SolutionGenerator {
       engineeringVariation: EngineeringVariation(plan: engineeringPlan),
       navigationVariation: NavigationVariation(
         topology: variation.navigationTopology,
-        rationale: variation.navigationTopology == NavigationTopology.hierarchical
+        rationale:
+            variation.navigationTopology == NavigationTopology.hierarchical
             ? 'Matches NavigationPlanner\'s real inferred edge shape (list -> detail/form).'
             : 'Every list view also gets a direct entry from the home screen.',
       ),
@@ -51,27 +60,40 @@ class SolutionGenerator {
             ? 'Search/filter/sort enabled per InteractionPlanner\'s structural detection.'
             : 'Search/filter/sort deliberately omitted for a leaner first version.',
       ),
-      offlineVariation: OfflineVariation(strategy: variation.offlineStrategy, rationale: variation.rationale),
+      offlineVariation: OfflineVariation(
+        strategy: variation.offlineStrategy,
+        rationale: variation.rationale,
+      ),
       synchronizationVariation: SynchronizationVariation(
         strategy: variation.synchronizationStrategy,
-        rationale: 'Architecture-only — no server/cloud sync implementation exists or is planned (see V3).',
+        rationale:
+            'Architecture-only — no server/cloud sync implementation exists or is planned (see V3).',
       ),
       storageVariation: const StorageVariation(
         description: 'Single generic SQLite table (ExperienceDatabase)',
-        rationale: 'Only one real storage backend exists in this codebase; not independently variable today.',
+        rationale:
+            'Only one real storage backend exists in this codebase; not independently variable today.',
       ),
       stateVariation: const StateVariation(
-        description: 'Reactive/computed/persistent state assigned by StatePlanner from entity/derived-value shape',
-        rationale: 'Correct-by-construction given the app\'s own shape; not a preference a solution could vary.',
+        description:
+            'Reactive/computed/persistent state assigned by StatePlanner from entity/derived-value shape',
+        rationale:
+            'Correct-by-construction given the app\'s own shape; not a preference a solution could vary.',
       ),
       dependencies: context.dependencyGraph,
       complexity: _complexityFor(variation),
       confidence: architecture.overallConfidence,
-      explanation: SolutionExplanation(solutionId: id, whyGenerated: variation.rationale),
+      explanation: SolutionExplanation(
+        solutionId: id,
+        whyGenerated: variation.rationale,
+      ),
     );
   }
 
-  ArchitectureCandidate _applyVariation(ArchitectureCandidate baseline, ArchitectureVariation variation) {
+  ArchitectureCandidate _applyVariation(
+    ArchitectureCandidate baseline,
+    ArchitectureVariation variation,
+  ) {
     var candidate = baseline;
 
     if (variation.capabilityRichness == CapabilityRichness.minimal) {
@@ -98,7 +120,11 @@ class SolutionGenerator {
       final flatEdges = candidate.navigation.screenIds
           .where((id) => id != candidate.navigation.entryScreenId)
           .map(
-            (id) => NavigationEdge(fromScreenId: candidate.navigation.entryScreenId, toScreenId: id, trigger: 'flatEntry'),
+            (id) => NavigationEdge(
+              fromScreenId: candidate.navigation.entryScreenId,
+              toScreenId: id,
+              trigger: 'flatEntry',
+            ),
           )
           .toList();
       candidate = candidate.copyWith(
@@ -112,7 +138,10 @@ class SolutionGenerator {
     }
 
     candidate = candidate.copyWith(
-      offline: OfflineDecision(capability: variation.offlineStrategy, decision: candidate.offline.decision),
+      offline: OfflineDecision(
+        capability: variation.offlineStrategy,
+        decision: candidate.offline.decision,
+      ),
       synchronization: SynchronizationDecision(
         strategy: variation.synchronizationStrategy,
         decision: candidate.synchronization.decision,
@@ -123,14 +152,17 @@ class SolutionGenerator {
   }
 
   FeatureComplexity _complexityFor(ArchitectureVariation variation) {
-    final capabilityLevel = variation.capabilityRichness == CapabilityRichness.full
+    final capabilityLevel =
+        variation.capabilityRichness == CapabilityRichness.full
         ? ComplexityLevel.medium
         : ComplexityLevel.low;
-    final offlineLevel = variation.offlineStrategy == OfflineCapability.cacheThenOnline
+    final offlineLevel =
+        variation.offlineStrategy == OfflineCapability.cacheThenOnline
         ? ComplexityLevel.medium
         : ComplexityLevel.low;
 
-    ComplexityLevel worst(List<ComplexityLevel> levels) => levels.reduce((a, b) => a.index > b.index ? a : b);
+    ComplexityLevel worst(List<ComplexityLevel> levels) =>
+        levels.reduce((a, b) => a.index > b.index ? a : b);
 
     return FeatureComplexity(
       implementation: worst([capabilityLevel, offlineLevel]),
@@ -138,8 +170,12 @@ class SolutionGenerator {
       runtime: capabilityLevel,
       memoryCost: capabilityLevel,
       storageCost: ComplexityLevel.low,
-      batteryCost: offlineLevel == ComplexityLevel.medium ? ComplexityLevel.low : ComplexityLevel.none,
-      networkCost: variation.offlineStrategy == OfflineCapability.onlineRequired ? ComplexityLevel.medium : ComplexityLevel.low,
+      batteryCost: offlineLevel == ComplexityLevel.medium
+          ? ComplexityLevel.low
+          : ComplexityLevel.none,
+      networkCost: variation.offlineStrategy == OfflineCapability.onlineRequired
+          ? ComplexityLevel.medium
+          : ComplexityLevel.low,
       maintenanceCost: worst([capabilityLevel, offlineLevel]),
       modificationCost: capabilityLevel,
     );

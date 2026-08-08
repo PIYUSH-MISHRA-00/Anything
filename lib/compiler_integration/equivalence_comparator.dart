@@ -24,7 +24,8 @@ import 'equivalence_report.dart';
 
 /// Dart's default `Set<T>.==` is identity-based, not content-based — this
 /// comparator needs real structural set equality throughout.
-bool _setEquals<T>(Set<T> a, Set<T> b) => a.length == b.length && a.containsAll(b);
+bool _setEquals<T>(Set<T> a, Set<T> b) =>
+    a.length == b.length && a.containsAll(b);
 
 class EquivalenceComparator {
   const EquivalenceComparator();
@@ -40,14 +41,21 @@ class EquivalenceComparator {
     final List<String> missingComponents;
     final List<String> extraComponents;
     if (legacyBlueprint != null && compilerModel != null) {
-      final identityDiff = _identityDiff(legacyScreenIdentities(legacyBlueprint), compilerScreenIdentities(compilerModel));
+      final identityDiff = _identityDiff(
+        legacyScreenIdentities(legacyBlueprint),
+        compilerScreenIdentities(compilerModel),
+      );
       missingComponents = identityDiff.missing;
       extraComponents = identityDiff.extra;
     } else {
       final legacyScreenIds = legacy.interface.screens.map((s) => s.id).toSet();
-      final compilerScreenIds = compiler.interface.screens.map((s) => s.id).toSet();
-      missingComponents = legacyScreenIds.difference(compilerScreenIds).toList()..sort();
-      extraComponents = compilerScreenIds.difference(legacyScreenIds).toList()..sort();
+      final compilerScreenIds = compiler.interface.screens
+          .map((s) => s.id)
+          .toSet();
+      missingComponents = legacyScreenIds.difference(compilerScreenIds).toList()
+        ..sort();
+      extraComponents = compilerScreenIds.difference(legacyScreenIds).toList()
+        ..sort();
     }
 
     final behaviorDifferences = _behaviorDifferences(legacy, compiler);
@@ -55,9 +63,13 @@ class EquivalenceComparator {
 
     final checks = _dimensionChecks(legacy, compiler);
     if (legacyBlueprint != null && compilerModel != null) {
-      checks['screenIdentityCoverage'] = missingComponents.isEmpty && extraComponents.isEmpty;
+      checks['screenIdentityCoverage'] =
+          missingComponents.isEmpty && extraComponents.isEmpty;
     }
-    final passed = checks.entries.where((e) => e.value).map((e) => e.key).toList();
+    final passed = checks.entries
+        .where((e) => e.value)
+        .map((e) => e.key)
+        .toList();
 
     return EquivalenceReport(
       missingComponents: missingComponents,
@@ -67,7 +79,8 @@ class EquivalenceComparator {
       legacyLatency: legacyLatency,
       compilerLatency: compilerLatency,
       compatibilityScore: checks.isEmpty ? 0.0 : passed.length / checks.length,
-      determinismScore: 0.0, // Filled in separately by checkDeterminism — a compare() call alone never re-runs a pipeline.
+      determinismScore:
+          0.0, // Filled in separately by checkDeterminism — a compare() call alone never re-runs a pipeline.
       dimensionsChecked: checks.keys.toList(),
       dimensionsPassed: passed,
     );
@@ -79,7 +92,10 @@ class EquivalenceComparator {
   /// has no create/edit distinction — see `experience_identity.dart`'s doc
   /// comment) shows up as a real, honest, quantified difference rather than
   /// being hidden or falsely equated.
-  ({List<String> missing, List<String> extra}) _identityDiff(List<ScreenIdentity> legacyIds, List<ScreenIdentity> compilerIds) {
+  ({List<String> missing, List<String> extra}) _identityDiff(
+    List<ScreenIdentity> legacyIds,
+    List<ScreenIdentity> compilerIds,
+  ) {
     final legacyCounts = <ScreenIdentity, int>{};
     for (final id in legacyIds) {
       legacyCounts[id] = (legacyCounts[id] ?? 0) + 1;
@@ -92,12 +108,16 @@ class EquivalenceComparator {
     final missing = <String>[];
     for (final entry in legacyCounts.entries) {
       final deficit = entry.value - (compilerCounts[entry.key] ?? 0);
-      if (deficit > 0) missing.add('${entry.key} (legacy $deficit more than compiler)');
+      if (deficit > 0) {
+        missing.add('${entry.key} (legacy $deficit more than compiler)');
+      }
     }
     final extra = <String>[];
     for (final entry in compilerCounts.entries) {
       final surplus = entry.value - (legacyCounts[entry.key] ?? 0);
-      if (surplus > 0) extra.add('${entry.key} (compiler $surplus more than legacy)');
+      if (surplus > 0) {
+        extra.add('${entry.key} (compiler $surplus more than legacy)');
+      }
     }
     missing.sort();
     extra.sort();
@@ -110,46 +130,72 @@ class EquivalenceComparator {
   /// supports dashboard/calendar/settings/summary views the compiler
   /// pipeline explicitly never generates, per R13's own honest scope) —
   /// a failing dimension is real signal, not a bug in this comparator.
-  Map<String, bool> _dimensionChecks(ExperiencePackage legacy, ExperiencePackage compiler) {
-    final legacyEntityIds = legacy.data?.entities.map((e) => e.id).toSet() ?? const <String>{};
-    final compilerEntityIds = compiler.data?.entities.map((e) => e.id).toSet() ?? const <String>{};
+  Map<String, bool> _dimensionChecks(
+    ExperiencePackage legacy,
+    ExperiencePackage compiler,
+  ) {
+    final legacyEntityIds =
+        legacy.data?.entities.map((e) => e.id).toSet() ?? const <String>{};
+    final compilerEntityIds =
+        compiler.data?.entities.map((e) => e.id).toSet() ?? const <String>{};
 
     return {
       // Both packages describe the SAME real entities — the one dimension
       // that must always hold, since both pipelines are fed the same
       // underlying entity list for one creation request.
-      'entityCoverage': legacyEntityIds.length == compilerEntityIds.length && legacyEntityIds.containsAll(compilerEntityIds),
+      'entityCoverage':
+          legacyEntityIds.length == compilerEntityIds.length &&
+          legacyEntityIds.containsAll(compilerEntityIds),
       // Same per-entity field COUNT (legacy's DataFieldSchema carries
       // richer metadata per field — defaultValue/referenceEntityId/
       // allowedValues/hint — CanonicalImplementationModel's
       // ImplementationField does not; field count itself should still
       // match).
-      'dataFieldCountParity': _fieldCountsMatch(legacy, compiler, legacyEntityIds.intersection(compilerEntityIds)),
+      'dataFieldCountParity': _fieldCountsMatch(
+        legacy,
+        compiler,
+        legacyEntityIds.intersection(compilerEntityIds),
+      ),
       // Same set of entities with a real create-mutation behavior node.
-      'crudCreateCoverage': _setEquals(_mutationEntitySet(legacy, 'create'), _mutationEntitySet(compiler, 'create')),
-      'crudUpdateCoverage': _setEquals(_mutationEntitySet(legacy, 'update'), _mutationEntitySet(compiler, 'update')),
-      'crudDeleteCoverage': _setEquals(_mutationEntitySet(legacy, 'delete'), _mutationEntitySet(compiler, 'delete')),
+      'crudCreateCoverage': _setEquals(
+        _mutationEntitySet(legacy, 'create'),
+        _mutationEntitySet(compiler, 'create'),
+      ),
+      'crudUpdateCoverage': _setEquals(
+        _mutationEntitySet(legacy, 'update'),
+        _mutationEntitySet(compiler, 'update'),
+      ),
+      'crudDeleteCoverage': _setEquals(
+        _mutationEntitySet(legacy, 'delete'),
+        _mutationEntitySet(compiler, 'delete'),
+      ),
       // Same declared capability id set.
       'capabilityCoverage': _setEquals(
         legacy.capabilityDeclarations.map((c) => c.capabilityId).toSet(),
         compiler.capabilityDeclarations.map((c) => c.capabilityId).toSet(),
       ),
-      'networkModeMatch': legacy.manifest.networkMode == compiler.manifest.networkMode,
-      'storageModeMatch': legacy.manifest.storageMode == compiler.manifest.storageMode,
+      'networkModeMatch':
+          legacy.manifest.networkMode == compiler.manifest.networkMode,
+      'storageModeMatch':
+          legacy.manifest.storageMode == compiler.manifest.storageMode,
       // Compiler's state is intentionally a strict subset (searchTerm
       // only) — real per compiler's own documented design (R13); checks
       // the subset relationship holds, not equality.
-      'stateVariableSubset': compiler.state.variables.map((v) => v.id).toSet().every(
-        (id) => legacy.state.variables.any((v) => v.id == id),
-      ),
+      'stateVariableSubset': compiler.state.variables
+          .map((v) => v.id)
+          .toSet()
+          .every((id) => legacy.state.variables.any((v) => v.id == id)),
       // Same navigation SHAPE (both none, or both bottomNavigation) — real
       // structural check, not identical item lists (screen ids differ by
       // convention, see `missingComponents`/`extraComponents`).
-      'navigationShapeMatch': (legacy.interface.navigation == null) == (compiler.interface.navigation == null),
+      'navigationShapeMatch':
+          (legacy.interface.navigation == null) ==
+          (compiler.interface.navigation == null),
       // Same TOTAL screen count — expected to fail whenever the legacy
       // blueprint used a view type (dashboard/calendar/settings/summary)
       // the compiler pipeline does not generate at all.
-      'screenCountParity': legacy.interface.screens.length == compiler.interface.screens.length,
+      'screenCountParity':
+          legacy.interface.screens.length == compiler.interface.screens.length,
       // Implementation Milestone R20 — a SEPARATE dimension from
       // `dataFieldCountParity`: that check is a raw field COUNT, which
       // genuinely (and correctly) still differs whenever the compiler's
@@ -161,42 +207,79 @@ class EquivalenceComparator {
       // different id-namespacing schemes), whether the real metadata R20
       // threads through (defaultValue/referenceEntityId/allowedValues/
       // hint) actually agrees.
-      'sharedFieldMetadataParity': _sharedFieldMetadataMatches(legacy, compiler, legacyEntityIds.intersection(compilerEntityIds)),
+      'sharedFieldMetadataParity': _sharedFieldMetadataMatches(
+        legacy,
+        compiler,
+        legacyEntityIds.intersection(compilerEntityIds),
+      ),
     };
   }
 
-  bool _sharedFieldMetadataMatches(ExperiencePackage legacy, ExperiencePackage compiler, Set<String> sharedEntityIds) {
+  bool _sharedFieldMetadataMatches(
+    ExperiencePackage legacy,
+    ExperiencePackage compiler,
+    Set<String> sharedEntityIds,
+  ) {
     for (final id in sharedEntityIds) {
-      final legacyFields = {for (final f in legacy.data!.entities.firstWhere((e) => e.id == id).fields) f.name: f};
-      final compilerFields = {for (final f in compiler.data!.entities.firstWhere((e) => e.id == id).fields) f.name: f};
-      for (final name in legacyFields.keys.toSet().intersection(compilerFields.keys.toSet())) {
+      final legacyFields = {
+        for (final f
+            in legacy.data!.entities.firstWhere((e) => e.id == id).fields)
+          f.name: f,
+      };
+      final compilerFields = {
+        for (final f
+            in compiler.data!.entities.firstWhere((e) => e.id == id).fields)
+          f.name: f,
+      };
+      for (final name in legacyFields.keys.toSet().intersection(
+        compilerFields.keys.toSet(),
+      )) {
         final lf = legacyFields[name]!;
         final cf = compilerFields[name]!;
         if (lf.defaultValue != cf.defaultValue) return false;
         if (lf.referenceEntityId != cf.referenceEntityId) return false;
-        if (!_setEquals(lf.allowedValues.toSet(), cf.allowedValues.toSet())) return false;
+        if (!_setEquals(lf.allowedValues.toSet(), cf.allowedValues.toSet())) {
+          return false;
+        }
         if (lf.hint != cf.hint) return false;
       }
     }
     return true;
   }
 
-  bool _fieldCountsMatch(ExperiencePackage legacy, ExperiencePackage compiler, Set<String> sharedEntityIds) {
+  bool _fieldCountsMatch(
+    ExperiencePackage legacy,
+    ExperiencePackage compiler,
+    Set<String> sharedEntityIds,
+  ) {
     if (sharedEntityIds.isEmpty) return true;
     for (final id in sharedEntityIds) {
-      final legacyFields = legacy.data!.entities.firstWhere((e) => e.id == id).fields.length;
-      final compilerFields = compiler.data!.entities.firstWhere((e) => e.id == id).fields.length;
+      final legacyFields = legacy.data!.entities
+          .firstWhere((e) => e.id == id)
+          .fields
+          .length;
+      final compilerFields = compiler.data!.entities
+          .firstWhere((e) => e.id == id)
+          .fields
+          .length;
       if (legacyFields != compilerFields) return false;
     }
     return true;
   }
 
-  Set<String> _mutationEntitySet(ExperiencePackage package, String operation) => package.behavior.nodes
-      .where((n) => n.type == 'dataMutation' && n.config['operation'] == operation)
-      .map((n) => n.config['entity'] as String)
-      .toSet();
+  Set<String> _mutationEntitySet(ExperiencePackage package, String operation) =>
+      package.behavior.nodes
+          .where(
+            (n) =>
+                n.type == 'dataMutation' && n.config['operation'] == operation,
+          )
+          .map((n) => n.config['entity'] as String)
+          .toSet();
 
-  List<ComponentDifference> _behaviorDifferences(ExperiencePackage legacy, ExperiencePackage compiler) {
+  List<ComponentDifference> _behaviorDifferences(
+    ExperiencePackage legacy,
+    ExperiencePackage compiler,
+  ) {
     final differences = <ComponentDifference>[];
     if (legacy.behavior.nodes.length != compiler.behavior.nodes.length) {
       differences.add(
@@ -212,22 +295,40 @@ class EquivalenceComparator {
       differences.add(
         ComponentDifference(
           category: 'behaviorEdgeCount',
-          description: 'Legacy produced ${legacy.behavior.edges.length} behavior edges; compiler produced ${compiler.behavior.edges.length}.',
+          description:
+              'Legacy produced ${legacy.behavior.edges.length} behavior edges; compiler produced ${compiler.behavior.edges.length}.',
         ),
       );
     }
     return differences;
   }
 
-  List<ComponentDifference> _capabilityDifferences(ExperiencePackage legacy, ExperiencePackage compiler) {
-    final legacySet = legacy.capabilityDeclarations.map((c) => c.capabilityId).toSet();
-    final compilerSet = compiler.capabilityDeclarations.map((c) => c.capabilityId).toSet();
+  List<ComponentDifference> _capabilityDifferences(
+    ExperiencePackage legacy,
+    ExperiencePackage compiler,
+  ) {
+    final legacySet = legacy.capabilityDeclarations
+        .map((c) => c.capabilityId)
+        .toSet();
+    final compilerSet = compiler.capabilityDeclarations
+        .map((c) => c.capabilityId)
+        .toSet();
     final differences = <ComponentDifference>[];
     for (final id in legacySet.difference(compilerSet)) {
-      differences.add(ComponentDifference(category: 'missingCapability', description: 'Legacy declares "$id"; compiler does not.'));
+      differences.add(
+        ComponentDifference(
+          category: 'missingCapability',
+          description: 'Legacy declares "$id"; compiler does not.',
+        ),
+      );
     }
     for (final id in compilerSet.difference(legacySet)) {
-      differences.add(ComponentDifference(category: 'extraCapability', description: 'Compiler declares "$id"; legacy does not.'));
+      differences.add(
+        ComponentDifference(
+          category: 'extraCapability',
+          description: 'Compiler declares "$id"; legacy does not.',
+        ),
+      );
     }
     return differences;
   }
@@ -254,7 +355,9 @@ class EquivalenceComparator {
     if (copy['integrity'] is Map) {
       final integrity = Map<String, dynamic>.from(copy['integrity'] as Map);
       integrity.remove('computedAt');
-      integrity.remove('contentHash'); // hash changes because timestamps fed the hash input.
+      integrity.remove(
+        'contentHash',
+      ); // hash changes because timestamps fed the hash input.
       copy['integrity'] = integrity;
     }
     return copy;

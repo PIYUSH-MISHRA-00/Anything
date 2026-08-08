@@ -22,5 +22,6 @@ class WorldEdge {
     this.confidence = GraphConfidence.full,
   });
 
-  RelationshipIdentity get identity => RelationshipIdentity.of(fromId, toId, kind);
+  RelationshipIdentity get identity =>
+      RelationshipIdentity.of(fromId, toId, kind);
 }

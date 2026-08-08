@@ -18,11 +18,25 @@ import '../world_types.dart';
 class ExperienceGraphBridge {
   final EntityResolver _resolver;
 
-  const ExperienceGraphBridge({EntityResolver resolver = const EntityResolver()}) : _resolver = resolver;
+  const ExperienceGraphBridge({
+    EntityResolver resolver = const EntityResolver(),
+  }) : _resolver = resolver;
 
-  GraphUpdate bridge(ExperienceMetadataRecord metadata, ExperiencePackage package) {
-    final experienceIdentity = _resolver.resolve(WorldNodeKind.experience, stableId: metadata.id);
-    final nodes = <WorldNode>[WorldNode(identity: experienceIdentity, kind: WorldNodeKind.experience, label: metadata.name)];
+  GraphUpdate bridge(
+    ExperienceMetadataRecord metadata,
+    ExperiencePackage package,
+  ) {
+    final experienceIdentity = _resolver.resolve(
+      WorldNodeKind.experience,
+      stableId: metadata.id,
+    );
+    final nodes = <WorldNode>[
+      WorldNode(
+        identity: experienceIdentity,
+        kind: WorldNodeKind.experience,
+        label: metadata.name,
+      ),
+    ];
     final edges = <WorldEdge>[];
 
     for (final entity in package.data?.entities ?? const <DataEntitySchema>[]) {
@@ -31,26 +45,47 @@ class ExperienceGraphBridge {
         WorldNodeKind.entity,
         structuralSignature: [entity.name, ...fieldTypeNames],
       );
-      nodes.add(WorldNode(identity: entityIdentity, kind: WorldNodeKind.entity, label: entity.name));
+      nodes.add(
+        WorldNode(
+          identity: entityIdentity,
+          kind: WorldNodeKind.entity,
+          label: entity.name,
+        ),
+      );
       edges.add(
         WorldEdge(
           fromId: experienceIdentity,
           toId: entityIdentity,
           kind: RelationshipKind.contains,
-          evidence: GraphEvidence(sourceGraph: 'ExperiencePackage.data', sourceNodeId: entity.id),
+          evidence: GraphEvidence(
+            sourceGraph: 'ExperiencePackage.data',
+            sourceNodeId: entity.id,
+          ),
         ),
       );
     }
 
     for (final capability in package.capabilityDeclarations) {
-      final capabilityIdentity = _resolver.resolve(WorldNodeKind.capability, stableId: capability.capabilityId);
-      nodes.add(WorldNode(identity: capabilityIdentity, kind: WorldNodeKind.capability, label: capability.capabilityId));
+      final capabilityIdentity = _resolver.resolve(
+        WorldNodeKind.capability,
+        stableId: capability.capabilityId,
+      );
+      nodes.add(
+        WorldNode(
+          identity: capabilityIdentity,
+          kind: WorldNodeKind.capability,
+          label: capability.capabilityId,
+        ),
+      );
       edges.add(
         WorldEdge(
           fromId: experienceIdentity,
           toId: capabilityIdentity,
           kind: RelationshipKind.consumes,
-          evidence: GraphEvidence(sourceGraph: 'ExperiencePackage.capabilityDeclarations', sourceNodeId: capability.capabilityId),
+          evidence: GraphEvidence(
+            sourceGraph: 'ExperiencePackage.capabilityDeclarations',
+            sourceNodeId: capability.capabilityId,
+          ),
         ),
       );
     }

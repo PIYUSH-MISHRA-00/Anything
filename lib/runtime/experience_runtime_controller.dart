@@ -52,7 +52,12 @@ class ExperienceRuntimeController {
   /// gone by the time [AnythingRuntime.closeSession] returns).
   final String? experienceId;
 
-  ExperienceRuntimeController({required this.runtime, this.workspace, this.eventPublisher, this.experienceId});
+  ExperienceRuntimeController({
+    required this.runtime,
+    this.workspace,
+    this.eventPublisher,
+    this.experienceId,
+  });
 
   RuntimeStatus get status => runtime.status;
   ExperienceSession? get currentSession => runtime.currentSession;
@@ -87,7 +92,9 @@ class ExperienceRuntimeController {
   Future<ExperienceSession> reload({ExperiencePackage? package}) async {
     final target = package ?? runtime.currentSession?.package;
     if (target == null) {
-      throw StateError('ExperienceRuntimeController.reload() has no package to reload — start() must succeed first, or pass one explicitly.');
+      throw StateError(
+        'ExperienceRuntimeController.reload() has no package to reload — start() must succeed first, or pass one explicitly.',
+      );
     }
     await runtime.closeSession();
     final session = await runtime.openExperience(target);
@@ -102,7 +109,9 @@ class ExperienceRuntimeController {
   /// before nulling `currentSession`, so no external caller could otherwise
   /// observe the real terminal status.
   Future<void> terminate() async {
-    final closingSession = runtime.currentSession?.copyWith(status: SessionStatus.closed);
+    final closingSession = runtime.currentSession?.copyWith(
+      status: SessionStatus.closed,
+    );
     await runtime.closeSession();
     _reportAndPublish('runtime_terminated', closingSession);
   }
@@ -113,7 +122,8 @@ class ExperienceRuntimeController {
 
   /// Restore = re-open from a captured session's real `package` — the
   /// exact same real primitive [start] uses.
-  Future<ExperienceSession> restore(ExperienceSession snapshot) => start(snapshot.package);
+  Future<ExperienceSession> restore(ExperienceSession snapshot) =>
+      start(snapshot.package);
 
   void _reportAndPublish(String change, ExperienceSession? session) {
     final id = experienceId ?? session?.experienceId;

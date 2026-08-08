@@ -32,17 +32,18 @@ class EvolutionPolicy {
     this.minBenefitForRoadmap = 0.3,
   });
 
-  factory EvolutionPolicy.forStrategy(EvolutionStrategy strategy) => switch (strategy) {
-    EvolutionStrategy.conservative => const EvolutionPolicy(
-      maxRiskForImmediate: RiskLevel.none,
-      maxRiskForNext: RiskLevel.low,
-      minBenefitForRoadmap: 0.4,
-    ),
-    EvolutionStrategy.balanced => const EvolutionPolicy(),
-    EvolutionStrategy.aggressive => const EvolutionPolicy(
-      maxRiskForImmediate: RiskLevel.medium,
-      maxRiskForNext: RiskLevel.high,
-      minBenefitForRoadmap: 0.2,
-    ),
-  };
+  factory EvolutionPolicy.forStrategy(EvolutionStrategy strategy) =>
+      switch (strategy) {
+        EvolutionStrategy.conservative => const EvolutionPolicy(
+          maxRiskForImmediate: RiskLevel.none,
+          maxRiskForNext: RiskLevel.low,
+          minBenefitForRoadmap: 0.4,
+        ),
+        EvolutionStrategy.balanced => const EvolutionPolicy(),
+        EvolutionStrategy.aggressive => const EvolutionPolicy(
+          maxRiskForImmediate: RiskLevel.medium,
+          maxRiskForNext: RiskLevel.high,
+          minBenefitForRoadmap: 0.2,
+        ),
+      };
 }

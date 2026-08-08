@@ -18,10 +18,18 @@ class RealHttpTransport implements HttpTransport {
   Future<HttpResponse> request(HttpRequest request) async {
     final uri = Uri.parse(request.url);
     final response = await switch (request.method) {
-      'GET' => _client.get(uri, headers: request.headers).timeout(request.timeout),
-      'POST' => _client.post(uri, headers: request.headers, body: request.body).timeout(request.timeout),
+      'GET' =>
+        _client.get(uri, headers: request.headers).timeout(request.timeout),
+      'POST' =>
+        _client
+            .post(uri, headers: request.headers, body: request.body)
+            .timeout(request.timeout),
       _ => throw UnsupportedError('Unsupported HTTP method: ${request.method}'),
     };
-    return HttpResponse(statusCode: response.statusCode, body: response.body, headers: response.headers);
+    return HttpResponse(
+      statusCode: response.statusCode,
+      body: response.body,
+      headers: response.headers,
+    );
   }
 }

@@ -12,7 +12,10 @@ class SoftwareKnowledgeGraph {
   final KnowledgeGraph knowledge;
   final SemanticSoftwareGraph software;
 
-  const SoftwareKnowledgeGraph({this.knowledge = KnowledgeGraph.empty, this.software = const SemanticSoftwareGraph()});
+  const SoftwareKnowledgeGraph({
+    this.knowledge = KnowledgeGraph.empty,
+    this.software = const SemanticSoftwareGraph(),
+  });
 
   bool get isEmpty => knowledge.isEmpty && software.nodes.isEmpty;
 }

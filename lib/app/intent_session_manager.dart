@@ -68,7 +68,10 @@ class SessionStartResult {
   final String sessionId;
   final CreationResult creationResult;
 
-  const SessionStartResult({required this.sessionId, required this.creationResult});
+  const SessionStartResult({
+    required this.sessionId,
+    required this.creationResult,
+  });
 }
 
 /// Real, typed result of [IntentSessionManager.continueSession] — the
@@ -78,7 +81,10 @@ class SessionContinueResult {
   final String sessionId;
   final LifecycleResult lifecycleResult;
 
-  const SessionContinueResult({required this.sessionId, required this.lifecycleResult});
+  const SessionContinueResult({
+    required this.sessionId,
+    required this.lifecycleResult,
+  });
 }
 
 /// One session's real, in-memory state — never persisted (see this file's
@@ -143,7 +149,8 @@ class IntentSessionManager {
   /// NEW session, even for a returning ("Opened") experience — a real,
   /// honest session boundary, never conflated with a prior one.
   Future<SessionStartResult> startSession(Intent intent) async {
-    final sessionId = 'session-${DateTime.now().microsecondsSinceEpoch}-${_sessionCounter++}';
+    final sessionId =
+        'session-${DateTime.now().microsecondsSinceEpoch}-${_sessionCounter++}';
     final state = SessionState(sessionId: sessionId);
     _sessions[sessionId] = state;
 
@@ -153,13 +160,25 @@ class IntentSessionManager {
       case CreationCreated():
         state.currentExperienceId = result.experienceId;
         state.currentExperienceName = result.package.manifest.name;
-        state.currentEngineeringState = await _engineeringMemory.load(result.experienceId);
-        await _record(state, type: 'session_started', message: 'Created ${result.package.manifest.name}');
+        state.currentEngineeringState = await _engineeringMemory.load(
+          result.experienceId,
+        );
+        await _record(
+          state,
+          type: 'session_started',
+          message: 'Created ${result.package.manifest.name}',
+        );
       case CreationOpened():
         state.currentExperienceId = result.experienceId;
         state.currentExperienceName = result.experienceName;
-        state.currentEngineeringState = await _engineeringMemory.load(result.experienceId);
-        await _record(state, type: 'session_started', message: 'Opened ${result.experienceName}');
+        state.currentEngineeringState = await _engineeringMemory.load(
+          result.experienceId,
+        );
+        await _record(
+          state,
+          type: 'session_started',
+          message: 'Opened ${result.experienceName}',
+        );
       case CreationClarification():
       case CreationProviderRequired():
       case CreationFailed():
@@ -177,20 +196,30 @@ class IntentSessionManager {
   /// (R30). Throws `StateError` for an unknown sessionId or a session with
   /// no experience yet (creation never succeeded) — a real programming
   /// error, never silently treated as a no-op.
-  Future<SessionContinueResult> continueSession(String sessionId, Intent intent) async {
+  Future<SessionContinueResult> continueSession(
+    String sessionId,
+    Intent intent,
+  ) async {
     final state = _sessions[sessionId];
     if (state == null) throw StateError('Unknown sessionId: $sessionId');
     final experienceId = state.currentExperienceId;
     if (experienceId == null) {
-      throw StateError('Session $sessionId has no active experience to continue — startSession() must succeed first.');
+      throw StateError(
+        'Session $sessionId has no active experience to continue — startSession() must succeed first.',
+      );
     }
 
     state.pendingModification = intent;
     try {
-      final result = await _lifecycleCoordinator.evolveExperience(experienceId: experienceId, intent: intent);
+      final result = await _lifecycleCoordinator.evolveExperience(
+        experienceId: experienceId,
+        intent: intent,
+      );
       state.currentLifecycleResult = result;
       if (result.outcome == LifecycleOutcome.deployed) {
-        state.currentEngineeringState = await _engineeringMemory.load(experienceId);
+        state.currentEngineeringState = await _engineeringMemory.load(
+          experienceId,
+        );
       }
       await _record(
         state,
@@ -198,7 +227,10 @@ class IntentSessionManager {
         message: 'Evolution outcome: ${result.outcome.name}',
         durationMs: result.executionDuration.inMilliseconds,
       );
-      return SessionContinueResult(sessionId: sessionId, lifecycleResult: result);
+      return SessionContinueResult(
+        sessionId: sessionId,
+        lifecycleResult: result,
+      );
     } finally {
       state.pendingModification = null;
     }
@@ -218,20 +250,34 @@ class IntentSessionManager {
     required String experienceId,
     required String experienceName,
   }) async {
-    final sessionId = 'session-${DateTime.now().microsecondsSinceEpoch}-${_sessionCounter++}';
+    final sessionId =
+        'session-${DateTime.now().microsecondsSinceEpoch}-${_sessionCounter++}';
     final state = SessionState(sessionId: sessionId);
     state.currentExperienceId = experienceId;
     state.currentExperienceName = experienceName;
     state.currentEngineeringState = await _engineeringMemory.load(experienceId);
     _sessions[sessionId] = state;
-    await _record(state, type: 'session_started', message: 'Opened $experienceName');
+    await _record(
+      state,
+      type: 'session_started',
+      message: 'Opened $experienceName',
+    );
     return SessionStartResult(
       sessionId: sessionId,
-      creationResult: CreationOpened(experienceId: experienceId, experienceName: experienceName, message: 'Opened $experienceName'),
+      creationResult: CreationOpened(
+        experienceId: experienceId,
+        experienceName: experienceName,
+        message: 'Opened $experienceName',
+      ),
     );
   }
 
-  Future<void> _record(SessionState state, {required String type, required String message, int? durationMs}) async {
+  Future<void> _record(
+    SessionState state, {
+    required String type,
+    required String message,
+    int? durationMs,
+  }) async {
     final event = ActivityEvent(
       id: '${state.sessionId}-${state.timeline.length}',
       type: type,

@@ -89,7 +89,8 @@ class ExperienceFingerprint {
   bool get isPresent => value.isNotEmpty;
 
   @override
-  bool operator ==(Object other) => other is ExperienceFingerprint && other.value == value;
+  bool operator ==(Object other) =>
+      other is ExperienceFingerprint && other.value == value;
 
   @override
   int get hashCode => value.hashCode;
@@ -143,7 +144,11 @@ class ExperienceProvenance {
   });
 
   /// Provenance for an Experience authored locally through the normal flow.
-  factory ExperienceProvenance.createdLocally({DateTime? at, String? author, ExperienceFingerprint? fingerprint}) {
+  factory ExperienceProvenance.createdLocally({
+    DateTime? at,
+    String? author,
+    ExperienceFingerprint? fingerprint,
+  }) {
     return ExperienceProvenance(
       origin: ExperienceOrigin.createdLocally,
       createdAt: at,
@@ -207,14 +212,18 @@ class ExperienceProvenance {
 
   // ── Transitions (Task 8) ────────────────────────────────────────────────
 
-  ExperienceProvenance verified() => copyWith(verificationState: VerificationState.verified);
-  ExperienceProvenance revoked() => copyWith(verificationState: VerificationState.revoked);
-  ExperienceProvenance quarantined() => copyWith(verificationState: VerificationState.quarantined);
+  ExperienceProvenance verified() =>
+      copyWith(verificationState: VerificationState.verified);
+  ExperienceProvenance revoked() =>
+      copyWith(verificationState: VerificationState.revoked);
+  ExperienceProvenance quarantined() =>
+      copyWith(verificationState: VerificationState.quarantined);
 
   /// Lift a quarantine or revocation back to plain unverified. Deliberately
   /// does NOT jump straight to `verified`: promotion restores eligibility,
   /// it does not manufacture proof.
-  ExperienceProvenance promoted() => copyWith(verificationState: VerificationState.unverified);
+  ExperienceProvenance promoted() =>
+      copyWith(verificationState: VerificationState.unverified);
 
   ExperienceProvenance demoted() => quarantined();
 
@@ -262,7 +271,10 @@ class ExperienceIdentity {
   final String experienceId;
   final ExperienceProvenance provenance;
 
-  const ExperienceIdentity({required this.experienceId, required this.provenance});
+  const ExperienceIdentity({
+    required this.experienceId,
+    required this.provenance,
+  });
 
   ExperienceFingerprint get fingerprint => provenance.fingerprint;
   ExperienceOrigin get origin => provenance.origin;
@@ -331,5 +343,6 @@ class ExperienceTrustClassifier {
   }
 
   /// Convenience for callers holding a full identity.
-  ExperienceTrustLevel classifyIdentity(ExperienceIdentity identity) => classify(identity.provenance);
+  ExperienceTrustLevel classifyIdentity(ExperienceIdentity identity) =>
+      classify(identity.provenance);
 }

@@ -27,7 +27,9 @@ class GraphIndex {
 
   WorldNode? nodeById(EntityIdentity id) => _nodesById[id];
 
-  List<WorldEdge> outgoingFrom(EntityIdentity id) => List.unmodifiable(_outgoing[id] ?? const []);
+  List<WorldEdge> outgoingFrom(EntityIdentity id) =>
+      List.unmodifiable(_outgoing[id] ?? const []);
 
-  List<WorldEdge> incomingTo(EntityIdentity id) => List.unmodifiable(_incoming[id] ?? const []);
+  List<WorldEdge> incomingTo(EntityIdentity id) =>
+      List.unmodifiable(_incoming[id] ?? const []);
 }

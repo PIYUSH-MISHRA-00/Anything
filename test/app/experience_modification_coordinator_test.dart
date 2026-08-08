@@ -21,44 +21,71 @@ void main() {
     databaseFactory = databaseFactoryFfiNoIsolate;
   });
 
-  test('default construction never requires an explicit WorldModelCoordinator — the precheck always runs', () {
-    // Constructing without a `worldModel` argument must not throw, and
-    // must produce a coordinator whose precheck is real (never silently
-    // opted out of) — "no caller should ever bypass it".
-    final coordinator = ExperienceModificationCoordinator(
-      repository: SqliteExperienceRepository(dbName: 'mod_coord_${DateTime.now().microsecondsSinceEpoch}.db'),
-    );
-    expect(coordinator, isNotNull);
-  });
+  test(
+    'default construction never requires an explicit WorldModelCoordinator — the precheck always runs',
+    () {
+      // Constructing without a `worldModel` argument must not throw, and
+      // must produce a coordinator whose precheck is real (never silently
+      // opted out of) — "no caller should ever bypass it".
+      final coordinator = ExperienceModificationCoordinator(
+        repository: SqliteExperienceRepository(
+          dbName: 'mod_coord_${DateTime.now().microsecondsSinceEpoch}.db',
+        ),
+      );
+      expect(coordinator, isNotNull);
+    },
+  );
 
-  test('a real modification succeeds once the graph-aware pre-check passes (an empty/unseen World Graph is trivially consistent)', () async {
-    final repository = SqliteExperienceRepository(dbName: 'mod_coord_${DateTime.now().microsecondsSinceEpoch}.db');
-    final calculator = createCalculatorPackage();
-    await repository.saveMetadata(
-      ExperienceMetadataRecord(
-        id: calculator.manifest.experienceId,
-        name: calculator.manifest.name,
-        description: calculator.manifest.description,
-        category: 'utility',
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-        packageVersion: calculator.manifest.version,
-      ),
-    );
-    await repository.savePackage(calculator);
+  test(
+    'a real modification succeeds once the graph-aware pre-check passes (an empty/unseen World Graph is trivially consistent)',
+    () async {
+      final repository = SqliteExperienceRepository(
+        dbName: 'mod_coord_${DateTime.now().microsecondsSinceEpoch}.db',
+      );
+      final calculator = createCalculatorPackage();
+      await repository.saveMetadata(
+        ExperienceMetadataRecord(
+          id: calculator.manifest.experienceId,
+          name: calculator.manifest.name,
+          description: calculator.manifest.description,
+          category: 'utility',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          packageVersion: calculator.manifest.version,
+        ),
+      );
+      await repository.savePackage(calculator);
 
-    final coordinator = ExperienceModificationCoordinator(repository: repository, worldModel: WorldModelCoordinator());
-    final result = await coordinator.modifyExperience(experienceId: calculator.manifest.experienceId, modificationExpression: 'add a percentage button');
+      final coordinator = ExperienceModificationCoordinator(
+        repository: repository,
+        worldModel: WorldModelCoordinator(),
+      );
+      final result = await coordinator.modifyExperience(
+        experienceId: calculator.manifest.experienceId,
+        modificationExpression: 'add a percentage button',
+      );
 
-    expect(result, isA<ModificationCoordinatorSucceeded>());
-    await repository.close();
-  });
+      expect(result, isA<ModificationCoordinatorSucceeded>());
+      await repository.close();
+    },
+  );
 
-  test('a modification for a nonexistent experience still fails honestly before the graph pre-check even matters', () async {
-    final repository = SqliteExperienceRepository(dbName: 'mod_coord_${DateTime.now().microsecondsSinceEpoch}.db');
-    final coordinator = ExperienceModificationCoordinator(repository: repository, worldModel: WorldModelCoordinator());
-    final result = await coordinator.modifyExperience(experienceId: 'does-not-exist', modificationExpression: 'anything');
-    expect(result, isA<ModificationCoordinatorFailed>());
-    await repository.close();
-  });
+  test(
+    'a modification for a nonexistent experience still fails honestly before the graph pre-check even matters',
+    () async {
+      final repository = SqliteExperienceRepository(
+        dbName: 'mod_coord_${DateTime.now().microsecondsSinceEpoch}.db',
+      );
+      final coordinator = ExperienceModificationCoordinator(
+        repository: repository,
+        worldModel: WorldModelCoordinator(),
+      );
+      final result = await coordinator.modifyExperience(
+        experienceId: 'does-not-exist',
+        modificationExpression: 'anything',
+      );
+      expect(result, isA<ModificationCoordinatorFailed>());
+      await repository.close();
+    },
+  );
 }

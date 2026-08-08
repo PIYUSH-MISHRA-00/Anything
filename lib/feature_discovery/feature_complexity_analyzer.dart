@@ -107,7 +107,9 @@ class FeatureComplexityAnalyzer {
         return _search;
       case FeatureCategory.capability:
         final capId = candidate.id.replaceFirst('feature:capability:', '');
-        return _knownImplementedCapabilities.contains(capId) ? _capabilityKnown : _capabilityExperimental;
+        return _knownImplementedCapabilities.contains(capId)
+            ? _capabilityKnown
+            : _capabilityExperimental;
       case FeatureCategory.permission:
         return _permission;
       case FeatureCategory.offline:
@@ -115,7 +117,9 @@ class FeatureComplexityAnalyzer {
       case FeatureCategory.reporting:
         return _reporting;
       case FeatureCategory.security:
-        return candidate.id == 'feature:security:protection' ? _protection : _credentialStorage;
+        return candidate.id == 'feature:security:protection'
+            ? _protection
+            : _credentialStorage;
     }
   }
 }

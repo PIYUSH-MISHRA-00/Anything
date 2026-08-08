@@ -13,7 +13,13 @@ enum DiagnosticSeverity { info, warning, error }
 /// vocabulary matching the spec's own "Generation Diagnostics" list
 /// exactly (warnings/errors/information/performance/skipped
 /// features/unsupported concepts/version compatibility).
-enum DiagnosticCategory { general, performance, skippedFeature, unsupportedConcept, versionCompatibility }
+enum DiagnosticCategory {
+  general,
+  performance,
+  skippedFeature,
+  unsupportedConcept,
+  versionCompatibility,
+}
 
 /// One real, structured diagnostic — never a raw exception string
 /// leaking through (matches this codebase's established
@@ -25,7 +31,12 @@ class GenerationDiagnostic {
   final String message;
   final String? relatedId;
 
-  const GenerationDiagnostic({required this.severity, required this.category, required this.message, this.relatedId});
+  const GenerationDiagnostic({
+    required this.severity,
+    required this.category,
+    required this.message,
+    this.relatedId,
+  });
 }
 
 /// One real, named, language-neutral dependency a generated artifact set
@@ -61,7 +72,10 @@ class GenerationResult {
     this.dependencyManifest = DependencyManifest.empty,
   });
 
-  bool get hasErrors => diagnostics.any((d) => d.severity == DiagnosticSeverity.error);
+  bool get hasErrors =>
+      diagnostics.any((d) => d.severity == DiagnosticSeverity.error);
 
-  List<Artifact> get allArtifacts => [for (final g in artifactGroups) ...g.artifacts];
+  List<Artifact> get allArtifacts => [
+    for (final g in artifactGroups) ...g.artifacts,
+  ];
 }

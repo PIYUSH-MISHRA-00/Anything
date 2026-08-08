@@ -121,6 +121,7 @@ class CapabilityPlatform {
     List<String>? declaredCapabilities,
     String? sessionId,
     ExperienceTrustLevel trustLevel = ExperienceTrustLevel.local,
+
     /// IS-R52: hand in PROVENANCE and trust is COMPUTED by the canonical
     /// classifier. Takes precedence over [trustLevel], which remains only so
     /// pre-R52 callers and tests keep working unchanged.
@@ -174,7 +175,9 @@ class CapabilityPlatform {
     if (governanceEngine != null) {
       // Provenance wins when supplied: trust must be COMPUTED, not asserted
       // by whoever happens to be calling.
-      final effectiveTrust = provenance == null ? trustLevel : trustFor(provenance);
+      final effectiveTrust = provenance == null
+          ? trustLevel
+          : trustFor(provenance);
       final evaluation = governanceEngine.authorizeCapability(
         capabilityId: capabilityId,
         operation: operation,

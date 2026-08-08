@@ -44,9 +44,15 @@ class FeatureRefinement {
 
     final outcome = !review.hasCriticalIssues
         ? FeatureRefinementOutcome.approved
-        : (iteration >= maxIterations ? FeatureRefinementOutcome.budgetExhausted : FeatureRefinementOutcome.refinementRequired);
+        : (iteration >= maxIterations
+              ? FeatureRefinementOutcome.budgetExhausted
+              : FeatureRefinementOutcome.refinementRequired);
 
-    return FeaturePlan(finalGraph: graph, reviewHistory: history, outcome: outcome);
+    return FeaturePlan(
+      finalGraph: graph,
+      reviewHistory: history,
+      outcome: outcome,
+    );
   }
 
   FeatureGraph _applyFixes(FeatureGraph graph, List<FeatureIssue> fixes) {
@@ -57,11 +63,20 @@ class FeatureRefinement {
       switch (issue.category) {
         case FeatureIssueCategory.duplicate:
           nodes = nodes.where((n) => n.id != issue.subjectId).toList();
-          edges = edges.where((e) => e.fromFeatureId != issue.subjectId && e.toFeatureId != issue.subjectId).toList();
+          edges = edges
+              .where(
+                (e) =>
+                    e.fromFeatureId != issue.subjectId &&
+                    e.toFeatureId != issue.subjectId,
+              )
+              .toList();
         case FeatureIssueCategory.dangling:
           final parts = issue.subjectId.split('->');
           edges = edges
-              .where((e) => !(e.fromFeatureId == parts[0] && e.toFeatureId == parts[1]))
+              .where(
+                (e) =>
+                    !(e.fromFeatureId == parts[0] && e.toFeatureId == parts[1]),
+              )
               .toList();
         default:
           break;

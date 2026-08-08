@@ -17,7 +17,11 @@ void main() {
   final entityId = EntityIdentity.stable(WorldNodeKind.entity, 'task');
   final graph = WorldGraph(
     nodes: [
-      WorldNode(identity: expId, kind: WorldNodeKind.experience, label: 'My App'),
+      WorldNode(
+        identity: expId,
+        kind: WorldNodeKind.experience,
+        label: 'My App',
+      ),
       WorldNode(identity: entityId, kind: WorldNodeKind.entity, label: 'Task'),
     ],
     edges: [
@@ -50,10 +54,18 @@ void main() {
     expect(index.outgoingFrom(entityId), isEmpty);
   });
 
-  test('GraphResolver resolves real references and reports absence honestly', () {
-    final resolver = GraphResolver(graph);
-    expect(resolver.exists(expId), isTrue);
-    expect(resolver.exists(EntityIdentity.stable(WorldNodeKind.experience, 'ghost')), isFalse);
-    expect(resolver.resolveRelationships(expId), hasLength(1));
-  });
+  test(
+    'GraphResolver resolves real references and reports absence honestly',
+    () {
+      final resolver = GraphResolver(graph);
+      expect(resolver.exists(expId), isTrue);
+      expect(
+        resolver.exists(
+          EntityIdentity.stable(WorldNodeKind.experience, 'ghost'),
+        ),
+        isFalse,
+      );
+      expect(resolver.resolveRelationships(expId), hasLength(1));
+    },
+  );
 }

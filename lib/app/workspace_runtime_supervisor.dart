@@ -57,7 +57,12 @@ class RuntimeControllerRegistration {
   final ExperienceRuntimeController controller;
   final DateTime registrationTime;
 
-  const RuntimeControllerRegistration({required this.sessionId, this.experienceId, required this.controller, required this.registrationTime});
+  const RuntimeControllerRegistration({
+    required this.sessionId,
+    this.experienceId,
+    required this.controller,
+    required this.registrationTime,
+  });
 
   RuntimeStatus get currentStatus => controller.status;
 }
@@ -73,9 +78,15 @@ class WorkspaceRuntimeSupervisor {
   /// to the first controller), never a silent overwrite. Mirrors
   /// `ExperienceWorkspaceManager.switchActiveExperience()`'s own "real
   /// programming error, never silent no-op" precedent.
-  void register(String sessionId, ExperienceRuntimeController controller, {String? experienceId}) {
+  void register(
+    String sessionId,
+    ExperienceRuntimeController controller, {
+    String? experienceId,
+  }) {
     if (_registrations.containsKey(sessionId)) {
-      throw StateError('A runtime controller is already registered for session $sessionId.');
+      throw StateError(
+        'A runtime controller is already registered for session $sessionId.',
+      );
     }
     _registrations[sessionId] = RuntimeControllerRegistration(
       sessionId: sessionId,
@@ -91,20 +102,28 @@ class WorkspaceRuntimeSupervisor {
   /// return" precedent for an already-absent id).
   void unregister(String sessionId) {
     if (_registrations.remove(sessionId) != null) {
-      eventPublisher?.publishWorkspaceUpdated('controller_unregistered', sessionId);
+      eventPublisher?.publishWorkspaceUpdated(
+        'controller_unregistered',
+        sessionId,
+      );
     }
   }
 
-  ExperienceRuntimeController? lookup(String sessionId) => _registrations[sessionId]?.controller;
+  ExperienceRuntimeController? lookup(String sessionId) =>
+      _registrations[sessionId]?.controller;
 
-  List<RuntimeControllerRegistration> get registrations => List.unmodifiable(_registrations.values);
+  List<RuntimeControllerRegistration> get registrations =>
+      List.unmodifiable(_registrations.values);
 
   /// Real, caller-invoked sweep (never a timer/poll) — removes every
   /// registration whose real, live controller status is `idle` (a real
   /// `terminate()` already happened but the caller never explicitly
   /// unregistered). Returns the real count removed.
   int removeDisposed() {
-    final disposedIds = [for (final e in _registrations.entries) if (e.value.currentStatus == RuntimeStatus.idle) e.key];
+    final disposedIds = [
+      for (final e in _registrations.entries)
+        if (e.value.currentStatus == RuntimeStatus.idle) e.key,
+    ];
     for (final id in disposedIds) {
       unregister(id);
     }
@@ -134,9 +153,14 @@ class WorkspaceRuntimeSupervisor {
   /// .apply()` — never re-implements the policy decision itself. A decision
   /// naming a sessionId this supervisor has no registration for is silently
   /// skipped (a real, honest "nothing this supervisor owns to act on").
-  Future<void> applyInactiveRuntimePolicy(WorkspaceRuntimeSnapshot snapshot, WorkspaceLifecyclePolicyEngine engine) async {
+  Future<void> applyInactiveRuntimePolicy(
+    WorkspaceRuntimeSnapshot snapshot,
+    WorkspaceLifecyclePolicyEngine engine,
+  ) async {
     for (final decision in engine.evaluateWorkspaceSnapshot(snapshot)) {
-      final controller = decision.sessionId == null ? null : lookup(decision.sessionId!);
+      final controller = decision.sessionId == null
+          ? null
+          : lookup(decision.sessionId!);
       if (controller != null) await engine.apply(decision, controller);
     }
   }
@@ -145,7 +169,10 @@ class WorkspaceRuntimeSupervisor {
   /// REGISTERED controller (e.g. pause every registered runtime on real app
   /// backgrounding) — same "resolve through this registry, apply via the
   /// unmodified engine" pattern.
-  Future<void> applyAppLifecyclePolicy(AppLifecycleState state, WorkspaceLifecyclePolicyEngine engine) async {
+  Future<void> applyAppLifecyclePolicy(
+    AppLifecycleState state,
+    WorkspaceLifecyclePolicyEngine engine,
+  ) async {
     final decision = engine.evaluateAppLifecycle(state);
     for (final reg in registrations) {
       await engine.apply(decision, reg.controller);

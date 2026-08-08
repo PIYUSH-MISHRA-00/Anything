@@ -37,12 +37,22 @@ class FeaturePriorityAnalyzer {
       FeatureCategory.indexing ||
       FeatureCategory.reporting => (
         FeaturePriority.recommended,
-        const Confidence(score: 0.8, reason: 'Structural signal present, but not explicitly requested by name.'),
+        const Confidence(
+          score: 0.8,
+          reason:
+              'Structural signal present, but not explicitly requested by name.',
+        ),
       ),
-      FeatureCategory.capability => _capabilityPriority(candidate, requirements),
+      FeatureCategory.capability => _capabilityPriority(
+        candidate,
+        requirements,
+      ),
       FeatureCategory.permission => (
         FeaturePriority.mandatory,
-        const Confidence(score: 0.9, reason: 'A permission-requiring capability was resolved without one.'),
+        const Confidence(
+          score: 0.9,
+          reason: 'A permission-requiring capability was resolved without one.',
+        ),
       ),
       FeatureCategory.offline => _offlinePriority(candidate),
       FeatureCategory.security => _securityPriority(candidate),
@@ -59,7 +69,10 @@ class FeaturePriorityAnalyzer {
     return (priority: priority, decision: decision);
   }
 
-  (FeaturePriority, Confidence) _capabilityPriority(FeatureCandidate candidate, RequirementGraph requirements) {
+  (FeaturePriority, Confidence) _capabilityPriority(
+    FeatureCandidate candidate,
+    RequirementGraph requirements,
+  ) {
     final capId = candidate.id.replaceFirst('feature:capability:', '');
     if (!knownImplementedCapabilities.contains(capId)) {
       return (
@@ -73,16 +86,24 @@ class FeaturePriorityAnalyzer {
     }
     final source = requirements.nodeById('capability:$capId')?.source;
     return (
-      source == RequirementSource.explicit ? FeaturePriority.mandatory : FeaturePriority.recommended,
+      source == RequirementSource.explicit
+          ? FeaturePriority.mandatory
+          : FeaturePriority.recommended,
       Confidence.full,
     );
   }
 
   (FeaturePriority, Confidence) _offlinePriority(FeatureCandidate candidate) {
-    final fullyOffline = candidate.rationale.toLowerCase().contains('fully offline');
+    final fullyOffline = candidate.rationale.toLowerCase().contains(
+      'fully offline',
+    );
     return (
       fullyOffline ? FeaturePriority.mandatory : FeaturePriority.recommended,
-      const Confidence(score: 0.85, reason: 'Derived from the declared network/offline non-functional requirement.'),
+      const Confidence(
+        score: 0.85,
+        reason:
+            'Derived from the declared network/offline non-functional requirement.',
+      ),
     );
   }
 
@@ -90,7 +111,10 @@ class FeaturePriorityAnalyzer {
     if (candidate.id == 'feature:security:protection') {
       return (
         FeaturePriority.optional,
-        const Confidence(score: 0.9, reason: 'Kaalka protection is available but always opt-in.'),
+        const Confidence(
+          score: 0.9,
+          reason: 'Kaalka protection is available but always opt-in.',
+        ),
       );
     }
     // feature:security:credential_storage
@@ -98,7 +122,8 @@ class FeaturePriorityAnalyzer {
       FeaturePriority.future,
       const Confidence(
         score: 0.5,
-        reason: 'Dormant capability trigger — no capability implemented today resolves credentials.',
+        reason:
+            'Dormant capability trigger — no capability implemented today resolves credentials.',
         risk: RiskLevel.low,
       ),
     );

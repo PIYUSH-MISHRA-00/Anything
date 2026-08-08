@@ -595,9 +595,7 @@ void main() {
 
 // ── Helpers ─────────────────────────────────────────────────────────────
 
-ExperienceSpec _makeSpec({
-  String name = 'Test',
-}) {
+ExperienceSpec _makeSpec({String name = 'Test'}) {
   return ExperienceSpec(
     id: 'test-spec',
     name: name,

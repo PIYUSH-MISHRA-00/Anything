@@ -22,7 +22,11 @@ class CertificationFixture {
   final SemanticApp app;
   final List<String> requiredCapabilityIds;
 
-  const CertificationFixture({required this.category, required this.app, this.requiredCapabilityIds = const []});
+  const CertificationFixture({
+    required this.category,
+    required this.app,
+    this.requiredCapabilityIds = const [],
+  });
 }
 
 class CertificationCorpus {
@@ -37,10 +41,22 @@ class CertificationCorpus {
     CertificationFixture(category: 'summary', app: _summaryApp()),
     CertificationFixture(category: 'multi_entity', app: _multiEntityApp()),
     CertificationFixture(category: 'relationships', app: _relationshipsApp()),
-    CertificationFixture(category: 'permissions', app: _permissionsApp(), requiredCapabilityIds: ['notifications']),
-    CertificationFixture(category: 'capabilities', app: _capabilitiesApp(), requiredCapabilityIds: ['clock']),
+    CertificationFixture(
+      category: 'permissions',
+      app: _permissionsApp(),
+      requiredCapabilityIds: ['notifications'],
+    ),
+    CertificationFixture(
+      category: 'capabilities',
+      app: _capabilitiesApp(),
+      requiredCapabilityIds: ['clock'],
+    ),
     CertificationFixture(category: 'navigation', app: _navigationApp()),
-    CertificationFixture(category: 'backend_required', app: _backendRequiredApp(), requiredCapabilityIds: ['http']),
+    CertificationFixture(
+      category: 'backend_required',
+      app: _backendRequiredApp(),
+      requiredCapabilityIds: ['http'],
+    ),
     CertificationFixture(category: 'composite', app: _compositeApp()),
   ];
 
@@ -52,14 +68,44 @@ class CertificationCorpus {
         id: 'entry',
         name: 'Entry',
         displayField: 'title',
-        fields: [SemanticField(id: 'title', name: 'Title', type: BlueprintFieldType.text, required: true)],
+        fields: [
+          SemanticField(
+            id: 'title',
+            name: 'Title',
+            type: BlueprintFieldType.text,
+            required: true,
+          ),
+        ],
       ),
     ],
-    views: const [SemanticView(id: 'entries_list', name: 'Entries', purpose: 'list', sourceEntityId: 'entry', viewType: BlueprintViewType.list, isDefault: true)],
+    views: const [
+      SemanticView(
+        id: 'entries_list',
+        name: 'Entries',
+        purpose: 'list',
+        sourceEntityId: 'entry',
+        viewType: BlueprintViewType.list,
+        isDefault: true,
+      ),
+    ],
     actions: const [
-      SemanticAction(id: 'add_entry', name: 'Add Entry', targetEntityId: 'entry'),
-      SemanticAction(id: 'update_entry', name: 'Update Entry', targetEntityId: 'entry', actionType: BlueprintActionType.update),
-      SemanticAction(id: 'delete_entry', name: 'Delete Entry', targetEntityId: 'entry', actionType: BlueprintActionType.delete),
+      SemanticAction(
+        id: 'add_entry',
+        name: 'Add Entry',
+        targetEntityId: 'entry',
+      ),
+      SemanticAction(
+        id: 'update_entry',
+        name: 'Update Entry',
+        targetEntityId: 'entry',
+        actionType: BlueprintActionType.update,
+      ),
+      SemanticAction(
+        id: 'delete_entry',
+        name: 'Delete Entry',
+        targetEntityId: 'entry',
+        actionType: BlueprintActionType.delete,
+      ),
     ],
   );
 
@@ -71,10 +117,33 @@ class CertificationCorpus {
     name: 'Offline Notes',
     purpose: 'Take notes with no network dependency',
     entities: const [
-      SemanticEntity(id: 'note', name: 'Note', displayField: 'body', fields: [SemanticField(id: 'body', name: 'Body', type: BlueprintFieldType.text, required: true)]),
+      SemanticEntity(
+        id: 'note',
+        name: 'Note',
+        displayField: 'body',
+        fields: [
+          SemanticField(
+            id: 'body',
+            name: 'Body',
+            type: BlueprintFieldType.text,
+            required: true,
+          ),
+        ],
+      ),
     ],
-    views: const [SemanticView(id: 'notes_list', name: 'Notes', purpose: 'list', sourceEntityId: 'note', viewType: BlueprintViewType.list, isDefault: true)],
-    actions: const [SemanticAction(id: 'add_note', name: 'Add Note', targetEntityId: 'note')],
+    views: const [
+      SemanticView(
+        id: 'notes_list',
+        name: 'Notes',
+        purpose: 'list',
+        sourceEntityId: 'note',
+        viewType: BlueprintViewType.list,
+        isDefault: true,
+      ),
+    ],
+    actions: const [
+      SemanticAction(id: 'add_note', name: 'Add Note', targetEntityId: 'note'),
+    ],
   );
 
   static SemanticApp _dashboardApp() => SemanticApp(
@@ -85,67 +154,227 @@ class CertificationCorpus {
         id: 'sale',
         name: 'Sale',
         displayField: 'title',
-        fields: [SemanticField(id: 'title', name: 'Title', type: BlueprintFieldType.text, required: true), SemanticField(id: 'amount', name: 'Amount', type: BlueprintFieldType.decimal)],
+        fields: [
+          SemanticField(
+            id: 'title',
+            name: 'Title',
+            type: BlueprintFieldType.text,
+            required: true,
+          ),
+          SemanticField(
+            id: 'amount',
+            name: 'Amount',
+            type: BlueprintFieldType.decimal,
+          ),
+        ],
       ),
     ],
     views: const [
-      SemanticView(id: 'sales_list', name: 'Sales', purpose: 'list', sourceEntityId: 'sale', viewType: BlueprintViewType.list, isDefault: true),
-      SemanticView(id: 'sales_overview', name: 'Overview', purpose: 'dashboard', sourceEntityId: 'sale', viewType: BlueprintViewType.dashboard),
+      SemanticView(
+        id: 'sales_list',
+        name: 'Sales',
+        purpose: 'list',
+        sourceEntityId: 'sale',
+        viewType: BlueprintViewType.list,
+        isDefault: true,
+      ),
+      SemanticView(
+        id: 'sales_overview',
+        name: 'Overview',
+        purpose: 'dashboard',
+        sourceEntityId: 'sale',
+        viewType: BlueprintViewType.dashboard,
+      ),
     ],
-    actions: const [SemanticAction(id: 'add_sale', name: 'Add Sale', targetEntityId: 'sale')],
+    actions: const [
+      SemanticAction(id: 'add_sale', name: 'Add Sale', targetEntityId: 'sale'),
+    ],
   );
 
   static SemanticApp _calendarApp() => SemanticApp(
     name: 'Events',
     purpose: 'Track scheduled events on a calendar',
     entities: const [
-      SemanticEntity(id: 'event', name: 'Event', displayField: 'title', fields: [SemanticField(id: 'title', name: 'Title', type: BlueprintFieldType.text, required: true)]),
+      SemanticEntity(
+        id: 'event',
+        name: 'Event',
+        displayField: 'title',
+        fields: [
+          SemanticField(
+            id: 'title',
+            name: 'Title',
+            type: BlueprintFieldType.text,
+            required: true,
+          ),
+        ],
+      ),
     ],
     views: const [
-      SemanticView(id: 'events_list', name: 'Events', purpose: 'list', sourceEntityId: 'event', viewType: BlueprintViewType.list, isDefault: true),
-      SemanticView(id: 'events_calendar', name: 'Calendar', purpose: 'calendar', sourceEntityId: 'event', viewType: BlueprintViewType.calendar),
+      SemanticView(
+        id: 'events_list',
+        name: 'Events',
+        purpose: 'list',
+        sourceEntityId: 'event',
+        viewType: BlueprintViewType.list,
+        isDefault: true,
+      ),
+      SemanticView(
+        id: 'events_calendar',
+        name: 'Calendar',
+        purpose: 'calendar',
+        sourceEntityId: 'event',
+        viewType: BlueprintViewType.calendar,
+      ),
     ],
-    actions: const [SemanticAction(id: 'add_event', name: 'Add Event', targetEntityId: 'event')],
+    actions: const [
+      SemanticAction(
+        id: 'add_event',
+        name: 'Add Event',
+        targetEntityId: 'event',
+      ),
+    ],
   );
 
   static SemanticApp _settingsApp() => SemanticApp(
     name: 'Preferences',
     purpose: 'Track configurable items with a settings screen',
     entities: const [
-      SemanticEntity(id: 'item', name: 'Item', displayField: 'name', fields: [SemanticField(id: 'name', name: 'Name', type: BlueprintFieldType.text, required: true)]),
+      SemanticEntity(
+        id: 'item',
+        name: 'Item',
+        displayField: 'name',
+        fields: [
+          SemanticField(
+            id: 'name',
+            name: 'Name',
+            type: BlueprintFieldType.text,
+            required: true,
+          ),
+        ],
+      ),
     ],
     views: const [
-      SemanticView(id: 'items_list', name: 'Items', purpose: 'list', sourceEntityId: 'item', viewType: BlueprintViewType.list, isDefault: true),
-      SemanticView(id: 'items_settings', name: 'Settings', purpose: 'settings', sourceEntityId: 'item', viewType: BlueprintViewType.settings),
+      SemanticView(
+        id: 'items_list',
+        name: 'Items',
+        purpose: 'list',
+        sourceEntityId: 'item',
+        viewType: BlueprintViewType.list,
+        isDefault: true,
+      ),
+      SemanticView(
+        id: 'items_settings',
+        name: 'Settings',
+        purpose: 'settings',
+        sourceEntityId: 'item',
+        viewType: BlueprintViewType.settings,
+      ),
     ],
-    actions: const [SemanticAction(id: 'add_item', name: 'Add Item', targetEntityId: 'item')],
+    actions: const [
+      SemanticAction(id: 'add_item', name: 'Add Item', targetEntityId: 'item'),
+    ],
   );
 
   static SemanticApp _summaryApp() => SemanticApp(
     name: 'Expense Summary',
     purpose: 'Track expenses with a summary screen',
     entities: const [
-      SemanticEntity(id: 'expense', name: 'Expense', displayField: 'title', fields: [SemanticField(id: 'title', name: 'Title', type: BlueprintFieldType.text, required: true)]),
+      SemanticEntity(
+        id: 'expense',
+        name: 'Expense',
+        displayField: 'title',
+        fields: [
+          SemanticField(
+            id: 'title',
+            name: 'Title',
+            type: BlueprintFieldType.text,
+            required: true,
+          ),
+        ],
+      ),
     ],
     views: const [
-      SemanticView(id: 'expenses_list', name: 'Expenses', purpose: 'list', sourceEntityId: 'expense', viewType: BlueprintViewType.list, isDefault: true),
-      SemanticView(id: 'expenses_summary', name: 'Summary', purpose: 'summary', sourceEntityId: 'expense', viewType: BlueprintViewType.summary),
+      SemanticView(
+        id: 'expenses_list',
+        name: 'Expenses',
+        purpose: 'list',
+        sourceEntityId: 'expense',
+        viewType: BlueprintViewType.list,
+        isDefault: true,
+      ),
+      SemanticView(
+        id: 'expenses_summary',
+        name: 'Summary',
+        purpose: 'summary',
+        sourceEntityId: 'expense',
+        viewType: BlueprintViewType.summary,
+      ),
     ],
-    actions: const [SemanticAction(id: 'add_expense', name: 'Add Expense', targetEntityId: 'expense')],
+    actions: const [
+      SemanticAction(
+        id: 'add_expense',
+        name: 'Add Expense',
+        targetEntityId: 'expense',
+      ),
+    ],
   );
 
   static SemanticApp _multiEntityApp() => SemanticApp(
     name: 'Projects and Tasks',
     purpose: 'Track two independent, unrelated entities',
     entities: const [
-      SemanticEntity(id: 'project', name: 'Project', displayField: 'name', fields: [SemanticField(id: 'name', name: 'Name', type: BlueprintFieldType.text, required: true)]),
-      SemanticEntity(id: 'note', name: 'Note', displayField: 'body', fields: [SemanticField(id: 'body', name: 'Body', type: BlueprintFieldType.text, required: true)]),
+      SemanticEntity(
+        id: 'project',
+        name: 'Project',
+        displayField: 'name',
+        fields: [
+          SemanticField(
+            id: 'name',
+            name: 'Name',
+            type: BlueprintFieldType.text,
+            required: true,
+          ),
+        ],
+      ),
+      SemanticEntity(
+        id: 'note',
+        name: 'Note',
+        displayField: 'body',
+        fields: [
+          SemanticField(
+            id: 'body',
+            name: 'Body',
+            type: BlueprintFieldType.text,
+            required: true,
+          ),
+        ],
+      ),
     ],
     views: const [
-      SemanticView(id: 'projects_list', name: 'Projects', purpose: 'list', sourceEntityId: 'project', viewType: BlueprintViewType.list, isDefault: true),
-      SemanticView(id: 'notes_list', name: 'Notes', purpose: 'list', sourceEntityId: 'note', viewType: BlueprintViewType.list),
+      SemanticView(
+        id: 'projects_list',
+        name: 'Projects',
+        purpose: 'list',
+        sourceEntityId: 'project',
+        viewType: BlueprintViewType.list,
+        isDefault: true,
+      ),
+      SemanticView(
+        id: 'notes_list',
+        name: 'Notes',
+        purpose: 'list',
+        sourceEntityId: 'note',
+        viewType: BlueprintViewType.list,
+      ),
     ],
-    actions: const [SemanticAction(id: 'add_project', name: 'Add Project', targetEntityId: 'project'), SemanticAction(id: 'add_note', name: 'Add Note', targetEntityId: 'note')],
+    actions: const [
+      SemanticAction(
+        id: 'add_project',
+        name: 'Add Project',
+        targetEntityId: 'project',
+      ),
+      SemanticAction(id: 'add_note', name: 'Add Note', targetEntityId: 'note'),
+    ],
   );
 
   /// A real reference field (`author` -> `author`) — the same
@@ -155,22 +384,64 @@ class CertificationCorpus {
     name: 'Library',
     purpose: 'Books authored by authors',
     entities: const [
-      SemanticEntity(id: 'author', name: 'Author', displayField: 'name', fields: [SemanticField(id: 'name', name: 'Name', type: BlueprintFieldType.text, required: true)]),
+      SemanticEntity(
+        id: 'author',
+        name: 'Author',
+        displayField: 'name',
+        fields: [
+          SemanticField(
+            id: 'name',
+            name: 'Name',
+            type: BlueprintFieldType.text,
+            required: true,
+          ),
+        ],
+      ),
       SemanticEntity(
         id: 'book',
         name: 'Book',
         displayField: 'title',
         fields: [
-          SemanticField(id: 'title', name: 'Title', type: BlueprintFieldType.text, required: true),
-          SemanticField(id: 'author', name: 'Author', type: BlueprintFieldType.reference, referenceEntityId: 'author'),
+          SemanticField(
+            id: 'title',
+            name: 'Title',
+            type: BlueprintFieldType.text,
+            required: true,
+          ),
+          SemanticField(
+            id: 'author',
+            name: 'Author',
+            type: BlueprintFieldType.reference,
+            referenceEntityId: 'author',
+          ),
         ],
       ),
     ],
     views: const [
-      SemanticView(id: 'authors_list', name: 'Authors', purpose: 'list', sourceEntityId: 'author', viewType: BlueprintViewType.list, isDefault: true),
-      SemanticView(id: 'books_list', name: 'Books', purpose: 'list', sourceEntityId: 'book', viewType: BlueprintViewType.list),
+      SemanticView(
+        id: 'authors_list',
+        name: 'Authors',
+        purpose: 'list',
+        sourceEntityId: 'author',
+        viewType: BlueprintViewType.list,
+        isDefault: true,
+      ),
+      SemanticView(
+        id: 'books_list',
+        name: 'Books',
+        purpose: 'list',
+        sourceEntityId: 'book',
+        viewType: BlueprintViewType.list,
+      ),
     ],
-    actions: const [SemanticAction(id: 'add_author', name: 'Add Author', targetEntityId: 'author'), SemanticAction(id: 'add_book', name: 'Add Book', targetEntityId: 'book')],
+    actions: const [
+      SemanticAction(
+        id: 'add_author',
+        name: 'Add Author',
+        targetEntityId: 'author',
+      ),
+      SemanticAction(id: 'add_book', name: 'Add Book', targetEntityId: 'book'),
+    ],
   );
 
   /// `notifications` is a real, known capability with a real required
@@ -181,10 +452,37 @@ class CertificationCorpus {
     name: 'Reminders',
     purpose: 'Reminders that need notification permission',
     entities: const [
-      SemanticEntity(id: 'reminder', name: 'Reminder', displayField: 'title', fields: [SemanticField(id: 'title', name: 'Title', type: BlueprintFieldType.text, required: true)]),
+      SemanticEntity(
+        id: 'reminder',
+        name: 'Reminder',
+        displayField: 'title',
+        fields: [
+          SemanticField(
+            id: 'title',
+            name: 'Title',
+            type: BlueprintFieldType.text,
+            required: true,
+          ),
+        ],
+      ),
     ],
-    views: const [SemanticView(id: 'reminders_list', name: 'Reminders', purpose: 'list', sourceEntityId: 'reminder', viewType: BlueprintViewType.list, isDefault: true)],
-    actions: const [SemanticAction(id: 'add_reminder', name: 'Add Reminder', targetEntityId: 'reminder')],
+    views: const [
+      SemanticView(
+        id: 'reminders_list',
+        name: 'Reminders',
+        purpose: 'list',
+        sourceEntityId: 'reminder',
+        viewType: BlueprintViewType.list,
+        isDefault: true,
+      ),
+    ],
+    actions: const [
+      SemanticAction(
+        id: 'add_reminder',
+        name: 'Add Reminder',
+        targetEntityId: 'reminder',
+      ),
+    ],
     requiredCapabilities: const ['notifications'],
   );
 
@@ -194,10 +492,37 @@ class CertificationCorpus {
     name: 'Streak Tracker',
     purpose: 'Track daily streaks using the clock capability',
     entities: const [
-      SemanticEntity(id: 'streak', name: 'Streak', displayField: 'name', fields: [SemanticField(id: 'name', name: 'Name', type: BlueprintFieldType.text, required: true)]),
+      SemanticEntity(
+        id: 'streak',
+        name: 'Streak',
+        displayField: 'name',
+        fields: [
+          SemanticField(
+            id: 'name',
+            name: 'Name',
+            type: BlueprintFieldType.text,
+            required: true,
+          ),
+        ],
+      ),
     ],
-    views: const [SemanticView(id: 'streaks_list', name: 'Streaks', purpose: 'list', sourceEntityId: 'streak', viewType: BlueprintViewType.list, isDefault: true)],
-    actions: const [SemanticAction(id: 'add_streak', name: 'Add Streak', targetEntityId: 'streak')],
+    views: const [
+      SemanticView(
+        id: 'streaks_list',
+        name: 'Streaks',
+        purpose: 'list',
+        sourceEntityId: 'streak',
+        viewType: BlueprintViewType.list,
+        isDefault: true,
+      ),
+    ],
+    actions: const [
+      SemanticAction(
+        id: 'add_streak',
+        name: 'Add Streak',
+        targetEntityId: 'streak',
+      ),
+    ],
     requiredCapabilities: const ['clock'],
   );
 
@@ -207,19 +532,82 @@ class CertificationCorpus {
     name: 'Home Hub',
     purpose: 'Three independent sections navigable from one bottom bar',
     entities: const [
-      SemanticEntity(id: 'chore', name: 'Chore', displayField: 'name', fields: [SemanticField(id: 'name', name: 'Name', type: BlueprintFieldType.text, required: true)]),
-      SemanticEntity(id: 'meal', name: 'Meal', displayField: 'name', fields: [SemanticField(id: 'name', name: 'Name', type: BlueprintFieldType.text, required: true)]),
-      SemanticEntity(id: 'guest', name: 'Guest', displayField: 'name', fields: [SemanticField(id: 'name', name: 'Name', type: BlueprintFieldType.text, required: true)]),
+      SemanticEntity(
+        id: 'chore',
+        name: 'Chore',
+        displayField: 'name',
+        fields: [
+          SemanticField(
+            id: 'name',
+            name: 'Name',
+            type: BlueprintFieldType.text,
+            required: true,
+          ),
+        ],
+      ),
+      SemanticEntity(
+        id: 'meal',
+        name: 'Meal',
+        displayField: 'name',
+        fields: [
+          SemanticField(
+            id: 'name',
+            name: 'Name',
+            type: BlueprintFieldType.text,
+            required: true,
+          ),
+        ],
+      ),
+      SemanticEntity(
+        id: 'guest',
+        name: 'Guest',
+        displayField: 'name',
+        fields: [
+          SemanticField(
+            id: 'name',
+            name: 'Name',
+            type: BlueprintFieldType.text,
+            required: true,
+          ),
+        ],
+      ),
     ],
     views: const [
-      SemanticView(id: 'chores_list', name: 'Chores', purpose: 'list', sourceEntityId: 'chore', viewType: BlueprintViewType.list, isDefault: true),
-      SemanticView(id: 'meals_list', name: 'Meals', purpose: 'list', sourceEntityId: 'meal', viewType: BlueprintViewType.list),
-      SemanticView(id: 'guests_list', name: 'Guests', purpose: 'list', sourceEntityId: 'guest', viewType: BlueprintViewType.list),
+      SemanticView(
+        id: 'chores_list',
+        name: 'Chores',
+        purpose: 'list',
+        sourceEntityId: 'chore',
+        viewType: BlueprintViewType.list,
+        isDefault: true,
+      ),
+      SemanticView(
+        id: 'meals_list',
+        name: 'Meals',
+        purpose: 'list',
+        sourceEntityId: 'meal',
+        viewType: BlueprintViewType.list,
+      ),
+      SemanticView(
+        id: 'guests_list',
+        name: 'Guests',
+        purpose: 'list',
+        sourceEntityId: 'guest',
+        viewType: BlueprintViewType.list,
+      ),
     ],
     actions: const [
-      SemanticAction(id: 'add_chore', name: 'Add Chore', targetEntityId: 'chore'),
+      SemanticAction(
+        id: 'add_chore',
+        name: 'Add Chore',
+        targetEntityId: 'chore',
+      ),
       SemanticAction(id: 'add_meal', name: 'Add Meal', targetEntityId: 'meal'),
-      SemanticAction(id: 'add_guest', name: 'Add Guest', targetEntityId: 'guest'),
+      SemanticAction(
+        id: 'add_guest',
+        name: 'Add Guest',
+        targetEntityId: 'guest',
+      ),
     ],
   );
 
@@ -232,10 +620,37 @@ class CertificationCorpus {
     name: 'Synced Contacts',
     purpose: 'Contacts synced over the network',
     entities: const [
-      SemanticEntity(id: 'contact', name: 'Contact', displayField: 'name', fields: [SemanticField(id: 'name', name: 'Name', type: BlueprintFieldType.text, required: true)]),
+      SemanticEntity(
+        id: 'contact',
+        name: 'Contact',
+        displayField: 'name',
+        fields: [
+          SemanticField(
+            id: 'name',
+            name: 'Name',
+            type: BlueprintFieldType.text,
+            required: true,
+          ),
+        ],
+      ),
     ],
-    views: const [SemanticView(id: 'contacts_list', name: 'Contacts', purpose: 'list', sourceEntityId: 'contact', viewType: BlueprintViewType.list, isDefault: true)],
-    actions: const [SemanticAction(id: 'add_contact', name: 'Add Contact', targetEntityId: 'contact')],
+    views: const [
+      SemanticView(
+        id: 'contacts_list',
+        name: 'Contacts',
+        purpose: 'list',
+        sourceEntityId: 'contact',
+        viewType: BlueprintViewType.list,
+        isDefault: true,
+      ),
+    ],
+    actions: const [
+      SemanticAction(
+        id: 'add_contact',
+        name: 'Add Contact',
+        targetEntityId: 'contact',
+      ),
+    ],
     requiredCapabilities: const ['http'],
   );
 
@@ -251,17 +666,53 @@ class CertificationCorpus {
         id: 'task',
         name: 'Task',
         displayField: 'title',
-        fields: [SemanticField(id: 'title', name: 'Title', type: BlueprintFieldType.text, required: true), SemanticField(id: 'priority', name: 'Priority', type: BlueprintFieldType.integer)],
+        fields: [
+          SemanticField(
+            id: 'title',
+            name: 'Title',
+            type: BlueprintFieldType.text,
+            required: true,
+          ),
+          SemanticField(
+            id: 'priority',
+            name: 'Priority',
+            type: BlueprintFieldType.integer,
+          ),
+        ],
       ),
     ],
     views: const [
-      SemanticView(id: 'tasks_list', name: 'Tasks', purpose: 'list', sourceEntityId: 'task', viewType: BlueprintViewType.list, isDefault: true),
-      SemanticView(id: 'tasks_dashboard', name: 'Overview', purpose: 'dashboard', sourceEntityId: 'task', viewType: BlueprintViewType.dashboard),
-      SemanticView(id: 'tasks_settings', name: 'Settings', purpose: 'settings', sourceEntityId: 'task', viewType: BlueprintViewType.settings),
+      SemanticView(
+        id: 'tasks_list',
+        name: 'Tasks',
+        purpose: 'list',
+        sourceEntityId: 'task',
+        viewType: BlueprintViewType.list,
+        isDefault: true,
+      ),
+      SemanticView(
+        id: 'tasks_dashboard',
+        name: 'Overview',
+        purpose: 'dashboard',
+        sourceEntityId: 'task',
+        viewType: BlueprintViewType.dashboard,
+      ),
+      SemanticView(
+        id: 'tasks_settings',
+        name: 'Settings',
+        purpose: 'settings',
+        sourceEntityId: 'task',
+        viewType: BlueprintViewType.settings,
+      ),
     ],
     actions: const [
       SemanticAction(id: 'add_task', name: 'Add Task', targetEntityId: 'task'),
-      SemanticAction(id: 'update_task', name: 'Update Task', targetEntityId: 'task', actionType: BlueprintActionType.update),
+      SemanticAction(
+        id: 'update_task',
+        name: 'Update Task',
+        targetEntityId: 'task',
+        actionType: BlueprintActionType.update,
+      ),
     ],
   );
 }

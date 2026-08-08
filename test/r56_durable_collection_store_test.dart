@@ -67,102 +67,162 @@ void main() {
       ]);
 
       final pending = await svc.pending();
-      expect(pending.length, 10,
-          reason: 'before R56 this stored ONE — nine concurrent schedules were lost');
-      expect(pending.map((n) => n.id).toSet(), {for (var i = 0; i < 10; i++) 'n$i'});
+      expect(
+        pending.length,
+        10,
+        reason:
+            'before R56 this stored ONE — nine concurrent schedules were lost',
+      );
+      expect(pending.map((n) => n.id).toSet(), {
+        for (var i = 0; i < 10; i++) 'n$i',
+      });
     });
 
     test('CONCURRENT deliverDue() DELIVERS EXACTLY ONCE (was: twice)', () async {
       final presenter = _CountingPresenter();
       final svc = RealNotificationService(presenter: presenter);
       await svc.schedule(
-        id: 'n1', experienceId: 'e1', title: 't', body: 'b',
+        id: 'n1',
+        experienceId: 'e1',
+        title: 't',
+        body: 'b',
         scheduledTime: DateTime(2026, 1, 1),
       );
 
       final now = DateTime(2026, 6, 1);
-      final results = await Future.wait([svc.deliverDue(now), svc.deliverDue(now)]);
+      final results = await Future.wait([
+        svc.deliverDue(now),
+        svc.deliverDue(now),
+      ]);
 
-      expect(presenter.presented, ['n1'],
-          reason: 'deliverDue documents "delivered exactly once"; before R56 it presented twice');
+      expect(
+        presenter.presented,
+        ['n1'],
+        reason:
+            'deliverDue documents "delivered exactly once"; before R56 it presented twice',
+      );
       // Exactly one of the two callers claimed it.
       expect(results.expand((r) => r).map((n) => n.id).toList(), ['n1']);
       expect(await svc.pending(), isEmpty);
     });
 
-    test('THREE concurrent deliverDue() calls over three due notifications deliver each once', () async {
-      final presenter = _CountingPresenter();
-      final svc = RealNotificationService(presenter: presenter);
-      for (var i = 0; i < 3; i++) {
+    test(
+      'THREE concurrent deliverDue() calls over three due notifications deliver each once',
+      () async {
+        final presenter = _CountingPresenter();
+        final svc = RealNotificationService(presenter: presenter);
+        for (var i = 0; i < 3; i++) {
+          await svc.schedule(
+            id: 'n$i',
+            experienceId: 'e1',
+            title: 't',
+            body: 'b',
+            scheduledTime: DateTime(2026, 1, 1),
+          );
+        }
+
+        final now = DateTime(2026, 6, 1);
+        await Future.wait([
+          svc.deliverDue(now),
+          svc.deliverDue(now),
+          svc.deliverDue(now),
+        ]);
+
+        expect(presenter.presented..sort(), ['n0', 'n1', 'n2']);
+        expect(presenter.presented.toSet().length, 3, reason: 'no duplicates');
+      },
+    );
+
+    test(
+      'claim-then-present: a notification is removed BEFORE it is presented',
+      () async {
+        // The ordering that makes exactly-once possible, asserted directly.
+        // Also documents the trade: this is at-most-once (gap G-38).
+        late Future<List<ScheduledNotification>> pendingDuringPresent;
+        final svc = RealNotificationService(
+          presenter: _ObservingPresenter(() {
+            pendingDuringPresent = RealNotificationService().pending();
+          }),
+        );
         await svc.schedule(
-          id: 'n$i', experienceId: 'e1', title: 't', body: 'b',
+          id: 'n1',
+          experienceId: 'e1',
+          title: 't',
+          body: 'b',
           scheduledTime: DateTime(2026, 1, 1),
         );
-      }
 
-      final now = DateTime(2026, 6, 1);
-      await Future.wait([svc.deliverDue(now), svc.deliverDue(now), svc.deliverDue(now)]);
+        await svc.deliverDue(DateTime(2026, 6, 1));
 
-      expect(presenter.presented..sort(), ['n0', 'n1', 'n2']);
-      expect(presenter.presented.toSet().length, 3, reason: 'no duplicates');
-    });
+        expect(
+          await pendingDuringPresent,
+          isEmpty,
+          reason:
+              'the due set must already be claimed while presentation is in flight',
+        );
+      },
+    );
 
-    test('claim-then-present: a notification is removed BEFORE it is presented', () async {
-      // The ordering that makes exactly-once possible, asserted directly.
-      // Also documents the trade: this is at-most-once (gap G-38).
-      late Future<List<ScheduledNotification>> pendingDuringPresent;
-      final svc = RealNotificationService(presenter: _ObservingPresenter(() {
-        pendingDuringPresent = RealNotificationService().pending();
-      }));
-      await svc.schedule(
-        id: 'n1', experienceId: 'e1', title: 't', body: 'b',
-        scheduledTime: DateTime(2026, 1, 1),
-      );
-
-      await svc.deliverDue(DateTime(2026, 6, 1));
-
-      expect(await pendingDuringPresent, isEmpty,
-          reason: 'the due set must already be claimed while presentation is in flight');
-    });
-
-    test('concurrent cancel() and schedule() of different ids do not clobber each other', () async {
-      final svc = RealNotificationService(presenter: _CountingPresenter());
-      await svc.schedule(
-        id: 'keep', experienceId: 'e1', title: 't', body: 'b',
-        scheduledTime: DateTime(2027, 1, 1),
-      );
-      await svc.schedule(
-        id: 'drop', experienceId: 'e1', title: 't', body: 'b',
-        scheduledTime: DateTime(2027, 1, 1),
-      );
-
-      await Future.wait([
-        svc.cancel('drop'),
-        svc.schedule(
-          id: 'new', experienceId: 'e1', title: 't', body: 'b',
+    test(
+      'concurrent cancel() and schedule() of different ids do not clobber each other',
+      () async {
+        final svc = RealNotificationService(presenter: _CountingPresenter());
+        await svc.schedule(
+          id: 'keep',
+          experienceId: 'e1',
+          title: 't',
+          body: 'b',
           scheduledTime: DateTime(2027, 1, 1),
-        ),
-      ]);
+        );
+        await svc.schedule(
+          id: 'drop',
+          experienceId: 'e1',
+          title: 't',
+          body: 'b',
+          scheduledTime: DateTime(2027, 1, 1),
+        );
 
-      final ids = (await svc.pending()).map((n) => n.id).toSet();
-      expect(ids, {'keep', 'new'});
-    });
+        await Future.wait([
+          svc.cancel('drop'),
+          svc.schedule(
+            id: 'new',
+            experienceId: 'e1',
+            title: 't',
+            body: 'b',
+            scheduledTime: DateTime(2027, 1, 1),
+          ),
+        ]);
+
+        final ids = (await svc.pending()).map((n) => n.id).toSet();
+        expect(ids, {'keep', 'new'});
+      },
+    );
   });
 
   // ───────────────────────────────────────────────────────────────────────────
   // THE STORE ITSELF
   // ───────────────────────────────────────────────────────────────────────────
   group('DurableCollectionStore', () {
-    test('TWENTY concurrent mutations of the SAME key all apply — none clobbered', () async {
-      const store = DurableCollectionStore();
-      await Future.wait([
-        for (var i = 0; i < 20; i++)
-          store.update<void>('k', (current) => (value: '${current ?? ''}$i,', result: null)),
-      ]);
-      final value = await store.read('k');
-      expect(value!.split(',').where((s) => s.isNotEmpty).length, 20,
-          reason: 'with no yield between read and write, concurrent callers cannot interleave');
-    });
+    test(
+      'TWENTY concurrent mutations of the SAME key all apply — none clobbered',
+      () async {
+        const store = DurableCollectionStore();
+        await Future.wait([
+          for (var i = 0; i < 20; i++)
+            store.update<void>(
+              'k',
+              (current) => (value: '${current ?? ''}$i,', result: null),
+            ),
+        ]);
+        final value = await store.read('k');
+        expect(
+          value!.split(',').where((s) => s.isNotEmpty).length,
+          20,
+          reason:
+              'with no yield between read and write, concurrent callers cannot interleave',
+        );
+      },
+    );
 
     test('mutations of DIFFERENT keys do not interfere', () async {
       const store = DurableCollectionStore();
@@ -174,23 +234,32 @@ void main() {
       expect(await store.read('b'), 'b');
     });
 
-    test('a throwing mutation fails only its own caller and leaves the key usable', () async {
-      const store = DurableCollectionStore();
-      await expectLater(
-        store.update<void>('k', (_) => throw StateError('boom')),
-        throwsStateError,
-      );
-      await store.update<void>('k', (_) => (value: 'ok', result: null));
-      expect(await store.read('k'), 'ok');
-    });
+    test(
+      'a throwing mutation fails only its own caller and leaves the key usable',
+      () async {
+        const store = DurableCollectionStore();
+        await expectLater(
+          store.update<void>('k', (_) => throw StateError('boom')),
+          throwsStateError,
+        );
+        await store.update<void>('k', (_) => (value: 'ok', result: null));
+        expect(await store.read('k'), 'ok');
+      },
+    );
 
-    test('the store holds NO state — a fresh instance sees another one\'s writes', () async {
-      // The first R56 design kept a static per-key lock table. It deadlocked
-      // across flutter_test zones and is recorded in the store's own doc
-      // comment so it is not retried. This asserts the replacement is stateless.
-      await const DurableCollectionStore().update<void>('k', (_) => (value: 'v', result: null));
-      expect(await const DurableCollectionStore().read('k'), 'v');
-    });
+    test(
+      'the store holds NO state — a fresh instance sees another one\'s writes',
+      () async {
+        // The first R56 design kept a static per-key lock table. It deadlocked
+        // across flutter_test zones and is recorded in the store's own doc
+        // comment so it is not retried. This asserts the replacement is stateless.
+        await const DurableCollectionStore().update<void>(
+          'k',
+          (_) => (value: 'v', result: null),
+        );
+        expect(await const DurableCollectionStore().read('k'), 'v');
+      },
+    );
 
     test('returning a null value removes the key', () async {
       const store = DurableCollectionStore();
@@ -199,13 +268,19 @@ void main() {
       expect(await store.read('k'), isNull);
     });
 
-    test('the mutation receives the CURRENT value and can return a result', () async {
-      const store = DurableCollectionStore();
-      await store.update<void>('k', (_) => (value: '1', result: null));
-      final seen = await store.update<String?>('k', (current) => (value: '2', result: current));
-      expect(seen, '1');
-      expect(await store.read('k'), '2');
-    });
+    test(
+      'the mutation receives the CURRENT value and can return a result',
+      () async {
+        const store = DurableCollectionStore();
+        await store.update<void>('k', (_) => (value: '1', result: null));
+        final seen = await store.update<String?>(
+          'k',
+          (current) => (value: '2', result: current),
+        );
+        expect(seen, '1');
+        expect(await store.read('k'), '2');
+      },
+    );
   });
 
   // ───────────────────────────────────────────────────────────────────────────
@@ -216,79 +291,114 @@ void main() {
       const repo = ActivityRepository();
       await Future.wait([
         for (var i = 0; i < 10; i++)
-          repo.record(ActivityEvent(
-            id: 'e$i', type: 'created', experienceName: 'x',
-            message: 'm$i', timestamp: DateTime(2026, 8, 7, 0, 0, i),
-          )),
+          repo.record(
+            ActivityEvent(
+              id: 'e$i',
+              type: 'created',
+              experienceName: 'x',
+              message: 'm$i',
+              timestamp: DateTime(2026, 8, 7, 0, 0, i),
+            ),
+          ),
       ]);
       expect((await repo.list(limit: 1000)).length, 10);
     });
 
-    test('activity retention is still 200 and still owned by the engine', () async {
-      const repo = ActivityRepository();
-      for (var i = 0; i < 205; i++) {
-        await repo.record(ActivityEvent(
-          id: 'e$i', type: 'created', experienceName: 'x',
-          message: 'm$i', timestamp: DateTime(2026, 8, 7).add(Duration(seconds: i)),
-        ));
-      }
-      expect((await repo.list(limit: 10000)).length, 200,
-          reason: 'R50 owns this bound; R56 must not have moved it');
-    });
+    test(
+      'activity retention is still 200 and still owned by the engine',
+      () async {
+        const repo = ActivityRepository();
+        for (var i = 0; i < 205; i++) {
+          await repo.record(
+            ActivityEvent(
+              id: 'e$i',
+              type: 'created',
+              experienceName: 'x',
+              message: 'm$i',
+              timestamp: DateTime(2026, 8, 7).add(Duration(seconds: i)),
+            ),
+          );
+        }
+        expect(
+          (await repo.list(limit: 10000)).length,
+          200,
+          reason: 'R50 owns this bound; R56 must not have moved it',
+        );
+      },
+    );
 
-    test('INTENT TRUNCATION FIXED: updateStatus no longer discards history past 50', () async {
-      // A real defect found while consolidating, unrelated to concurrency.
-      // updateStatus read through list() (default limit 50) and wrote the
-      // result back as the WHOLE history, so records 51+ were silently lost.
-      const repo = IntentRepository();
-      for (var i = 0; i < 80; i++) {
-        await repo.save(IntentRecord(
-          id: 'i$i',
-          expression: 'text $i',
-          modality: InputModality.text,
-          status: IntentStatus.submitted,
-          createdAt: DateTime(2026, 8, 7).add(Duration(seconds: i)),
-          updatedAt: DateTime(2026, 8, 7).add(Duration(seconds: i)),
-        ));
-      }
-      expect((await repo.list(limit: 1000)).length, 80);
+    test(
+      'INTENT TRUNCATION FIXED: updateStatus no longer discards history past 50',
+      () async {
+        // A real defect found while consolidating, unrelated to concurrency.
+        // updateStatus read through list() (default limit 50) and wrote the
+        // result back as the WHOLE history, so records 51+ were silently lost.
+        const repo = IntentRepository();
+        for (var i = 0; i < 80; i++) {
+          await repo.save(
+            IntentRecord(
+              id: 'i$i',
+              expression: 'text $i',
+              modality: InputModality.text,
+              status: IntentStatus.submitted,
+              createdAt: DateTime(2026, 8, 7).add(Duration(seconds: i)),
+              updatedAt: DateTime(2026, 8, 7).add(Duration(seconds: i)),
+            ),
+          );
+        }
+        expect((await repo.list(limit: 1000)).length, 80);
 
-      await repo.updateStatus('i0', IntentStatus.accepted);
+        await repo.updateStatus('i0', IntentStatus.accepted);
 
-      expect((await repo.list(limit: 1000)).length, 80,
-          reason: 'before R56 this dropped to 50 — 30 records silently discarded');
-    });
+        expect(
+          (await repo.list(limit: 1000)).length,
+          80,
+          reason:
+              'before R56 this dropped to 50 — 30 records silently discarded',
+        );
+      },
+    );
 
-    test('INTENT TRUNCATION FIXED: delete no longer discards history past 50', () async {
-      const repo = IntentRepository();
-      for (var i = 0; i < 80; i++) {
-        await repo.save(IntentRecord(
-          id: 'i$i',
-          expression: 'text $i',
-          modality: InputModality.text,
-          status: IntentStatus.submitted,
-          createdAt: DateTime(2026, 8, 7).add(Duration(seconds: i)),
-          updatedAt: DateTime(2026, 8, 7).add(Duration(seconds: i)),
-        ));
-      }
-      await repo.delete('i0');
-      expect((await repo.list(limit: 1000)).length, 79);
-    });
+    test(
+      'INTENT TRUNCATION FIXED: delete no longer discards history past 50',
+      () async {
+        const repo = IntentRepository();
+        for (var i = 0; i < 80; i++) {
+          await repo.save(
+            IntentRecord(
+              id: 'i$i',
+              expression: 'text $i',
+              modality: InputModality.text,
+              status: IntentStatus.submitted,
+              createdAt: DateTime(2026, 8, 7).add(Duration(seconds: i)),
+              updatedAt: DateTime(2026, 8, 7).add(Duration(seconds: i)),
+            ),
+          );
+        }
+        await repo.delete('i0');
+        expect((await repo.list(limit: 1000)).length, 79);
+      },
+    );
 
-    test('intent retention is still 100 and still owned by the engine', () async {
-      const repo = IntentRepository();
-      for (var i = 0; i < 105; i++) {
-        await repo.save(IntentRecord(
-          id: 'i$i',
-          expression: 't',
-          modality: InputModality.text,
-          status: IntentStatus.submitted,
-          createdAt: DateTime(2026, 8, 7).add(Duration(seconds: i)),
-          updatedAt: DateTime(2026, 8, 7).add(Duration(seconds: i)),
-        ));
-      }
-      expect((await repo.list(limit: 10000)).length, 100);
-    });
+    test(
+      'intent retention is still 100 and still owned by the engine',
+      () async {
+        const repo = IntentRepository();
+        for (var i = 0; i < 105; i++) {
+          await repo.save(
+            IntentRecord(
+              id: 'i$i',
+              expression: 't',
+              modality: InputModality.text,
+              status: IntentStatus.submitted,
+              createdAt: DateTime(2026, 8, 7).add(Duration(seconds: i)),
+              updatedAt: DateTime(2026, 8, 7).add(Duration(seconds: i)),
+            ),
+          );
+        }
+        expect((await repo.list(limit: 10000)).length, 100);
+      },
+    );
   });
 }
 

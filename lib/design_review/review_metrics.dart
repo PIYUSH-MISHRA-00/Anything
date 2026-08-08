@@ -34,7 +34,9 @@ class ReviewMetrics {
   factory ReviewMetrics.from(ReviewResult result) {
     final allIssues = result.allIssues;
     final finalIssueIds = result.finalIteration.issues.map((i) => i.id).toSet();
-    final fixedCount = allIssues.where((i) => i.autoFixable && !finalIssueIds.contains(i.id)).length;
+    final fixedCount = allIssues
+        .where((i) => i.autoFixable && !finalIssueIds.contains(i.id))
+        .length;
 
     final counts = <ReviewCategory, int>{};
     for (final issue in result.finalIteration.issues) {
@@ -44,11 +46,19 @@ class ReviewMetrics {
     return ReviewMetrics(
       totalIssuesFound: allIssues.length,
       totalIssuesFixed: fixedCount,
-      totalCritical: result.finalIteration.issues.where((i) => i.severity == ReviewSeverity.critical).length,
-      totalWarnings: result.finalIteration.issues.where((i) => i.severity == ReviewSeverity.warning).length,
-      totalInfo: result.finalIteration.issues.where((i) => i.severity == ReviewSeverity.info).length,
+      totalCritical: result.finalIteration.issues
+          .where((i) => i.severity == ReviewSeverity.critical)
+          .length,
+      totalWarnings: result.finalIteration.issues
+          .where((i) => i.severity == ReviewSeverity.warning)
+          .length,
+      totalInfo: result.finalIteration.issues
+          .where((i) => i.severity == ReviewSeverity.info)
+          .length,
       iterationsRun: result.iterations.length,
-      issuesByCategory: counts.entries.map((e) => ReviewCategoryCount(category: e.key, count: e.value)).toList(),
+      issuesByCategory: counts.entries
+          .map((e) => ReviewCategoryCount(category: e.key, count: e.value))
+          .toList(),
     );
   }
 }

@@ -11,7 +11,12 @@ class AutomationRecord {
   final DateTime plannedAt;
   final int version;
 
-  const AutomationRecord({required this.plan, required this.report, required this.plannedAt, required this.version});
+  const AutomationRecord({
+    required this.plan,
+    required this.report,
+    required this.plannedAt,
+    required this.version,
+  });
 }
 
 class AutomationHistory {

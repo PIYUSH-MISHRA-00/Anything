@@ -26,5 +26,6 @@ class BackendStorageModel {
   /// Whether any entity's storage decision implies real file/object
   /// storage (as opposed to structured record storage) — the one real,
   /// checkable signal available for "does this app need file storage."
-  bool get requiresFileStorage => requirements.any((r) => r.kind == StorageKind.file);
+  bool get requiresFileStorage =>
+      requirements.any((r) => r.kind == StorageKind.file);
 }

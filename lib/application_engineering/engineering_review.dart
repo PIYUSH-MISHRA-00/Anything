@@ -43,8 +43,10 @@ class EngineeringReviewResult {
   });
 
   bool get passed => issues.isEmpty;
-  bool get hasCriticalIssues => issues.any((i) => i.severity == EngineeringIssueSeverity.critical);
-  List<EngineeringIssue> get autoFixableIssues => issues.where((i) => i.autoFixable).toList();
+  bool get hasCriticalIssues =>
+      issues.any((i) => i.severity == EngineeringIssueSeverity.critical);
+  List<EngineeringIssue> get autoFixableIssues =>
+      issues.where((i) => i.autoFixable).toList();
 }
 
 class EngineeringReview {
@@ -65,7 +67,10 @@ class EngineeringReview {
     );
   }
 
-  void _checkUnsatisfiedValidations(EngineeringCandidate candidate, List<EngineeringIssue> issues) {
+  void _checkUnsatisfiedValidations(
+    EngineeringCandidate candidate,
+    List<EngineeringIssue> issues,
+  ) {
     for (final rule in candidate.validations) {
       if (!rule.satisfied) {
         issues.add(
@@ -80,8 +85,13 @@ class EngineeringReview {
     }
   }
 
-  void _checkDanglingBindings(EngineeringCandidate candidate, List<EngineeringIssue> issues) {
-    final entityIds = candidate.behaviors.map((b) => b.eventGraph.entityId).toSet();
+  void _checkDanglingBindings(
+    EngineeringCandidate candidate,
+    List<EngineeringIssue> issues,
+  ) {
+    final entityIds = candidate.behaviors
+        .map((b) => b.eventGraph.entityId)
+        .toSet();
     for (final edge in candidate.bindingGraph.edges) {
       if (edge.kind.name == 'stateToData' && !entityIds.contains(edge.toId)) {
         issues.add(
@@ -89,7 +99,8 @@ class EngineeringReview {
             category: EngineeringIssueCategory.danglingBinding,
             severity: EngineeringIssueSeverity.critical,
             subjectId: '${edge.fromId}->${edge.toId}',
-            message: 'Binding references entity "${edge.toId}" with no behavior plan',
+            message:
+                'Binding references entity "${edge.toId}" with no behavior plan',
             autoFixable: true,
           ),
         );
@@ -97,10 +108,14 @@ class EngineeringReview {
     }
   }
 
-  void _checkBehaviorConsistency(EngineeringCandidate candidate, List<EngineeringIssue> issues) {
+  void _checkBehaviorConsistency(
+    EngineeringCandidate candidate,
+    List<EngineeringIssue> issues,
+  ) {
     for (final behavior in candidate.behaviors) {
       for (final transition in behavior.stateMachine.transitions) {
-        final hasEvent = behavior.eventGraph.events.any((e) => e.id == transition.eventId) ||
+        final hasEvent =
+            behavior.eventGraph.events.any((e) => e.id == transition.eventId) ||
             transition.eventId.endsWith(':done') ||
             transition.eventId.endsWith(':failed');
         if (!hasEvent) {
@@ -108,8 +123,10 @@ class EngineeringReview {
             EngineeringIssue(
               category: EngineeringIssueCategory.behaviorInconsistency,
               severity: EngineeringIssueSeverity.critical,
-              subjectId: '${behavior.eventGraph.entityId}:${transition.eventId}',
-              message: 'State transition references an event no action declares',
+              subjectId:
+                  '${behavior.eventGraph.entityId}:${transition.eventId}',
+              message:
+                  'State transition references an event no action declares',
               autoFixable: true,
             ),
           );
@@ -118,7 +135,10 @@ class EngineeringReview {
     }
   }
 
-  void _checkConfidence(EngineeringCandidate candidate, List<EngineeringIssue> issues) {
+  void _checkConfidence(
+    EngineeringCandidate candidate,
+    List<EngineeringIssue> issues,
+  ) {
     if (candidate.overallConfidence.score < 0.4) {
       issues.add(
         EngineeringIssue(

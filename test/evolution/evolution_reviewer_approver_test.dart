@@ -23,93 +23,125 @@ void main() {
   const approver = EvolutionApprover();
 
   group('EvolutionReviewer', () {
-    test('every real, observed candidate is accepted (its evidence is real by construction)', () {
-      final context = buildEvolutionContext(fieldSurveyApp());
-      final candidates = observer.observe(context).map(estimator.estimate).toList();
-      for (final candidate in candidates) {
-        final decision = reviewer.review(candidate, context);
-        expect(decision.kind, EvolutionDecisionKind.accepted, reason: candidate.opportunity.id);
-      }
-    });
+    test(
+      'every real, observed candidate is accepted (its evidence is real by construction)',
+      () {
+        final context = buildEvolutionContext(fieldSurveyApp());
+        final candidates = observer
+            .observe(context)
+            .map(estimator.estimate)
+            .toList();
+        for (final candidate in candidates) {
+          final decision = reviewer.review(candidate, context);
+          expect(
+            decision.kind,
+            EvolutionDecisionKind.accepted,
+            reason: candidate.opportunity.id,
+          );
+        }
+      },
+    );
 
-    test('a candidate whose sourceReviewIssueId no longer exists is rejected', () {
-      final context = buildEvolutionContext(fieldSurveyApp());
-      final fake = EvolutionCandidate(
-        id: 'candidate:fake',
-        opportunity: EvolutionOpportunity(
-          id: 'evolution:missingAccessibility:fake',
-          category: EvolutionOpportunityCategory.missingAccessibility,
-          description: 'fake',
-          reason: const EvolutionReason(
-            summary: 'fake',
-            evidence: EvolutionEvidence(
-              affectedGraph: 'test',
-              affectedNodeId: 'test',
-              sourceReviewIssueId: 'issue:does-not-exist',
+    test(
+      'a candidate whose sourceReviewIssueId no longer exists is rejected',
+      () {
+        final context = buildEvolutionContext(fieldSurveyApp());
+        final fake = EvolutionCandidate(
+          id: 'candidate:fake',
+          opportunity: EvolutionOpportunity(
+            id: 'evolution:missingAccessibility:fake',
+            category: EvolutionOpportunityCategory.missingAccessibility,
+            description: 'fake',
+            reason: const EvolutionReason(
+              summary: 'fake',
+              evidence: EvolutionEvidence(
+                affectedGraph: 'test',
+                affectedNodeId: 'test',
+                sourceReviewIssueId: 'issue:does-not-exist',
+              ),
+              confidence: Confidence.full,
             ),
-            confidence: Confidence.full,
           ),
-        ),
-        cost: const EvolutionCost(),
-        risk: const EvolutionRisk(),
-        benefit: const EvolutionBenefit(
-          engineeringValue: Confidence.full,
-          userValue: Confidence.full,
-          maintenanceValue: Confidence.full,
-          performanceValue: Confidence.full,
-          securityValue: Confidence.full,
-          accessibilityValue: Confidence.full,
-          offlineValue: Confidence.full,
-          futureValue: Confidence.full,
-        ),
-      );
-      final decision = reviewer.review(fake, context);
-      expect(decision.kind, EvolutionDecisionKind.rejected);
-    });
+          cost: const EvolutionCost(),
+          risk: const EvolutionRisk(),
+          benefit: const EvolutionBenefit(
+            engineeringValue: Confidence.full,
+            userValue: Confidence.full,
+            maintenanceValue: Confidence.full,
+            performanceValue: Confidence.full,
+            securityValue: Confidence.full,
+            accessibilityValue: Confidence.full,
+            offlineValue: Confidence.full,
+            futureValue: Confidence.full,
+          ),
+        );
+        final decision = reviewer.review(fake, context);
+        expect(decision.kind, EvolutionDecisionKind.rejected);
+      },
+    );
 
-    test('a candidate whose referenced entity no longer exists in the architecture is rejected', () {
-      final context = buildEvolutionContext(fieldSurveyApp());
-      final fake = EvolutionCandidate(
-        id: 'candidate:fake2',
-        opportunity: EvolutionOpportunity(
-          id: 'evolution:missingNavigation:ghost-entity',
-          category: EvolutionOpportunityCategory.missingNavigation,
-          description: 'fake',
-          reason: const EvolutionReason(
-            summary: 'fake',
-            evidence: EvolutionEvidence(affectedGraph: 'test', affectedNodeId: 'ghost-entity'),
-            confidence: Confidence.full,
+    test(
+      'a candidate whose referenced entity no longer exists in the architecture is rejected',
+      () {
+        final context = buildEvolutionContext(fieldSurveyApp());
+        final fake = EvolutionCandidate(
+          id: 'candidate:fake2',
+          opportunity: EvolutionOpportunity(
+            id: 'evolution:missingNavigation:ghost-entity',
+            category: EvolutionOpportunityCategory.missingNavigation,
+            description: 'fake',
+            reason: const EvolutionReason(
+              summary: 'fake',
+              evidence: EvolutionEvidence(
+                affectedGraph: 'test',
+                affectedNodeId: 'ghost-entity',
+              ),
+              confidence: Confidence.full,
+            ),
           ),
-        ),
-        cost: const EvolutionCost(),
-        risk: const EvolutionRisk(),
-        benefit: const EvolutionBenefit(
-          engineeringValue: Confidence.full,
-          userValue: Confidence.full,
-          maintenanceValue: Confidence.full,
-          performanceValue: Confidence.full,
-          securityValue: Confidence.full,
-          accessibilityValue: Confidence.full,
-          offlineValue: Confidence.full,
-          futureValue: Confidence.full,
-        ),
-      );
-      final decision = reviewer.review(fake, context);
-      expect(decision.kind, EvolutionDecisionKind.rejected);
-    });
+          cost: const EvolutionCost(),
+          risk: const EvolutionRisk(),
+          benefit: const EvolutionBenefit(
+            engineeringValue: Confidence.full,
+            userValue: Confidence.full,
+            maintenanceValue: Confidence.full,
+            performanceValue: Confidence.full,
+            securityValue: Confidence.full,
+            accessibilityValue: Confidence.full,
+            offlineValue: Confidence.full,
+            futureValue: Confidence.full,
+          ),
+        );
+        final decision = reviewer.review(fake, context);
+        expect(decision.kind, EvolutionDecisionKind.rejected);
+      },
+    );
   });
 
   group('EvolutionApprover', () {
-    test('only accepted candidates become roadmap-eligible proposals, and none are pre-approved for execution', () {
-      final context = buildEvolutionContext(fieldSurveyApp());
-      final candidates = observer.observe(context).map(estimator.estimate).toList();
-      final decisions = candidates.map((c) => reviewer.review(c, context)).toList();
-      final proposals = approver.approveForRoadmap(candidates, decisions);
+    test(
+      'only accepted candidates become roadmap-eligible proposals, and none are pre-approved for execution',
+      () {
+        final context = buildEvolutionContext(fieldSurveyApp());
+        final candidates = observer
+            .observe(context)
+            .map(estimator.estimate)
+            .toList();
+        final decisions = candidates
+            .map((c) => reviewer.review(c, context))
+            .toList();
+        final proposals = approver.approveForRoadmap(candidates, decisions);
 
-      expect(proposals.length, decisions.where((d) => d.kind == EvolutionDecisionKind.accepted).length);
-      for (final proposal in proposals) {
-        expect(proposal.approvedForExecution, isFalse);
-      }
-    });
+        expect(
+          proposals.length,
+          decisions
+              .where((d) => d.kind == EvolutionDecisionKind.accepted)
+              .length,
+        );
+        for (final proposal in proposals) {
+          expect(proposal.approvedForExecution, isFalse);
+        }
+      },
+    );
   });
 }

@@ -1,4 +1,4 @@
-﻿/// AppComposition â€” the ONE canonical production composition root
+/// AppComposition â€” the ONE canonical production composition root
 /// (Implementation Milestone R1).
 ///
 /// Holds every shared, app-session-scoped instance that must have exactly
@@ -263,9 +263,15 @@ class AppComposition {
     const activityRepository = ActivityRepository();
     const intentRepository = IntentRepository();
     final credentialVault = CredentialVault();
-    final providerRegistry = AnythingProviderRegistry(credentialVault: credentialVault);
+    final providerRegistry = AnythingProviderRegistry(
+      credentialVault: credentialVault,
+    );
 
-    final worldModel = WorldModelCoordinator(persistence: WorldModelRepository(experienceRepository: experienceRepository));
+    final worldModel = WorldModelCoordinator(
+      persistence: WorldModelRepository(
+        experienceRepository: experienceRepository,
+      ),
+    );
 
     // Implementation Specification IS-R48: knowledge now survives restart.
     // The SAME `WebWeaveXAdapter` instance is threaded into both the engine
@@ -325,7 +331,9 @@ class AppComposition {
     // state — creation, modification, evolution, protection, installation and
     // removal — writes through this and nothing else. See
     // docs/architecture/EXPERIENCE_COMMIT_ARCHITECTURE.md.
-    final commitFramework = ExperienceCommitFramework(repository: experienceRepository);
+    final commitFramework = ExperienceCommitFramework(
+      repository: experienceRepository,
+    );
 
     final installer = ExperienceInstallationFramework(
       repository: experienceRepository,
@@ -342,45 +350,64 @@ class AppComposition {
       installer: installer,
     );
 
-    final capabilityPlatform = CapabilityPlatform(
-      governance: governance,
-      trustClassifier: trustClassifier,
-    )
-      ..register(ClockCapability())
-      ..register(HttpCapability(transport: RealHttpTransport(), allowedHosts: _defaultHttpAllowedHosts))
-      ..register(AiCapability(provider: ModelProviderAiAdapter(providerRegistry), experienceId: ''))
-      ..register(KnowledgeCapability(provider: KnowledgeAcquisitionProviderAdapter(knowledgeEngine)))
-      // Implementation Specification IS-R49: the last two production Fake*
-      // registrations are gone. Both now resolve to real services, each
-      // constructed exactly once here â€” there is no alternate composition
-      // root and no conditional production graph.
-      //
-      // RealNotificationService persists schedules durably (SharedPreferences,
-      // the backend ActivityRepository already uses â€” no new storage system),
-      // enforces per-Experience ownership, computes real due state, and
-      // delivers in-app through the EXISTING EventBus as the EXISTING R35
-      // `NotificationGenerated` event. No new event hierarchy, no second
-      // notification framework: `NotificationPlanner`/`BackgroundCoordinator`
-      // remain the canonical planning layer, untouched.
-      //
-      // HONEST SCOPE, unchanged from what background_coordinator.dart already
-      // states about itself: OS-level BACKGROUND delivery still requires a
-      // platform plugin plus native Android/iOS configuration that cannot be
-      // exercised by `flutter test` and cannot be verified without a device.
-      // It is left as one explicit seam (`NotificationPresenter`) rather than
-      // shipped unverified â€” see IS-R49's report and gap G-20.
-      ..register(NotificationCapability(
-        service: RealNotificationService(
-          presenter: EventBusNotificationPresenter(bus: eventBus),
-        ),
-        experienceId: '',
-      ))
-      // RealFileService is genuinely complete: real picking via
-      // package:file_picker (already a dependency), real sandboxed adoption,
-      // export, temporary files and workspace/Experience assets via
-      // path_provider + dart:io. Every path is resolved and verified to be
-      // inside the sandbox root.
-      ..register(FileCapability(service: RealFileService(), experienceId: ''));
+    final capabilityPlatform =
+        CapabilityPlatform(
+            governance: governance,
+            trustClassifier: trustClassifier,
+          )
+          ..register(ClockCapability())
+          ..register(
+            HttpCapability(
+              transport: RealHttpTransport(),
+              allowedHosts: _defaultHttpAllowedHosts,
+            ),
+          )
+          ..register(
+            AiCapability(
+              provider: ModelProviderAiAdapter(providerRegistry),
+              experienceId: '',
+            ),
+          )
+          ..register(
+            KnowledgeCapability(
+              provider: KnowledgeAcquisitionProviderAdapter(knowledgeEngine),
+            ),
+          )
+          // Implementation Specification IS-R49: the last two production Fake*
+          // registrations are gone. Both now resolve to real services, each
+          // constructed exactly once here â€” there is no alternate composition
+          // root and no conditional production graph.
+          //
+          // RealNotificationService persists schedules durably (SharedPreferences,
+          // the backend ActivityRepository already uses â€” no new storage system),
+          // enforces per-Experience ownership, computes real due state, and
+          // delivers in-app through the EXISTING EventBus as the EXISTING R35
+          // `NotificationGenerated` event. No new event hierarchy, no second
+          // notification framework: `NotificationPlanner`/`BackgroundCoordinator`
+          // remain the canonical planning layer, untouched.
+          //
+          // HONEST SCOPE, unchanged from what background_coordinator.dart already
+          // states about itself: OS-level BACKGROUND delivery still requires a
+          // platform plugin plus native Android/iOS configuration that cannot be
+          // exercised by `flutter test` and cannot be verified without a device.
+          // It is left as one explicit seam (`NotificationPresenter`) rather than
+          // shipped unverified â€” see IS-R49's report and gap G-20.
+          ..register(
+            NotificationCapability(
+              service: RealNotificationService(
+                presenter: EventBusNotificationPresenter(bus: eventBus),
+              ),
+              experienceId: '',
+            ),
+          )
+          // RealFileService is genuinely complete: real picking via
+          // package:file_picker (already a dependency), real sandboxed adoption,
+          // export, temporary files and workspace/Experience assets via
+          // path_provider + dart:io. Every path is resolved and verified to be
+          // inside the sandbox root.
+          ..register(
+            FileCapability(service: RealFileService(), experienceId: ''),
+          );
 
     // Implementation Milestone R16: built before `kernel` so the SAME
     // instance is shared with `AnythingKernel`'s autonomous discovery step
@@ -394,7 +421,9 @@ class AppComposition {
       softwareCognition: softwareCognition,
     );
 
-    final engineeringMemory = EngineeringMemoryRepository(experienceRepository: experienceRepository);
+    final engineeringMemory = EngineeringMemoryRepository(
+      experienceRepository: experienceRepository,
+    );
 
     // Implementation Specification IS-R36: the real "AI Operating System"
     // service graph (R31-R35), constructed here â€” the single production
@@ -417,7 +446,10 @@ class AppComposition {
       softwareCognition: softwareCognition,
       engineeringMemory: engineeringMemory,
     );
-    final engineeringLifecycleCoordinator = EngineeringLifecycleCoordinator(kernel: kernel, engineeringMemory: engineeringMemory);
+    final engineeringLifecycleCoordinator = EngineeringLifecycleCoordinator(
+      kernel: kernel,
+      engineeringMemory: engineeringMemory,
+    );
     final intentSessionManager = IntentSessionManager(
       activity: activityRepository,
       creationCoordinator: experienceCreationCoordinator,
@@ -429,7 +461,9 @@ class AppComposition {
       activity: activityRepository,
     );
     final intentRouter = UniversalIntentRouter(workspace: workspaceManager);
-    final workspaceRuntime = AutonomousWorkspaceRuntime(workspace: workspaceManager);
+    final workspaceRuntime = AutonomousWorkspaceRuntime(
+      workspace: workspaceManager,
+    );
     // `eventBus` itself is now constructed earlier (above `capabilityPlatform`),
     // because IS-R49's real notification presenter delivers through it. It is
     // still the SAME single instance every consumer below receives â€” moving
@@ -439,12 +473,17 @@ class AppComposition {
     // Implementation Specification IS-R37: the one canonical production
     // path from an Intent to engineering execution â€” composed from
     // [intentRouter]/[eventPublisher] above, never a second router.
-    final intentExecutionPipeline = IntentExecutionPipeline(router: intentRouter, eventPublisher: eventPublisher);
+    final intentExecutionPipeline = IntentExecutionPipeline(
+      router: intentRouter,
+      eventPublisher: eventPublisher,
+    );
 
     // Implementation Specification IS-R41: the one shared runtime-controller
     // registry, composed from [eventPublisher] above â€” never a second
     // supervisor. `WorkspaceRuntimeSupervisor` itself is unmodified since R40.
-    final workspaceRuntimeSupervisor = WorkspaceRuntimeSupervisor(eventPublisher: eventPublisher);
+    final workspaceRuntimeSupervisor = WorkspaceRuntimeSupervisor(
+      eventPublisher: eventPublisher,
+    );
 
     // Implementation Specification IS-R43: the one shared scheduling
     // coordinator, composed from [workspaceRuntime]/[workspaceRuntimeSupervisor]/
@@ -463,7 +502,10 @@ class AppComposition {
     // Implementation Specification IS-R44: the one shared activation
     // coordinator, composed from [workspaceSchedulingEngine]/[eventPublisher]
     // above â€” never a second scheduler, never a second Navigator.
-    final experienceActivationManager = ExperienceActivationManager(scheduler: workspaceSchedulingEngine, eventPublisher: eventPublisher);
+    final experienceActivationManager = ExperienceActivationManager(
+      scheduler: workspaceSchedulingEngine,
+      eventPublisher: eventPublisher,
+    );
 
     // Implementation Specification IS-R45: the one shared entry pipeline,
     // composed from [intentExecutionPipeline]/[experienceActivationManager]/
@@ -473,7 +515,9 @@ class AppComposition {
     // precedent) â€” never a second scheduler, never a second Navigator.
     final experienceEntryPipeline = ExperienceEntryPipeline(
       intentExecutionPipeline: intentExecutionPipeline,
-      openingCoordinator: ExperienceOpeningCoordinator(activity: activityRepository),
+      openingCoordinator: ExperienceOpeningCoordinator(
+        activity: activityRepository,
+      ),
       activationManager: experienceActivationManager,
       workspaceManager: workspaceManager,
       worldModel: worldModel,

@@ -34,8 +34,24 @@ import 'certification_report.dart';
 CapabilityRegistry _fullRegistry() {
   final registry = CapabilityRegistry();
   for (final d in const [
-    CapabilityDescriptor(id: 'storage', version: '1.0.0', name: 'Storage', description: 'Local storage', category: CapabilityCategory.storage, inputContract: 'data', outputContract: 'stored data'),
-    CapabilityDescriptor(id: 'clock', version: '1.0.0', name: 'Clock', description: 'Trusted time source', category: CapabilityCategory.computation, inputContract: 'none', outputContract: 'timestamp'),
+    CapabilityDescriptor(
+      id: 'storage',
+      version: '1.0.0',
+      name: 'Storage',
+      description: 'Local storage',
+      category: CapabilityCategory.storage,
+      inputContract: 'data',
+      outputContract: 'stored data',
+    ),
+    CapabilityDescriptor(
+      id: 'clock',
+      version: '1.0.0',
+      name: 'Clock',
+      description: 'Trusted time source',
+      category: CapabilityCategory.computation,
+      inputContract: 'none',
+      outputContract: 'timestamp',
+    ),
     CapabilityDescriptor(
       id: 'notifications',
       version: '1.0.0',
@@ -45,7 +61,15 @@ CapabilityRegistry _fullRegistry() {
       inputContract: 'schedule',
       outputContract: 'notification',
     ),
-    CapabilityDescriptor(id: 'http', version: '1.0.0', name: 'HTTP', description: 'Network access', category: CapabilityCategory.integration, inputContract: 'request', outputContract: 'response'),
+    CapabilityDescriptor(
+      id: 'http',
+      version: '1.0.0',
+      name: 'HTTP',
+      description: 'Network access',
+      category: CapabilityCategory.integration,
+      inputContract: 'request',
+      outputContract: 'response',
+    ),
   ]) {
     registry.register(d);
   }
@@ -77,7 +101,9 @@ class _FixedReasoner implements ApplicationReasoner {
   final SemanticApp app;
   const _FixedReasoner(this.app);
   @override
-  Future<AppReasoningResult> reason(ApplicationReasoningContext context) async => ReasoningReady(semanticApp: app);
+  Future<AppReasoningResult> reason(
+    ApplicationReasoningContext context,
+  ) async => ReasoningReady(semanticApp: app);
 }
 
 class CertificationRunner {
@@ -87,14 +113,24 @@ class CertificationRunner {
   /// the real Kernel does not reach `ExecutionPlanReady` for this fixture
   /// — an honest "not certifiable" outcome, never a fabricated report.
   Future<FixtureCertification?> certify(CertificationFixture fixture) async {
-    final kernel = AnythingKernel(providerRegistry: _FakeProviderRegistry(), capabilityRegistry: _fullRegistry(), reasoner: _FixedReasoner(fixture.app));
-    final outcome = await kernel.processIntent(Intent.create(expression: fixture.app.purpose));
+    final kernel = AnythingKernel(
+      providerRegistry: _FakeProviderRegistry(),
+      capabilityRegistry: _fullRegistry(),
+      reasoner: _FixedReasoner(fixture.app),
+    );
+    final outcome = await kernel.processIntent(
+      Intent.create(expression: fixture.app.purpose),
+    );
     if (outcome is! ExecutionPlanReady) return null;
 
     final legacyPackage = await _runLegacy(outcome);
     final compilerPackage = outcome.canonicalImplementationModel == null
         ? null
-        : runCompilerPipeline(outcome.canonicalImplementationModel!, id: outcome.specification.id, name: outcome.specification.name).package;
+        : runCompilerPipeline(
+            outcome.canonicalImplementationModel!,
+            id: outcome.specification.id,
+            name: outcome.specification.name,
+          ).package;
     if (legacyPackage == null || compilerPackage == null) return null;
 
     const comparator = EquivalenceComparator();
@@ -108,13 +144,21 @@ class CertificationRunner {
     );
 
     final legacyAgain = await _runLegacy(outcome);
-    final compilerAgain = runCompilerPipeline(outcome.canonicalImplementationModel!, id: outcome.specification.id, name: outcome.specification.name).package;
+    final compilerAgain = runCompilerPipeline(
+      outcome.canonicalImplementationModel!,
+      id: outcome.specification.id,
+      name: outcome.specification.name,
+    ).package;
 
     return FixtureCertification(
       category: fixture.category,
       report: report,
-      legacyDeterministic: legacyAgain != null && comparator.structurallyIdentical(legacyPackage, legacyAgain),
-      compilerDeterministic: compilerAgain != null && comparator.structurallyIdentical(compilerPackage, compilerAgain),
+      legacyDeterministic:
+          legacyAgain != null &&
+          comparator.structurallyIdentical(legacyPackage, legacyAgain),
+      compilerDeterministic:
+          compilerAgain != null &&
+          comparator.structurallyIdentical(compilerPackage, compilerAgain),
     );
   }
 
@@ -126,7 +170,10 @@ class CertificationRunner {
         plan: outcome.plan,
         blueprint: outcome.blueprint,
         engineeringPlan: outcome.engineeringPlan,
-        platformContext: const PlatformContext(platform: 'android', sdkVersion: 34),
+        platformContext: const PlatformContext(
+          platform: 'android',
+          sdkVersion: 34,
+        ),
         securityPolicy: const CreationSecurityPolicy(),
       ),
     );

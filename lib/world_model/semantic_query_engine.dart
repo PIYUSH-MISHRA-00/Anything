@@ -17,9 +17,11 @@ import 'world_types.dart';
 class SemanticQueryEngine {
   final GraphSearch _search;
 
-  const SemanticQueryEngine({GraphSearch search = const GraphSearch()}) : _search = search;
+  const SemanticQueryEngine({GraphSearch search = const GraphSearch()})
+    : _search = search;
 
-  List<WorldNode> query(WorldGraph graph, GraphQuery query) => _search.run(graph, query);
+  List<WorldNode> query(WorldGraph graph, GraphQuery query) =>
+      _search.run(graph, query);
 
   /// A minimal, deterministic structural parser — matches a small,
   /// fixed vocabulary of relationship phrases to a real RelationshipKind.
@@ -31,7 +33,10 @@ class SemanticQueryEngine {
 
     if (lower.contains('depend')) {
       kind = RelationshipKind.dependsOn;
-      direction = lower.contains('depends on this') || lower.contains('what depends') ? GraphQueryDirection.reverse : GraphQueryDirection.forward;
+      direction =
+          lower.contains('depends on this') || lower.contains('what depends')
+          ? GraphQueryDirection.reverse
+          : GraphQueryDirection.forward;
     } else if (lower.contains('contain')) {
       kind = RelationshipKind.contains;
     } else if (lower.contains('reference')) {
@@ -42,6 +47,10 @@ class SemanticQueryEngine {
       direction = GraphQueryDirection.both;
     }
 
-    return GraphQuery(startId: startId, relationKinds: kind == null ? null : {kind}, direction: direction);
+    return GraphQuery(
+      startId: startId,
+      relationKinds: kind == null ? null : {kind},
+      direction: direction,
+    );
   }
 }

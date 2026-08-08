@@ -19,5 +19,9 @@ class EngineeringContext {
   /// live path where Engineering runs without one.
   final FeatureGraph? featureGraph;
 
-  const EngineeringContext({required this.architecture, required this.app, this.featureGraph});
+  const EngineeringContext({
+    required this.architecture,
+    required this.app,
+    this.featureGraph,
+  });
 }

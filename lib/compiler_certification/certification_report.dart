@@ -18,7 +18,12 @@ class FixtureCertification {
   final bool legacyDeterministic;
   final bool compilerDeterministic;
 
-  const FixtureCertification({required this.category, required this.report, required this.legacyDeterministic, required this.compilerDeterministic});
+  const FixtureCertification({
+    required this.category,
+    required this.report,
+    required this.legacyDeterministic,
+    required this.compilerDeterministic,
+  });
 }
 
 /// Corpus-level aggregate — every field is a plain, documented formula
@@ -31,36 +36,50 @@ class CertificationReport {
   /// Mean per-fixture `compatibilityScore` — the same real, itemized
   /// metric `EquivalenceReport` already defines, averaged across the
   /// corpus.
-  double get structuralEquivalence => fixtures.isEmpty ? 0.0 : fixtures.map((f) => f.report.compatibilityScore).reduce((a, b) => a + b) / fixtures.length;
+  double get structuralEquivalence => fixtures.isEmpty
+      ? 0.0
+      : fixtures
+                .map((f) => f.report.compatibilityScore)
+                .reduce((a, b) => a + b) /
+            fixtures.length;
 
   /// Fraction of fixtures with zero real, named behavior differences
   /// (`EquivalenceReport.behaviorDifferences`, e.g. derived-value node
   /// count mismatches — R20's own documented, expected gap).
-  double get behaviorEquivalence => _fraction((f) => f.report.behaviorDifferences.isEmpty);
+  double get behaviorEquivalence =>
+      _fraction((f) => f.report.behaviorDifferences.isEmpty);
 
   /// Fraction of fixtures whose `navigationShapeMatch` dimension passed
   /// (both packages agree on none-vs-bottomNavigation) — a real,
   /// already-checked dimension name, read back out of
   /// `dimensionsPassed`/`dimensionsChecked`, never re-derived.
-  double get navigationEquivalence => _fraction((f) => f.report.dimensionsPassed.contains('navigationShapeMatch'));
+  double get navigationEquivalence => _fraction(
+    (f) => f.report.dimensionsPassed.contains('navigationShapeMatch'),
+  );
 
   /// Fraction of fixtures certified with the real R22 identity-aware
   /// comparison active (`screenIdentityCoverage` present among the
   /// dimensions checked — only true when a fixture's `legacyBlueprint`/
   /// `compilerModel` were supplied to `compare()`).
-  double get identityCoverage => _fraction((f) => f.report.dimensionsChecked.contains('screenIdentityCoverage'));
+  double get identityCoverage => _fraction(
+    (f) => f.report.dimensionsChecked.contains('screenIdentityCoverage'),
+  );
 
   /// Fraction of fixtures whose `sharedFieldMetadataParity` dimension
   /// (R20) passed.
-  double get fieldMetadataCoverage => _fraction((f) => f.report.dimensionsPassed.contains('sharedFieldMetadataParity'));
+  double get fieldMetadataCoverage => _fraction(
+    (f) => f.report.dimensionsPassed.contains('sharedFieldMetadataParity'),
+  );
 
   /// Fraction of fixtures whose `screenCountParity` dimension (R21 view
   /// coverage) passed.
-  double get viewCoverage => _fraction((f) => f.report.dimensionsPassed.contains('screenCountParity'));
+  double get viewCoverage =>
+      _fraction((f) => f.report.dimensionsPassed.contains('screenCountParity'));
 
   /// Fraction of fixtures where BOTH pipelines independently re-ran
   /// deterministic.
-  double get determinismRate => _fraction((f) => f.legacyDeterministic && f.compilerDeterministic);
+  double get determinismRate =>
+      _fraction((f) => f.legacyDeterministic && f.compilerDeterministic);
 
   /// Real, documented formula: the unweighted mean of the six equivalence
   /// dimensions above plus the determinism rate — a transparent, equally
@@ -68,7 +87,14 @@ class CertificationReport {
   /// signal for a future milestone's own explicit compiler-by-default
   /// decision, never itself a decision to flip that default.
   double get migrationReadinessScore =>
-      (structuralEquivalence + behaviorEquivalence + navigationEquivalence + identityCoverage + fieldMetadataCoverage + viewCoverage + determinismRate) / 7;
+      (structuralEquivalence +
+          behaviorEquivalence +
+          navigationEquivalence +
+          identityCoverage +
+          fieldMetadataCoverage +
+          viewCoverage +
+          determinismRate) /
+      7;
 
   /// Same value as [migrationReadinessScore] today — kept as a distinct,
   /// separately-named field per R23's own "Confidence Score" ask, so a
@@ -82,10 +108,22 @@ class CertificationReport {
   List<String> get knownDifferences {
     final all = <String>{};
     for (final f in fixtures) {
-      all.addAll(f.report.missingComponents.map((c) => '${f.category}: missing $c'));
-      all.addAll(f.report.extraComponents.map((c) => '${f.category}: extra $c'));
-      all.addAll(f.report.behaviorDifferences.map((d) => '${f.category}: ${d.category} — ${d.description}'));
-      all.addAll(f.report.capabilityDifferences.map((d) => '${f.category}: ${d.category} — ${d.description}'));
+      all.addAll(
+        f.report.missingComponents.map((c) => '${f.category}: missing $c'),
+      );
+      all.addAll(
+        f.report.extraComponents.map((c) => '${f.category}: extra $c'),
+      );
+      all.addAll(
+        f.report.behaviorDifferences.map(
+          (d) => '${f.category}: ${d.category} — ${d.description}',
+        ),
+      );
+      all.addAll(
+        f.report.capabilityDifferences.map(
+          (d) => '${f.category}: ${d.category} — ${d.description}',
+        ),
+      );
     }
     return all.toList()..sort();
   }
@@ -106,6 +144,8 @@ class CertificationReport {
     'determinismRate': determinismRate,
     'migrationReadinessScore': migrationReadinessScore,
     'confidenceScore': confidenceScore,
-    'perFixture': {for (final f in fixtures) f.category: f.report.compatibilityScore},
+    'perFixture': {
+      for (final f in fixtures) f.category: f.report.compatibilityScore,
+    },
   };
 }

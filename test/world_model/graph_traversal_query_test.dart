@@ -25,51 +25,101 @@ void main() {
   );
 
   final chain = WorldGraph(
-    nodes: ['a', 'b', 'c', 'd'].map((s) => WorldNode(identity: id(s), kind: WorldNodeKind.entity, label: s)).toList(),
-    edges: [edge('a', 'b', RelationshipKind.dependsOn), edge('b', 'c', RelationshipKind.dependsOn), edge('c', 'd', RelationshipKind.dependsOn)],
+    nodes: ['a', 'b', 'c', 'd']
+        .map(
+          (s) =>
+              WorldNode(identity: id(s), kind: WorldNodeKind.entity, label: s),
+        )
+        .toList(),
+    edges: [
+      edge('a', 'b', RelationshipKind.dependsOn),
+      edge('b', 'c', RelationshipKind.dependsOn),
+      edge('c', 'd', RelationshipKind.dependsOn),
+    ],
   );
 
   final cyclic = WorldGraph(
-    nodes: ['x', 'y'].map((s) => WorldNode(identity: id(s), kind: WorldNodeKind.entity, label: s)).toList(),
-    edges: [edge('x', 'y', RelationshipKind.relatesTo), edge('y', 'x', RelationshipKind.relatesTo)],
+    nodes: ['x', 'y']
+        .map(
+          (s) =>
+              WorldNode(identity: id(s), kind: WorldNodeKind.entity, label: s),
+        )
+        .toList(),
+    edges: [
+      edge('x', 'y', RelationshipKind.relatesTo),
+      edge('y', 'x', RelationshipKind.relatesTo),
+    ],
   );
 
   group('GraphTraversal', () {
     const traversal = GraphTraversal();
 
-    test('forward traversal follows outgoing edges up to maxDepth, never beyond', () {
-      final steps = traversal.forward(chain, id('a'), maxDepth: 2);
-      expect(steps.map((s) => s.nodeId), containsAll([id('b'), id('c')]));
-      expect(steps.any((s) => s.nodeId == id('d')), isFalse); // depth 3, beyond the bound
-    });
+    test(
+      'forward traversal follows outgoing edges up to maxDepth, never beyond',
+      () {
+        final steps = traversal.forward(chain, id('a'), maxDepth: 2);
+        expect(steps.map((s) => s.nodeId), containsAll([id('b'), id('c')]));
+        expect(
+          steps.any((s) => s.nodeId == id('d')),
+          isFalse,
+        ); // depth 3, beyond the bound
+      },
+    );
 
     test('reverse traversal follows incoming edges', () {
       final steps = traversal.reverse(chain, id('d'), maxDepth: 5);
-      expect(steps.map((s) => s.nodeId), containsAll([id('c'), id('b'), id('a')]));
-    });
-
-    test('a cyclic graph never causes an infinite loop — terminates deterministically', () {
-      final steps = traversal.forward(cyclic, id('x'), maxDepth: 10);
-      // Only 'y' is ever reachable and visited once, despite the cycle.
-      expect(steps, hasLength(1));
-      expect(steps.first.nodeId, id('y'));
-    });
-
-    test('relationKinds filters the traversal to only the requested edge kinds', () {
-      final mixed = WorldGraph(
-        nodes: ['p', 'q', 'r'].map((s) => WorldNode(identity: id(s), kind: WorldNodeKind.entity, label: s)).toList(),
-        edges: [edge('p', 'q', RelationshipKind.dependsOn), edge('p', 'r', RelationshipKind.duplicates)],
+      expect(
+        steps.map((s) => s.nodeId),
+        containsAll([id('c'), id('b'), id('a')]),
       );
-      final onlyDepends = traversal.forward(mixed, id('p'), relationKinds: {RelationshipKind.dependsOn});
-      expect(onlyDepends.map((s) => s.nodeId), [id('q')]);
     });
+
+    test(
+      'a cyclic graph never causes an infinite loop — terminates deterministically',
+      () {
+        final steps = traversal.forward(cyclic, id('x'), maxDepth: 10);
+        // Only 'y' is ever reachable and visited once, despite the cycle.
+        expect(steps, hasLength(1));
+        expect(steps.first.nodeId, id('y'));
+      },
+    );
+
+    test(
+      'relationKinds filters the traversal to only the requested edge kinds',
+      () {
+        final mixed = WorldGraph(
+          nodes: ['p', 'q', 'r']
+              .map(
+                (s) => WorldNode(
+                  identity: id(s),
+                  kind: WorldNodeKind.entity,
+                  label: s,
+                ),
+              )
+              .toList(),
+          edges: [
+            edge('p', 'q', RelationshipKind.dependsOn),
+            edge('p', 'r', RelationshipKind.duplicates),
+          ],
+        );
+        final onlyDepends = traversal.forward(
+          mixed,
+          id('p'),
+          relationKinds: {RelationshipKind.dependsOn},
+        );
+        expect(onlyDepends.map((s) => s.nodeId), [id('q')]);
+      },
+    );
   });
 
   group('GraphSearch + GraphQuery', () {
     const search = GraphSearch();
 
     test('runs a typed query and returns typed WorldNode results', () {
-      final results = search.run(chain, GraphQuery(startId: id('a'), maxDepth: 5));
+      final results = search.run(
+        chain,
+        GraphQuery(startId: id('a'), maxDepth: 5),
+      );
       expect(results.map((n) => n.label), containsAll(['b', 'c', 'd']));
     });
   });
@@ -77,17 +127,26 @@ void main() {
   group('SemanticQueryEngine', () {
     const engine = SemanticQueryEngine();
 
-    test('parseIntent maps a real relationship phrase to a typed RelationshipKind', () {
-      final query = engine.parseIntent('what does this depend on', id('a'));
-      expect(query, isNotNull);
-      expect(query!.relationKinds, {RelationshipKind.dependsOn});
-    });
+    test(
+      'parseIntent maps a real relationship phrase to a typed RelationshipKind',
+      () {
+        final query = engine.parseIntent('what does this depend on', id('a'));
+        expect(query, isNotNull);
+        expect(query!.relationKinds, {RelationshipKind.dependsOn});
+      },
+    );
 
-    test('an unrecognized expression still returns a query, never a crash, with no relation filter', () {
-      final query = engine.parseIntent('completely unrelated gibberish', id('a'));
-      expect(query, isNotNull);
-      expect(query!.relationKinds, isNull);
-    });
+    test(
+      'an unrecognized expression still returns a query, never a crash, with no relation filter',
+      () {
+        final query = engine.parseIntent(
+          'completely unrelated gibberish',
+          id('a'),
+        );
+        expect(query, isNotNull);
+        expect(query!.relationKinds, isNull);
+      },
+    );
 
     test('end to end: query(graph, parseIntent(...)) returns real results', () {
       final query = engine.parseIntent('show everything related', id('a'))!;

@@ -54,8 +54,10 @@ import 'package:anything/backend_engineering/backend_engineering_planner.dart';
 import 'package:anything/knowledge/knowledge_resource.dart';
 import 'package:anything/knowledge/autonomous_knowledge_planner.dart';
 import 'package:anything/software_cognition/software_cognition_coordinator.dart';
-import 'package:anything/software_cognition/software_cognition_engine.dart' show RepositoryCognitionResult;
-import 'package:anything/software_cognition/software_reasoner.dart' show SoftwareRecommendation;
+import 'package:anything/software_cognition/software_cognition_engine.dart'
+    show RepositoryCognitionResult;
+import 'package:anything/software_cognition/software_reasoner.dart'
+    show SoftwareRecommendation;
 import 'package:anything/world_model/world_model_coordinator.dart';
 import 'package:anything/world_model/world_types.dart' show WorldNodeKind;
 import 'package:anything/implementation_model/canonical_implementation_planner.dart';
@@ -173,15 +175,19 @@ class AnythingKernel {
        _requirementExtractor =
            requirementExtractor ?? const RequirementExtractor(),
        _constraintPlanner = constraintPlanner ?? const ConstraintPlanner(),
-       _featureDiscoveryEngine = featureDiscoveryEngine ?? const FeatureDiscoveryEngine(),
+       _featureDiscoveryEngine =
+           featureDiscoveryEngine ?? const FeatureDiscoveryEngine(),
        _featureRefinement = featureRefinement ?? const FeatureRefinement(),
        _solutionExplorer = solutionExplorer ?? const SolutionExplorer(),
        _designReviewEngine = designReviewEngine ?? const DesignReviewEngine(),
        _evolutionEngine = evolutionEngine ?? const EvolutionEngine(),
        _architectureToBlueprint =
            architectureToBlueprint ?? const ArchitectureToBlueprintConverter(),
-       _backendEngineeringPlanner = backendEngineeringPlanner ?? const BackendEngineeringPlanner(),
-       _canonicalImplementationPlanner = canonicalImplementationPlanner ?? const CanonicalImplementationPlanner(),
+       _backendEngineeringPlanner =
+           backendEngineeringPlanner ?? const BackendEngineeringPlanner(),
+       _canonicalImplementationPlanner =
+           canonicalImplementationPlanner ??
+           const CanonicalImplementationPlanner(),
        _experienceResolver = experienceResolver ?? ExperienceResolver(),
        _capabilityRegistry = capabilityRegistry ?? CapabilityRegistry(),
        _understandingService = ModelUnderstandingService(providerRegistry),
@@ -337,7 +343,9 @@ class AnythingKernel {
       // the "RequirementGraph is never ingested anywhere" finding (see
       // `RequirementGraphBridge`'s own doc comment). Reuses the existing
       // R1 defensive-ingestion pattern exactly.
-      _ingestIntoWorldModelSafely(() => _worldModel?.ingestRequirementGraph(requirementGraph));
+      _ingestIntoWorldModelSafely(
+        () => _worldModel?.ingestRequirementGraph(requirementGraph),
+      );
       final knowledgeGraph = _lastAcquiredKnowledge != null
           ? KnowledgeGraphBuilder.build(_lastAcquiredKnowledge!)
           : null;
@@ -347,7 +355,9 @@ class AnythingKernel {
       // call sites" finding. Reuses the existing R1 defensive-ingestion
       // pattern: optional, best-effort, never able to fail processIntent.
       if (knowledgeGraph != null && !knowledgeGraph.isEmpty) {
-        _ingestIntoWorldModelSafely(() => _worldModel?.ingestKnowledge(knowledgeGraph));
+        _ingestIntoWorldModelSafely(
+          () => _worldModel?.ingestKnowledge(knowledgeGraph),
+        );
       }
       final featureGraph = _featureDiscoveryEngine.plan(
         FeatureDiscoveryContext(
@@ -435,13 +445,17 @@ class AnythingKernel {
       );
       if (!reviewOutcome.approved) {
         return PlanningFailed(
-          error: const ReviewApproval().denialReason(reviewOutcome.session.result),
+          error: const ReviewApproval().denialReason(
+            reviewOutcome.session.result,
+          ),
           message: 'Design review did not approve this design',
           timestamp: DateTime.now(),
         );
       }
       final reviewedContext = reviewOutcome.session.result.finalContext;
-      _ingestIntoWorldModelSafely(() => _worldModel?.ingestReviewSession(reviewOutcome.session));
+      _ingestIntoWorldModelSafely(
+        () => _worldModel?.ingestReviewSession(reviewOutcome.session),
+      );
 
       // Step 7.6: Application Engineering Engine output. The selected,
       // now review-approved solution already carries its own real
@@ -449,8 +463,10 @@ class AnythingKernel {
       // reused here rather than recomputed, and reflecting any
       // conservative auto-fixes Design Review applied to its binding
       // graph.
-      final engineeringPlan = reviewedContext.solution.engineeringVariation.plan;
-      if (engineeringPlan.outcome == EngineeringRefinementOutcome.budgetExhausted &&
+      final engineeringPlan =
+          reviewedContext.solution.engineeringVariation.plan;
+      if (engineeringPlan.outcome ==
+              EngineeringRefinementOutcome.budgetExhausted &&
           engineeringPlan.finalReview.hasCriticalIssues) {
         return PlanningFailed(
           error:
@@ -472,12 +488,18 @@ class AnythingKernel {
       // "Do NOT automatically execute" applies here even more strongly
       // than at Design Review.
       final evolutionResult = _evolutionEngine.evolve(
-        EvolutionContext(reviewContext: reviewedContext, reviewSession: reviewOutcome.session),
+        EvolutionContext(
+          reviewContext: reviewedContext,
+          reviewSession: reviewOutcome.session,
+        ),
         memory: _evolutionMemory,
         history: _evolutionHistory,
       );
       _ingestIntoWorldModelSafely(
-        () => _worldModel?.ingestEvolutionRoadmap(evolutionResult.roadmap, blueprint: blueprint),
+        () => _worldModel?.ingestEvolutionRoadmap(
+          evolutionResult.roadmap,
+          blueprint: blueprint,
+        ),
       );
 
       // Step 7.8: Backend Engineering Planner (Implementation Milestone
@@ -487,9 +509,14 @@ class AnythingKernel {
       // `reasonResult.semanticApp` frontend Engineering already consumed
       // at Step 7.6 — zero new AI call, zero new upstream dependency.
       final backendEngineeringPlan = _backendEngineeringPlanner.plan(
-        BackendEngineeringContext(architecture: selectedSolution.architecture, app: reasonResult.semanticApp),
+        BackendEngineeringContext(
+          architecture: selectedSolution.architecture,
+          app: reasonResult.semanticApp,
+        ),
       );
-      _ingestIntoWorldModelSafely(() => _worldModel?.ingestBackendEngineering(backendEngineeringPlan));
+      _ingestIntoWorldModelSafely(
+        () => _worldModel?.ingestBackendEngineering(backendEngineeringPlan),
+      );
 
       // Step 7.9: Semantic Solution Architecture (Implementation Milestone
       // R17) — real, deterministic composition of the SAME
@@ -498,8 +525,13 @@ class AnythingKernel {
       // upstream dependency. REALITY before R17: frontend architecture was
       // never ingested into the World Graph at all (see
       // `SolutionArchitectureGraphBridge`'s own doc comment).
-      final solutionArchitecture = const SolutionArchitecturePlanner().plan(selectedSolution.architecture, backendEngineeringPlan);
-      _ingestIntoWorldModelSafely(() => _worldModel?.ingestSolutionArchitecture(solutionArchitecture));
+      final solutionArchitecture = const SolutionArchitecturePlanner().plan(
+        selectedSolution.architecture,
+        backendEngineeringPlan,
+      );
+      _ingestIntoWorldModelSafely(
+        () => _worldModel?.ingestSolutionArchitecture(solutionArchitecture),
+      );
 
       // Step 8: Convert to ExperienceSpec
       final spec = BlueprintToSpecConverter.convert(
@@ -536,11 +568,17 @@ class AnythingKernel {
         CanonicalImplementationContext(
           engineering: engineeringPlan.finalCandidate,
           backend: backendEngineeringPlan,
-          resolvedCapabilities: resolutions.map((r) => r.descriptor).whereType<CapabilityDescriptor>().toList(),
+          resolvedCapabilities: resolutions
+              .map((r) => r.descriptor)
+              .whereType<CapabilityDescriptor>()
+              .toList(),
           // Merges the caller-supplied list (R15, manual referenceUrls)
           // with whatever Step 5.5's autonomous discovery found (R16,
           // opt-in) — both compose, neither replaces the other.
-          corroboratingRecommendations: [...corroboratingRecommendations, ...autoDiscoveredRecommendations],
+          corroboratingRecommendations: [
+            ...corroboratingRecommendations,
+            ...autoDiscoveredRecommendations,
+          ],
           // Real, already-reasoned field/derived-value metadata
           // (Implementation Milestone R20) — `reasonResult.semanticApp` is
           // the SAME single reasoning call's output already used above
@@ -555,7 +593,11 @@ class AnythingKernel {
           semanticViews: reasonResult.semanticApp.views,
         ),
       );
-      _ingestIntoWorldModelSafely(() => _worldModel?.ingestCanonicalImplementation(canonicalImplementationModel));
+      _ingestIntoWorldModelSafely(
+        () => _worldModel?.ingestCanonicalImplementation(
+          canonicalImplementationModel,
+        ),
+      );
 
       // Step 8.6: Solution Execution Planner (Implementation Milestone
       // R18) — real, deterministic classification of R18's 12 requested
@@ -570,7 +612,9 @@ class AnythingKernel {
       // touched here (see docs/architecture/SOLUTION_EXECUTION_PLANNING.md
       // "Persistence" — cheap, deterministic, recomputed from data already
       // persisted via ArchitectureCandidate/BackendEngineeringPlan).
-      final executionStrategy = const SolutionExecutionPlanner().plan(solutionArchitecture);
+      final executionStrategy = const SolutionExecutionPlanner().plan(
+        solutionArchitecture,
+      );
 
       // Step 9: Build ExecutionPlan
       final plan = _buildPlan(spec);
@@ -638,7 +682,9 @@ class AnythingKernel {
   /// failure for one target, or for the whole step, never fails creation,
   /// matching this Kernel's other optional-enhancement contracts
   /// (`_ingestIntoWorldModelSafely`).
-  Future<List<SoftwareRecommendation>> _autoDiscoverSoftwareKnowledge(SemanticApp app) async {
+  Future<List<SoftwareRecommendation>> _autoDiscoverSoftwareKnowledge(
+    SemanticApp app,
+  ) async {
     final softwareCognition = _softwareCognition;
     final searchProvider = _knowledgeEngine.searchProvider;
     if (softwareCognition == null || searchProvider == null) return const [];
@@ -648,13 +694,17 @@ class AnythingKernel {
 
     for (final target in plan.actionableTargets) {
       try {
-        final searchResults = await searchProvider.search(target.query, maxResults: 3);
+        final searchResults = await searchProvider.search(
+          target.query,
+          maxResults: 3,
+        );
         for (final candidate in searchResults) {
           try {
-            final result = await softwareCognition.engine.understandRepositoryFromUrl(
-              candidate.url,
-              name: Uri.tryParse(candidate.url)?.host ?? candidate.url,
-            );
+            final result = await softwareCognition.engine
+                .understandRepositoryFromUrl(
+                  candidate.url,
+                  name: Uri.tryParse(candidate.url)?.host ?? candidate.url,
+                );
             if (result != null && result.isSound) soundResults.add(result);
           } catch (_) {
             // One candidate URL failing must never fail creation.
@@ -672,12 +722,17 @@ class AnythingKernel {
     final worldModel = _worldModel;
     if (worldModel != null) {
       for (final result in soundResults) {
-        _ingestIntoWorldModelSafely(() => softwareCognition.syncToWorldModel(worldModel, result.model));
+        _ingestIntoWorldModelSafely(
+          () => softwareCognition.syncToWorldModel(worldModel, result.model),
+        );
       }
     }
 
     final candidates = soundResults.map((r) => r.model).toList();
-    return softwareCognition.reasoner.reasonAboutRepositories(candidates).where((r) => r.accepted).toList();
+    return softwareCognition.reasoner
+        .reasonAboutRepositories(candidates)
+        .where((r) => r.accepted)
+        .toList();
   }
 
   /// Best-effort World Graph READ (Implementation Milestone R3): the
@@ -692,7 +747,10 @@ class AnythingKernel {
   Set<String> _priorCapabilityIdsSafely() {
     if (_worldModel == null) return const {};
     try {
-      return _worldModel.model.graph.nodesOfKind(WorldNodeKind.capability).map((n) => n.label).toSet();
+      return _worldModel.model.graph
+          .nodesOfKind(WorldNodeKind.capability)
+          .map((n) => n.label)
+          .toSet();
     } catch (_) {
       return const {};
     }

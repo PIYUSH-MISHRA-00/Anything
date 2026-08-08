@@ -106,9 +106,12 @@ class LifecyclePolicy {
   });
 
   /// Nothing is ever reclaimed by policy.
-  static const LifecyclePolicy unbounded = LifecyclePolicy(retentionClass: RetentionClass.durable);
+  static const LifecyclePolicy unbounded = LifecyclePolicy(
+    retentionClass: RetentionClass.durable,
+  );
 
-  bool get isBounded => maxEntries != null || maxBytes != null || maxAge != null;
+  bool get isBounded =>
+      maxEntries != null || maxBytes != null || maxAge != null;
 }
 
 /// One record offered to the engine for a decision. Deliberately minimal: an
@@ -136,7 +139,11 @@ class LifecycleDecision {
   final LifecycleAction action;
   final String reason;
 
-  const LifecycleDecision({required this.id, required this.action, required this.reason});
+  const LifecycleDecision({
+    required this.id,
+    required this.action,
+    required this.reason,
+  });
 
   bool get reclaims => action != LifecycleAction.retain;
 }
@@ -147,16 +154,32 @@ class LifecycleEvaluation {
   final LifecyclePolicy policy;
   final List<LifecycleDecision> decisions;
 
-  const LifecycleEvaluation({required this.domain, required this.policy, required this.decisions});
+  const LifecycleEvaluation({
+    required this.domain,
+    required this.policy,
+    required this.decisions,
+  });
 
   /// Ids the caller should remove from its own store, in the order decided.
-  List<String> get reclaimedIds => [for (final d in decisions) if (d.reclaims) d.id];
+  List<String> get reclaimedIds => [
+    for (final d in decisions)
+      if (d.reclaims) d.id,
+  ];
 
-  List<String> get retainedIds => [for (final d in decisions) if (!d.reclaims) d.id];
+  List<String> get retainedIds => [
+    for (final d in decisions)
+      if (!d.reclaims) d.id,
+  ];
 
-  List<String> get expiredIds => [for (final d in decisions) if (d.action == LifecycleAction.expire) d.id];
+  List<String> get expiredIds => [
+    for (final d in decisions)
+      if (d.action == LifecycleAction.expire) d.id,
+  ];
 
-  List<String> get evictedIds => [for (final d in decisions) if (d.action == LifecycleAction.evict) d.id];
+  List<String> get evictedIds => [
+    for (final d in decisions)
+      if (d.action == LifecycleAction.evict) d.id,
+  ];
 
   bool get reclaimsAnything => decisions.any((d) => d.reclaims);
 }
@@ -172,7 +195,14 @@ abstract final class LifecycleDomain {
   static const String temporaryFiles = 'temporary_files';
   static const String exports = 'exports';
 
-  static const List<String> all = [knowledge, intents, activity, notifications, temporaryFiles, exports];
+  static const List<String> all = [
+    knowledge,
+    intents,
+    activity,
+    notifications,
+    temporaryFiles,
+    exports,
+  ];
 }
 
 class RetentionPolicyEngine {
@@ -190,9 +220,18 @@ class RetentionPolicyEngine {
       maxBytes: 20 * 1024 * 1024,
       maxAge: Duration(days: 30),
     ),
-    LifecycleDomain.intents: LifecyclePolicy(retentionClass: RetentionClass.bounded, maxEntries: 100),
-    LifecycleDomain.activity: LifecyclePolicy(retentionClass: RetentionClass.bounded, maxEntries: 200),
-    LifecycleDomain.notifications: LifecyclePolicy(retentionClass: RetentionClass.bounded, maxEntries: 200),
+    LifecycleDomain.intents: LifecyclePolicy(
+      retentionClass: RetentionClass.bounded,
+      maxEntries: 100,
+    ),
+    LifecycleDomain.activity: LifecyclePolicy(
+      retentionClass: RetentionClass.bounded,
+      maxEntries: 200,
+    ),
+    LifecycleDomain.notifications: LifecyclePolicy(
+      retentionClass: RetentionClass.bounded,
+      maxEntries: 200,
+    ),
     LifecycleDomain.temporaryFiles: LifecyclePolicy(
       retentionClass: RetentionClass.ephemeral,
       maxAge: Duration(days: 1),
@@ -210,7 +249,8 @@ class RetentionPolicyEngine {
   /// The policy for [domain]. An unregistered domain is `unbounded` — a
   /// deliberate fail-safe: an unknown domain must never have its data silently
   /// reclaimed by a default nobody chose.
-  LifecyclePolicy policyFor(String domain) => policies[domain] ?? LifecyclePolicy.unbounded;
+  LifecyclePolicy policyFor(String domain) =>
+      policies[domain] ?? LifecyclePolicy.unbounded;
 
   /// Evaluates [candidates] against [domain]'s policy.
   ///
@@ -233,10 +273,11 @@ class RetentionPolicyEngine {
     final policy = policyFor(domain);
     final at = now ?? DateTime.now();
 
-    final ordered = [...candidates]..sort((a, b) {
-      final byTime = b.timestamp.compareTo(a.timestamp);
-      return byTime != 0 ? byTime : a.id.compareTo(b.id);
-    });
+    final ordered = [...candidates]
+      ..sort((a, b) {
+        final byTime = b.timestamp.compareTo(a.timestamp);
+        return byTime != 0 ? byTime : a.id.compareTo(b.id);
+      });
 
     final decisions = <LifecycleDecision>[];
     var keptCount = 0;
@@ -244,54 +285,68 @@ class RetentionPolicyEngine {
 
     for (final candidate in ordered) {
       if (candidate.isProtected) {
-        decisions.add(LifecycleDecision(
-          id: candidate.id,
-          action: LifecycleAction.retain,
-          reason: 'protected — exempt from $domain retention',
-        ));
+        decisions.add(
+          LifecycleDecision(
+            id: candidate.id,
+            action: LifecycleAction.retain,
+            reason: 'protected — exempt from $domain retention',
+          ),
+        );
         continue;
       }
 
       final maxAge = policy.maxAge;
       if (maxAge != null && at.difference(candidate.timestamp) > maxAge) {
-        decisions.add(LifecycleDecision(
-          id: candidate.id,
-          action: LifecycleAction.expire,
-          reason: 'older than ${maxAge.inDays}d $domain maximum age',
-        ));
+        decisions.add(
+          LifecycleDecision(
+            id: candidate.id,
+            action: LifecycleAction.expire,
+            reason: 'older than ${maxAge.inDays}d $domain maximum age',
+          ),
+        );
         continue;
       }
 
       final maxEntries = policy.maxEntries;
       if (maxEntries != null && keptCount >= maxEntries) {
-        decisions.add(LifecycleDecision(
-          id: candidate.id,
-          action: LifecycleAction.evict,
-          reason: 'beyond $domain maximum of $maxEntries entries',
-        ));
+        decisions.add(
+          LifecycleDecision(
+            id: candidate.id,
+            action: LifecycleAction.evict,
+            reason: 'beyond $domain maximum of $maxEntries entries',
+          ),
+        );
         continue;
       }
 
       final maxBytes = policy.maxBytes;
       final size = candidate.sizeBytes ?? 0;
       if (maxBytes != null && keptBytes + size > maxBytes) {
-        decisions.add(LifecycleDecision(
-          id: candidate.id,
-          action: LifecycleAction.evict,
-          reason: 'beyond $domain maximum of $maxBytes bytes',
-        ));
+        decisions.add(
+          LifecycleDecision(
+            id: candidate.id,
+            action: LifecycleAction.evict,
+            reason: 'beyond $domain maximum of $maxBytes bytes',
+          ),
+        );
         continue;
       }
 
       keptCount++;
       keptBytes += size;
-      decisions.add(LifecycleDecision(
-        id: candidate.id,
-        action: LifecycleAction.retain,
-        reason: 'within $domain retention budget',
-      ));
+      decisions.add(
+        LifecycleDecision(
+          id: candidate.id,
+          action: LifecycleAction.retain,
+          reason: 'within $domain retention budget',
+        ),
+      );
     }
 
-    return LifecycleEvaluation(domain: domain, policy: policy, decisions: decisions);
+    return LifecycleEvaluation(
+      domain: domain,
+      policy: policy,
+      decisions: decisions,
+    );
   }
 }

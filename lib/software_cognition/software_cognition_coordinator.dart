@@ -34,9 +34,11 @@ class SoftwareCognitionCoordinator {
   final SoftwareCognitionEngine _engine;
   final SoftwareReasoner _reasoner;
 
-  SoftwareCognitionCoordinator({SoftwareCognitionEngine? engine, SoftwareReasoner reasoner = const SoftwareReasoner()})
-    : _engine = engine ?? SoftwareCognitionEngine(),
-      _reasoner = reasoner;
+  SoftwareCognitionCoordinator({
+    SoftwareCognitionEngine? engine,
+    SoftwareReasoner reasoner = const SoftwareReasoner(),
+  }) : _engine = engine ?? SoftwareCognitionEngine(),
+       _reasoner = reasoner;
 
   SoftwareCognitionEngine get engine => _engine;
 
@@ -78,18 +80,26 @@ class SoftwareCognitionCoordinator {
       license: model.metadata.provenance.license,
       trust: const TrustMetadata(
         level: TrustLevel.unknown,
-        reason: 'Software Cognition understanding, distilled via WebWeaveX; not independently verified.',
+        reason:
+            'Software Cognition understanding, distilled via WebWeaveX; not independently verified.',
         confidence: 0.5,
       ),
-      freshness: FreshnessMetadata(lastModified: model.metadata.provenance.retrievedAt),
-      ranking: const RankingMetadata(relevanceScore: 0.5, authorityScore: 0.5, freshnessScore: 0.5),
+      freshness: FreshnessMetadata(
+        lastModified: model.metadata.provenance.retrievedAt,
+      ),
+      ranking: const RankingMetadata(
+        relevanceScore: 0.5,
+        authorityScore: 0.5,
+        freshnessScore: 0.5,
+      ),
     );
   }
 
   KnowledgeResource? packageToKnowledgeResource(PackageCognitionResult result) {
     if (!result.isSound) return null;
     final model = result.model;
-    final content = 'Package: ${model.metadata.name}\n'
+    final content =
+        'Package: ${model.metadata.name}\n'
         'Description: ${model.metadata.description}\n'
         'Capabilities: ${model.capabilities.map((c) => c.name).join(', ')}';
     final hash = KnowledgeResource.computeHash(content);
@@ -114,21 +124,34 @@ class SoftwareCognitionCoordinator {
       license: model.metadata.provenance.license,
       trust: const TrustMetadata(
         level: TrustLevel.unknown,
-        reason: 'Software Cognition understanding, distilled via WebWeaveX; not independently verified.',
+        reason:
+            'Software Cognition understanding, distilled via WebWeaveX; not independently verified.',
         confidence: 0.5,
       ),
-      freshness: FreshnessMetadata(lastModified: model.metadata.provenance.retrievedAt),
-      ranking: const RankingMetadata(relevanceScore: 0.5, authorityScore: 0.5, freshnessScore: 0.5),
+      freshness: FreshnessMetadata(
+        lastModified: model.metadata.provenance.retrievedAt,
+      ),
+      ranking: const RankingMetadata(
+        relevanceScore: 0.5,
+        authorityScore: 0.5,
+        freshnessScore: 0.5,
+      ),
     );
   }
 
   /// Bridges an acquired repository's understanding into the real World
   /// Graph — the "Software becomes World Graph nodes" requirement.
-  void syncToWorldModel(WorldModelCoordinator worldModel, RepositoryModel model) {
+  void syncToWorldModel(
+    WorldModelCoordinator worldModel,
+    RepositoryModel model,
+  ) {
     worldModel.ingestSoftwareGraph(model.graph.graph);
   }
 
-  void syncPackageToWorldModel(WorldModelCoordinator worldModel, PackageModel model) {
+  void syncPackageToWorldModel(
+    WorldModelCoordinator worldModel,
+    PackageModel model,
+  ) {
     worldModel.ingestSoftwareGraph(model.graph.graph);
   }
 
@@ -140,14 +163,23 @@ class SoftwareCognitionCoordinator {
   /// parallel one. Deliberately additive: a caller merges this list with
   /// `EvolutionObserver.observe()`'s own output; it does not modify
   /// EvolutionObserver or EvolutionContext.
-  List<EvolutionOpportunity> suggestEvolutionOpportunities(List<RepositoryModel> acquired, EvolutionContext context) {
+  List<EvolutionOpportunity> suggestEvolutionOpportunities(
+    List<RepositoryModel> acquired,
+    EvolutionContext context,
+  ) {
     final declaredCapabilities = context.blueprint.requiredCapabilities.toSet();
-    final recommendations = _reasoner.reasonAboutRepositories(acquired).where((r) => r.accepted);
+    final recommendations = _reasoner
+        .reasonAboutRepositories(acquired)
+        .where((r) => r.accepted);
 
     final opportunities = <EvolutionOpportunity>[];
     for (final recommendation in recommendations) {
-      final framework = recommendation.tracedTo.isNotEmpty ? recommendation.tracedTo.first.sourceArtifact : '';
-      if (framework.isEmpty || declaredCapabilities.contains(framework)) continue;
+      final framework = recommendation.tracedTo.isNotEmpty
+          ? recommendation.tracedTo.first.sourceArtifact
+          : '';
+      if (framework.isEmpty || declaredCapabilities.contains(framework)) {
+        continue;
+      }
       opportunities.add(
         EvolutionOpportunity(
           id: 'software-cognition-$framework',
@@ -155,7 +187,10 @@ class SoftwareCognitionCoordinator {
           description: recommendation.description,
           reason: EvolutionReason(
             summary: recommendation.description,
-            evidence: EvolutionEvidence(affectedGraph: 'SoftwareCognition', affectedNodeId: framework),
+            evidence: EvolutionEvidence(
+              affectedGraph: 'SoftwareCognition',
+              affectedNodeId: framework,
+            ),
             confidence: recommendation.confidence,
           ),
         ),

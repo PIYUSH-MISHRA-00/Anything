@@ -16,7 +16,11 @@ class EntityResolver {
   /// id elsewhere in the codebase (capability ids, experience ids).
   /// [structuralSignature] is used otherwise — sorted, so field order
   /// never affects the resulting identity.
-  EntityIdentity resolve(WorldNodeKind kind, {String? stableId, List<String> structuralSignature = const []}) {
+  EntityIdentity resolve(
+    WorldNodeKind kind, {
+    String? stableId,
+    List<String> structuralSignature = const [],
+  }) {
     if (stableId != null && stableId.isNotEmpty) {
       return EntityIdentity.stable(kind, stableId);
     }

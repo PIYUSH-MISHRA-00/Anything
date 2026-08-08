@@ -33,7 +33,11 @@ class GeneratorVersion {
   final int minor;
   final int patch;
 
-  const GeneratorVersion({required this.major, required this.minor, required this.patch});
+  const GeneratorVersion({
+    required this.major,
+    required this.minor,
+    required this.patch,
+  });
 
   @override
   String toString() => '$major.$minor.$patch';
@@ -45,7 +49,13 @@ class GeneratorVersion {
 /// parallel capability taxonomy (this is a DIFFERENT concern —
 /// "what artifact kinds can this generator emit" — not an Anything
 /// runtime capability).
-enum GeneratorCapability { sourceFiles, configuration, manifests, buildInstructions, documentation }
+enum GeneratorCapability {
+  sourceFiles,
+  configuration,
+  manifests,
+  buildInstructions,
+  documentation,
+}
 
 /// Real, small identity for a generator — id/name/version/declared
 /// capabilities. Never a language-specific type (e.g. no `dartVersion`,
@@ -58,7 +68,12 @@ class GeneratorMetadata {
   final GeneratorVersion version;
   final List<GeneratorCapability> capabilities;
 
-  const GeneratorMetadata({required this.id, required this.name, required this.version, this.capabilities = const []});
+  const GeneratorMetadata({
+    required this.id,
+    required this.name,
+    required this.version,
+    this.capabilities = const [],
+  });
 }
 
 /// Identifies WHAT is being generated for — a real, opaque, language-
@@ -93,7 +108,11 @@ class GeneratorContext {
   final GeneratorTarget target;
   final GeneratorOptions options;
 
-  const GeneratorContext({required this.buildGraph, required this.target, this.options = GeneratorOptions.empty});
+  const GeneratorContext({
+    required this.buildGraph,
+    required this.target,
+    this.options = GeneratorOptions.empty,
+  });
 }
 
 /// The ONE canonical interface. Every real, future language generator

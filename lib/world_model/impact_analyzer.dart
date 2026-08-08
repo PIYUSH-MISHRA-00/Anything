@@ -16,18 +16,24 @@ class ImpactReport {
 
   const ImpactReport({required this.subject, this.impactedNodes = const []});
 
-  List<WorldNode> ofKind(WorldNodeKind kind) => impactedNodes.where((n) => n.kind == kind).toList();
+  List<WorldNode> ofKind(WorldNodeKind kind) =>
+      impactedNodes.where((n) => n.kind == kind).toList();
 }
 
 class ImpactAnalyzer {
   final GraphTraversal _traversal;
 
-  const ImpactAnalyzer({GraphTraversal traversal = const GraphTraversal()}) : _traversal = traversal;
+  const ImpactAnalyzer({GraphTraversal traversal = const GraphTraversal()})
+    : _traversal = traversal;
 
   /// Everything that would be affected if [subject] changed or was
   /// removed — a real reverse traversal over contains/references/
   /// dependsOn/consumes/produces edges, never a fabricated answer.
-  ImpactReport analyze(WorldGraph graph, EntityIdentity subject, {int maxDepth = 5}) {
+  ImpactReport analyze(
+    WorldGraph graph,
+    EntityIdentity subject, {
+    int maxDepth = 5,
+  }) {
     final steps = _traversal.reverse(
       graph,
       subject,
@@ -41,7 +47,10 @@ class ImpactAnalyzer {
         RelationshipKind.extends_,
       },
     );
-    final nodes = steps.map((s) => graph.nodeById(s.nodeId)).whereType<WorldNode>().toList();
+    final nodes = steps
+        .map((s) => graph.nodeById(s.nodeId))
+        .whereType<WorldNode>()
+        .toList();
     return ImpactReport(subject: subject, impactedNodes: nodes);
   }
 }

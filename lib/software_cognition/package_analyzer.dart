@@ -59,7 +59,9 @@ class PackageAnalyzer {
     var sectionIndent = -1;
 
     for (final rawLine in lines) {
-      if (rawLine.trim().isEmpty || rawLine.trimLeft().startsWith('#')) continue;
+      if (rawLine.trim().isEmpty || rawLine.trimLeft().startsWith('#')) {
+        continue;
+      }
       final indent = rawLine.length - rawLine.trimLeft().length;
       final trimmed = rawLine.trim();
 
@@ -74,20 +76,34 @@ class PackageAnalyzer {
         inDependencies = false;
         continue;
       }
-      if (indent != sectionIndent) continue; // nested map (e.g. sdk: flutter) — not a dependency name line
+      if (indent != sectionIndent) {
+        continue; // nested map (e.g. sdk: flutter) — not a dependency name line
+      }
 
       final colon = trimmed.indexOf(':');
       if (colon <= 0) continue;
       final name = trimmed.substring(0, colon).trim();
       final rest = trimmed.substring(colon + 1).trim();
-      deps.add(PackageDependency(name: name, versionConstraint: rest.isEmpty ? null : rest));
+      deps.add(
+        PackageDependency(
+          name: name,
+          versionConstraint: rest.isEmpty ? null : rest,
+        ),
+      );
     }
     return deps;
   }
 
-  PackageModel analyzePubspec({required String pubspecSource, required PackageMetadata metadata}) {
+  PackageModel analyzePubspec({
+    required String pubspecSource,
+    required PackageMetadata metadata,
+  }) {
     final dependencies = parsePubspecDependencies(pubspecSource);
-    return _build(metadata: metadata, dependencies: dependencies, descriptionText: metadata.description);
+    return _build(
+      metadata: metadata,
+      dependencies: dependencies,
+      descriptionText: metadata.description,
+    );
   }
 
   /// Understands a package from free text (e.g. a pub.dev package page's
@@ -96,9 +112,18 @@ class PackageAnalyzer {
   /// text itself, via WebWeaveX's own deterministic `analyze`/
   /// `compileDocument` where applicable; never fabricates a dependency
   /// list from a description.
-  PackageModel analyzeFromDescription({required String text, required PackageMetadata metadata}) {
-    wwx.compileDocument(text); // real WebWeaveX document IR — establishes the text is genuinely processed, not skipped
-    return _build(metadata: metadata, dependencies: const [], descriptionText: text);
+  PackageModel analyzeFromDescription({
+    required String text,
+    required PackageMetadata metadata,
+  }) {
+    wwx.compileDocument(
+      text,
+    ); // real WebWeaveX document IR — establishes the text is genuinely processed, not skipped
+    return _build(
+      metadata: metadata,
+      dependencies: const [],
+      descriptionText: text,
+    );
   }
 
   PackageModel _build({
@@ -113,7 +138,13 @@ class PackageAnalyzer {
       final capability = _dependencyCapabilities[dep.name];
       if (capability != null) {
         capabilities.add(
-          PackageCapability(name: capability, evidence: SoftwareEvidence(sourceUrl: metadata.provenance.sourceUrl, sourceArtifact: dep.name)),
+          PackageCapability(
+            name: capability,
+            evidence: SoftwareEvidence(
+              sourceUrl: metadata.provenance.sourceUrl,
+              sourceArtifact: dep.name,
+            ),
+          ),
         );
       }
     }
@@ -121,20 +152,54 @@ class PackageAnalyzer {
       if (dependencies.any((d) => d.name == entry.key)) continue;
       if (lowerText.contains(entry.key)) {
         capabilities.add(
-          PackageCapability(name: entry.value, evidence: SoftwareEvidence(sourceUrl: metadata.provenance.sourceUrl, sourceArtifact: entry.key)),
+          PackageCapability(
+            name: entry.value,
+            evidence: SoftwareEvidence(
+              sourceUrl: metadata.provenance.sourceUrl,
+              sourceArtifact: entry.key,
+            ),
+          ),
         );
       }
     }
 
-    final packageIdentity = SoftwareIdentity.stable(SoftwareNodeKind.package, metadata.name);
-    final nodes = <SoftwareNode>[SoftwareNode(identity: packageIdentity, kind: SoftwareNodeKind.package, label: metadata.name)];
+    final packageIdentity = SoftwareIdentity.stable(
+      SoftwareNodeKind.package,
+      metadata.name,
+    );
+    final nodes = <SoftwareNode>[
+      SoftwareNode(
+        identity: packageIdentity,
+        kind: SoftwareNodeKind.package,
+        label: metadata.name,
+      ),
+    ];
     final edges = <SoftwareEdge>[];
-    final evidence = SoftwareEvidence(sourceUrl: metadata.provenance.sourceUrl, sourceArtifact: metadata.name);
+    final evidence = SoftwareEvidence(
+      sourceUrl: metadata.provenance.sourceUrl,
+      sourceArtifact: metadata.name,
+    );
 
     for (final dep in dependencies) {
-      final depIdentity = SoftwareIdentity.stable(SoftwareNodeKind.package, dep.name);
-      nodes.add(SoftwareNode(identity: depIdentity, kind: SoftwareNodeKind.package, label: dep.name));
-      edges.add(SoftwareEdge(fromId: packageIdentity, toId: depIdentity, kind: SoftwareRelationshipKind.dependsOn, evidence: evidence));
+      final depIdentity = SoftwareIdentity.stable(
+        SoftwareNodeKind.package,
+        dep.name,
+      );
+      nodes.add(
+        SoftwareNode(
+          identity: depIdentity,
+          kind: SoftwareNodeKind.package,
+          label: dep.name,
+        ),
+      );
+      edges.add(
+        SoftwareEdge(
+          fromId: packageIdentity,
+          toId: depIdentity,
+          kind: SoftwareRelationshipKind.dependsOn,
+          evidence: evidence,
+        ),
+      );
     }
 
     return PackageModel(
@@ -143,8 +208,12 @@ class PackageAnalyzer {
       capabilities: capabilities,
       graph: PackageGraph(SemanticSoftwareGraph(nodes: nodes, edges: edges)),
       confidence: SoftwareConfidence(
-        score: dependencies.isNotEmpty ? 0.8 : (capabilities.isNotEmpty ? 0.4 : 0.1),
-        reason: dependencies.isNotEmpty ? 'parsed real pubspec dependency declarations' : 'inferred from description text only',
+        score: dependencies.isNotEmpty
+            ? 0.8
+            : (capabilities.isNotEmpty ? 0.4 : 0.1),
+        reason: dependencies.isNotEmpty
+            ? 'parsed real pubspec dependency declarations'
+            : 'inferred from description text only',
       ),
     );
   }

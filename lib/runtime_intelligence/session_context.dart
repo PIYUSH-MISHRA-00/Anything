@@ -10,7 +10,12 @@ class SessionContext {
   final DateTime startedAt;
   final DateTime? endedAt;
 
-  const SessionContext({required this.sessionId, this.experienceId, required this.startedAt, this.endedAt});
+  const SessionContext({
+    required this.sessionId,
+    this.experienceId,
+    required this.startedAt,
+    this.endedAt,
+  });
 
   bool get isActive => endedAt == null;
 }

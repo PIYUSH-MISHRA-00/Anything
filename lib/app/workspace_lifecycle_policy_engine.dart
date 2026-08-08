@@ -45,7 +45,11 @@ class RuntimePolicyDecision {
   final String? sessionId;
   final String reason;
 
-  const RuntimePolicyDecision({required this.action, this.sessionId, required this.reason});
+  const RuntimePolicyDecision({
+    required this.action,
+    this.sessionId,
+    required this.reason,
+  });
 }
 
 class WorkspaceLifecyclePolicyEngine {
@@ -60,12 +64,22 @@ class WorkspaceLifecyclePolicyEngine {
     switch (state) {
       case AppLifecycleState.paused:
       case AppLifecycleState.hidden:
-        return RuntimePolicyDecision(action: RuntimePolicyAction.pause, reason: 'app backgrounded ($state) — Background Pause policy');
+        return RuntimePolicyDecision(
+          action: RuntimePolicyAction.pause,
+          reason: 'app backgrounded ($state) — Background Pause policy',
+        );
       case AppLifecycleState.resumed:
-        return const RuntimePolicyDecision(action: RuntimePolicyAction.resume, reason: 'app foregrounded — Foreground Resume / Automatic Resume policy');
+        return const RuntimePolicyDecision(
+          action: RuntimePolicyAction.resume,
+          reason:
+              'app foregrounded — Foreground Resume / Automatic Resume policy',
+        );
       case AppLifecycleState.inactive:
       case AppLifecycleState.detached:
-        return RuntimePolicyDecision(action: RuntimePolicyAction.noAction, reason: 'transient/detached state ($state) — no policy applies');
+        return RuntimePolicyDecision(
+          action: RuntimePolicyAction.noAction,
+          reason: 'transient/detached state ($state) — no policy applies',
+        );
     }
   }
 
@@ -76,11 +90,18 @@ class WorkspaceLifecyclePolicyEngine {
   /// engine's decision logic scales to N real sessions — see this file's
   /// own doc comment / KNOWN LIMITATIONS for why production wiring does
   /// not yet auto-apply these across a multi-runtime registry.
-  List<RuntimePolicyDecision> evaluateWorkspaceSnapshot(WorkspaceRuntimeSnapshot snapshot) {
+  List<RuntimePolicyDecision> evaluateWorkspaceSnapshot(
+    WorkspaceRuntimeSnapshot snapshot,
+  ) {
     return [
       for (final s in snapshot.backgroundSessions)
         if (s.runtimeState?.status == SessionStatus.running)
-          RuntimePolicyDecision(action: RuntimePolicyAction.pause, sessionId: s.sessionId, reason: 'session ${s.sessionId} is open but not the active workspace session — Inactive Runtime policy'),
+          RuntimePolicyDecision(
+            action: RuntimePolicyAction.pause,
+            sessionId: s.sessionId,
+            reason:
+                'session ${s.sessionId} is open but not the active workspace session — Inactive Runtime policy',
+          ),
     ];
   }
 
@@ -88,7 +109,10 @@ class WorkspaceLifecyclePolicyEngine {
   /// — never owns/constructs controllers itself (no controller registry, no
   /// second runtime/runtime-controller concept; the caller supplies the
   /// real controller for the real session/runtime this decision is about).
-  Future<void> apply(RuntimePolicyDecision decision, ExperienceRuntimeController controller) async {
+  Future<void> apply(
+    RuntimePolicyDecision decision,
+    ExperienceRuntimeController controller,
+  ) async {
     switch (decision.action) {
       case RuntimePolicyAction.pause:
         controller.pause();
@@ -103,9 +127,15 @@ class WorkspaceLifecyclePolicyEngine {
         return; // a real no-op — never a fabricated transition/event.
     }
 
-    final id = decision.sessionId ?? controller.experienceId ?? controller.currentSession?.experienceId;
+    final id =
+        decision.sessionId ??
+        controller.experienceId ??
+        controller.currentSession?.experienceId;
     if (eventPublisher != null && id != null) {
-      eventPublisher!.publishWorkspaceUpdated('policy_${decision.action.name}', id);
+      eventPublisher!.publishWorkspaceUpdated(
+        'policy_${decision.action.name}',
+        id,
+      );
     }
   }
 }

@@ -18,5 +18,8 @@ class GraphResolver {
 
   bool exists(EntityIdentity identity) => resolveEntity(identity) != null;
 
-  List<WorldEdge> resolveRelationships(EntityIdentity identity) => [...graph.edgesFrom(identity), ...graph.edgesTo(identity)];
+  List<WorldEdge> resolveRelationships(EntityIdentity identity) => [
+    ...graph.edgesFrom(identity),
+    ...graph.edgesTo(identity),
+  ];
 }

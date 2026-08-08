@@ -17,7 +17,11 @@ class AutomationStepReport {
   final AutomationStepEligibility eligibility;
   final String reason;
 
-  const AutomationStepReport({required this.step, required this.eligibility, required this.reason});
+  const AutomationStepReport({
+    required this.step,
+    required this.eligibility,
+    required this.reason,
+  });
 }
 
 class AutomationExecutionReport {
@@ -26,7 +30,8 @@ class AutomationExecutionReport {
 
   const AutomationExecutionReport({required this.plan, required this.steps});
 
-  bool get allEligible => steps.every((s) => s.eligibility == AutomationStepEligibility.eligible);
+  bool get allEligible =>
+      steps.every((s) => s.eligibility == AutomationStepEligibility.eligible);
 }
 
 class AutomationExecutor {
@@ -34,8 +39,13 @@ class AutomationExecutor {
 
   /// Validates structural soundness only — never invokes a capability,
   /// never schedules anything, never runs any code.
-  AutomationExecutionReport validate(AutomationPlan plan, CapabilityRegistry registry) {
-    final resolutions = registry.resolve(plan.steps.map((s) => s.capabilityId).toList());
+  AutomationExecutionReport validate(
+    AutomationPlan plan,
+    CapabilityRegistry registry,
+  ) {
+    final resolutions = registry.resolve(
+      plan.steps.map((s) => s.capabilityId).toList(),
+    );
     final resolutionById = {for (final r in resolutions) r.capabilityId: r};
 
     final reports = plan.steps.map((step) {
@@ -43,8 +53,12 @@ class AutomationExecutor {
       final eligible = resolution?.isResolved ?? false;
       return AutomationStepReport(
         step: step,
-        eligibility: eligible ? AutomationStepEligibility.eligible : AutomationStepEligibility.blockedMissingCapability,
-        reason: eligible ? 'Capability "${step.capabilityId}" is registered and available.' : (resolution?.reason ?? 'Capability not registered.'),
+        eligibility: eligible
+            ? AutomationStepEligibility.eligible
+            : AutomationStepEligibility.blockedMissingCapability,
+        reason: eligible
+            ? 'Capability "${step.capabilityId}" is registered and available.'
+            : (resolution?.reason ?? 'Capability not registered.'),
       );
     }).toList();
 

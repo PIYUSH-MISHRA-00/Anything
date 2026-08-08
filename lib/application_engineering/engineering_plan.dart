@@ -8,7 +8,11 @@ library;
 import 'engineering_candidate.dart';
 import 'engineering_review.dart';
 
-enum EngineeringRefinementOutcome { approved, refinementRequired, budgetExhausted }
+enum EngineeringRefinementOutcome {
+  approved,
+  refinementRequired,
+  budgetExhausted,
+}
 
 class EngineeringPlan {
   final EngineeringCandidate finalCandidate;

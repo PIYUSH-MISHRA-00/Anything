@@ -36,7 +36,11 @@ class CompilerPipelineOutcome {
   final GenerationResult result;
   final Duration latency;
 
-  const CompilerPipelineOutcome({required this.package, required this.result, required this.latency});
+  const CompilerPipelineOutcome({
+    required this.package,
+    required this.result,
+    required this.latency,
+  });
 
   bool get succeeded => package != null && !result.hasErrors;
 }
@@ -70,7 +74,12 @@ GeneratorPipelineOutcome runGeneratorPipeline(
   final stopwatch = Stopwatch()..start();
   final buildGraph = const BuildGraphBuilder().build(model);
   const pipeline = GenerationPipeline();
-  final result = pipeline.run(buildGraph: buildGraph, generator: generator, target: GeneratorTarget(id: id, name: name), options: options);
+  final result = pipeline.run(
+    buildGraph: buildGraph,
+    generator: generator,
+    target: GeneratorTarget(id: id, name: name),
+    options: options,
+  );
   stopwatch.stop();
   return GeneratorPipelineOutcome(result: result, latency: stopwatch.elapsed);
 }
@@ -79,15 +88,34 @@ GeneratorPipelineOutcome runGeneratorPipeline(
 /// real, existing `RuntimeExperienceGenerator` (R13) and decodes its one
 /// aggregate artifact back into a real [ExperiencePackage]. Behavior
 /// unchanged since R19 — every existing caller/test is unaffected.
-CompilerPipelineOutcome runCompilerPipeline(CanonicalImplementationModel model, {required String id, required String name}) {
-  final outcome = runGeneratorPipeline(model, generator: const RuntimeExperienceGenerator(), id: id, name: name);
+CompilerPipelineOutcome runCompilerPipeline(
+  CanonicalImplementationModel model, {
+  required String id,
+  required String name,
+}) {
+  final outcome = runGeneratorPipeline(
+    model,
+    generator: const RuntimeExperienceGenerator(),
+    id: id,
+    name: name,
+  );
   final result = outcome.result;
 
   if (result.hasErrors || result.allArtifacts.isEmpty) {
-    return CompilerPipelineOutcome(package: null, result: result, latency: outcome.latency);
+    return CompilerPipelineOutcome(
+      package: null,
+      result: result,
+      latency: outcome.latency,
+    );
   }
 
   final artifact = result.allArtifacts.first;
-  final package = ExperiencePackage.fromJson(jsonDecode(artifact.content!) as Map<String, dynamic>);
-  return CompilerPipelineOutcome(package: package, result: result, latency: outcome.latency);
+  final package = ExperiencePackage.fromJson(
+    jsonDecode(artifact.content!) as Map<String, dynamic>,
+  );
+  return CompilerPipelineOutcome(
+    package: package,
+    result: result,
+    latency: outcome.latency,
+  );
 }

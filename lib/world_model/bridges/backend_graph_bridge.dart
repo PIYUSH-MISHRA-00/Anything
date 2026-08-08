@@ -22,27 +22,49 @@ import '../world_types.dart';
 class BackendGraphBridge {
   final EntityResolver _resolver;
 
-  const BackendGraphBridge({EntityResolver resolver = const EntityResolver()}) : _resolver = resolver;
+  const BackendGraphBridge({EntityResolver resolver = const EntityResolver()})
+    : _resolver = resolver;
 
   GraphUpdate bridge(BackendEngineeringPlan plan) {
     final nodes = <WorldNode>[];
     final edges = <WorldEdge>[];
 
     for (final table in plan.database.tables) {
-      nodes.add(WorldNode(identity: _resolver.resolve(WorldNodeKind.entity, stableId: table.id), kind: WorldNodeKind.entity, label: table.name));
+      nodes.add(
+        WorldNode(
+          identity: _resolver.resolve(WorldNodeKind.entity, stableId: table.id),
+          kind: WorldNodeKind.entity,
+          label: table.name,
+        ),
+      );
     }
 
     for (final endpoint in plan.api.endpoints) {
-      final endpointIdentity = _resolver.resolve(WorldNodeKind.backendEndpoint, stableId: endpoint.id);
-      nodes.add(WorldNode(identity: endpointIdentity, kind: WorldNodeKind.backendEndpoint, label: '${endpoint.method.name.toUpperCase()} ${endpoint.path}'));
+      final endpointIdentity = _resolver.resolve(
+        WorldNodeKind.backendEndpoint,
+        stableId: endpoint.id,
+      );
+      nodes.add(
+        WorldNode(
+          identity: endpointIdentity,
+          kind: WorldNodeKind.backendEndpoint,
+          label: '${endpoint.method.name.toUpperCase()} ${endpoint.path}',
+        ),
+      );
 
-      final entityIdentity = _resolver.resolve(WorldNodeKind.entity, stableId: endpoint.entityId);
+      final entityIdentity = _resolver.resolve(
+        WorldNodeKind.entity,
+        stableId: endpoint.entityId,
+      );
       edges.add(
         WorldEdge(
           fromId: endpointIdentity,
           toId: entityIdentity,
           kind: RelationshipKind.references,
-          evidence: const GraphEvidence(sourceGraph: 'BackendEngineering', sourceNodeId: 'api'),
+          evidence: const GraphEvidence(
+            sourceGraph: 'BackendEngineering',
+            sourceNodeId: 'api',
+          ),
         ),
       );
     }

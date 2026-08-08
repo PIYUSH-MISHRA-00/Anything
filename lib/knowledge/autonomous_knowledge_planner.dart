@@ -28,7 +28,13 @@ import '../synthesis/application_reasoner.dart' show SemanticApp;
 /// Pipeline A's job, `KnowledgeAcquisitionEngine`, already autonomous
 /// since before this milestone). [documentation]/[api]/[general] targets
 /// are still planned and ranked for visibility, honestly left unactioned.
-enum KnowledgeSourceCategory { repository, package, documentation, api, general }
+enum KnowledgeSourceCategory {
+  repository,
+  package,
+  documentation,
+  api,
+  general,
+}
 
 /// Real, deterministic, non-exhaustive mapping from the reasoner's own
 /// freeform `resourceType` string to a source category this planner can
@@ -52,7 +58,8 @@ const Map<String, KnowledgeSourceCategory> _resourceTypeCategories = {
 };
 
 KnowledgeSourceCategory _categorize(String resourceType) =>
-    _resourceTypeCategories[resourceType.toLowerCase()] ?? KnowledgeSourceCategory.general;
+    _resourceTypeCategories[resourceType.toLowerCase()] ??
+    KnowledgeSourceCategory.general;
 
 /// One planned knowledge-acquisition target — a real, structured
 /// restatement of one `SynthesisKnowledgeRequirement` the reasoner already
@@ -109,7 +116,8 @@ class KnowledgeTarget {
   });
 
   bool get isActionable =>
-      sourceCategory == KnowledgeSourceCategory.repository || sourceCategory == KnowledgeSourceCategory.package;
+      sourceCategory == KnowledgeSourceCategory.repository ||
+      sourceCategory == KnowledgeSourceCategory.package;
 }
 
 /// Real output type: targets in final acquisition order (required first,
@@ -119,7 +127,8 @@ class AutonomousKnowledgeAcquisitionPlan {
 
   const AutonomousKnowledgeAcquisitionPlan({this.targets = const []});
 
-  List<KnowledgeTarget> get actionableTargets => targets.where((t) => t.isActionable).toList();
+  List<KnowledgeTarget> get actionableTargets =>
+      targets.where((t) => t.isActionable).toList();
 }
 
 class AutonomousKnowledgeAcquisitionPlanner {

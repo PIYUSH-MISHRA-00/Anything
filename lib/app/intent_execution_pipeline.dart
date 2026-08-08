@@ -29,16 +29,22 @@ class IntentExecutionPipeline {
   final UniversalIntentRouter _router;
   final WorkspaceEventPublisher _eventPublisher;
 
-  const IntentExecutionPipeline({required UniversalIntentRouter router, required WorkspaceEventPublisher eventPublisher})
-    : _router = router,
-      _eventPublisher = eventPublisher;
+  const IntentExecutionPipeline({
+    required UniversalIntentRouter router,
+    required WorkspaceEventPublisher eventPublisher,
+  }) : _router = router,
+       _eventPublisher = eventPublisher;
 
   /// Accepts one user [intent], invokes the real `UniversalIntentRouter`
   /// (structural dispatch only — zero new reasoning, matching the router's
   /// own documented "never semantic interpretation" rule), publishes a real
   /// `IntentRouted` event for the outcome, and returns the router's own
   /// real, typed [RoutingResult] unmodified.
-  Future<RoutingResult> execute(Intent intent, {RouteTarget? target, String? correlationId}) async {
+  Future<RoutingResult> execute(
+    Intent intent, {
+    RouteTarget? target,
+    String? correlationId,
+  }) async {
     final result = await _router.route(intent, target: target);
     _eventPublisher.publishIntentRouted(result, correlationId: correlationId);
     return result;

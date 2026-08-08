@@ -17,7 +17,8 @@ import '../world_types.dart';
 class RuntimeGraphBridge {
   final EntityResolver _resolver;
 
-  const RuntimeGraphBridge({EntityResolver resolver = const EntityResolver()}) : _resolver = resolver;
+  const RuntimeGraphBridge({EntityResolver resolver = const EntityResolver()})
+    : _resolver = resolver;
 
   WorldNodeKind _mapKind(RilNodeKind kind) => switch (kind) {
     RilNodeKind.screen => WorldNodeKind.workflow,
@@ -28,17 +29,32 @@ class RuntimeGraphBridge {
 
   GraphUpdate bridgeUsage(UsageGraph usageGraph) {
     final nodes = usageGraph.nodes
-        .map((n) => WorldNode(identity: _resolver.resolve(_mapKind(n.node.kind), stableId: n.id), kind: _mapKind(n.node.kind), label: n.node.label))
+        .map(
+          (n) => WorldNode(
+            identity: _resolver.resolve(_mapKind(n.node.kind), stableId: n.id),
+            kind: _mapKind(n.node.kind),
+            label: n.node.label,
+          ),
+        )
         .toList();
 
     final edges = usageGraph.edges
         .map(
           (e) => WorldEdge(
-            fromId: _resolver.resolve(WorldNodeKind.workflow, stableId: e.fromId),
+            fromId: _resolver.resolve(
+              WorldNodeKind.workflow,
+              stableId: e.fromId,
+            ),
             toId: _resolver.resolve(WorldNodeKind.workflow, stableId: e.toId),
             kind: RelationshipKind.relatesTo,
-            evidence: GraphEvidence(sourceGraph: 'UsageGraph', sourceNodeId: '${e.fromId}->${e.toId}'),
-            confidence: GraphConfidence(score: e.coOccurrenceCount.toDouble().clamp(0.0, 1.0), reason: 'Observed ${e.coOccurrenceCount} time(s).'),
+            evidence: GraphEvidence(
+              sourceGraph: 'UsageGraph',
+              sourceNodeId: '${e.fromId}->${e.toId}',
+            ),
+            confidence: GraphConfidence(
+              score: e.coOccurrenceCount.toDouble().clamp(0.0, 1.0),
+              reason: 'Observed ${e.coOccurrenceCount} time(s).',
+            ),
           ),
         )
         .toList();
@@ -55,7 +71,10 @@ class RuntimeGraphBridge {
     final nodes = learned
         .map(
           (record) => WorldNode(
-            identity: _resolver.resolve(WorldNodeKind.learning, stableId: record.id),
+            identity: _resolver.resolve(
+              WorldNodeKind.learning,
+              stableId: record.id,
+            ),
             kind: WorldNodeKind.learning,
             label: record.pattern.description,
           ),

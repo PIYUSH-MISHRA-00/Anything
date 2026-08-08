@@ -57,5 +57,8 @@ class SoftwareEvidence {
   final String sourceUrl;
   final String sourceArtifact;
 
-  const SoftwareEvidence({required this.sourceUrl, required this.sourceArtifact});
+  const SoftwareEvidence({
+    required this.sourceUrl,
+    required this.sourceArtifact,
+  });
 }

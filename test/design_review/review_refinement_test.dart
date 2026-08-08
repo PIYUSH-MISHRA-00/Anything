@@ -21,22 +21,49 @@ void main() {
   });
 
   test('fixes a duplicated binding edge and reaches approved', () {
-    final duplicatedEdges = [...context.engineering.bindingGraph.edges, context.engineering.bindingGraph.edges.first];
-    final broken = withEngineering(context, context.engineering.copyWith(bindingGraph: BindingGraph(edges: duplicatedEdges)));
+    final duplicatedEdges = [
+      ...context.engineering.bindingGraph.edges,
+      context.engineering.bindingGraph.edges.first,
+    ];
+    final broken = withEngineering(
+      context,
+      context.engineering.copyWith(
+        bindingGraph: BindingGraph(edges: duplicatedEdges),
+      ),
+    );
 
     final result = const ReviewRefinement().refine(broken);
 
     expect(result.outcome, ReviewOutcome.approved);
-    expect(result.finalContext.engineering.bindingGraph.edges.length, context.engineering.bindingGraph.edges.length);
+    expect(
+      result.finalContext.engineering.bindingGraph.edges.length,
+      context.engineering.bindingGraph.edges.length,
+    );
   });
 
-  test('every applied fix is logged in the iteration history — never silent', () {
-    final duplicatedEdges = [...context.engineering.bindingGraph.edges, context.engineering.bindingGraph.edges.first];
-    final broken = withEngineering(context, context.engineering.copyWith(bindingGraph: BindingGraph(edges: duplicatedEdges)));
+  test(
+    'every applied fix is logged in the iteration history — never silent',
+    () {
+      final duplicatedEdges = [
+        ...context.engineering.bindingGraph.edges,
+        context.engineering.bindingGraph.edges.first,
+      ];
+      final broken = withEngineering(
+        context,
+        context.engineering.copyWith(
+          bindingGraph: BindingGraph(edges: duplicatedEdges),
+        ),
+      );
 
-    final result = const ReviewRefinement().refine(broken);
+      final result = const ReviewRefinement().refine(broken);
 
-    expect(result.iterations.first.issues.any((i) => i.category.name == 'engineering' && i.autoFixable), isTrue);
-    expect(result.iterations.length, greaterThan(1));
-  });
+      expect(
+        result.iterations.first.issues.any(
+          (i) => i.category.name == 'engineering' && i.autoFixable,
+        ),
+        isTrue,
+      );
+      expect(result.iterations.length, greaterThan(1));
+    },
+  );
 }

@@ -18,7 +18,16 @@ import 'software_types.dart';
 
 /// Semantic HTML5 tags whose presence is a real, checkable structural
 /// signal (navigation, forms, tabular data, etc).
-const List<String> _semanticTags = ['nav', 'form', 'table', 'header', 'footer', 'aside', 'section', 'button'];
+const List<String> _semanticTags = [
+  'nav',
+  'form',
+  'table',
+  'header',
+  'footer',
+  'aside',
+  'section',
+  'button',
+];
 
 class ComponentAnalyzer {
   const ComponentAnalyzer();
@@ -45,7 +54,10 @@ class ComponentAnalyzer {
 /// a small, documented, non-exhaustive naming heuristic (WebWeaveX has no
 /// Flutter-widget-specific classifier to reuse).
 bool _looksLikeWidget(String className) =>
-    className.endsWith('Widget') || className.endsWith('Screen') || className.endsWith('Page') || className.endsWith('View');
+    className.endsWith('Widget') ||
+    className.endsWith('Screen') ||
+    className.endsWith('Page') ||
+    className.endsWith('View');
 
 class WidgetAnalyzer {
   const WidgetAnalyzer();
@@ -53,7 +65,13 @@ class WidgetAnalyzer {
   WidgetGraph fromClassNames(List<String> classNames) {
     final widgetNames = classNames.where(_looksLikeWidget).toList();
     final nodes = widgetNames
-        .map((name) => SoftwareNode(identity: SoftwareIdentity.stable(SoftwareNodeKind.widget, name), kind: SoftwareNodeKind.widget, label: name))
+        .map(
+          (name) => SoftwareNode(
+            identity: SoftwareIdentity.stable(SoftwareNodeKind.widget, name),
+            kind: SoftwareNodeKind.widget,
+            label: name,
+          ),
+        )
         .toList();
     return WidgetGraph(SemanticSoftwareGraph(nodes: nodes));
   }

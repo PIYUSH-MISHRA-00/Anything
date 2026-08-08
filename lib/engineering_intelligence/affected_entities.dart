@@ -22,7 +22,8 @@ class AffectedEntities {
 
   bool get isEmpty => entityIds.isEmpty;
 
-  AffectedEntities merge(AffectedEntities other) => AffectedEntities({...entityIds, ...other.entityIds});
+  AffectedEntities merge(AffectedEntities other) =>
+      AffectedEntities({...entityIds, ...other.entityIds});
 }
 
 class AffectedEntityAnalyzer {
@@ -37,7 +38,14 @@ class AffectedEntityAnalyzer {
   /// at a view, not an entity — excluded for the same reason: this
   /// analyzer only ever reports real entity ids, never a fabricated one
   /// from a node that structurally has none).
-  static const _entityRootedPrefixes = {'entity', 'field', 'relationship', 'constraint', 'storage', 'state'};
+  static const _entityRootedPrefixes = {
+    'entity',
+    'field',
+    'relationship',
+    'constraint',
+    'storage',
+    'state',
+  };
 
   AffectedEntities fromRequirementDiff(RequirementGraphDiff diff) {
     final ids = <String>{};
@@ -59,9 +67,13 @@ class AffectedEntityAnalyzer {
   /// `.toEntityId`) — read straight off them, no parsing needed.
   AffectedEntities fromArchitectureDiff(ArchitectureDiff diff) {
     final ids = <String>{
-      for (final e in [...diff.addedEntities, ...diff.removedEntities]) e.entityId,
+      for (final e in [...diff.addedEntities, ...diff.removedEntities])
+        e.entityId,
       for (final f in [...diff.addedFields, ...diff.removedFields]) f.entityId,
-      for (final r in [...diff.addedRelationships, ...diff.removedRelationships]) ...[r.fromEntityId, r.toEntityId],
+      for (final r in [
+        ...diff.addedRelationships,
+        ...diff.removedRelationships,
+      ]) ...[r.fromEntityId, r.toEntityId],
     };
     return AffectedEntities(ids);
   }

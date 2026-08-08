@@ -24,7 +24,9 @@ class GraphConsistency {
 
   GraphValidation validate(WorldGraph graph) {
     final nodeIds = graph.nodes.map((n) => n.identity).toSet();
-    final dangling = graph.edges.where((e) => !nodeIds.contains(e.fromId) || !nodeIds.contains(e.toId)).toList();
+    final dangling = graph.edges
+        .where((e) => !nodeIds.contains(e.fromId) || !nodeIds.contains(e.toId))
+        .toList();
     return GraphValidation(isValid: dangling.isEmpty, danglingEdges: dangling);
   }
 }

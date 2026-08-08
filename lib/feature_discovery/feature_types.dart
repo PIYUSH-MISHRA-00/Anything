@@ -190,10 +190,14 @@ class FeatureGraph {
     this.nodes = const [],
     this.edges = const [],
     this.iteration = 0,
-    this.overallConfidence = const Confidence(score: 0.0, reason: 'not yet analyzed'),
+    this.overallConfidence = const Confidence(
+      score: 0.0,
+      reason: 'not yet analyzed',
+    ),
   });
 
-  FeatureNode? nodeById(String id) => nodes.where((n) => n.id == id).firstOrNull;
+  FeatureNode? nodeById(String id) =>
+      nodes.where((n) => n.id == id).firstOrNull;
 
   List<FeatureEdge> edgesFrom(String featureId) =>
       edges.where((e) => e.fromFeatureId == featureId).toList();
@@ -204,7 +208,8 @@ class FeatureGraph {
   List<FeatureNode> nodesOfCategory(FeatureCategory category) =>
       nodes.where((n) => n.category == category).toList();
 
-  List<FeatureDecision> get allDecisions => nodes.map((n) => n.decision).toList();
+  List<FeatureDecision> get allDecisions =>
+      nodes.map((n) => n.decision).toList();
 
   FeatureGraph copyWith({
     List<FeatureNode>? nodes,

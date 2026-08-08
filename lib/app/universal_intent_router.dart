@@ -85,9 +85,16 @@ class RouteTarget {
   final String? experienceId;
   final bool forceNew;
 
-  const RouteTarget.session(this.sessionId) : experienceId = null, forceNew = false;
-  const RouteTarget.experience(this.experienceId) : sessionId = null, forceNew = false;
-  const RouteTarget.newExperience() : sessionId = null, experienceId = null, forceNew = true;
+  const RouteTarget.session(this.sessionId)
+    : experienceId = null,
+      forceNew = false;
+  const RouteTarget.experience(this.experienceId)
+    : sessionId = null,
+      forceNew = false;
+  const RouteTarget.newExperience()
+    : sessionId = null,
+      experienceId = null,
+      forceNew = true;
 }
 
 /// Real, typed result — every field traceable to the real call this router
@@ -99,13 +106,19 @@ class RoutingResult {
   final CreationResult? creationResult;
   final LifecycleResult? lifecycleResult;
 
-  const RoutingResult({required this.action, this.sessionId, this.creationResult, this.lifecycleResult});
+  const RoutingResult({
+    required this.action,
+    this.sessionId,
+    this.creationResult,
+    this.lifecycleResult,
+  });
 }
 
 class UniversalIntentRouter {
   final ExperienceWorkspaceManager _workspace;
 
-  const UniversalIntentRouter({required ExperienceWorkspaceManager workspace}) : _workspace = workspace;
+  const UniversalIntentRouter({required ExperienceWorkspaceManager workspace})
+    : _workspace = workspace;
 
   /// Real, deterministic dispatch. [target] is the caller's explicit,
   /// structural routing hint — never derived from [intent]'s own text.
@@ -117,7 +130,11 @@ class UniversalIntentRouter {
     // any," never "open another").
     if (target?.forceNew ?? false) {
       final result = await _workspace.openExperience(intent);
-      return RoutingResult(action: RoutingAction.newExperience, sessionId: result.sessionId, creationResult: result.creationResult);
+      return RoutingResult(
+        action: RoutingAction.newExperience,
+        sessionId: result.sessionId,
+        creationResult: result.creationResult,
+      );
     }
 
     final resolvedSessionId = _resolveTarget(target);
@@ -134,18 +151,35 @@ class UniversalIntentRouter {
       final active = _workspace.activeSessionId;
       if (active == null) {
         final result = await _workspace.openExperience(intent);
-        return RoutingResult(action: RoutingAction.newExperience, sessionId: result.sessionId, creationResult: result.creationResult);
+        return RoutingResult(
+          action: RoutingAction.newExperience,
+          sessionId: result.sessionId,
+          creationResult: result.creationResult,
+        );
       }
       final result = await _workspace.continueExperience(active, intent);
-      return RoutingResult(action: RoutingAction.continueActiveSession, sessionId: active, lifecycleResult: result.lifecycleResult);
+      return RoutingResult(
+        action: RoutingAction.continueActiveSession,
+        sessionId: active,
+        lifecycleResult: result.lifecycleResult,
+      );
     }
 
-    final action = resolvedSessionId == _workspace.activeSessionId ? RoutingAction.modifyActiveExperience : RoutingAction.resumeBackgroundSession;
+    final action = resolvedSessionId == _workspace.activeSessionId
+        ? RoutingAction.modifyActiveExperience
+        : RoutingAction.resumeBackgroundSession;
     if (action == RoutingAction.resumeBackgroundSession) {
       await _workspace.switchActiveExperience(resolvedSessionId);
     }
-    final result = await _workspace.continueExperience(resolvedSessionId, intent);
-    return RoutingResult(action: action, sessionId: resolvedSessionId, lifecycleResult: result.lifecycleResult);
+    final result = await _workspace.continueExperience(
+      resolvedSessionId,
+      intent,
+    );
+    return RoutingResult(
+      action: action,
+      sessionId: resolvedSessionId,
+      lifecycleResult: result.lifecycleResult,
+    );
   }
 
   /// Real, structural resolution — `null` when [target] is `null` (no
@@ -155,7 +189,9 @@ class UniversalIntentRouter {
   String? _resolveTarget(RouteTarget? target) {
     if (target == null) return null;
     if (target.sessionId != null) {
-      return _workspace.openSessionIds.contains(target.sessionId) ? target.sessionId : null;
+      return _workspace.openSessionIds.contains(target.sessionId)
+          ? target.sessionId
+          : null;
     }
     final state = _workspace.sessionForExperience(target.experienceId!);
     return state?.sessionId;

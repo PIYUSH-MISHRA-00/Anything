@@ -55,5 +55,9 @@ class EngineeringIntelligence {
   final ArchitectureCandidate architectureCandidate;
   final BackendEngineeringPlan? backendEngineeringPlan;
 
-  const EngineeringIntelligence({required this.requirementGraph, required this.architectureCandidate, this.backendEngineeringPlan});
+  const EngineeringIntelligence({
+    required this.requirementGraph,
+    required this.architectureCandidate,
+    this.backendEngineeringPlan,
+  });
 }

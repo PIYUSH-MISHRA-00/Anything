@@ -3,10 +3,19 @@
 /// weak/over-engineered/incomplete solutions.
 library;
 
-import '../software_architect/architecture_types.dart' show NetworkMode, OfflineCapability;
+import '../software_architect/architecture_types.dart'
+    show NetworkMode, OfflineCapability;
 import 'solution_types.dart';
 
-enum SolutionIssueCategory { duplicate, equivalent, impossible, contradictory, weak, overEngineered, incomplete }
+enum SolutionIssueCategory {
+  duplicate,
+  equivalent,
+  impossible,
+  contradictory,
+  weak,
+  overEngineered,
+  incomplete,
+}
 
 enum SolutionIssueSeverity { info, warning, critical }
 
@@ -33,8 +42,10 @@ class SolutionReviewResult {
   const SolutionReviewResult({required this.iteration, this.issues = const []});
 
   bool get passed => issues.isEmpty;
-  bool get hasCriticalIssues => issues.any((i) => i.severity == SolutionIssueSeverity.critical);
-  List<SolutionIssue> get autoFixableIssues => issues.where((i) => i.autoFixable).toList();
+  bool get hasCriticalIssues =>
+      issues.any((i) => i.severity == SolutionIssueSeverity.critical);
+  List<SolutionIssue> get autoFixableIssues =>
+      issues.where((i) => i.autoFixable).toList();
 }
 
 class SolutionReviewer {
@@ -42,7 +53,11 @@ class SolutionReviewer {
 
   final int iteration;
 
-  static const Set<String> _networkOrientedCapabilities = {'http', 'ai', 'knowledge'};
+  static const Set<String> _networkOrientedCapabilities = {
+    'http',
+    'ai',
+    'knowledge',
+  };
 
   SolutionReviewResult review(List<SolutionCandidate> candidates) {
     final issues = <SolutionIssue>[];
@@ -58,11 +73,15 @@ class SolutionReviewer {
     return SolutionReviewResult(iteration: iteration, issues: issues);
   }
 
-  void _checkDuplicates(List<SolutionCandidate> candidates, List<SolutionIssue> issues) {
+  void _checkDuplicates(
+    List<SolutionCandidate> candidates,
+    List<SolutionIssue> issues,
+  ) {
     final seen = <String, SolutionCandidate>{};
     for (final c in candidates) {
       final v = c.architectureVariation;
-      final key = '${v.navigationTopology.name}|${v.capabilityRichness.name}|${v.offlineStrategy.name}|${v.synchronizationStrategy.name}';
+      final key =
+          '${v.navigationTopology.name}|${v.capabilityRichness.name}|${v.offlineStrategy.name}|${v.synchronizationStrategy.name}';
       final existing = seen[key];
       if (existing != null) {
         issues.add(
@@ -70,7 +89,8 @@ class SolutionReviewer {
             category: SolutionIssueCategory.duplicate,
             severity: SolutionIssueSeverity.critical,
             subjectId: c.id,
-            message: 'Solution "${c.label}" is structurally identical to ${existing.id}',
+            message:
+                'Solution "${c.label}" is structurally identical to ${existing.id}',
             autoFixable: true,
           ),
         );
@@ -80,7 +100,10 @@ class SolutionReviewer {
     }
   }
 
-  void _checkEquivalents(List<SolutionCandidate> candidates, List<SolutionIssue> issues) {
+  void _checkEquivalents(
+    List<SolutionCandidate> candidates,
+    List<SolutionIssue> issues,
+  ) {
     for (var i = 0; i < candidates.length; i++) {
       for (var j = i + 1; j < candidates.length; j++) {
         final a = candidates[i];
@@ -93,7 +116,8 @@ class SolutionReviewer {
               category: SolutionIssueCategory.equivalent,
               severity: SolutionIssueSeverity.info,
               subjectId: '${a.id}~${b.id}',
-              message: '"${a.label}" and "${b.label}" score equivalently despite different tradeoffs',
+              message:
+                  '"${a.label}" and "${b.label}" score equivalently despite different tradeoffs',
             ),
           );
         }
@@ -101,18 +125,28 @@ class SolutionReviewer {
     }
   }
 
-  void _checkImpossible(List<SolutionCandidate> candidates, List<SolutionIssue> issues) {
+  void _checkImpossible(
+    List<SolutionCandidate> candidates,
+    List<SolutionIssue> issues,
+  ) {
     for (final c in candidates) {
-      if (c.architectureVariation.offlineStrategy != OfflineCapability.onlineRequired) continue;
-      final hasNetworkCapability = c.capabilities.any((cap) => _networkOrientedCapabilities.contains(cap.capabilityId));
-      final hasNetworkSecurity = c.architecture.security.networkMode != NetworkMode.none;
+      if (c.architectureVariation.offlineStrategy !=
+          OfflineCapability.onlineRequired) {
+        continue;
+      }
+      final hasNetworkCapability = c.capabilities.any(
+        (cap) => _networkOrientedCapabilities.contains(cap.capabilityId),
+      );
+      final hasNetworkSecurity =
+          c.architecture.security.networkMode != NetworkMode.none;
       if (!hasNetworkCapability && !hasNetworkSecurity) {
         issues.add(
           SolutionIssue(
             category: SolutionIssueCategory.impossible,
             severity: SolutionIssueSeverity.critical,
             subjectId: c.id,
-            message: '"${c.label}" requires network but no network-oriented capability was requested',
+            message:
+                '"${c.label}" requires network but no network-oriented capability was requested',
             autoFixable: true,
           ),
         );
@@ -120,7 +154,10 @@ class SolutionReviewer {
     }
   }
 
-  void _checkContradictory(List<SolutionCandidate> candidates, List<SolutionIssue> issues) {
+  void _checkContradictory(
+    List<SolutionCandidate> candidates,
+    List<SolutionIssue> issues,
+  ) {
     for (final c in candidates) {
       if (c.capabilityVariation.richness.name != 'full') continue;
       if (c.architecture.interactions.isEmpty) continue;
@@ -128,15 +165,20 @@ class SolutionReviewer {
       // single synthetic 'home' screen (decision id 'navigation:default')
       // and InteractionPlanner legitimately never sets any rich flag
       // regardless of richness — a structural reality, not a defect.
-      if (c.architecture.navigation.decision.id == 'navigation:default') continue;
-      final anyRich = c.architecture.interactions.any((i) => i.supportsSearch || i.supportsFilter || i.supportsSort);
+      if (c.architecture.navigation.decision.id == 'navigation:default') {
+        continue;
+      }
+      final anyRich = c.architecture.interactions.any(
+        (i) => i.supportsSearch || i.supportsFilter || i.supportsSort,
+      );
       if (!anyRich) {
         issues.add(
           SolutionIssue(
             category: SolutionIssueCategory.contradictory,
             severity: SolutionIssueSeverity.critical,
             subjectId: c.id,
-            message: '"${c.label}" claims full capability richness but no interaction supports search/filter/sort',
+            message:
+                '"${c.label}" claims full capability richness but no interaction supports search/filter/sort',
             autoFixable: true,
           ),
         );
@@ -144,7 +186,10 @@ class SolutionReviewer {
     }
   }
 
-  void _checkWeak(List<SolutionCandidate> candidates, List<SolutionIssue> issues) {
+  void _checkWeak(
+    List<SolutionCandidate> candidates,
+    List<SolutionIssue> issues,
+  ) {
     for (final c in candidates) {
       final score = c.score?.overall.score;
       if (score != null && score < 0.4) {
@@ -153,17 +198,23 @@ class SolutionReviewer {
             category: SolutionIssueCategory.weak,
             severity: SolutionIssueSeverity.warning,
             subjectId: c.id,
-            message: '"${c.label}" scores ${score.toStringAsFixed(2)}, below the 0.4 acceptance threshold',
+            message:
+                '"${c.label}" scores ${score.toStringAsFixed(2)}, below the 0.4 acceptance threshold',
           ),
         );
       }
     }
   }
 
-  void _checkOverEngineered(List<SolutionCandidate> candidates, List<SolutionIssue> issues) {
+  void _checkOverEngineered(
+    List<SolutionCandidate> candidates,
+    List<SolutionIssue> issues,
+  ) {
     final scored = candidates.where((c) => c.score != null).toList();
     if (scored.isEmpty) return;
-    final bestScore = scored.map((c) => c.score!.overall.score).reduce((a, b) => a > b ? a : b);
+    final bestScore = scored
+        .map((c) => c.score!.overall.score)
+        .reduce((a, b) => a > b ? a : b);
     for (final c in scored) {
       final isHighComplexity = c.complexity.engineering.name == 'high';
       final isBest = c.score!.overall.score >= bestScore - 0.001;
@@ -173,14 +224,18 @@ class SolutionReviewer {
             category: SolutionIssueCategory.overEngineered,
             severity: SolutionIssueSeverity.warning,
             subjectId: c.id,
-            message: '"${c.label}" carries high engineering complexity without the best overall score',
+            message:
+                '"${c.label}" carries high engineering complexity without the best overall score',
           ),
         );
       }
     }
   }
 
-  void _checkIncomplete(List<SolutionCandidate> candidates, List<SolutionIssue> issues) {
+  void _checkIncomplete(
+    List<SolutionCandidate> candidates,
+    List<SolutionIssue> issues,
+  ) {
     for (final c in candidates) {
       if (c.architecture.entities.isEmpty) {
         issues.add(

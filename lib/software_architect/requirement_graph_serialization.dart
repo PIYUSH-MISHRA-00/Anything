@@ -18,13 +18,20 @@ extension RequirementGraphJson on RequirementGraph {
     'nonFunctional': nonFunctional.map((n) => n.toJson()).toList(),
   };
 
-  static RequirementGraph fromJson(Map<String, dynamic> json) => RequirementGraph(
-    nodes: (json['nodes'] as List).map((n) => RequirementNodeJson.fromJson(n as Map<String, dynamic>)).toList(),
+  static RequirementGraph fromJson(
+    Map<String, dynamic> json,
+  ) => RequirementGraph(
+    nodes: (json['nodes'] as List)
+        .map((n) => RequirementNodeJson.fromJson(n as Map<String, dynamic>))
+        .toList(),
     relations: (json['relations'] as List)
         .map((r) => RequirementRelationJson.fromJson(r as Map<String, dynamic>))
         .toList(),
     nonFunctional: (json['nonFunctional'] as List)
-        .map((n) => NonFunctionalRequirementJson.fromJson(n as Map<String, dynamic>))
+        .map(
+          (n) =>
+              NonFunctionalRequirementJson.fromJson(n as Map<String, dynamic>),
+        )
         .toList(),
   );
 }
@@ -43,26 +50,42 @@ extension RequirementNodeJson on RequirementNode {
     type: RequirementNodeType.values.byName(json['type'] as String),
     label: json['label'] as String,
     description: json['description'] as String? ?? '',
-    source: RequirementSource.values.byName(json['source'] as String? ?? 'inferred'),
+    source: RequirementSource.values.byName(
+      json['source'] as String? ?? 'inferred',
+    ),
   );
 }
 
 extension RequirementRelationJson on RequirementRelation {
-  Map<String, dynamic> toJson() => {'fromId': fromId, 'toId': toId, 'type': type.name};
+  Map<String, dynamic> toJson() => {
+    'fromId': fromId,
+    'toId': toId,
+    'type': type.name,
+  };
 
-  static RequirementRelation fromJson(Map<String, dynamic> json) => RequirementRelation(
-    fromId: json['fromId'] as String,
-    toId: json['toId'] as String,
-    type: RequirementRelationType.values.byName(json['type'] as String),
-  );
+  static RequirementRelation fromJson(Map<String, dynamic> json) =>
+      RequirementRelation(
+        fromId: json['fromId'] as String,
+        toId: json['toId'] as String,
+        type: RequirementRelationType.values.byName(json['type'] as String),
+      );
 }
 
 extension NonFunctionalRequirementJson on NonFunctionalRequirement {
-  Map<String, dynamic> toJson() => {'category': category.name, 'description': description, 'source': source.name};
+  Map<String, dynamic> toJson() => {
+    'category': category.name,
+    'description': description,
+    'source': source.name,
+  };
 
-  static NonFunctionalRequirement fromJson(Map<String, dynamic> json) => NonFunctionalRequirement(
-    category: NonFunctionalCategory.values.byName(json['category'] as String),
-    description: json['description'] as String,
-    source: RequirementSource.values.byName(json['source'] as String? ?? 'inferred'),
-  );
+  static NonFunctionalRequirement fromJson(Map<String, dynamic> json) =>
+      NonFunctionalRequirement(
+        category: NonFunctionalCategory.values.byName(
+          json['category'] as String,
+        ),
+        description: json['description'] as String,
+        source: RequirementSource.values.byName(
+          json['source'] as String? ?? 'inferred',
+        ),
+      );
 }

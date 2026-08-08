@@ -731,8 +731,9 @@ void main() {
 
       // Delete Alice should be blocked
       expect(() {
-        if (hasActiveLoan)
+        if (hasActiveLoan) {
           throw Exception('Cannot delete: referenced by active loan');
+        }
       }, throwsException);
     });
   });

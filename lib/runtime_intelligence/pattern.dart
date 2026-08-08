@@ -9,7 +9,10 @@ class PatternEvidence {
   final String usageGraphNodeOrEdgeId;
   final int occurrenceCount;
 
-  const PatternEvidence({required this.usageGraphNodeOrEdgeId, required this.occurrenceCount});
+  const PatternEvidence({
+    required this.usageGraphNodeOrEdgeId,
+    required this.occurrenceCount,
+  });
 }
 
 /// RIL's own confidence type (distinct from `software_architect`'s

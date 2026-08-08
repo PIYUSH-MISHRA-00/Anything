@@ -67,19 +67,21 @@ class EvolutionEstimator {
         migration: ComplexityLevel.medium,
         testing: ComplexityLevel.high,
       ),
-      EvolutionOpportunityCategory.missingSynchronization => const EvolutionCost(
-        engineering: ComplexityLevel.high,
-        migration: ComplexityLevel.medium,
-        testing: ComplexityLevel.high,
-      ),
+      EvolutionOpportunityCategory.missingSynchronization =>
+        const EvolutionCost(
+          engineering: ComplexityLevel.high,
+          migration: ComplexityLevel.medium,
+          testing: ComplexityLevel.high,
+        ),
       EvolutionOpportunityCategory.missingPerformance => const EvolutionCost(
         engineering: ComplexityLevel.medium,
         testing: ComplexityLevel.medium,
       ),
-      EvolutionOpportunityCategory.missingMaintainability => const EvolutionCost(
-        engineering: ComplexityLevel.low,
-        documentation: ComplexityLevel.medium,
-      ),
+      EvolutionOpportunityCategory.missingMaintainability =>
+        const EvolutionCost(
+          engineering: ComplexityLevel.low,
+          documentation: ComplexityLevel.medium,
+        ),
     };
   }
 
@@ -96,13 +98,14 @@ class EvolutionEstimator {
         userImpact: RiskLevel.low,
         testingCost: RiskLevel.medium,
       ),
-      EvolutionOpportunityCategory.missingSynchronization => const EvolutionRisk(
-        migrationRisk: RiskLevel.medium,
-        dataRisk: RiskLevel.high,
-        runtimeRisk: RiskLevel.medium,
-        userImpact: RiskLevel.low,
-        testingCost: RiskLevel.medium,
-      ),
+      EvolutionOpportunityCategory.missingSynchronization =>
+        const EvolutionRisk(
+          migrationRisk: RiskLevel.medium,
+          dataRisk: RiskLevel.high,
+          runtimeRisk: RiskLevel.medium,
+          userImpact: RiskLevel.low,
+          testingCost: RiskLevel.medium,
+        ),
       EvolutionOpportunityCategory.missingCapability => const EvolutionRisk(
         modificationRisk: RiskLevel.low,
         securityRisk: RiskLevel.low,
@@ -113,7 +116,10 @@ class EvolutionEstimator {
         performanceRisk: RiskLevel.low,
         runtimeRisk: RiskLevel.low,
       ),
-      _ => const EvolutionRisk(modificationRisk: RiskLevel.low, userImpact: RiskLevel.none),
+      _ => const EvolutionRisk(
+        modificationRisk: RiskLevel.low,
+        userImpact: RiskLevel.none,
+      ),
     };
   }
 
@@ -123,35 +129,55 @@ class EvolutionEstimator {
   /// honestly `0.0` with a "not applicable" reason, matching SolutionScore
   /// (V5)'s honest-neutral pattern.
   EvolutionBenefit _benefitFor(EvolutionOpportunity opportunity) {
-    Confidence at(double score, String reason) => Confidence(score: score, reason: reason);
-    const notApplicable = 'This opportunity does not structurally affect this dimension.';
+    Confidence at(double score, String reason) =>
+        Confidence(score: score, reason: reason);
+    const notApplicable =
+        'This opportunity does not structurally affect this dimension.';
 
     final baseScore = opportunity.reason.confidence.score;
 
     return switch (opportunity.category) {
       EvolutionOpportunityCategory.missingCapability => EvolutionBenefit(
-        engineeringValue: at(baseScore, 'Extends real, already-discovered capability coverage.'),
-        userValue: at(baseScore, 'A capability Feature Discovery found the user objective implies.'),
+        engineeringValue: at(
+          baseScore,
+          'Extends real, already-discovered capability coverage.',
+        ),
+        userValue: at(
+          baseScore,
+          'A capability Feature Discovery found the user objective implies.',
+        ),
         maintenanceValue: at(0.0, notApplicable),
         performanceValue: at(0.0, notApplicable),
         securityValue: at(0.0, notApplicable),
         accessibilityValue: at(0.0, notApplicable),
         offlineValue: at(0.0, notApplicable),
-        futureValue: at(baseScore, 'Keeps the design aligned with discovered future needs.'),
+        futureValue: at(
+          baseScore,
+          'Keeps the design aligned with discovered future needs.',
+        ),
       ),
       EvolutionOpportunityCategory.missingWorkflow => EvolutionBenefit(
-        engineeringValue: at(baseScore, 'Completes a workflow Feature Discovery already found.'),
+        engineeringValue: at(
+          baseScore,
+          'Completes a workflow Feature Discovery already found.',
+        ),
         userValue: at(baseScore, opportunity.description),
         maintenanceValue: at(0.0, notApplicable),
         performanceValue: at(0.0, notApplicable),
         securityValue: at(0.0, notApplicable),
         accessibilityValue: at(0.0, notApplicable),
         offlineValue: at(0.0, notApplicable),
-        futureValue: at(baseScore, 'Deferred workflow becoming available later.'),
+        futureValue: at(
+          baseScore,
+          'Deferred workflow becoming available later.',
+        ),
       ),
       EvolutionOpportunityCategory.missingNavigation => EvolutionBenefit(
         engineeringValue: at(0.0, notApplicable),
-        userValue: at(0.8, 'A readable entity with no view is unreachable to the user today.'),
+        userValue: at(
+          0.8,
+          'A readable entity with no view is unreachable to the user today.',
+        ),
         maintenanceValue: at(0.0, notApplicable),
         performanceValue: at(0.0, notApplicable),
         securityValue: at(0.0, notApplicable),
@@ -159,7 +185,8 @@ class EvolutionEstimator {
         offlineValue: at(0.0, notApplicable),
         futureValue: at(0.0, notApplicable),
       ),
-      EvolutionOpportunityCategory.missingSearch || EvolutionOpportunityCategory.missingFiltering => EvolutionBenefit(
+      EvolutionOpportunityCategory.missingSearch ||
+      EvolutionOpportunityCategory.missingFiltering => EvolutionBenefit(
         engineeringValue: at(0.0, notApplicable),
         userValue: at(baseScore, opportunity.description),
         maintenanceValue: at(0.0, notApplicable),
@@ -171,7 +198,10 @@ class EvolutionEstimator {
       ),
       EvolutionOpportunityCategory.missingAccessibility => EvolutionBenefit(
         engineeringValue: at(0.0, notApplicable),
-        userValue: at(baseScore, 'Accessibility improvements benefit every user.'),
+        userValue: at(
+          baseScore,
+          'Accessibility improvements benefit every user.',
+        ),
         maintenanceValue: at(0.0, notApplicable),
         performanceValue: at(0.0, notApplicable),
         securityValue: at(0.0, notApplicable),
@@ -181,7 +211,10 @@ class EvolutionEstimator {
       ),
       EvolutionOpportunityCategory.missingOffline => EvolutionBenefit(
         engineeringValue: at(0.0, notApplicable),
-        userValue: at(baseScore, 'Full offline support benefits users with unreliable connectivity.'),
+        userValue: at(
+          baseScore,
+          'Full offline support benefits users with unreliable connectivity.',
+        ),
         maintenanceValue: at(0.0, notApplicable),
         performanceValue: at(0.0, notApplicable),
         securityValue: at(0.0, notApplicable),
@@ -191,7 +224,10 @@ class EvolutionEstimator {
       ),
       EvolutionOpportunityCategory.missingSynchronization => EvolutionBenefit(
         engineeringValue: at(0.0, notApplicable),
-        userValue: at(baseScore, 'Synchronization keeps data current across sessions/devices.'),
+        userValue: at(
+          baseScore,
+          'Synchronization keeps data current across sessions/devices.',
+        ),
         maintenanceValue: at(0.0, notApplicable),
         performanceValue: at(0.0, notApplicable),
         securityValue: at(0.0, notApplicable),
@@ -201,7 +237,10 @@ class EvolutionEstimator {
       ),
       EvolutionOpportunityCategory.missingPerformance => EvolutionBenefit(
         engineeringValue: at(0.0, notApplicable),
-        userValue: at(baseScore, 'Performance improvements are directly felt by the user.'),
+        userValue: at(
+          baseScore,
+          'Performance improvements are directly felt by the user.',
+        ),
         maintenanceValue: at(0.0, notApplicable),
         performanceValue: at(baseScore, opportunity.reason.summary),
         securityValue: at(0.0, notApplicable),
@@ -217,7 +256,10 @@ class EvolutionEstimator {
         securityValue: at(0.0, notApplicable),
         accessibilityValue: at(0.0, notApplicable),
         offlineValue: at(0.0, notApplicable),
-        futureValue: at(baseScore, 'Lower maintenance cost compounds favorably over future milestones.'),
+        futureValue: at(
+          baseScore,
+          'Lower maintenance cost compounds favorably over future milestones.',
+        ),
       ),
     };
   }
@@ -226,18 +268,21 @@ class EvolutionEstimator {
   /// second, competing tradeoff vocabulary.
   List<SolutionTradeoff> _tradeoffsFor(EvolutionOpportunityCategory category) {
     return switch (category) {
-      EvolutionOpportunityCategory.missingOffline || EvolutionOpportunityCategory.missingSynchronization => const [
+      EvolutionOpportunityCategory.missingOffline ||
+      EvolutionOpportunityCategory.missingSynchronization => const [
         SolutionTradeoff(
           dimension: TradeoffDimension.offline,
           direction: TradeoffDirection.advantage,
           description: 'Improves offline/synchronization posture',
-          rationale: 'Directly addresses a real posture gap in the current architecture.',
+          rationale:
+              'Directly addresses a real posture gap in the current architecture.',
         ),
         SolutionTradeoff(
           dimension: TradeoffDimension.complexity,
           direction: TradeoffDirection.disadvantage,
           description: 'Adds synchronization/conflict-handling complexity',
-          rationale: 'Offline/sync changes are structurally cross-cutting, not additive.',
+          rationale:
+              'Offline/sync changes are structurally cross-cutting, not additive.',
         ),
       ],
       EvolutionOpportunityCategory.missingAccessibility => const [
@@ -245,7 +290,8 @@ class EvolutionEstimator {
           dimension: TradeoffDimension.accessibility,
           direction: TradeoffDirection.advantage,
           description: 'Closes a real, non-critical accessibility finding',
-          rationale: 'Sourced directly from a Design Review (SCARE) finding for this design.',
+          rationale:
+              'Sourced directly from a Design Review (SCARE) finding for this design.',
         ),
       ],
       EvolutionOpportunityCategory.missingPerformance => const [
@@ -253,7 +299,8 @@ class EvolutionEstimator {
           dimension: TradeoffDimension.performance,
           direction: TradeoffDirection.advantage,
           description: 'Closes a real, non-critical performance finding',
-          rationale: 'Sourced directly from a Design Review (SCARE) finding for this design.',
+          rationale:
+              'Sourced directly from a Design Review (SCARE) finding for this design.',
         ),
       ],
       EvolutionOpportunityCategory.missingMaintainability => const [
@@ -261,7 +308,8 @@ class EvolutionEstimator {
           dimension: TradeoffDimension.maintainability,
           direction: TradeoffDirection.advantage,
           description: 'Closes a real, non-critical maintainability finding',
-          rationale: 'Sourced directly from a Design Review (SCARE) finding for this design.',
+          rationale:
+              'Sourced directly from a Design Review (SCARE) finding for this design.',
         ),
       ],
       _ => const [
@@ -269,7 +317,8 @@ class EvolutionEstimator {
           dimension: TradeoffDimension.modificationCost,
           direction: TradeoffDirection.neutral,
           description: 'Additive UI/workflow change',
-          rationale: 'Does not restructure existing entities, permissions, or navigation.',
+          rationale:
+              'Does not restructure existing entities, permissions, or navigation.',
         ),
       ],
     };

@@ -18,7 +18,10 @@ import 'evolution_types.dart';
 class EvolutionReviewer {
   const EvolutionReviewer();
 
-  EvolutionDecision review(EvolutionCandidate candidate, EvolutionContext context) {
+  EvolutionDecision review(
+    EvolutionCandidate candidate,
+    EvolutionContext context,
+  ) {
     final evidence = candidate.opportunity.reason.evidence;
 
     if (evidence.sourceReviewIssueId != null) {
@@ -27,7 +30,9 @@ class EvolutionReviewer {
       );
       return EvolutionDecision(
         subjectId: candidate.id,
-        kind: stillReal ? EvolutionDecisionKind.accepted : EvolutionDecisionKind.rejected,
+        kind: stillReal
+            ? EvolutionDecisionKind.accepted
+            : EvolutionDecisionKind.rejected,
         rationale: stillReal
             ? 'Sourced from a real, already-vetted Design Review (SCARE) finding for this design.'
             : 'The Design Review finding this candidate was based on is no longer present.',
@@ -41,19 +46,28 @@ class EvolutionReviewer {
         return EvolutionDecision(
           subjectId: candidate.id,
           kind: EvolutionDecisionKind.rejected,
-          rationale: 'The FeatureGraph node this candidate was based on no longer exists.',
+          rationale:
+              'The FeatureGraph node this candidate was based on no longer exists.',
           confidence: candidate.opportunity.reason.confidence,
         );
       }
       final entityRef = node.candidate.sourceNodeIds
-          .map((id) => id.startsWith('entity:') ? id.replaceFirst('entity:', '') : null)
+          .map(
+            (id) => id.startsWith('entity:')
+                ? id.replaceFirst('entity:', '')
+                : null,
+          )
           .whereType<String>()
           .firstOrNull;
-      final entityStillReal = entityRef == null || context.architecture.entities.any((e) => e.entityId == entityRef);
+      final entityStillReal =
+          entityRef == null ||
+          context.architecture.entities.any((e) => e.entityId == entityRef);
 
       return EvolutionDecision(
         subjectId: candidate.id,
-        kind: entityStillReal ? EvolutionDecisionKind.accepted : EvolutionDecisionKind.rejected,
+        kind: entityStillReal
+            ? EvolutionDecisionKind.accepted
+            : EvolutionDecisionKind.rejected,
         rationale: entityStillReal
             ? 'Sourced from a real FeatureGraph node whose referenced entity is still present.'
             : 'References entity "$entityRef", which is missing from the final architecture.',
@@ -69,11 +83,18 @@ class EvolutionReviewer {
       EvolutionOpportunityCategory.missingSynchronization,
     };
     if (postureCategories.contains(candidate.opportunity.category)) {
-      final currentDecisionIds = {context.architecture.offline.decision.id, context.architecture.synchronization.decision.id};
-      final postureStillReal = currentDecisionIds.contains(evidence.affectedNodeId);
+      final currentDecisionIds = {
+        context.architecture.offline.decision.id,
+        context.architecture.synchronization.decision.id,
+      };
+      final postureStillReal = currentDecisionIds.contains(
+        evidence.affectedNodeId,
+      );
       return EvolutionDecision(
         subjectId: candidate.id,
-        kind: postureStillReal ? EvolutionDecisionKind.accepted : EvolutionDecisionKind.rejected,
+        kind: postureStillReal
+            ? EvolutionDecisionKind.accepted
+            : EvolutionDecisionKind.rejected,
         rationale: postureStillReal
             ? 'Sourced from a real, current ArchitectureCandidate offline/synchronization posture decision.'
             : 'References posture decision "${evidence.affectedNodeId}", which no longer matches the current architecture.',
@@ -84,10 +105,14 @@ class EvolutionReviewer {
     // Navigation/search/filtering opportunities: sourced live from the
     // current architecture's own interaction decisions.
     final entityId = evidence.affectedNodeId;
-    final interactionStillReal = context.architecture.interactions.any((i) => i.entityId == entityId);
+    final interactionStillReal = context.architecture.interactions.any(
+      (i) => i.entityId == entityId,
+    );
     return EvolutionDecision(
       subjectId: candidate.id,
-      kind: interactionStillReal ? EvolutionDecisionKind.accepted : EvolutionDecisionKind.rejected,
+      kind: interactionStillReal
+          ? EvolutionDecisionKind.accepted
+          : EvolutionDecisionKind.rejected,
       rationale: interactionStillReal
           ? 'Sourced from a real, current ArchitectureCandidate interaction decision.'
           : 'References entity "$entityId", whose interaction decision is missing.',

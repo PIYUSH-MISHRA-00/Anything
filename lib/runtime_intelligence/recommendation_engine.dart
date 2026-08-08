@@ -15,13 +15,23 @@ import 'ril_types.dart';
 class RecommendationEngine {
   const RecommendationEngine();
 
-  List<Recommendation> recommend(List<LearningRecord> learned, {EvolutionRoadmap? evolutionRoadmap}) {
-    final alreadyProposed = evolutionRoadmap?.allProposals.map((p) => p.candidate.opportunity.description).toSet() ?? const {};
+  List<Recommendation> recommend(
+    List<LearningRecord> learned, {
+    EvolutionRoadmap? evolutionRoadmap,
+  }) {
+    final alreadyProposed =
+        evolutionRoadmap?.allProposals
+            .map((p) => p.candidate.opportunity.description)
+            .toSet() ??
+        const {};
 
     final recommendations = <Recommendation>[];
     for (final record in learned) {
       final kind = _kindFor(record.pattern.kind);
-      final description = _describe(record.pattern.kind, record.pattern.description);
+      final description = _describe(
+        record.pattern.kind,
+        record.pattern.description,
+      );
       if (alreadyProposed.contains(description)) continue;
 
       recommendations.add(
@@ -33,9 +43,14 @@ class RecommendationEngine {
             summary: record.pattern.description,
             evidence: RecommendationEvidence(
               patternId: record.pattern.id,
-              usageGraphNodeOrEdgeId: record.pattern.evidence.isNotEmpty ? record.pattern.evidence.first.usageGraphNodeOrEdgeId : '',
+              usageGraphNodeOrEdgeId: record.pattern.evidence.isNotEmpty
+                  ? record.pattern.evidence.first.usageGraphNodeOrEdgeId
+                  : '',
             ),
-            confidence: Confidence(score: record.pattern.confidence.score, reason: record.pattern.confidence.reason),
+            confidence: Confidence(
+              score: record.pattern.confidence.score,
+              reason: record.pattern.confidence.reason,
+            ),
           ),
         ),
       );
@@ -50,10 +65,13 @@ class RecommendationEngine {
     PatternKind.sequentialWorkflow => RecommendationKind.automation,
   };
 
-  String _describe(PatternKind kind, String patternDescription) => switch (kind) {
-    PatternKind.frequentFeaturePair => 'Add a shortcut: $patternDescription',
-    PatternKind.frequentCapability => patternDescription,
-    PatternKind.navigationLoop => 'Reduce friction: $patternDescription',
-    PatternKind.sequentialWorkflow => 'Automate this workflow: $patternDescription',
-  };
+  String _describe(PatternKind kind, String patternDescription) =>
+      switch (kind) {
+        PatternKind.frequentFeaturePair =>
+          'Add a shortcut: $patternDescription',
+        PatternKind.frequentCapability => patternDescription,
+        PatternKind.navigationLoop => 'Reduce friction: $patternDescription',
+        PatternKind.sequentialWorkflow =>
+          'Automate this workflow: $patternDescription',
+      };
 }

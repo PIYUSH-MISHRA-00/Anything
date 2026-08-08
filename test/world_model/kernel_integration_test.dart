@@ -76,39 +76,67 @@ SemanticApp _fieldSurveyApp() {
         id: 'entry',
         name: 'Entry',
         displayField: 'title',
-        fields: [SemanticField(id: 'title', name: 'Title', type: BlueprintFieldType.text, required: true)],
+        fields: [
+          SemanticField(
+            id: 'title',
+            name: 'Title',
+            type: BlueprintFieldType.text,
+            required: true,
+          ),
+        ],
       ),
     ],
     views: const [
-      SemanticView(id: 'entries_list', name: 'Entries', purpose: 'list', sourceEntityId: 'entry', viewType: BlueprintViewType.list, isDefault: true),
+      SemanticView(
+        id: 'entries_list',
+        name: 'Entries',
+        purpose: 'list',
+        sourceEntityId: 'entry',
+        viewType: BlueprintViewType.list,
+        isDefault: true,
+      ),
     ],
-    actions: const [SemanticAction(id: 'add_entry', name: 'Add Entry', targetEntityId: 'entry')],
+    actions: const [
+      SemanticAction(
+        id: 'add_entry',
+        name: 'Add Entry',
+        targetEntityId: 'entry',
+      ),
+    ],
   );
 }
 
 void main() {
-  test('a real Kernel run\'s reviewSession and evolutionRoadmap both ingest cleanly into the World Graph', () async {
-    final kernel = AnythingKernel(
-      providerRegistry: _FakeProviderRegistry(),
-      capabilityRegistry: _registryWithStorage(),
-      reasoner: _FixedReasoner(_fieldSurveyApp()),
-    );
-    final outcome = await kernel.processIntent(Intent.create(expression: 'track my field survey entries'));
+  test(
+    'a real Kernel run\'s reviewSession and evolutionRoadmap both ingest cleanly into the World Graph',
+    () async {
+      final kernel = AnythingKernel(
+        providerRegistry: _FakeProviderRegistry(),
+        capabilityRegistry: _registryWithStorage(),
+        reasoner: _FixedReasoner(_fieldSurveyApp()),
+      );
+      final outcome = await kernel.processIntent(
+        Intent.create(expression: 'track my field survey entries'),
+      );
 
-    expect(outcome, isA<ExecutionPlanReady>());
-    final ready = outcome as ExecutionPlanReady;
-    expect(ready.reviewSession, isNotNull);
-    expect(ready.evolutionRoadmap, isNotNull);
+      expect(outcome, isA<ExecutionPlanReady>());
+      final ready = outcome as ExecutionPlanReady;
+      expect(ready.reviewSession, isNotNull);
+      expect(ready.evolutionRoadmap, isNotNull);
 
-    final coordinator = WorldModelCoordinator();
-    coordinator.ingestReviewSession(ready.reviewSession!);
-    coordinator.ingestEvolutionRoadmap(ready.evolutionRoadmap!);
+      final coordinator = WorldModelCoordinator();
+      coordinator.ingestReviewSession(ready.reviewSession!);
+      coordinator.ingestEvolutionRoadmap(ready.evolutionRoadmap!);
 
-    expect(coordinator.model.graph.nodesOfKind(WorldNodeKind.evolution), isNotEmpty);
-    // Every ingestion is versioned and consistency-checked — reaching
-    // this point at all proves both bridges produced a graph-consistent
-    // update (WorldModelEngine.apply silently no-ops on rejection, so a
-    // non-empty result here is the real proof of a clean apply).
-    expect(coordinator.model.version.number, greaterThanOrEqualTo(1));
-  });
+      expect(
+        coordinator.model.graph.nodesOfKind(WorldNodeKind.evolution),
+        isNotEmpty,
+      );
+      // Every ingestion is versioned and consistency-checked — reaching
+      // this point at all proves both bridges produced a graph-consistent
+      // update (WorldModelEngine.apply silently no-ops on rejection, so a
+      // non-empty result here is the real proof of a clean apply).
+      expect(coordinator.model.version.number, greaterThanOrEqualTo(1));
+    },
+  );
 }

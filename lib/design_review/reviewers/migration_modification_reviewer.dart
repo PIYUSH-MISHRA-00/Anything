@@ -6,7 +6,8 @@
 library;
 
 import '../../software_architect/confidence.dart';
-import '../../software_architect/requirement_graph.dart' show NonFunctionalCategory;
+import '../../software_architect/requirement_graph.dart'
+    show NonFunctionalCategory;
 import '../review_context.dart';
 import '../review_types.dart';
 
@@ -24,8 +25,14 @@ class MigrationReviewer {
           category: ReviewCategory.migration,
           severity: ReviewSeverity.critical,
           reason: 'No real migration decision was recorded for this design',
-          evidence: const ReviewEvidence(affectedGraph: 'EngineeringCandidate.data', affectedNodeId: 'migrationDecision'),
-          recommendation: const ReviewRecommendation(description: 'Run DataEngineering to produce a real migration decision'),
+          evidence: const ReviewEvidence(
+            affectedGraph: 'EngineeringCandidate.data',
+            affectedNodeId: 'migrationDecision',
+          ),
+          recommendation: const ReviewRecommendation(
+            description:
+                'Run DataEngineering to produce a real migration decision',
+          ),
           confidence: Confidence.full,
         ),
       );
@@ -39,9 +46,8 @@ class ModificationReviewer {
   const ModificationReviewer();
 
   List<ReviewIssue> review(ReviewContext context) {
-    final hasFutureModificationRequirement = context.requirements.nonFunctional.any(
-      (r) => r.category == NonFunctionalCategory.futureModification,
-    );
+    final hasFutureModificationRequirement = context.requirements.nonFunctional
+        .any((r) => r.category == NonFunctionalCategory.futureModification);
     final issues = <ReviewIssue>[];
 
     if (!hasFutureModificationRequirement) {
@@ -50,9 +56,15 @@ class ModificationReviewer {
           id: 'modification:missingRequirement',
           category: ReviewCategory.modification,
           severity: ReviewSeverity.warning,
-          reason: 'No future-modification non-functional requirement was recorded for this request',
-          evidence: const ReviewEvidence(affectedGraph: 'RequirementGraph.nonFunctional', affectedNodeId: 'futureModification'),
-          recommendation: const ReviewRecommendation(description: 'Confirm RequirementExtractor ran for this request'),
+          reason:
+              'No future-modification non-functional requirement was recorded for this request',
+          evidence: const ReviewEvidence(
+            affectedGraph: 'RequirementGraph.nonFunctional',
+            affectedNodeId: 'futureModification',
+          ),
+          recommendation: const ReviewRecommendation(
+            description: 'Confirm RequirementExtractor ran for this request',
+          ),
           confidence: Confidence.full,
         ),
       );

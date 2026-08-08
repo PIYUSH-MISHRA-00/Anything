@@ -37,7 +37,9 @@ class DesignReviewEngine {
         .map(
           (issue) => ReviewDecision(
             issueId: issue.id,
-            kind: finalIssueIds.contains(issue.id) ? ReviewDecisionKind.accepted : ReviewDecisionKind.fixed,
+            kind: finalIssueIds.contains(issue.id)
+                ? ReviewDecisionKind.accepted
+                : ReviewDecisionKind.fixed,
             rationale: issue.reason,
             confidence: issue.confidence,
           ),
@@ -70,8 +72,11 @@ class DesignReviewEngine {
   /// requests producing this same fingerprint within one Kernel lifetime
   /// share ReviewMemory.
   String fingerprintOf(ReviewContext context) {
-    final entityIds = context.architecture.entities.map((e) => e.entityId).toList()..sort();
-    final capabilityIds = context.architecture.capabilities.map((c) => c.capabilityId).toList()..sort();
+    final entityIds =
+        context.architecture.entities.map((e) => e.entityId).toList()..sort();
+    final capabilityIds =
+        context.architecture.capabilities.map((c) => c.capabilityId).toList()
+          ..sort();
     return '${entityIds.join(',')}|${capabilityIds.join(',')}|${context.architecture.navigation.screenIds.length}';
   }
 }

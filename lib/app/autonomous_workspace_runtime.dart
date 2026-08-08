@@ -86,7 +86,12 @@ class WorkspaceNotification {
   final LifecycleOutcome outcome;
   final DateTime observedAt;
 
-  const WorkspaceNotification({required this.sessionId, required this.experienceName, required this.outcome, required this.observedAt});
+  const WorkspaceNotification({
+    required this.sessionId,
+    required this.experienceName,
+    required this.outcome,
+    required this.observedAt,
+  });
 }
 
 /// Real, whole-workspace snapshot — every field a plain, traceable
@@ -97,13 +102,23 @@ class WorkspaceRuntimeSnapshot {
   final List<WorkspaceNotification> notifications;
   final DateTime capturedAt;
 
-  const WorkspaceRuntimeSnapshot({required this.sessions, required this.notifications, required this.capturedAt});
+  const WorkspaceRuntimeSnapshot({
+    required this.sessions,
+    required this.notifications,
+    required this.capturedAt,
+  });
 
-  List<SessionRuntimeStatus> get backgroundSessions => sessions.where((s) => !s.isActive).toList();
-  SessionRuntimeStatus? get activeSession => sessions.where((s) => s.isActive).firstOrNull;
+  List<SessionRuntimeStatus> get backgroundSessions =>
+      sessions.where((s) => !s.isActive).toList();
+  SessionRuntimeStatus? get activeSession =>
+      sessions.where((s) => s.isActive).firstOrNull;
 }
 
-const _terminalOutcomes = {LifecycleOutcome.deployed, LifecycleOutcome.blocked, LifecycleOutcome.commitFailed};
+const _terminalOutcomes = {
+  LifecycleOutcome.deployed,
+  LifecycleOutcome.blocked,
+  LifecycleOutcome.commitFailed,
+};
 
 class AutonomousWorkspaceRuntime {
   final ExperienceWorkspaceManager _workspace;
@@ -114,7 +129,8 @@ class AutonomousWorkspaceRuntime {
   /// evidence and produces a fresh notification.
   final Map<String, LifecycleOutcome> _lastNotifiedOutcome = {};
 
-  AutonomousWorkspaceRuntime({required ExperienceWorkspaceManager workspace}) : _workspace = workspace;
+  AutonomousWorkspaceRuntime({required ExperienceWorkspaceManager workspace})
+    : _workspace = workspace;
 
   /// Real, on-demand aggregation — pure with respect to
   /// [ExperienceWorkspaceManager]'s own real state, except for the
@@ -136,20 +152,33 @@ class AutonomousWorkspaceRuntime {
           isActive: isActive,
           runtimeState: state.currentRuntimeState,
           deploymentStatus: state.currentLifecycleResult?.outcome,
-          artifactStatus: state.currentLifecycleResult?.artifactIntelligenceReport,
+          artifactStatus:
+              state.currentLifecycleResult?.artifactIntelligenceReport,
           hasPendingEvolution: state.pendingModification != null,
         ),
       );
 
       final outcome = state.currentLifecycleResult?.outcome;
-      if (!isActive && outcome != null && _terminalOutcomes.contains(outcome) && _lastNotifiedOutcome[state.sessionId] != outcome) {
+      if (!isActive &&
+          outcome != null &&
+          _terminalOutcomes.contains(outcome) &&
+          _lastNotifiedOutcome[state.sessionId] != outcome) {
         _lastNotifiedOutcome[state.sessionId] = outcome;
         notifications.add(
-          WorkspaceNotification(sessionId: state.sessionId, experienceName: state.currentExperienceName, outcome: outcome, observedAt: now),
+          WorkspaceNotification(
+            sessionId: state.sessionId,
+            experienceName: state.currentExperienceName,
+            outcome: outcome,
+            observedAt: now,
+          ),
         );
       }
     }
 
-    return WorkspaceRuntimeSnapshot(sessions: sessions, notifications: notifications, capturedAt: now);
+    return WorkspaceRuntimeSnapshot(
+      sessions: sessions,
+      notifications: notifications,
+      capturedAt: now,
+    );
   }
 }

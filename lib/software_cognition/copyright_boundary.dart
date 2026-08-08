@@ -29,14 +29,19 @@ class CopyrightBoundary {
   /// expected and not a copyright concern.
   static const int _verbatimExcerptThreshold = 200;
 
-  CopyrightBoundaryResult check({required String originalSource, required String digestText}) {
+  CopyrightBoundaryResult check({
+    required String originalSource,
+    required String digestText,
+  }) {
     final violations = <String>[];
     final trimmedDigest = digestText.trim();
 
     if (originalSource.isNotEmpty &&
         trimmedDigest.length >= _verbatimExcerptThreshold &&
         originalSource.contains(trimmedDigest)) {
-      violations.add('digest text is a verbatim excerpt of the original acquired source (${trimmedDigest.length} chars)');
+      violations.add(
+        'digest text is a verbatim excerpt of the original acquired source (${trimmedDigest.length} chars)',
+      );
     }
 
     return CopyrightBoundaryResult(violations: violations);
@@ -59,16 +64,30 @@ class AttributionCheck {
     final present = <String>[];
     final missing = <String>[];
 
-    void record(String field, bool hasValue) => hasValue ? present.add(field) : missing.add(field);
+    void record(String field, bool hasValue) =>
+        hasValue ? present.add(field) : missing.add(field);
 
     record('source', provenance.sourceUrl.isNotEmpty);
-    record('author', provenance.author != null && provenance.author!.isNotEmpty);
-    record('repository', provenance.repositoryUrl != null && provenance.repositoryUrl!.isNotEmpty);
-    record('commit', provenance.commit != null && provenance.commit!.isNotEmpty);
-    record('version', provenance.version != null && provenance.version!.isNotEmpty);
+    record(
+      'author',
+      provenance.author != null && provenance.author!.isNotEmpty,
+    );
+    record(
+      'repository',
+      provenance.repositoryUrl != null && provenance.repositoryUrl!.isNotEmpty,
+    );
+    record(
+      'commit',
+      provenance.commit != null && provenance.commit!.isNotEmpty,
+    );
+    record(
+      'version',
+      provenance.version != null && provenance.version!.isNotEmpty,
+    );
     record(
       'license',
-      provenance.license.licenseId != null || provenance.license.licenseName != null,
+      provenance.license.licenseId != null ||
+          provenance.license.licenseName != null,
     );
 
     return AttributionCompleteness(present: present, missing: missing);

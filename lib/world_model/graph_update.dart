@@ -14,7 +14,10 @@ class GraphUpdate {
 
   const GraphUpdate({this.addedNodes = const [], this.addedEdges = const []});
 
-  WorldGraph applyTo(WorldGraph graph) => WorldGraph(nodes: [...graph.nodes, ...addedNodes], edges: [...graph.edges, ...addedEdges]);
+  WorldGraph applyTo(WorldGraph graph) => WorldGraph(
+    nodes: [...graph.nodes, ...addedNodes],
+    edges: [...graph.edges, ...addedEdges],
+  );
 
   bool get isEmpty => addedNodes.isEmpty && addedEdges.isEmpty;
 }

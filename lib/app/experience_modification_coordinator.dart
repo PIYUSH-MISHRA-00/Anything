@@ -79,8 +79,11 @@ class ExperienceModificationCoordinator {
     EngineeringMemoryRepository? engineeringMemory,
     ExperienceCommitFramework? commitFramework,
   }) : _repository = repository ?? SqliteExperienceRepository(),
-       _commits = commitFramework ??
-           ExperienceCommitFramework(repository: repository ?? SqliteExperienceRepository()),
+       _commits =
+           commitFramework ??
+           ExperienceCommitFramework(
+             repository: repository ?? SqliteExperienceRepository(),
+           ),
        _activity = activity ?? ActivityRepository(),
        _engine = ModificationEngine(),
        _worldModel = worldModel ?? WorldModelCoordinator(),
@@ -114,7 +117,8 @@ class ExperienceModificationCoordinator {
     final check = _worldModel.precheckModification(experienceId);
     if (!check.approved) {
       return const ModificationCoordinatorFailed(
-        message: "I couldn't verify this app's data is consistent right now. Please try again.",
+        message:
+            "I couldn't verify this app's data is consistent right now. Please try again.",
       );
     }
 
@@ -236,7 +240,10 @@ class ExperienceModificationCoordinator {
     final result = await _engine.modify(currentPackage, spec);
     if (result is! ModificationReady) return null;
 
-    final experienceDiff = const ExperienceDiffer().diff(currentPackage, result.updatedPackage);
+    final experienceDiff = const ExperienceDiffer().diff(
+      currentPackage,
+      result.updatedPackage,
+    );
 
     // Implementation Milestone R5: surface real, persisted engineering
     // history when available — never a fabricated diff (see
@@ -285,11 +292,15 @@ class ExperienceModificationCoordinator {
   /// against stale state could persist an invalid package). This method
   /// re-validates [EvolutionDiffPlan.candidatePackage] through the exact
   /// same boundary [modifyExperience] already uses — never a bypass.
-  Future<ModificationCoordinatorResult> applyEvolutionPlan(EvolutionDiffPlan plan) async {
+  Future<ModificationCoordinatorResult> applyEvolutionPlan(
+    EvolutionDiffPlan plan,
+  ) async {
     final stopwatch = Stopwatch()..start();
     final candidate = plan.candidatePackage;
     if (candidate == null) {
-      return const ModificationCoordinatorFailed(message: "This plan has no candidate to apply.");
+      return const ModificationCoordinatorFailed(
+        message: "This plan has no candidate to apply.",
+      );
     }
 
     final metadata = await _repository.getMetadata(plan.experienceId);
@@ -303,7 +314,9 @@ class ExperienceModificationCoordinator {
 
     final validation = ExperiencePackageValidator.validate(candidate);
     if (!validation.isValid) {
-      return const ModificationCoordinatorFailed(message: "I couldn't apply that change.");
+      return const ModificationCoordinatorFailed(
+        message: "I couldn't apply that change.",
+      );
     }
 
     // IS-R55 Task 3 — modification prepares, the commit framework commits.
@@ -355,11 +368,21 @@ class ExperienceModificationCoordinator {
   static String _summarize(ExperienceDiff diff) {
     if (diff.isEmpty) return '';
     final parts = <String>[];
-    if (diff.addedScreens.isNotEmpty) parts.add('${diff.addedScreens.length} screen(s) added');
-    if (diff.removedScreens.isNotEmpty) parts.add('${diff.removedScreens.length} screen(s) removed');
-    if (diff.addedComponents.isNotEmpty) parts.add('${diff.addedComponents.length} component(s) added');
-    if (diff.removedComponents.isNotEmpty) parts.add('${diff.removedComponents.length} component(s) removed');
-    if (diff.addedCapabilities.isNotEmpty) parts.add('${diff.addedCapabilities.length} capability(ies) added');
+    if (diff.addedScreens.isNotEmpty) {
+      parts.add('${diff.addedScreens.length} screen(s) added');
+    }
+    if (diff.removedScreens.isNotEmpty) {
+      parts.add('${diff.removedScreens.length} screen(s) removed');
+    }
+    if (diff.addedComponents.isNotEmpty) {
+      parts.add('${diff.addedComponents.length} component(s) added');
+    }
+    if (diff.removedComponents.isNotEmpty) {
+      parts.add('${diff.removedComponents.length} component(s) removed');
+    }
+    if (diff.addedCapabilities.isNotEmpty) {
+      parts.add('${diff.addedCapabilities.length} capability(ies) added');
+    }
     if (diff.behaviorChanged) parts.add('behavior changed');
     if (diff.stateChanged) parts.add('state changed');
     if (diff.dataSchemaChanged) parts.add('data schema changed');
@@ -391,7 +414,9 @@ class ExperienceModificationCoordinator {
 
     final validation = ExperiencePackageValidator.validate(previousPackage);
     if (!validation.isValid) {
-      return const ModificationCoordinatorFailed(message: "I couldn't roll back that change.");
+      return const ModificationCoordinatorFailed(
+        message: "I couldn't roll back that change.",
+      );
     }
 
     final currentPackage = await _repository.getPackage(experienceId);

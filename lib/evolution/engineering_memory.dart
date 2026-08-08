@@ -32,18 +32,25 @@ class EngineeringMemory {
     required this.evolutionHistory,
   });
 
-  List<EvolutionDecision> acceptedIdeas(String fingerprint) =>
-      evolutionMemory.decisionsFor(fingerprint).where((d) => d.kind == EvolutionDecisionKind.accepted).toList();
+  List<EvolutionDecision> acceptedIdeas(String fingerprint) => evolutionMemory
+      .decisionsFor(fingerprint)
+      .where((d) => d.kind == EvolutionDecisionKind.accepted)
+      .toList();
 
-  List<EvolutionDecision> rejectedIdeas(String fingerprint) =>
-      evolutionMemory.decisionsFor(fingerprint).where((d) => d.kind == EvolutionDecisionKind.rejected).toList();
+  List<EvolutionDecision> rejectedIdeas(String fingerprint) => evolutionMemory
+      .decisionsFor(fingerprint)
+      .where((d) => d.kind == EvolutionDecisionKind.rejected)
+      .toList();
 
-  List<ReviewDecision> reviewDecisionsFor(String fingerprint) => reviewMemory.decisionsFor(fingerprint);
+  List<ReviewDecision> reviewDecisionsFor(String fingerprint) =>
+      reviewMemory.decisionsFor(fingerprint);
 
   List<SolutionTradeoff> tradeoffsFor(String fingerprint) {
     final result = evolutionMemory.recall(fingerprint);
     if (result == null) return const [];
-    return result.cycle.finalIteration.candidates.expand((c) => c.tradeoffs).toList();
+    return result.cycle.finalIteration.candidates
+        .expand((c) => c.tradeoffs)
+        .toList();
   }
 
   List<String> futureIdeasFor(String fingerprint) {
@@ -57,15 +64,19 @@ class EngineeringMemory {
 
   /// Every architecture-category finding SCARE has ever recorded — a real
   /// slice of ReviewHistory, not a separate ledger.
-  List<ReviewIssue> architecturalHistory() => _issuesOfCategory(ReviewCategory.architecture);
+  List<ReviewIssue> architecturalHistory() =>
+      _issuesOfCategory(ReviewCategory.architecture);
 
   /// Every security-category finding SCARE has ever recorded.
-  List<ReviewIssue> securityHistory() => _issuesOfCategory(ReviewCategory.security);
+  List<ReviewIssue> securityHistory() =>
+      _issuesOfCategory(ReviewCategory.security);
 
   /// Every performance-category finding SCARE has ever recorded.
-  List<ReviewIssue> performanceHistory() => _issuesOfCategory(ReviewCategory.performance);
+  List<ReviewIssue> performanceHistory() =>
+      _issuesOfCategory(ReviewCategory.performance);
 
-  List<ReviewIssue> _issuesOfCategory(ReviewCategory category) => reviewHistory.sessions
+  List<ReviewIssue> _issuesOfCategory(ReviewCategory category) => reviewHistory
+      .sessions
       .expand((s) => s.result.allIssues)
       .where((issue) => issue.category == category)
       .toList();

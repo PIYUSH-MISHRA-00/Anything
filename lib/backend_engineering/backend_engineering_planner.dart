@@ -34,7 +34,9 @@ DatabaseColumnType _columnTypeFor(BlueprintFieldType type) => switch (type) {
   BlueprintFieldType.integer => DatabaseColumnType.integer,
   BlueprintFieldType.decimal => DatabaseColumnType.decimal,
   BlueprintFieldType.boolean => DatabaseColumnType.boolean,
-  BlueprintFieldType.date || BlueprintFieldType.dateTime || BlueprintFieldType.time => DatabaseColumnType.dateTime,
+  BlueprintFieldType.date ||
+  BlueprintFieldType.dateTime ||
+  BlueprintFieldType.time => DatabaseColumnType.dateTime,
   BlueprintFieldType.reference => DatabaseColumnType.reference,
   // A derived value is computed, never stored — DataEngineering (V3)
   // already treats these as aggregations, not columns; mirrored here.
@@ -57,15 +59,27 @@ class BackendEngineeringPlanner {
 
   DatabaseSchemaModel _planDatabase(BackendEngineeringContext context) {
     final relationshipsByField = {
-      for (final r in context.architecture.relationships) '${r.fromEntityId}.${r.fieldId}': r,
+      for (final r in context.architecture.relationships)
+        '${r.fromEntityId}.${r.fieldId}': r,
     };
 
     final tables = context.app.entities.map((entity) {
       final columns = <DatabaseColumn>[
-        DatabaseColumn(id: '${entity.id}.id', name: 'id', type: DatabaseColumnType.text, required: true, isPrimaryKey: true),
+        DatabaseColumn(
+          id: '${entity.id}.id',
+          name: 'id',
+          type: DatabaseColumnType.text,
+          required: true,
+          isPrimaryKey: true,
+        ),
         for (final field in entity.fields)
           if (field.type != BlueprintFieldType.derived)
-            DatabaseColumn(id: '${entity.id}.${field.id}', name: field.name, type: _columnTypeFor(field.type), required: field.required),
+            DatabaseColumn(
+              id: '${entity.id}.${field.id}',
+              name: field.name,
+              type: _columnTypeFor(field.type),
+              required: field.required,
+            ),
       ];
 
       final foreignKeys = <ForeignKeyConstraint>[
@@ -74,18 +88,29 @@ class BackendEngineeringPlanner {
             ForeignKeyConstraint(
               columnId: '${entity.id}.${field.id}',
               referencesTableId: field.referenceEntityId!,
-              onDelete: relationshipsByField['${entity.id}.${field.id}']?.deletePolicy.name ?? RelationshipDeletePolicy.setNull.name,
+              onDelete:
+                  relationshipsByField['${entity.id}.${field.id}']
+                      ?.deletePolicy
+                      .name ??
+                  RelationshipDeletePolicy.setNull.name,
             ),
       ];
 
-      return DatabaseTable(id: entity.id, name: entity.name, columns: columns, foreignKeys: foreignKeys);
+      return DatabaseTable(
+        id: entity.id,
+        name: entity.name,
+        columns: columns,
+        foreignKeys: foreignKeys,
+      );
     }).toList();
 
     return DatabaseSchemaModel(tables: tables);
   }
 
   ApiSpecificationModel _planApi(BackendEngineeringContext context) {
-    final interactionByEntity = {for (final i in context.architecture.interactions) i.entityId: i};
+    final interactionByEntity = {
+      for (final i in context.architecture.interactions) i.entityId: i,
+    };
     final endpoints = <ApiEndpoint>[];
 
     for (final entity in context.app.entities) {
@@ -94,24 +119,75 @@ class BackendEngineeringPlanner {
 
       final requestFields = [
         for (final field in entity.fields)
-          if (field.type != BlueprintFieldType.derived) ApiRequestField(name: field.name, required: field.required),
+          if (field.type != BlueprintFieldType.derived)
+            ApiRequestField(name: field.name, required: field.required),
       ];
 
       if (interaction.canRead) {
-        endpoints.add(ApiEndpoint(id: '${entity.id}.list', path: '/${entity.id}', method: HttpMethod.get, operation: ApiOperation.list, entityId: entity.id));
-        endpoints.add(ApiEndpoint(id: '${entity.id}.get', path: '/${entity.id}/{id}', method: HttpMethod.get, operation: ApiOperation.get, entityId: entity.id));
+        endpoints.add(
+          ApiEndpoint(
+            id: '${entity.id}.list',
+            path: '/${entity.id}',
+            method: HttpMethod.get,
+            operation: ApiOperation.list,
+            entityId: entity.id,
+          ),
+        );
+        endpoints.add(
+          ApiEndpoint(
+            id: '${entity.id}.get',
+            path: '/${entity.id}/{id}',
+            method: HttpMethod.get,
+            operation: ApiOperation.get,
+            entityId: entity.id,
+          ),
+        );
       }
       if (interaction.canCreate) {
-        endpoints.add(ApiEndpoint(id: '${entity.id}.create', path: '/${entity.id}', method: HttpMethod.post, operation: ApiOperation.create, entityId: entity.id, requestFields: requestFields));
+        endpoints.add(
+          ApiEndpoint(
+            id: '${entity.id}.create',
+            path: '/${entity.id}',
+            method: HttpMethod.post,
+            operation: ApiOperation.create,
+            entityId: entity.id,
+            requestFields: requestFields,
+          ),
+        );
       }
       if (interaction.canUpdate) {
-        endpoints.add(ApiEndpoint(id: '${entity.id}.update', path: '/${entity.id}/{id}', method: HttpMethod.put, operation: ApiOperation.update, entityId: entity.id, requestFields: requestFields));
+        endpoints.add(
+          ApiEndpoint(
+            id: '${entity.id}.update',
+            path: '/${entity.id}/{id}',
+            method: HttpMethod.put,
+            operation: ApiOperation.update,
+            entityId: entity.id,
+            requestFields: requestFields,
+          ),
+        );
       }
       if (interaction.canDelete) {
-        endpoints.add(ApiEndpoint(id: '${entity.id}.delete', path: '/${entity.id}/{id}', method: HttpMethod.delete, operation: ApiOperation.delete, entityId: entity.id));
+        endpoints.add(
+          ApiEndpoint(
+            id: '${entity.id}.delete',
+            path: '/${entity.id}/{id}',
+            method: HttpMethod.delete,
+            operation: ApiOperation.delete,
+            entityId: entity.id,
+          ),
+        );
       }
       if (interaction.supportsSearch) {
-        endpoints.add(ApiEndpoint(id: '${entity.id}.search', path: '/${entity.id}/search', method: HttpMethod.get, operation: ApiOperation.search, entityId: entity.id));
+        endpoints.add(
+          ApiEndpoint(
+            id: '${entity.id}.search',
+            path: '/${entity.id}/search',
+            method: HttpMethod.get,
+            operation: ApiOperation.search,
+            entityId: entity.id,
+          ),
+        );
       }
     }
 
@@ -119,29 +195,41 @@ class BackendEngineeringPlanner {
   }
 
   AuthenticationModel _planAuthentication(BackendEngineeringContext context) =>
-      AuthenticationModel(requiresCredentials: context.architecture.security.requiresCredentialVault);
+      AuthenticationModel(
+        requiresCredentials:
+            context.architecture.security.requiresCredentialVault,
+      );
 
-  BackendStorageModel _planStorage(BackendEngineeringContext context) => BackendStorageModel(
-    requirements: [
-      for (final e in context.architecture.entities) StorageRequirement(entityId: e.entityId, kind: e.storage),
-    ],
-  );
+  BackendStorageModel _planStorage(BackendEngineeringContext context) =>
+      BackendStorageModel(
+        requirements: [
+          for (final e in context.architecture.entities)
+            StorageRequirement(entityId: e.entityId, kind: e.storage),
+        ],
+      );
 
   BackgroundJobsModel _planBackgroundJobs(BackendEngineeringContext context) {
     final strategy = context.architecture.synchronization.strategy;
     return BackgroundJobsModel(
-      requiresBackgroundSync: strategy == SyncStrategy.cacheFirst || strategy == SyncStrategy.networkFirst,
+      requiresBackgroundSync:
+          strategy == SyncStrategy.cacheFirst ||
+          strategy == SyncStrategy.networkFirst,
       sourceStrategy: strategy,
     );
   }
 
-  DeploymentSpecificationModel _planDeployment(BackendEngineeringContext context) {
+  DeploymentSpecificationModel _planDeployment(
+    BackendEngineeringContext context,
+  ) {
     final requiresBackend =
-        context.architecture.offline.capability != OfflineCapability.fullyOffline ||
+        context.architecture.offline.capability !=
+            OfflineCapability.fullyOffline ||
         context.architecture.security.networkMode != NetworkMode.none;
     return DeploymentSpecificationModel(
       requiresBackend: requiresBackend,
-      secretReferences: context.architecture.security.requiresCredentialVault ? const [SecretReference('BACKEND_API_CREDENTIALS')] : const [],
+      secretReferences: context.architecture.security.requiresCredentialVault
+          ? const [SecretReference('BACKEND_API_CREDENTIALS')]
+          : const [],
     );
   }
 }

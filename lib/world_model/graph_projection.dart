@@ -11,20 +11,32 @@ import 'world_types.dart';
 class GraphProjection {
   const GraphProjection();
 
-  WorldGraph project(WorldGraph graph, {Set<WorldNodeKind>? nodeKinds, Set<RelationshipKind>? relationKinds}) {
-    final nodes = nodeKinds == null ? graph.nodes : graph.nodes.where((n) => nodeKinds.contains(n.kind)).toList();
+  WorldGraph project(
+    WorldGraph graph, {
+    Set<WorldNodeKind>? nodeKinds,
+    Set<RelationshipKind>? relationKinds,
+  }) {
+    final nodes = nodeKinds == null
+        ? graph.nodes
+        : graph.nodes.where((n) => nodeKinds.contains(n.kind)).toList();
     final nodeIds = nodes.map((n) => n.identity).toSet();
 
     final edges = graph.edges.where((e) {
-      if (!nodeIds.contains(e.fromId) || !nodeIds.contains(e.toId)) return false;
-      if (relationKinds != null && !relationKinds.contains(e.kind)) return false;
+      if (!nodeIds.contains(e.fromId) || !nodeIds.contains(e.toId)) {
+        return false;
+      }
+      if (relationKinds != null && !relationKinds.contains(e.kind)) {
+        return false;
+      }
       return true;
     }).toList();
 
     return WorldGraph(nodes: nodes, edges: edges);
   }
 
-  List<WorldNode> nodesOfKind(WorldGraph graph, WorldNodeKind kind) => graph.nodesOfKind(kind);
+  List<WorldNode> nodesOfKind(WorldGraph graph, WorldNodeKind kind) =>
+      graph.nodesOfKind(kind);
 
-  List<WorldEdge> edgesOfKind(WorldGraph graph, RelationshipKind kind) => graph.edges.where((e) => e.kind == kind).toList();
+  List<WorldEdge> edgesOfKind(WorldGraph graph, RelationshipKind kind) =>
+      graph.edges.where((e) => e.kind == kind).toList();
 }

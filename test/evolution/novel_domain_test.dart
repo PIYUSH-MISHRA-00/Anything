@@ -75,54 +75,110 @@ SemanticApp _seedLibraryApp() {
         id: 'seed_packet',
         name: 'SeedPacket',
         fields: [
-          SemanticField(id: 'variety', name: 'Variety', type: BlueprintFieldType.text, required: true),
-          SemanticField(id: 'quantity', name: 'Quantity', type: BlueprintFieldType.integer, required: true),
-          SemanticField(id: 'harvestSeason', name: 'Harvest Season', type: BlueprintFieldType.text),
-          SemanticField(id: 'donorId', name: 'Donor', type: BlueprintFieldType.reference, referenceEntityId: 'donor'),
+          SemanticField(
+            id: 'variety',
+            name: 'Variety',
+            type: BlueprintFieldType.text,
+            required: true,
+          ),
+          SemanticField(
+            id: 'quantity',
+            name: 'Quantity',
+            type: BlueprintFieldType.integer,
+            required: true,
+          ),
+          SemanticField(
+            id: 'harvestSeason',
+            name: 'Harvest Season',
+            type: BlueprintFieldType.text,
+          ),
+          SemanticField(
+            id: 'donorId',
+            name: 'Donor',
+            type: BlueprintFieldType.reference,
+            referenceEntityId: 'donor',
+          ),
         ],
       ),
       const SemanticEntity(
         id: 'donor',
         name: 'Donor',
-        fields: [SemanticField(id: 'name', name: 'Name', type: BlueprintFieldType.text, required: true)],
+        fields: [
+          SemanticField(
+            id: 'name',
+            name: 'Name',
+            type: BlueprintFieldType.text,
+            required: true,
+          ),
+        ],
       ),
     ],
     views: const [
-      SemanticView(id: 'seed_list', name: 'Seed Packets', purpose: 'list', sourceEntityId: 'seed_packet', viewType: BlueprintViewType.list, isDefault: true),
-      SemanticView(id: 'donor_list', name: 'Donors', purpose: 'list', sourceEntityId: 'donor', viewType: BlueprintViewType.list),
+      SemanticView(
+        id: 'seed_list',
+        name: 'Seed Packets',
+        purpose: 'list',
+        sourceEntityId: 'seed_packet',
+        viewType: BlueprintViewType.list,
+        isDefault: true,
+      ),
+      SemanticView(
+        id: 'donor_list',
+        name: 'Donors',
+        purpose: 'list',
+        sourceEntityId: 'donor',
+        viewType: BlueprintViewType.list,
+      ),
     ],
     actions: const [
-      SemanticAction(id: 'add_seed_packet', name: 'Add Seed Packet', targetEntityId: 'seed_packet'),
-      SemanticAction(id: 'add_donor', name: 'Add Donor', targetEntityId: 'donor'),
+      SemanticAction(
+        id: 'add_seed_packet',
+        name: 'Add Seed Packet',
+        targetEntityId: 'seed_packet',
+      ),
+      SemanticAction(
+        id: 'add_donor',
+        name: 'Add Donor',
+        targetEntityId: 'donor',
+      ),
     ],
   );
 }
 
 void main() {
-  test('a never-before-seen domain reaches a real, structurally-derived EvolutionRoadmap', () async {
-    final kernel = AnythingKernel(
-      providerRegistry: _FakeProviderRegistry(),
-      capabilityRegistry: _registryWithStorage(),
-      reasoner: _FixedReasoner(_seedLibraryApp()),
-    );
+  test(
+    'a never-before-seen domain reaches a real, structurally-derived EvolutionRoadmap',
+    () async {
+      final kernel = AnythingKernel(
+        providerRegistry: _FakeProviderRegistry(),
+        capabilityRegistry: _registryWithStorage(),
+        reasoner: _FixedReasoner(_seedLibraryApp()),
+      );
 
-    final outcome = await kernel.processIntent(
-      Intent.create(expression: 'track seed packets donated to our community seed library'),
-    );
+      final outcome = await kernel.processIntent(
+        Intent.create(
+          expression:
+              'track seed packets donated to our community seed library',
+        ),
+      );
 
-    expect(outcome, isA<ExecutionPlanReady>());
-    final ready = outcome as ExecutionPlanReady;
-    final roadmap = ready.evolutionRoadmap!;
+      expect(outcome, isA<ExecutionPlanReady>());
+      final ready = outcome as ExecutionPlanReady;
+      final roadmap = ready.evolutionRoadmap!;
 
-    expect(roadmap.milestones, hasLength(6));
-    expect(roadmap.fingerprint, isNotEmpty);
+      expect(roadmap.milestones, hasLength(6));
+      expect(roadmap.fingerprint, isNotEmpty);
 
-    // Every proposal surfaced must trace to real, structural evidence —
-    // never a domain-specific fabrication (no mention of "seed"/"donor"
-    // logic anywhere in lib/evolution/, only structural signals).
-    for (final proposal in roadmap.allProposals) {
-      expect(proposal.candidate.opportunity.reason.evidence.affectedNodeId, isNotEmpty);
-      expect(proposal.reviewDecision.kind, EvolutionDecisionKind.accepted);
-    }
-  });
+      // Every proposal surfaced must trace to real, structural evidence —
+      // never a domain-specific fabrication (no mention of "seed"/"donor"
+      // logic anywhere in lib/evolution/, only structural signals).
+      for (final proposal in roadmap.allProposals) {
+        expect(
+          proposal.candidate.opportunity.reason.evidence.affectedNodeId,
+          isNotEmpty,
+        );
+        expect(proposal.reviewDecision.kind, EvolutionDecisionKind.accepted);
+      }
+    },
+  );
 }

@@ -86,7 +86,9 @@ class DesignReviewer {
       ..._modification.review(context),
       ..._consistency.review(context),
     ];
-    issues.addAll(_maintainability.review(context, otherIssueCount: issues.length));
+    issues.addAll(
+      _maintainability.review(context, otherIssueCount: issues.length),
+    );
 
     return ReviewIteration(index: iteration, issues: issues);
   }

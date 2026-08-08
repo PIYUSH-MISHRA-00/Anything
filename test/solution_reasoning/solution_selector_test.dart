@@ -8,9 +8,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:anything/feature_discovery/dependency_resolver.dart';
 import 'package:anything/feature_discovery/feature_discovery_context.dart';
 import 'package:anything/feature_discovery/feature_discovery_engine.dart';
-import 'package:anything/feature_discovery/feature_types.dart' show ComplexityLevel, FeatureComplexity;
+import 'package:anything/feature_discovery/feature_types.dart'
+    show ComplexityLevel, FeatureComplexity;
 import 'package:anything/kernel/classification/intent_category.dart';
-import 'package:anything/kernel/specification/experience_spec.dart' show NetworkNeed;
+import 'package:anything/kernel/specification/experience_spec.dart'
+    show NetworkNeed;
 import 'package:anything/kernel/understanding/intent_understanding.dart';
 import 'package:anything/software_architect/architecture_planner.dart';
 import 'package:anything/software_architect/confidence.dart';
@@ -39,7 +41,9 @@ IntentUnderstanding _understanding() {
     intentId: 'test-${DateTime.now().microsecondsSinceEpoch}',
     objective: 'test',
     category: IntentCategory.create,
-    existingExperience: const ExistingExperienceResolution(status: ExistingExperienceStatus.notChecked),
+    existingExperience: const ExistingExperienceResolution(
+      status: ExistingExperienceStatus.notChecked,
+    ),
     desiredOutcome: '',
     confidence: 0.9,
     networkNeed: NetworkNeed.none,
@@ -53,12 +57,28 @@ SemanticApp _app() {
     name: 'Field Survey Log',
     purpose: 'p',
     entities: [
-      const SemanticEntity(id: 'entry', name: 'Entry', fields: [SemanticField(id: 'title', name: 'Title', type: BlueprintFieldType.text)]),
+      const SemanticEntity(
+        id: 'entry',
+        name: 'Entry',
+        fields: [
+          SemanticField(
+            id: 'title',
+            name: 'Title',
+            type: BlueprintFieldType.text,
+          ),
+        ],
+      ),
     ],
   );
 }
 
-SolutionScore _score(double overall, {double security = 0.5, double maintainability = 0.5, double offline = 0.5, double userExperience = 0.5}) {
+SolutionScore _score(
+  double overall, {
+  double security = 0.5,
+  double maintainability = 0.5,
+  double offline = 0.5,
+  double userExperience = 0.5,
+}) {
   Confidence c(double v) => Confidence(score: v, reason: 'test');
   return SolutionScore(
     overall: c(overall),
@@ -116,11 +136,24 @@ SolutionCandidate _fixture(
 
 void main() {
   final app = _app();
-  final requirements = _requirementExtractor.extract(app: app, understanding: _understanding());
-  final featureGraph = _featureEngine.plan(FeatureDiscoveryContext(app: app, requirements: requirements));
-  final dependencyGraph = const DependencyGraphBuilder().build(featureGraph.nodes.map((n) => n.candidate).toList());
-  final context = SolutionExplorationContext(app: app, featureGraph: featureGraph, dependencyGraph: dependencyGraph);
-  final baseline = _refinementPlanner.refine(_architecturePlanner.plan(app)).finalCandidate;
+  final requirements = _requirementExtractor.extract(
+    app: app,
+    understanding: _understanding(),
+  );
+  final featureGraph = _featureEngine.plan(
+    FeatureDiscoveryContext(app: app, requirements: requirements),
+  );
+  final dependencyGraph = const DependencyGraphBuilder().build(
+    featureGraph.nodes.map((n) => n.candidate).toList(),
+  );
+  final context = SolutionExplorationContext(
+    app: app,
+    featureGraph: featureGraph,
+    dependencyGraph: dependencyGraph,
+  );
+  final baseline = _refinementPlanner
+      .refine(_architecturePlanner.plan(app))
+      .finalCandidate;
   final real = _generator.build(
     baseline: baseline,
     variation: ArchitectureVariation(
@@ -134,37 +167,64 @@ void main() {
     context: context,
   );
 
-  test('never first-candidate-wins: a worse candidate placed first is not selected', () {
-    final worse = _fixture(real, id: 'worse', score: _score(0.3));
-    final better = _fixture(real, id: 'better', score: _score(0.9));
-    final candidates = [worse, better]; // worse is first in the list
-    final graph = _comparison.compare(candidates).graph;
+  test(
+    'never first-candidate-wins: a worse candidate placed first is not selected',
+    () {
+      final worse = _fixture(real, id: 'worse', score: _score(0.3));
+      final better = _fixture(real, id: 'better', score: _score(0.9));
+      final candidates = [worse, better]; // worse is first in the list
+      final graph = _comparison.compare(candidates).graph;
 
-    final decision = _selector.select(candidates, graph);
+      final decision = _selector.select(candidates, graph);
 
-    expect(decision.selected.id, 'better');
-    expect(decision.rejected.map((r) => r.candidate.id), contains('worse'));
-  });
+      expect(decision.selected.id, 'better');
+      expect(decision.rejected.map((r) => r.candidate.id), contains('worse'));
+    },
+  );
 
-  test('a dominated candidate is excluded from the Pareto frontier and never selected', () {
-    final dominated = _fixture(real, id: 'dominated', score: _score(0.5), level: ComplexityLevel.high);
-    final dominator = _fixture(real, id: 'dominator', score: _score(0.7), level: ComplexityLevel.low);
-    final candidates = [dominated, dominator];
-    final graph = _comparison.compare(candidates).graph;
+  test(
+    'a dominated candidate is excluded from the Pareto frontier and never selected',
+    () {
+      final dominated = _fixture(
+        real,
+        id: 'dominated',
+        score: _score(0.5),
+        level: ComplexityLevel.high,
+      );
+      final dominator = _fixture(
+        real,
+        id: 'dominator',
+        score: _score(0.7),
+        level: ComplexityLevel.low,
+      );
+      final candidates = [dominated, dominator];
+      final graph = _comparison.compare(candidates).graph;
 
-    final decision = _selector.select(candidates, graph);
-    expect(decision.selected.id, 'dominator');
-  });
+      final decision = _selector.select(candidates, graph);
+      expect(decision.selected.id, 'dominator');
+    },
+  );
 
-  test('a tie on overall score is broken by security, then maintainability, then offline', () {
-    final a = _fixture(real, id: 'a', score: _score(0.7, security: 0.9, maintainability: 0.5, offline: 0.5));
-    final b = _fixture(real, id: 'b', score: _score(0.7, security: 0.5, maintainability: 0.9, offline: 0.5));
-    final candidates = [b, a]; // b (lower security) first in the list
-    final graph = _comparison.compare(candidates).graph;
+  test(
+    'a tie on overall score is broken by security, then maintainability, then offline',
+    () {
+      final a = _fixture(
+        real,
+        id: 'a',
+        score: _score(0.7, security: 0.9, maintainability: 0.5, offline: 0.5),
+      );
+      final b = _fixture(
+        real,
+        id: 'b',
+        score: _score(0.7, security: 0.5, maintainability: 0.9, offline: 0.5),
+      );
+      final candidates = [b, a]; // b (lower security) first in the list
+      final graph = _comparison.compare(candidates).graph;
 
-    final decision = _selector.select(candidates, graph);
-    expect(decision.selected.id, 'a'); // higher security wins the tie-break
-  });
+      final decision = _selector.select(candidates, graph);
+      expect(decision.selected.id, 'a'); // higher security wins the tie-break
+    },
+  );
 
   test('every rejected alternative carries a concrete, non-empty reason', () {
     final worse = _fixture(real, id: 'worse', score: _score(0.3));

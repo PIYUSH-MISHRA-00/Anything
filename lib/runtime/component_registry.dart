@@ -376,9 +376,11 @@ class RuntimeComponentRegistry {
         builder: (ctx, props, children) {
           final hint = props['hint']?.toString() ?? 'Search...';
           final entityId = props['entityId']?.toString();
-          final onEvent = props['_onEvent']
-              as void Function(String, {Map<String, dynamic>? data})?;
-          final onStateChanged = props['_onStateChanged'] as void Function(dynamic)?;
+          final onEvent =
+              props['_onEvent']
+                  as void Function(String, {Map<String, dynamic>? data})?;
+          final onStateChanged =
+              props['_onStateChanged'] as void Function(dynamic)?;
           return TextField(
             decoration: InputDecoration(
               hintText: hint,

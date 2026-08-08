@@ -120,7 +120,7 @@ class _FakeModelProvider implements ModelProvider {
   final String _responseText;
 
   _FakeModelProvider({required String responseText})
-      : _responseText = responseText;
+    : _responseText = responseText;
 
   @override
   String get providerId => 'fake';
@@ -135,10 +135,12 @@ class _FakeModelProvider implements ModelProvider {
     invocationCount++;
     return ModelResponse(text: _responseText);
   }
+
   @override
   Stream<String> generateStream(ModelRequest request) async* {
     yield _responseText;
   }
+
   @override
   Future<bool> testConnection(String apiKey) async => true;
   @override
@@ -194,7 +196,7 @@ class _KnowledgeLoopReasoner implements ApplicationReasoner {
   final List<AppReasoningResult> _responses;
 
   _KnowledgeLoopReasoner({List<AppReasoningResult>? responses})
-      : _responses = responses ?? [];
+    : _responses = responses ?? [];
 
   @override
   Future<AppReasoningResult> reason(ApplicationReasoningContext context) async {
@@ -249,15 +251,12 @@ class _MultiRoundReasoner implements ApplicationReasoner {
   @override
   Future<AppReasoningResult> reason(ApplicationReasoningContext context) async {
     callCount++;
-    final hasA = context.knowledge?.resources
-            .any((r) => r.id == 'resource-A') ??
-        false;
-    final hasB = context.knowledge?.resources
-            .any((r) => r.id == 'resource-B') ??
-        false;
-    final hasC = context.knowledge?.resources
-            .any((r) => r.id == 'resource-C') ??
-        false;
+    final hasA =
+        context.knowledge?.resources.any((r) => r.id == 'resource-A') ?? false;
+    final hasB =
+        context.knowledge?.resources.any((r) => r.id == 'resource-B') ?? false;
+    final hasC =
+        context.knowledge?.resources.any((r) => r.id == 'resource-C') ?? false;
 
     if (!hasA) {
       return const ReasoningKnowledgeRequired(
@@ -517,30 +516,33 @@ void main() {
   // A. Required Knowledge Success
   // ==========================================================================
   group('Knowledge A: Required Knowledge Success', () {
-    test('Kernel acquires required knowledge and reasons successfully', () async {
-      final reasoner = _KnowledgeLoopReasoner();
-      final cache = KnowledgeCache();
-      await cache.store([
-        _makeResource(
-          id: 'seed-required',
-          content: 'Domain knowledge for testing',
-          title: 'test domain best practices',
-          relevanceScore: 0.9,
-          authorityScore: 0.8,
-          freshnessScore: 0.7,
-        ),
-      ]);
-      final kernel = AnythingKernel(
-        providerRegistry: _FakeProviderRegistry(),
-        reasoner: reasoner,
-        knowledgeEngine: KnowledgeAcquisitionEngine(cache: cache),
-      );
-      final outcome = await kernel.processIntent(
-        Intent.create(expression: 'create a test app'),
-      );
-      expect(reasoner.callCount, greaterThanOrEqualTo(2));
-      expect(outcome, isA<KernelOutcome>());
-    });
+    test(
+      'Kernel acquires required knowledge and reasons successfully',
+      () async {
+        final reasoner = _KnowledgeLoopReasoner();
+        final cache = KnowledgeCache();
+        await cache.store([
+          _makeResource(
+            id: 'seed-required',
+            content: 'Domain knowledge for testing',
+            title: 'test domain best practices',
+            relevanceScore: 0.9,
+            authorityScore: 0.8,
+            freshnessScore: 0.7,
+          ),
+        ]);
+        final kernel = AnythingKernel(
+          providerRegistry: _FakeProviderRegistry(),
+          reasoner: reasoner,
+          knowledgeEngine: KnowledgeAcquisitionEngine(cache: cache),
+        );
+        final outcome = await kernel.processIntent(
+          Intent.create(expression: 'create a test app'),
+        );
+        expect(reasoner.callCount, greaterThanOrEqualTo(2));
+        expect(outcome, isA<KernelOutcome>());
+      },
+    );
   });
 
   // ==========================================================================
@@ -625,74 +627,80 @@ void main() {
   // D. Multi-Round Accumulation
   // ==========================================================================
   group('Knowledge D: Multi-Round Accumulation', () {
-    test('Round 1 resource A, Round 2 resources B+C — all present in round 3',
-        () async {
-      final reasoner = _MultiRoundReasoner();
-      final cache = KnowledgeCache();
-      await cache.store([
-        _makeResource(
-          id: 'resource-A',
-          content: 'Resource A',
-          title: 'resource A data',
-          relevanceScore: 0.9,
-          authorityScore: 0.8,
-          freshnessScore: 0.7,
-        ),
-        _makeResource(
-          id: 'resource-B',
-          content: 'Resource B',
-          title: 'resource B data',
-          relevanceScore: 0.9,
-          authorityScore: 0.8,
-          freshnessScore: 0.7,
-        ),
-        _makeResource(
-          id: 'resource-C',
-          content: 'Resource C',
-          title: 'resource C data',
-          relevanceScore: 0.9,
-          authorityScore: 0.8,
-          freshnessScore: 0.7,
-        ),
-      ]);
-      final kernel = AnythingKernel(
-        providerRegistry: _FakeProviderRegistry(),
-        reasoner: reasoner,
-        knowledgeEngine: KnowledgeAcquisitionEngine(cache: cache),
-      );
-      final outcome = await kernel.processIntent(
-        Intent.create(expression: 'create a test app'),
-      );
-      // The multi-round reasoner succeeds only if A, B, C all accumulated
-      expect(reasoner.callCount, greaterThanOrEqualTo(2));
-      expect(outcome, isA<KernelOutcome>());
-    });
+    test(
+      'Round 1 resource A, Round 2 resources B+C — all present in round 3',
+      () async {
+        final reasoner = _MultiRoundReasoner();
+        final cache = KnowledgeCache();
+        await cache.store([
+          _makeResource(
+            id: 'resource-A',
+            content: 'Resource A',
+            title: 'resource A data',
+            relevanceScore: 0.9,
+            authorityScore: 0.8,
+            freshnessScore: 0.7,
+          ),
+          _makeResource(
+            id: 'resource-B',
+            content: 'Resource B',
+            title: 'resource B data',
+            relevanceScore: 0.9,
+            authorityScore: 0.8,
+            freshnessScore: 0.7,
+          ),
+          _makeResource(
+            id: 'resource-C',
+            content: 'Resource C',
+            title: 'resource C data',
+            relevanceScore: 0.9,
+            authorityScore: 0.8,
+            freshnessScore: 0.7,
+          ),
+        ]);
+        final kernel = AnythingKernel(
+          providerRegistry: _FakeProviderRegistry(),
+          reasoner: reasoner,
+          knowledgeEngine: KnowledgeAcquisitionEngine(cache: cache),
+        );
+        final outcome = await kernel.processIntent(
+          Intent.create(expression: 'create a test app'),
+        );
+        // The multi-round reasoner succeeds only if A, B, C all accumulated
+        expect(reasoner.callCount, greaterThanOrEqualTo(2));
+        expect(outcome, isA<KernelOutcome>());
+      },
+    );
 
-    test('Deduplication: same resource ID across rounds not duplicated',
-        () async {
-      final bundleA = KnowledgeBundle(
-        id: 'b1',
-        status: BundleStatus.ready,
-        resources: [
-          _makeResource(id: 'dup-1', content: 'First'),
-          _makeResource(id: 'dup-2', content: 'Second'),
-        ],
-        generatedAt: DateTime(2026),
-      );
-      final bundleB = KnowledgeBundle(
-        id: 'b2',
-        status: BundleStatus.ready,
-        resources: [
-          _makeResource(id: 'dup-1', content: 'First again'),
-          _makeResource(id: 'dup-3', content: 'Third'),
-        ],
-        generatedAt: DateTime(2026),
-      );
-      final merged = bundleA.mergedWith(bundleB);
-      expect(merged.resources.length, equals(3));
-      expect(merged.resources.map((r) => r.id).toSet(),
-          equals({'dup-1', 'dup-2', 'dup-3'}));
-    });
+    test(
+      'Deduplication: same resource ID across rounds not duplicated',
+      () async {
+        final bundleA = KnowledgeBundle(
+          id: 'b1',
+          status: BundleStatus.ready,
+          resources: [
+            _makeResource(id: 'dup-1', content: 'First'),
+            _makeResource(id: 'dup-2', content: 'Second'),
+          ],
+          generatedAt: DateTime(2026),
+        );
+        final bundleB = KnowledgeBundle(
+          id: 'b2',
+          status: BundleStatus.ready,
+          resources: [
+            _makeResource(id: 'dup-1', content: 'First again'),
+            _makeResource(id: 'dup-3', content: 'Third'),
+          ],
+          generatedAt: DateTime(2026),
+        );
+        final merged = bundleA.mergedWith(bundleB);
+        expect(merged.resources.length, equals(3));
+        expect(
+          merged.resources.map((r) => r.id).toSet(),
+          equals({'dup-1', 'dup-2', 'dup-3'}),
+        );
+      },
+    );
   });
 
   // ==========================================================================
@@ -729,41 +737,45 @@ void main() {
   // F. Optional Knowledge Failure Does Not Escape
   // ==========================================================================
   group('Knowledge F: Optional Failure No Escape', () {
-    test('Optional-only ReasoningKnowledgeRequired resolves to failure',
-        () async {
-      final reasoner = _OptionalOnlyReasoner();
-      final kernel = AnythingKernel(
-        providerRegistry: _FakeProviderRegistry(),
-        reasoner: reasoner,
-        knowledgeEngine: KnowledgeAcquisitionEngine(),
-      );
-      final outcome = await kernel.processIntent(
-        Intent.create(expression: 'create a test app'),
-      );
-      // Must NOT be ReasoningKnowledgeRequired leaking out
-      expect(outcome, isA<PlanningFailed>());
-      expect(reasoner.callCount, equals(3));
-    });
+    test(
+      'Optional-only ReasoningKnowledgeRequired resolves to failure',
+      () async {
+        final reasoner = _OptionalOnlyReasoner();
+        final kernel = AnythingKernel(
+          providerRegistry: _FakeProviderRegistry(),
+          reasoner: reasoner,
+          knowledgeEngine: KnowledgeAcquisitionEngine(),
+        );
+        final outcome = await kernel.processIntent(
+          Intent.create(expression: 'create a test app'),
+        );
+        // Must NOT be ReasoningKnowledgeRequired leaking out
+        expect(outcome, isA<PlanningFailed>());
+        expect(reasoner.callCount, equals(3));
+      },
+    );
   });
 
   // ==========================================================================
   // G. No ReasoningKnowledgeRequired Leaks to Pipeline
   // ==========================================================================
   group('Knowledge G: No KnowledgeRequired Leak', () {
-    test('Kernel never returns ReasoningKnowledgeRequired to creation pipeline',
-        () async {
-      final reasoner = _AlwaysFailReasoner();
-      final kernel = AnythingKernel(
-        providerRegistry: _FakeProviderRegistry(),
-        reasoner: reasoner,
-        knowledgeEngine: KnowledgeAcquisitionEngine(),
-      );
-      final outcome = await kernel.processIntent(
-        Intent.create(expression: 'create a test app'),
-      );
-      // KernelOutcome is sealed — ReasoningKnowledgeRequired should never appear
-      expect(outcome, isA<PlanningFailed>());
-    });
+    test(
+      'Kernel never returns ReasoningKnowledgeRequired to creation pipeline',
+      () async {
+        final reasoner = _AlwaysFailReasoner();
+        final kernel = AnythingKernel(
+          providerRegistry: _FakeProviderRegistry(),
+          reasoner: reasoner,
+          knowledgeEngine: KnowledgeAcquisitionEngine(),
+        );
+        final outcome = await kernel.processIntent(
+          Intent.create(expression: 'create a test app'),
+        );
+        // KernelOutcome is sealed — ReasoningKnowledgeRequired should never appear
+        expect(outcome, isA<PlanningFailed>());
+      },
+    );
   });
 
   // ==========================================================================
@@ -894,29 +906,32 @@ void main() {
       expect(pkg.manifest.category, equals('tracker'));
     });
 
-    test('collection archetype → category "collection" (not "productivity")', () {
-      final blueprint = AppBlueprint(
-        id: 'collection-test',
-        name: 'Plant Collection',
-        description: 'Collect plants',
-        archetypes: const [AppArchetype.collection],
-        entities: const [
-          BlueprintEntity(
-            id: 'plant',
-            name: 'Plant',
-            fields: [
-              BlueprintField(
-                id: 'plant_name',
-                name: 'Name',
-                type: BlueprintFieldType.text,
-              ),
-            ],
-          ),
-        ],
-      );
-      final pkg = GenericPackageBuilder.build(blueprint);
-      expect(pkg.manifest.category, equals('collection'));
-    });
+    test(
+      'collection archetype → category "collection" (not "productivity")',
+      () {
+        final blueprint = AppBlueprint(
+          id: 'collection-test',
+          name: 'Plant Collection',
+          description: 'Collect plants',
+          archetypes: const [AppArchetype.collection],
+          entities: const [
+            BlueprintEntity(
+              id: 'plant',
+              name: 'Plant',
+              fields: [
+                BlueprintField(
+                  id: 'plant_name',
+                  name: 'Name',
+                  type: BlueprintFieldType.text,
+                ),
+              ],
+            ),
+          ],
+        );
+        final pkg = GenericPackageBuilder.build(blueprint);
+        expect(pkg.manifest.category, equals('collection'));
+      },
+    );
 
     test('multiple tracker domains all map to "tracker"', () {
       for (final domain in ['fitness', 'reading', 'bug', 'maintenance']) {
@@ -940,8 +955,11 @@ void main() {
           ],
         );
         final pkg = GenericPackageBuilder.build(blueprint);
-        expect(pkg.manifest.category, equals('tracker'),
-            reason: '$domain should map to tracker');
+        expect(
+          pkg.manifest.category,
+          equals('tracker'),
+          reason: '$domain should map to tracker',
+        );
       }
     });
 
@@ -1087,7 +1105,9 @@ void main() {
         registry.register(provider);
         registry.setActive('fake');
 
-        final reasoner = CompositeApplicationReasoner(providerRegistry: registry);
+        final reasoner = CompositeApplicationReasoner(
+          providerRegistry: registry,
+        );
         final capabilityRegistry = CapabilityRegistry();
         capabilityRegistry.register(
           const CapabilityDescriptor(
@@ -1108,7 +1128,9 @@ void main() {
         );
 
         final composer = IntentComposer(kernel);
-        composer.setExpression('Make me an app to manage equipment I lend to people.');
+        composer.setExpression(
+          'Make me an app to manage equipment I lend to people.',
+        );
         final intent = composer.createIntent();
         expect(intent.expression, contains('equipment'));
 
@@ -1222,7 +1244,8 @@ void main() {
                 'OrbitMetrics API: value (decimal) is the primary metric. '
                 'recorded_at (dateTime) is the timestamp. '
                 'project (text) identifies the project.',
-            title: 'OrbitMetrics project data API fields value recorded_at docs',
+            title:
+                'OrbitMetrics project data API fields value recorded_at docs',
             relevanceScore: 0.95,
             authorityScore: 0.9,
             freshnessScore: 0.8,
@@ -1266,7 +1289,8 @@ void main() {
           final creationResult = await engine.create(
             CreationContext(
               intent: Intent.create(
-                expression: 'Make me a dashboard for my OrbitMetrics project data.',
+                expression:
+                    'Make me a dashboard for my OrbitMetrics project data.',
               ),
               specification: spec,
               plan: outcome.plan,
@@ -1299,7 +1323,8 @@ void main() {
         _makeResource(
           id: 'orbit-docs-2',
           content: 'OrbitMetrics: value and recorded_at are core fields.',
-          title: 'OrbitMetrics project data API fields value recorded_at reference',
+          title:
+              'OrbitMetrics project data API fields value recorded_at reference',
           relevanceScore: 0.95,
           authorityScore: 0.9,
           freshnessScore: 0.8,
@@ -1339,7 +1364,8 @@ void main() {
         final creationResult = await engine.create(
           CreationContext(
             intent: Intent.create(
-              expression: 'Make me a dashboard for my OrbitMetrics project data.',
+              expression:
+                  'Make me a dashboard for my OrbitMetrics project data.',
             ),
             specification: outcome.specification,
             plan: outcome.plan,
@@ -1432,9 +1458,9 @@ void main() {
 }
 ''',
       );
-      final result = await ModelApplicationReasoner(provider).reason(
-        _context('create app'),
-      );
+      final result = await ModelApplicationReasoner(
+        provider,
+      ).reason(_context('create app'));
       expect(result, isA<ReasoningFailed>());
     });
 
@@ -1450,9 +1476,9 @@ void main() {
 }
 ''',
       );
-      final result = await ModelApplicationReasoner(provider).reason(
-        _context('create app'),
-      );
+      final result = await ModelApplicationReasoner(
+        provider,
+      ).reason(_context('create app'));
       expect(result, isA<ReasoningFailed>());
     });
 
@@ -1464,13 +1490,19 @@ void main() {
       expect(ready.semanticApp.entities, isNotEmpty);
     });
 
-    test('Malicious capability reasoner produces forbidden capabilities', () async {
-      final reasoner = _MaliciousCapabilityReasoner();
-      final result = await reasoner.reason(_context('exploit'));
-      expect(result, isA<ReasoningReady>());
-      final ready = result as ReasoningReady;
-      expect(ready.semanticApp.requiredCapabilities, contains('shell_execution'));
-    });
+    test(
+      'Malicious capability reasoner produces forbidden capabilities',
+      () async {
+        final reasoner = _MaliciousCapabilityReasoner();
+        final result = await reasoner.reason(_context('exploit'));
+        expect(result, isA<ReasoningReady>());
+        final ready = result as ReasoningReady;
+        expect(
+          ready.semanticApp.requiredCapabilities,
+          contains('shell_execution'),
+        );
+      },
+    );
 
     test('Malicious capabilities rejected by validation', () async {
       final blueprint = AppBlueprint(
@@ -1560,58 +1592,60 @@ void main() {
   // 19. GenericPackageBuilder Audit
   // ==========================================================================
   group('Audit: GenericPackageBuilder', () {
-    test('GenericPackageBuilder.build produces valid package from any blueprint',
-        () {
-      final blueprint = AppBlueprint(
-        id: 'audit-test',
-        name: 'Audit Test',
-        description: 'Test',
-        archetypes: const [AppArchetype.collection],
-        entities: const [
-          BlueprintEntity(
-            id: 'item',
-            name: 'Item',
-            fields: [
-              BlueprintField(
-                id: 'item_name',
-                name: 'Name',
-                type: BlueprintFieldType.text,
-                required: true,
-              ),
-              BlueprintField(
-                id: 'item_count',
-                name: 'Count',
-                type: BlueprintFieldType.integer,
-              ),
-            ],
-          ),
-        ],
-        views: const [
-          BlueprintView(
-            id: 'item_list',
-            name: 'Items',
-            purpose: 'View items',
-            sourceEntityId: 'item',
-            viewType: BlueprintViewType.list,
-          ),
-        ],
-        actions: const [
-          BlueprintAction(
-            id: 'create_item',
-            name: 'Add Item',
-            targetEntityId: 'item',
-            actionType: BlueprintActionType.create,
-          ),
-        ],
-      );
-      final pkg = GenericPackageBuilder.build(blueprint);
-      expect(pkg.manifest.name, equals('Audit Test'));
-      expect(pkg.manifest.category, equals('collection'));
-      expect(pkg.interface.screens, isNotEmpty);
-      expect(pkg.data, isNotNull);
-      expect(pkg.behavior.nodes, isNotEmpty);
-      expect(pkg.integrity.contentHash, isNotEmpty);
-    });
+    test(
+      'GenericPackageBuilder.build produces valid package from any blueprint',
+      () {
+        final blueprint = AppBlueprint(
+          id: 'audit-test',
+          name: 'Audit Test',
+          description: 'Test',
+          archetypes: const [AppArchetype.collection],
+          entities: const [
+            BlueprintEntity(
+              id: 'item',
+              name: 'Item',
+              fields: [
+                BlueprintField(
+                  id: 'item_name',
+                  name: 'Name',
+                  type: BlueprintFieldType.text,
+                  required: true,
+                ),
+                BlueprintField(
+                  id: 'item_count',
+                  name: 'Count',
+                  type: BlueprintFieldType.integer,
+                ),
+              ],
+            ),
+          ],
+          views: const [
+            BlueprintView(
+              id: 'item_list',
+              name: 'Items',
+              purpose: 'View items',
+              sourceEntityId: 'item',
+              viewType: BlueprintViewType.list,
+            ),
+          ],
+          actions: const [
+            BlueprintAction(
+              id: 'create_item',
+              name: 'Add Item',
+              targetEntityId: 'item',
+              actionType: BlueprintActionType.create,
+            ),
+          ],
+        );
+        final pkg = GenericPackageBuilder.build(blueprint);
+        expect(pkg.manifest.name, equals('Audit Test'));
+        expect(pkg.manifest.category, equals('collection'));
+        expect(pkg.interface.screens, isNotEmpty);
+        expect(pkg.data, isNotNull);
+        expect(pkg.behavior.nodes, isNotEmpty);
+        expect(pkg.integrity.contentHash, isNotEmpty);
+      },
+    );
 
     test('GenericPackageBuilder is generic — no domain-specific branches', () {
       // Verify by building from completely different archetypes
@@ -1645,58 +1679,60 @@ void main() {
   // 20. CreationEngine Audit
   // ==========================================================================
   group('Audit: CreationEngine', () {
-    test('CreationEngine is generic — no domain keywords in production lib',
-        () {
-      // Verify CreationEngine produces valid packages for different specs
-      final spec = ExperienceSpec(
-        id: 'engine-audit',
-        name: 'Engine Audit',
-        description: 'Test',
-        category: ExperienceCategory.unknown,
-        interactionModel: InteractionModel.formBased,
-        uiRequirements: const UIRequirements(description: 'Test UI'),
-        stateRequirements: const StateRequirements(description: 'Test state'),
-        storageRequirements: const StorageRequirements(
-          description: 'Test storage',
-          storageType: StorageType.localDatabase,
-          requiresDatabase: true,
-        ),
-        networkRequirements: const NetworkRequirements(
-          networkNeed: NetworkNeed.none,
-        ),
-        backendClassification: BackendClassification.localDatabase,
-        protectionRequirements: const ProtectionRequirements(),
-        runtimeRequirements: const RuntimeRequirements(),
-        qualityRequirements: const QualityRequirements(),
-        accessibilityRequirements: const AccessibilityRequirements(),
-        offlineBehavior: const OfflineBehavior(
-          offlineCapability: OfflineCapability.fullyOffline,
-        ),
-        createdAt: DateTime(2026),
-      );
-      final plan = ExecutionPlan(
-        id: 'plan-audit',
-        specification: spec,
-        steps: const [],
-        createdAt: DateTime(2026),
-      );
-      final engine = CreationEngine();
-      expect(
-        () => engine.create(
-          CreationContext(
-            intent: Intent.create(expression: 'test'),
-            specification: spec,
-            plan: plan,
-            platformContext: const PlatformContext(
-              platform: 'android',
-              sdkVersion: 34,
-            ),
-            securityPolicy: const CreationSecurityPolicy(),
+    test(
+      'CreationEngine is generic — no domain keywords in production lib',
+      () {
+        // Verify CreationEngine produces valid packages for different specs
+        final spec = ExperienceSpec(
+          id: 'engine-audit',
+          name: 'Engine Audit',
+          description: 'Test',
+          category: ExperienceCategory.unknown,
+          interactionModel: InteractionModel.formBased,
+          uiRequirements: const UIRequirements(description: 'Test UI'),
+          stateRequirements: const StateRequirements(description: 'Test state'),
+          storageRequirements: const StorageRequirements(
+            description: 'Test storage',
+            storageType: StorageType.localDatabase,
+            requiresDatabase: true,
           ),
-        ),
-        returnsNormally,
-      );
-    });
+          networkRequirements: const NetworkRequirements(
+            networkNeed: NetworkNeed.none,
+          ),
+          backendClassification: BackendClassification.localDatabase,
+          protectionRequirements: const ProtectionRequirements(),
+          runtimeRequirements: const RuntimeRequirements(),
+          qualityRequirements: const QualityRequirements(),
+          accessibilityRequirements: const AccessibilityRequirements(),
+          offlineBehavior: const OfflineBehavior(
+            offlineCapability: OfflineCapability.fullyOffline,
+          ),
+          createdAt: DateTime(2026),
+        );
+        final plan = ExecutionPlan(
+          id: 'plan-audit',
+          specification: spec,
+          steps: const [],
+          createdAt: DateTime(2026),
+        );
+        final engine = CreationEngine();
+        expect(
+          () => engine.create(
+            CreationContext(
+              intent: Intent.create(expression: 'test'),
+              specification: spec,
+              plan: plan,
+              platformContext: const PlatformContext(
+                platform: 'android',
+                sdkVersion: 34,
+              ),
+              securityPolicy: const CreationSecurityPolicy(),
+            ),
+          ),
+          returnsNormally,
+        );
+      },
+    );
   });
 
   // ==========================================================================
@@ -1830,9 +1866,7 @@ void main() {
       final bundle = KnowledgeBundle(
         id: 'json-test',
         status: BundleStatus.ready,
-        resources: [
-          _makeResource(id: 'r1', content: 'Content 1'),
-        ],
+        resources: [_makeResource(id: 'r1', content: 'Content 1')],
         requirementsSatisfied: ['req-1'],
         warnings: ['warn-1'],
         generatedAt: DateTime(2026),
@@ -2040,22 +2074,14 @@ void main() {
             id: 'item',
             name: 'A',
             fields: [
-              BlueprintField(
-                id: 'a',
-                name: 'A',
-                type: BlueprintFieldType.text,
-              ),
+              BlueprintField(id: 'a', name: 'A', type: BlueprintFieldType.text),
             ],
           ),
           BlueprintEntity(
             id: 'item',
             name: 'B',
             fields: [
-              BlueprintField(
-                id: 'b',
-                name: 'B',
-                type: BlueprintFieldType.text,
-              ),
+              BlueprintField(id: 'b', name: 'B', type: BlueprintFieldType.text),
             ],
           ),
         ],
@@ -2070,9 +2096,7 @@ void main() {
         name: 'Empty Fields',
         description: 'Test',
         archetypes: const [AppArchetype.collection],
-        entities: const [
-          BlueprintEntity(id: 'item', name: 'Item', fields: []),
-        ],
+        entities: const [BlueprintEntity(id: 'item', name: 'Item', fields: [])],
       );
       final validation = BlueprintValidator.validate(blueprint);
       expect(validation.isValid, isFalse);
@@ -2158,7 +2182,10 @@ void main() {
         ],
       );
       final spec = BlueprintToSpecConverter.convert(blueprint);
-      expect(spec.networkRequirements.networkNeed, equals(NetworkNeed.required));
+      expect(
+        spec.networkRequirements.networkNeed,
+        equals(NetworkNeed.required),
+      );
     });
   });
 

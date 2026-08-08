@@ -16,7 +16,11 @@ class RepositoryNode {
   final bool isDirectory;
   final String? language;
 
-  const RepositoryNode({required this.path, required this.isDirectory, this.language});
+  const RepositoryNode({
+    required this.path,
+    required this.isDirectory,
+    this.language,
+  });
 }
 
 /// A structural relationship between two repository-tree entries (e.g.
@@ -28,19 +32,33 @@ class RepositoryRelationship {
   final String toPath;
   final String kind;
 
-  const RepositoryRelationship({required this.fromPath, required this.toPath, required this.kind});
+  const RepositoryRelationship({
+    required this.fromPath,
+    required this.toPath,
+    required this.kind,
+  });
 }
 
 class RepositoryStructure {
   final List<RepositoryNode> entries;
   final List<RepositoryRelationship> relationships;
 
-  const RepositoryStructure({this.entries = const [], this.relationships = const []});
+  const RepositoryStructure({
+    this.entries = const [],
+    this.relationships = const [],
+  });
 
-  bool get hasTests => entries.any((e) => e.path.toLowerCase().contains('test'));
-  bool get hasCi => entries.any((e) => e.path.contains('.github/workflows') || e.path.contains('.gitlab-ci'));
-  bool get hasDocker =>
-      entries.any((e) => e.path.toLowerCase().contains('dockerfile') || e.path.toLowerCase().contains('docker-compose'));
+  bool get hasTests =>
+      entries.any((e) => e.path.toLowerCase().contains('test'));
+  bool get hasCi => entries.any(
+    (e) =>
+        e.path.contains('.github/workflows') || e.path.contains('.gitlab-ci'),
+  );
+  bool get hasDocker => entries.any(
+    (e) =>
+        e.path.toLowerCase().contains('dockerfile') ||
+        e.path.toLowerCase().contains('docker-compose'),
+  );
 }
 
 class RepositoryMetadata {
@@ -85,7 +103,9 @@ class RepositorySummary {
     buffer.writeln('Primary language: $primaryLanguage');
     buffer.writeln('Declared dependencies: $dependencyCount');
     buffer.writeln('Detected entrypoints: $entrypointCount');
-    buffer.writeln('Has tests: $hasTests; CI: $hasCi; containerized: $hasDocker');
+    buffer.writeln(
+      'Has tests: $hasTests; CI: $hasCi; containerized: $hasDocker',
+    );
     return buffer.toString();
   }
 }
@@ -139,5 +159,10 @@ class RepositoryContext {
   final String path;
   final List<String> files;
 
-  const RepositoryContext({required this.source, required this.metadata, this.path = '', this.files = const []});
+  const RepositoryContext({
+    required this.source,
+    required this.metadata,
+    this.path = '',
+    this.files = const [],
+  });
 }

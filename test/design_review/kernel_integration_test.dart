@@ -69,56 +69,93 @@ SemanticApp _fieldSurveyApp() {
         id: 'entry',
         name: 'Entry',
         displayField: 'title',
-        fields: [SemanticField(id: 'title', name: 'Title', type: BlueprintFieldType.text, required: true)],
+        fields: [
+          SemanticField(
+            id: 'title',
+            name: 'Title',
+            type: BlueprintFieldType.text,
+            required: true,
+          ),
+        ],
       ),
     ],
     views: const [
-      SemanticView(id: 'entries_list', name: 'Entries', purpose: 'list', sourceEntityId: 'entry', viewType: BlueprintViewType.list, isDefault: true),
+      SemanticView(
+        id: 'entries_list',
+        name: 'Entries',
+        purpose: 'list',
+        sourceEntityId: 'entry',
+        viewType: BlueprintViewType.list,
+        isDefault: true,
+      ),
     ],
-    actions: const [SemanticAction(id: 'add_entry', name: 'Add Entry', targetEntityId: 'entry')],
+    actions: const [
+      SemanticAction(
+        id: 'add_entry',
+        name: 'Add Entry',
+        targetEntityId: 'entry',
+      ),
+    ],
   );
 }
 
 Future<ExecutionPlanReady> _runKernel(AnythingKernel kernel) async {
-  final outcome = await kernel.processIntent(Intent.create(expression: 'track my field survey entries'));
+  final outcome = await kernel.processIntent(
+    Intent.create(expression: 'track my field survey entries'),
+  );
   expect(outcome, isA<ExecutionPlanReady>());
   return outcome as ExecutionPlanReady;
 }
 
 void main() {
-  test('processIntent runs Design Review and returns a real, approved ReviewSession', () async {
-    final kernel = AnythingKernel(
-      providerRegistry: _FakeProviderRegistry(),
-      capabilityRegistry: _registryWithStorage(),
-      reasoner: _FixedReasoner(_fieldSurveyApp()),
-    );
-    final ready = await _runKernel(kernel);
+  test(
+    'processIntent runs Design Review and returns a real, approved ReviewSession',
+    () async {
+      final kernel = AnythingKernel(
+        providerRegistry: _FakeProviderRegistry(),
+        capabilityRegistry: _registryWithStorage(),
+        reasoner: _FixedReasoner(_fieldSurveyApp()),
+      );
+      final ready = await _runKernel(kernel);
 
-    expect(ready.reviewSession, isNotNull);
-    expect(ready.reviewSession!.result.outcome.name, 'approved');
-  });
+      expect(ready.reviewSession, isNotNull);
+      expect(ready.reviewSession!.result.outcome.name, 'approved');
+    },
+  );
 
-  test('the same Kernel instance reuses ReviewMemory across two structurally-identical requests', () async {
-    final kernel = AnythingKernel(
-      providerRegistry: _FakeProviderRegistry(),
-      capabilityRegistry: _registryWithStorage(),
-      reasoner: _FixedReasoner(_fieldSurveyApp()),
-    );
+  test(
+    'the same Kernel instance reuses ReviewMemory across two structurally-identical requests',
+    () async {
+      final kernel = AnythingKernel(
+        providerRegistry: _FakeProviderRegistry(),
+        capabilityRegistry: _registryWithStorage(),
+        reasoner: _FixedReasoner(_fieldSurveyApp()),
+      );
 
-    final first = await _runKernel(kernel);
-    final second = await _runKernel(kernel);
+      final first = await _runKernel(kernel);
+      final second = await _runKernel(kernel);
 
-    expect(first.reviewSession!.fingerprint, second.reviewSession!.fingerprint);
-  });
+      expect(
+        first.reviewSession!.fingerprint,
+        second.reviewSession!.fingerprint,
+      );
+    },
+  );
 
-  test('the blueprint reaching Creation is the one Design Review actually approved', () async {
-    final kernel = AnythingKernel(
-      providerRegistry: _FakeProviderRegistry(),
-      capabilityRegistry: _registryWithStorage(),
-      reasoner: _FixedReasoner(_fieldSurveyApp()),
-    );
-    final ready = await _runKernel(kernel);
+  test(
+    'the blueprint reaching Creation is the one Design Review actually approved',
+    () async {
+      final kernel = AnythingKernel(
+        providerRegistry: _FakeProviderRegistry(),
+        capabilityRegistry: _registryWithStorage(),
+        reasoner: _FixedReasoner(_fieldSurveyApp()),
+      );
+      final ready = await _runKernel(kernel);
 
-    expect(ready.reviewSession!.result.finalContext.blueprint.id, ready.blueprint!.id);
-  });
+      expect(
+        ready.reviewSession!.result.finalContext.blueprint.id,
+        ready.blueprint!.id,
+      );
+    },
+  );
 }

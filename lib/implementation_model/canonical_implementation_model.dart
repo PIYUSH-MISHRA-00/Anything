@@ -36,7 +36,14 @@ import '../application_engineering/engineering_types.dart' show GenericState;
 /// A column/field's logical type — storage- and language-agnostic,
 /// mirrors `DatabaseColumnType` (R8) exactly (reused values, not a
 /// parallel taxonomy).
-enum ImplementationDataType { text, integer, decimal, boolean, dateTime, reference }
+enum ImplementationDataType {
+  text,
+  integer,
+  decimal,
+  boolean,
+  dateTime,
+  reference,
+}
 
 enum ImplementationOperationKind { list, get, create, update, delete, search }
 
@@ -77,7 +84,17 @@ class ImplementationField {
 /// language-independent model stays free of a `synthesis/` dependency,
 /// matching `ImplementationDataType`'s own established mirror-not-import
 /// convention relative to `DatabaseColumnType`.
-enum ImplementationDerivedOperation { count, sum, average, minimum, maximum, consecutiveDateCount, percentage, daysRemaining, difference }
+enum ImplementationDerivedOperation {
+  count,
+  sum,
+  average,
+  minimum,
+  maximum,
+  consecutiveDateCount,
+  percentage,
+  daysRemaining,
+  difference,
+}
 
 /// A real, deterministic pass-through of `SemanticDerivedValue`
 /// (Implementation Milestone R20) — the SAME reasoner output legacy's
@@ -128,7 +145,12 @@ class ImplementationView {
   final ImplementationViewKind kind;
   final String? sourceEntityId;
 
-  const ImplementationView({required this.id, required this.name, required this.kind, this.sourceEntityId});
+  const ImplementationView({
+    required this.id,
+    required this.name,
+    required this.kind,
+    this.sourceEntityId,
+  });
 }
 
 // ── Entity / Repository / Controller / DTO / Validator / Service (real depth, from BackendEngineeringPlan) ──
@@ -138,7 +160,11 @@ class ImplementationEntity {
   final String name;
   final List<ImplementationField> fields;
 
-  const ImplementationEntity({required this.id, required this.name, this.fields = const []});
+  const ImplementationEntity({
+    required this.id,
+    required this.name,
+    this.fields = const [],
+  });
 }
 
 class ImplementationRepository {
@@ -146,7 +172,11 @@ class ImplementationRepository {
   final String entityId;
   final List<ImplementationOperationKind> supportedOperations;
 
-  const ImplementationRepository({required this.id, required this.entityId, this.supportedOperations = const []});
+  const ImplementationRepository({
+    required this.id,
+    required this.entityId,
+    this.supportedOperations = const [],
+  });
 }
 
 class ImplementationOperation {
@@ -154,7 +184,11 @@ class ImplementationOperation {
   final ImplementationOperationKind kind;
   final List<String> requestFieldNames;
 
-  const ImplementationOperation({required this.id, required this.kind, this.requestFieldNames = const []});
+  const ImplementationOperation({
+    required this.id,
+    required this.kind,
+    this.requestFieldNames = const [],
+  });
 }
 
 class ImplementationController {
@@ -162,7 +196,11 @@ class ImplementationController {
   final String entityId;
   final List<ImplementationOperation> operations;
 
-  const ImplementationController({required this.id, required this.entityId, this.operations = const []});
+  const ImplementationController({
+    required this.id,
+    required this.entityId,
+    this.operations = const [],
+  });
 }
 
 class ImplementationDto {
@@ -170,7 +208,11 @@ class ImplementationDto {
   final String entityId;
   final List<ImplementationField> fields;
 
-  const ImplementationDto({required this.id, required this.entityId, this.fields = const []});
+  const ImplementationDto({
+    required this.id,
+    required this.entityId,
+    this.fields = const [],
+  });
 }
 
 class ImplementationValidationRule {
@@ -178,7 +220,11 @@ class ImplementationValidationRule {
   final bool required;
   final ImplementationDataType type;
 
-  const ImplementationValidationRule({required this.fieldId, required this.required, required this.type});
+  const ImplementationValidationRule({
+    required this.fieldId,
+    required this.required,
+    required this.type,
+  });
 }
 
 class ImplementationValidator {
@@ -186,7 +232,11 @@ class ImplementationValidator {
   final String entityId;
   final List<ImplementationValidationRule> rules;
 
-  const ImplementationValidator({required this.id, required this.entityId, this.rules = const []});
+  const ImplementationValidator({
+    required this.id,
+    required this.entityId,
+    this.rules = const [],
+  });
 }
 
 /// A real, structural aggregation — "the repository + controller for one
@@ -216,7 +266,11 @@ class ImplementationDependency {
   final String toId;
   final DependencyKind kind;
 
-  const ImplementationDependency({required this.fromId, required this.toId, required this.kind});
+  const ImplementationDependency({
+    required this.fromId,
+    required this.toId,
+    required this.kind,
+  });
 }
 
 // ── StateContainer / NavigationHandler / CapabilityAdapter (real depth, from EngineeringCandidate/CapabilityRegistry) ──
@@ -226,7 +280,11 @@ class StateTransitionSpec {
   final GenericState from;
   final GenericState to;
 
-  const StateTransitionSpec({required this.triggerId, required this.from, required this.to});
+  const StateTransitionSpec({
+    required this.triggerId,
+    required this.from,
+    required this.to,
+  });
 }
 
 class StateContainerSpec {
@@ -234,7 +292,11 @@ class StateContainerSpec {
   final GenericState initial;
   final List<StateTransitionSpec> transitions;
 
-  const StateContainerSpec({required this.entityId, required this.initial, this.transitions = const []});
+  const StateContainerSpec({
+    required this.entityId,
+    required this.initial,
+    this.transitions = const [],
+  });
 }
 
 class NavigationRouteSpec {
@@ -255,7 +317,10 @@ class NavigationHandlerSpec {
   final List<NavigationRouteSpec> routes;
   final List<String> deepLinkableRouteIds;
 
-  const NavigationHandlerSpec({this.routes = const [], this.deepLinkableRouteIds = const []});
+  const NavigationHandlerSpec({
+    this.routes = const [],
+    this.deepLinkableRouteIds = const [],
+  });
 }
 
 /// One resolved capability, restated in generic adapter vocabulary —
@@ -265,7 +330,10 @@ class CapabilityAdapterSpec {
   final String capabilityId;
   final String category;
 
-  const CapabilityAdapterSpec({required this.capabilityId, required this.category});
+  const CapabilityAdapterSpec({
+    required this.capabilityId,
+    required this.category,
+  });
 }
 
 // ── Authentication / Storage / Background (thin, real wrappers over R8's own already-honest-and-minimal models) ──
@@ -274,14 +342,20 @@ class AuthenticationAdapterSpec {
   final bool requiresCredentials;
   final bool providerIndependent;
 
-  const AuthenticationAdapterSpec({required this.requiresCredentials, this.providerIndependent = true});
+  const AuthenticationAdapterSpec({
+    required this.requiresCredentials,
+    this.providerIndependent = true,
+  });
 }
 
 class StorageAdapterSpec {
   final String entityId;
   final bool isFileStorage;
 
-  const StorageAdapterSpec({required this.entityId, required this.isFileStorage});
+  const StorageAdapterSpec({
+    required this.entityId,
+    required this.isFileStorage,
+  });
 }
 
 class BackgroundWorkerSpec {

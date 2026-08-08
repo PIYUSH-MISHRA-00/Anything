@@ -9,7 +9,17 @@ library;
 
 /// What kind of thing an [Artifact] represents — real, closed vocabulary,
 /// never tied to one language's own file-type conventions.
-enum ArtifactKind { file, directory, metadata, asset, dependency, generatedSource, configuration, manifest, buildInstruction }
+enum ArtifactKind {
+  file,
+  directory,
+  metadata,
+  asset,
+  dependency,
+  generatedSource,
+  configuration,
+  manifest,
+  buildInstruction,
+}
 
 /// One real, inspectable, generated artifact. [path] is a real,
 /// generator-supplied relative path (this framework never writes to
@@ -23,7 +33,12 @@ class Artifact {
   final ArtifactKind kind;
   final String? content;
 
-  const Artifact({required this.id, required this.path, required this.kind, this.content});
+  const Artifact({
+    required this.id,
+    required this.path,
+    required this.kind,
+    this.content,
+  });
 }
 
 /// A real, named grouping of related [Artifact]s (e.g. "everything for

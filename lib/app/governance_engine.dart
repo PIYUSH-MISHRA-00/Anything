@@ -215,7 +215,10 @@ class GovernanceEvaluation {
   /// user, or log, when something is refused.
   List<GovernanceDecision> get decisive {
     final effective = outcome;
-    return [for (final d in decisions) if (d.outcome == effective) d];
+    return [
+      for (final d in decisions)
+        if (d.outcome == effective) d,
+    ];
   }
 
   String get reason => decisive.isEmpty
@@ -250,7 +253,8 @@ class CapabilityTrustFloorRule extends GovernanceRule {
   @override
   String get id => 'trust.capability_floor';
   @override
-  String get description => 'An Experience may only use capabilities at or above its trust level.';
+  String get description =>
+      'An Experience may only use capabilities at or above its trust level.';
 
   @override
   GovernanceDecision? evaluate(GovernanceContext context) {
@@ -264,14 +268,16 @@ class CapabilityTrustFloorRule extends GovernanceRule {
         domain: domain,
         outcome: GovernanceOutcome.deny,
         ruleId: id,
-        reason: '${context.trustLevel.name} Experience may not use "$capabilityId" (requires ${floor.name} or above)',
+        reason:
+            '${context.trustLevel.name} Experience may not use "$capabilityId" (requires ${floor.name} or above)',
       );
     }
     return GovernanceDecision(
       domain: domain,
       outcome: GovernanceOutcome.allow,
       ruleId: id,
-      reason: '${context.trustLevel.name} meets the ${floor.name} floor for "$capabilityId"',
+      reason:
+          '${context.trustLevel.name} meets the ${floor.name} floor for "$capabilityId"',
     );
   }
 }
@@ -287,18 +293,22 @@ class PrivacyModeRule extends GovernanceRule {
   @override
   String get id => 'privacy.no_egress';
   @override
-  String get description => 'Privacy mode forbids any capability that sends data off the device.';
+  String get description =>
+      'Privacy mode forbids any capability that sends data off the device.';
 
   @override
   GovernanceDecision? evaluate(GovernanceContext context) {
     if (!context.privacyMode) return null;
     final capabilityId = context.capabilityId;
-    if (capabilityId == null || !egressCapabilities.contains(capabilityId)) return null;
+    if (capabilityId == null || !egressCapabilities.contains(capabilityId)) {
+      return null;
+    }
     return GovernanceDecision(
       domain: domain,
       outcome: GovernanceOutcome.deny,
       ruleId: id,
-      reason: 'privacy mode is on; "$capabilityId" would send data off the device',
+      reason:
+          'privacy mode is on; "$capabilityId" would send data off the device',
     );
   }
 }
@@ -314,13 +324,16 @@ class OfflineRule extends GovernanceRule {
   @override
   String get id => 'offline.network_required';
   @override
-  String get description => 'Network-dependent capabilities are denied while offline.';
+  String get description =>
+      'Network-dependent capabilities are denied while offline.';
 
   @override
   GovernanceDecision? evaluate(GovernanceContext context) {
     if (!context.isOffline) return null;
     final capabilityId = context.capabilityId;
-    if (capabilityId == null || !networkCapabilities.contains(capabilityId)) return null;
+    if (capabilityId == null || !networkCapabilities.contains(capabilityId)) {
+      return null;
+    }
     return GovernanceDecision(
       domain: domain,
       outcome: GovernanceOutcome.deny,
@@ -377,7 +390,8 @@ class ModelAccessRule extends GovernanceRule {
   @override
   String get id => 'model.cloud_access';
   @override
-  String get description => 'Low-trust Experiences need explicit approval to reach a cloud model.';
+  String get description =>
+      'Low-trust Experiences need explicit approval to reach a cloud model.';
 
   @override
   GovernanceDecision? evaluate(GovernanceContext context) {
@@ -387,7 +401,8 @@ class ModelAccessRule extends GovernanceRule {
       domain: domain,
       outcome: GovernanceOutcome.requireApproval,
       ruleId: id,
-      reason: '${context.trustLevel.name} Experience requires explicit approval for model access',
+      reason:
+          '${context.trustLevel.name} Experience requires explicit approval for model access',
     );
   }
 }
@@ -403,7 +418,8 @@ class ResourceCeilingRule extends GovernanceRule {
   @override
   String get id => 'resource.request_ceiling';
   @override
-  String get description => 'A single request may not exceed the trusted byte ceiling.';
+  String get description =>
+      'A single request may not exceed the trusted byte ceiling.';
 
   @override
   GovernanceDecision? evaluate(GovernanceContext context) {
@@ -414,7 +430,8 @@ class ResourceCeilingRule extends GovernanceRule {
         domain: domain,
         outcome: GovernanceOutcome.deny,
         ruleId: id,
-        reason: 'requested $requested bytes exceeds the $maxRequestBytes ceiling',
+        reason:
+            'requested $requested bytes exceeds the $maxRequestBytes ceiling',
       );
     }
     return null;
@@ -449,7 +466,8 @@ class BackgroundExecutionRule extends GovernanceRule {
       domain: domain,
       outcome: GovernanceOutcome.deny,
       ruleId: id,
-      reason: '${context.trustLevel.name} Experience may not run background work',
+      reason:
+          '${context.trustLevel.name} Experience may not run background work',
     );
   }
 }
@@ -464,7 +482,8 @@ class RecoveryQuarantineRule extends GovernanceRule {
   @override
   String get id => 'recovery.untrusted_quarantine';
   @override
-  String get description => 'An untrusted Experience is not automatically restored.';
+  String get description =>
+      'An untrusted Experience is not automatically restored.';
 
   @override
   GovernanceDecision? evaluate(GovernanceContext context) {
@@ -504,8 +523,10 @@ class OperatingSystemGovernanceEngine {
   const OperatingSystemGovernanceEngine({this.rules = canonicalRules});
 
   /// Rules registered for [domain].
-  List<GovernanceRule> rulesFor(GovernanceDomain domain) =>
-      [for (final r in rules) if (r.domain == domain) r];
+  List<GovernanceRule> rulesFor(GovernanceDomain domain) => [
+    for (final r in rules)
+      if (r.domain == domain) r,
+  ];
 
   GovernancePolicy policyFor(GovernanceDomain domain) =>
       GovernancePolicy(domain: domain, rules: rulesFor(domain));
@@ -515,7 +536,10 @@ class OperatingSystemGovernanceEngine {
   /// Rules that return `null` are silent, not approving — which is why
   /// `GovernanceEvaluation.outcome` fails closed on any denial rather than
   /// counting votes.
-  GovernanceEvaluation evaluate(GovernanceContext context, {GovernanceDomain? domain}) {
+  GovernanceEvaluation evaluate(
+    GovernanceContext context, {
+    GovernanceDomain? domain,
+  }) {
     final applicable = domain == null ? rules : rulesFor(domain);
     return GovernanceEvaluation(
       context: context,
@@ -543,16 +567,18 @@ class OperatingSystemGovernanceEngine {
     String? host,
     int? requestedBytes,
   }) {
-    return evaluate(GovernanceContext(
-      capabilityId: capabilityId,
-      operation: operation,
-      trustLevel: trustLevel,
-      experienceId: experienceId,
-      sessionId: sessionId,
-      isOffline: isOffline,
-      privacyMode: privacyMode,
-      host: host,
-      requestedBytes: requestedBytes,
-    ));
+    return evaluate(
+      GovernanceContext(
+        capabilityId: capabilityId,
+        operation: operation,
+        trustLevel: trustLevel,
+        experienceId: experienceId,
+        sessionId: sessionId,
+        isOffline: isOffline,
+        privacyMode: privacyMode,
+        host: host,
+        requestedBytes: requestedBytes,
+      ),
+    );
   }
 }

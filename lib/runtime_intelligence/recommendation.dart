@@ -11,7 +11,10 @@ class RecommendationEvidence {
   final String patternId;
   final String usageGraphNodeOrEdgeId;
 
-  const RecommendationEvidence({required this.patternId, required this.usageGraphNodeOrEdgeId});
+  const RecommendationEvidence({
+    required this.patternId,
+    required this.usageGraphNodeOrEdgeId,
+  });
 }
 
 class RecommendationReason {
@@ -19,7 +22,11 @@ class RecommendationReason {
   final RecommendationEvidence evidence;
   final Confidence confidence;
 
-  const RecommendationReason({required this.summary, required this.evidence, required this.confidence});
+  const RecommendationReason({
+    required this.summary,
+    required this.evidence,
+    required this.confidence,
+  });
 }
 
 class Recommendation {
@@ -28,5 +35,10 @@ class Recommendation {
   final String description;
   final RecommendationReason reason;
 
-  const Recommendation({required this.id, required this.kind, required this.description, required this.reason});
+  const Recommendation({
+    required this.id,
+    required this.kind,
+    required this.description,
+    required this.reason,
+  });
 }

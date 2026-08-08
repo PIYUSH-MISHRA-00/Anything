@@ -14,8 +14,10 @@ class ReviewIteration {
   const ReviewIteration({required this.index, this.issues = const []});
 
   bool get passed => issues.isEmpty;
-  bool get hasCriticalIssues => issues.any((i) => i.severity == ReviewSeverity.critical);
-  List<ReviewIssue> get autoFixableIssues => issues.where((i) => i.autoFixable).toList();
+  bool get hasCriticalIssues =>
+      issues.any((i) => i.severity == ReviewSeverity.critical);
+  List<ReviewIssue> get autoFixableIssues =>
+      issues.where((i) => i.autoFixable).toList();
 }
 
 enum ReviewOutcome { approved, refinementRequired, budgetExhausted }
@@ -25,8 +27,13 @@ class ReviewResult {
   final ReviewContext finalContext;
   final ReviewOutcome outcome;
 
-  const ReviewResult({required this.iterations, required this.finalContext, required this.outcome});
+  const ReviewResult({
+    required this.iterations,
+    required this.finalContext,
+    required this.outcome,
+  });
 
   ReviewIteration get finalIteration => iterations.last;
-  List<ReviewIssue> get allIssues => iterations.expand((i) => i.issues).toList();
+  List<ReviewIssue> get allIssues =>
+      iterations.expand((i) => i.issues).toList();
 }

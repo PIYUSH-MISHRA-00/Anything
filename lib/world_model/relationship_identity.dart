@@ -11,11 +11,15 @@ class RelationshipIdentity {
 
   const RelationshipIdentity._(this.value);
 
-  factory RelationshipIdentity.of(EntityIdentity from, EntityIdentity to, RelationshipKind kind) =>
-      RelationshipIdentity._('${from.value}--${kind.name}-->${to.value}');
+  factory RelationshipIdentity.of(
+    EntityIdentity from,
+    EntityIdentity to,
+    RelationshipKind kind,
+  ) => RelationshipIdentity._('${from.value}--${kind.name}-->${to.value}');
 
   @override
-  bool operator ==(Object other) => other is RelationshipIdentity && other.value == value;
+  bool operator ==(Object other) =>
+      other is RelationshipIdentity && other.value == value;
 
   @override
   int get hashCode => value.hashCode;
@@ -31,5 +35,10 @@ class RelationshipReference {
   final EntityIdentity to;
   final RelationshipKind kind;
 
-  const RelationshipReference({required this.identity, required this.from, required this.to, required this.kind});
+  const RelationshipReference({
+    required this.identity,
+    required this.from,
+    required this.to,
+    required this.kind,
+  });
 }

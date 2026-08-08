@@ -41,7 +41,9 @@ class ExecutionLevels {
 
   const ExecutionLevels({required this.levels, required this.isComplete});
 
-  List<ExecutionTargetKind> get orderedTargets => [for (final level in levels) ...level];
+  List<ExecutionTargetKind> get orderedTargets => [
+    for (final level in levels) ...level,
+  ];
 }
 
 class ExecutionTargetOrderer {
@@ -55,7 +57,9 @@ class ExecutionTargetOrderer {
     final applicable = strategy.applicableTargets;
     final byTarget = {for (final t in applicable) t.target: t};
 
-    final inDegree = <ExecutionTargetKind, int>{for (final t in applicable) t.target: 0};
+    final inDegree = <ExecutionTargetKind, int>{
+      for (final t in applicable) t.target: 0,
+    };
     for (final t in applicable) {
       for (final dep in t.dependencies) {
         // A dependency on a target this strategy didn't even mark
@@ -74,19 +78,28 @@ class ExecutionTargetOrderer {
     final resolved = <ExecutionTargetKind>{};
 
     while (resolved.length < applicable.length) {
-      final ready = remaining.entries.where((e) => e.value == 0 && !resolved.contains(e.key)).map((e) => e.key).toList()
-        ..sort((a, b) => a.index.compareTo(b.index));
+      final ready =
+          remaining.entries
+              .where((e) => e.value == 0 && !resolved.contains(e.key))
+              .map((e) => e.key)
+              .toList()
+            ..sort((a, b) => a.index.compareTo(b.index));
       if (ready.isEmpty) break; // Cycle: nothing left is resolvable.
 
       levels.add(ready);
       resolved.addAll(ready);
       for (final t in applicable) {
         if (resolved.contains(t.target)) continue;
-        final stillUnresolvedDeps = t.dependencies.where((d) => byTarget.containsKey(d) && !resolved.contains(d)).length;
+        final stillUnresolvedDeps = t.dependencies
+            .where((d) => byTarget.containsKey(d) && !resolved.contains(d))
+            .length;
         remaining[t.target] = stillUnresolvedDeps;
       }
     }
 
-    return ExecutionLevels(levels: levels, isComplete: resolved.length == applicable.length);
+    return ExecutionLevels(
+      levels: levels,
+      isComplete: resolved.length == applicable.length,
+    );
   }
 }

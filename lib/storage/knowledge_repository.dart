@@ -159,7 +159,9 @@ class KnowledgeRepository {
   /// Rows for exactly [cacheKey], in stored order — the incremental unit of
   /// restoration. Returns `null` when nothing is persisted for this key, so
   /// callers can distinguish "not cached" from "cached, and genuinely empty".
-  Future<List<PersistedKnowledgeResource>?> resourcesFor(String cacheKey) async {
+  Future<List<PersistedKnowledgeResource>?> resourcesFor(
+    String cacheKey,
+  ) async {
     final db = await database;
     final rows = await db.query(
       'knowledge_resources',
@@ -231,7 +233,8 @@ class KnowledgeRepository {
           entryCount: (row['entries'] as int?) ?? 0,
           totalBytes: (row['bytes'] as int?) ?? 0,
           newestRetrievedAt:
-              DateTime.tryParse(row['newest'] as String? ?? '') ?? DateTime.fromMillisecondsSinceEpoch(0),
+              DateTime.tryParse(row['newest'] as String? ?? '') ??
+              DateTime.fromMillisecondsSinceEpoch(0),
         ),
     ];
   }

@@ -19,7 +19,11 @@ class WorldPlanResult {
   final GraphMergeResult mergeResult;
   final GraphValidation validation;
 
-  const WorldPlanResult({required this.graph, required this.mergeResult, required this.validation});
+  const WorldPlanResult({
+    required this.graph,
+    required this.mergeResult,
+    required this.validation,
+  });
 
   bool get approved => mergeResult.isClean && validation.isValid;
 }
@@ -28,9 +32,11 @@ class WorldPlanner {
   final GraphMerge _merge;
   final GraphConsistency _consistency;
 
-  const WorldPlanner({GraphMerge merge = const GraphMerge(), GraphConsistency consistency = const GraphConsistency()})
-    : _merge = merge,
-      _consistency = consistency;
+  const WorldPlanner({
+    GraphMerge merge = const GraphMerge(),
+    GraphConsistency consistency = const GraphConsistency(),
+  }) : _merge = merge,
+       _consistency = consistency;
 
   /// Plans applying [update] to [base]: merges it in, checks consistency,
   /// and only reports `approved` if both the merge was clean (no
@@ -39,9 +45,16 @@ class WorldPlanner {
   /// explicitly accept via [WorldPlanResult.graph] — planning and
   /// committing stay separate.
   WorldPlanResult plan(WorldGraph base, GraphUpdate update) {
-    final incoming = WorldGraph(nodes: update.addedNodes, edges: update.addedEdges);
+    final incoming = WorldGraph(
+      nodes: update.addedNodes,
+      edges: update.addedEdges,
+    );
     final mergeResult = _merge.merge(base, incoming);
     final validation = _consistency.validate(mergeResult.graph);
-    return WorldPlanResult(graph: mergeResult.graph, mergeResult: mergeResult, validation: validation);
+    return WorldPlanResult(
+      graph: mergeResult.graph,
+      mergeResult: mergeResult,
+      validation: validation,
+    );
   }
 }

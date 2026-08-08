@@ -4,7 +4,8 @@
 /// codebase does not implement.
 library;
 
-import '../../application_engineering/accessibility_performance_security_engineering.dart' show AccessibilityAspect;
+import '../../application_engineering/accessibility_performance_security_engineering.dart'
+    show AccessibilityAspect;
 import '../../software_architect/confidence.dart';
 import '../review_context.dart';
 import '../review_types.dart';
@@ -17,16 +18,24 @@ class AccessibilityReviewer {
     final issues = <ReviewIssue>[];
 
     for (final aspect in AccessibilityAspect.values) {
-      final decision = decisions.where((d) => d.subjectId == aspect.name).firstOrNull;
+      final decision = decisions
+          .where((d) => d.subjectId == aspect.name)
+          .firstOrNull;
       if (decision == null) {
         issues.add(
           ReviewIssue(
             id: 'accessibility:missingAspect:${aspect.name}',
             category: ReviewCategory.accessibility,
             severity: ReviewSeverity.warning,
-            reason: 'No engineered accessibility decision recorded for "${aspect.name}"',
-            evidence: ReviewEvidence(affectedGraph: 'EngineeringCandidate.accessibility', affectedNodeId: aspect.name),
-            recommendation: const ReviewRecommendation(description: 'Run AccessibilityEngineering for this aspect'),
+            reason:
+                'No engineered accessibility decision recorded for "${aspect.name}"',
+            evidence: ReviewEvidence(
+              affectedGraph: 'EngineeringCandidate.accessibility',
+              affectedNodeId: aspect.name,
+            ),
+            recommendation: const ReviewRecommendation(
+              description: 'Run AccessibilityEngineering for this aspect',
+            ),
             confidence: Confidence.full,
           ),
         );
@@ -44,10 +53,20 @@ class AccessibilityReviewer {
             id: 'accessibility:unverifiedClaim:${aspect.name}',
             category: ReviewCategory.accessibility,
             severity: ReviewSeverity.warning,
-            reason: 'Accessibility decision for "${aspect.name}" no longer traces to a real Flutter/Material mechanism',
-            evidence: ReviewEvidence(affectedGraph: 'EngineeringCandidate.accessibility', affectedNodeId: aspect.name),
-            recommendation: const ReviewRecommendation(description: 'Ground the decision in a real, inspectable implementation'),
-            confidence: const Confidence(score: 0.6, reason: 'Rationale-text heuristic, not a guaranteed detector.'),
+            reason:
+                'Accessibility decision for "${aspect.name}" no longer traces to a real Flutter/Material mechanism',
+            evidence: ReviewEvidence(
+              affectedGraph: 'EngineeringCandidate.accessibility',
+              affectedNodeId: aspect.name,
+            ),
+            recommendation: const ReviewRecommendation(
+              description:
+                  'Ground the decision in a real, inspectable implementation',
+            ),
+            confidence: const Confidence(
+              score: 0.6,
+              reason: 'Rationale-text heuristic, not a guaranteed detector.',
+            ),
           ),
         );
       }

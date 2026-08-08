@@ -54,13 +54,15 @@ class CorroborationSummary {
     required this.conflicting,
   });
 
-  factory CorroborationSummary.of(List<SoftwareRecommendation> recommendations, {required int sourceCount}) =>
-      CorroborationSummary(
-        sourceCount: sourceCount,
-        recommendationsConsidered: recommendations.length,
-        corroborated: recommendations.where((r) => r.accepted).length,
-        conflicting: recommendations.where((r) => !r.accepted).length,
-      );
+  factory CorroborationSummary.of(
+    List<SoftwareRecommendation> recommendations, {
+    required int sourceCount,
+  }) => CorroborationSummary(
+    sourceCount: sourceCount,
+    recommendationsConsidered: recommendations.length,
+    corroborated: recommendations.where((r) => r.accepted).length,
+    conflicting: recommendations.where((r) => !r.accepted).length,
+  );
 }
 
 class SoftwareReasoner {
@@ -71,14 +73,18 @@ class SoftwareReasoner {
   /// "never copy a single source" gate.
   final int minSupportingCandidates;
 
-  const SoftwareReasoner({SoftwareSimilarity similarity = const SoftwareSimilarity(), this.minSupportingCandidates = 2})
-    : _similarity = similarity;
+  const SoftwareReasoner({
+    SoftwareSimilarity similarity = const SoftwareSimilarity(),
+    this.minSupportingCandidates = 2,
+  }) : _similarity = similarity;
 
   /// Compares N acquired repositories and extracts frameworks/patterns
   /// that repeat across candidates as accepted recommendations; anything
   /// seen in only one candidate is reported but rejected — never
   /// silently dropped, so a caller can see what was considered.
-  List<SoftwareRecommendation> reasonAboutRepositories(List<RepositoryModel> candidates) {
+  List<SoftwareRecommendation> reasonAboutRepositories(
+    List<RepositoryModel> candidates,
+  ) {
     if (candidates.isEmpty) return const [];
     final frameworkSupport = <String, List<RepositoryModel>>{};
     for (final candidate in candidates) {
@@ -94,13 +100,21 @@ class SoftwareReasoner {
       final accepted = supporters.length >= minSupportingCandidates;
       recommendations.add(
         SoftwareRecommendation(
-          description: 'Consider the "$framework" approach — observed in ${supporters.length} of ${candidates.length} acquired repositories.',
+          description:
+              'Consider the "$framework" approach — observed in ${supporters.length} of ${candidates.length} acquired repositories.',
           tracedTo: supporters
-              .map((s) => SoftwareEvidence(sourceUrl: s.metadata.provenance.sourceUrl, sourceArtifact: framework))
+              .map(
+                (s) => SoftwareEvidence(
+                  sourceUrl: s.metadata.provenance.sourceUrl,
+                  sourceArtifact: framework,
+                ),
+              )
               .toList(),
           confidence: SoftwareConfidence(
             score: supporters.length / candidates.length,
-            reason: accepted ? 'repeated across ${supporters.length} independent sources' : 'seen in only ${supporters.length} source(s)',
+            reason: accepted
+                ? 'repeated across ${supporters.length} independent sources'
+                : 'seen in only ${supporters.length} source(s)',
           ),
           accepted: accepted,
         ),
@@ -110,7 +124,9 @@ class SoftwareReasoner {
   }
 
   /// Same repeated-across-candidates gate, for package capabilities.
-  List<SoftwareRecommendation> reasonAboutPackages(List<PackageModel> candidates) {
+  List<SoftwareRecommendation> reasonAboutPackages(
+    List<PackageModel> candidates,
+  ) {
     if (candidates.isEmpty) return const [];
     final capabilitySupport = <String, List<PackageModel>>{};
     for (final candidate in candidates) {
@@ -126,13 +142,21 @@ class SoftwareReasoner {
       final accepted = supporters.length >= minSupportingCandidates;
       recommendations.add(
         SoftwareRecommendation(
-          description: 'Consider the "$capability" capability — observed in ${supporters.length} of ${candidates.length} acquired packages.',
+          description:
+              'Consider the "$capability" capability — observed in ${supporters.length} of ${candidates.length} acquired packages.',
           tracedTo: supporters
-              .map((s) => SoftwareEvidence(sourceUrl: s.metadata.provenance.sourceUrl, sourceArtifact: capability))
+              .map(
+                (s) => SoftwareEvidence(
+                  sourceUrl: s.metadata.provenance.sourceUrl,
+                  sourceArtifact: capability,
+                ),
+              )
               .toList(),
           confidence: SoftwareConfidence(
             score: supporters.length / candidates.length,
-            reason: accepted ? 'repeated across ${supporters.length} independent sources' : 'seen in only ${supporters.length} source(s)',
+            reason: accepted
+                ? 'repeated across ${supporters.length} independent sources'
+                : 'seen in only ${supporters.length} source(s)',
           ),
           accepted: accepted,
         ),
@@ -145,7 +169,9 @@ class SoftwareReasoner {
   /// typed, graph-facing form of the same "repeated across candidates"
   /// evidence.
   SoftwarePatternGraph detectPatterns(List<RepositoryModel> candidates) {
-    final accepted = reasonAboutRepositories(candidates).where((r) => r.accepted);
+    final accepted = reasonAboutRepositories(
+      candidates,
+    ).where((r) => r.accepted);
     return SoftwarePatternGraph(
       patterns: accepted
           .map(
@@ -167,8 +193,12 @@ class SoftwareReasoner {
     final result = <String, double>{};
     for (var i = 0; i < candidates.length; i++) {
       for (var j = i + 1; j < candidates.length; j++) {
-        final key = '${candidates[i].metadata.name}~${candidates[j].metadata.name}';
-        result[key] = _similarity.repositorySimilarity(candidates[i], candidates[j]);
+        final key =
+            '${candidates[i].metadata.name}~${candidates[j].metadata.name}';
+        result[key] = _similarity.repositorySimilarity(
+          candidates[i],
+          candidates[j],
+        );
       }
     }
     return result;

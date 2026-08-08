@@ -79,7 +79,10 @@ class RestApiGenerator implements Generator {
     id: 'reference.rest-api',
     name: 'REST API Generator',
     version: GeneratorVersion(major: 1, minor: 0, patch: 0),
-    capabilities: [GeneratorCapability.manifests, GeneratorCapability.configuration],
+    capabilities: [
+      GeneratorCapability.manifests,
+      GeneratorCapability.configuration,
+    ],
   );
 
   @override
@@ -91,7 +94,8 @@ class RestApiGenerator implements Generator {
         const GenerationDiagnostic(
           severity: DiagnosticSeverity.info,
           category: DiagnosticCategory.general,
-          message: 'No BackendEngineeringPlan supplied via GeneratorOptions — no REST API to generate.',
+          message:
+              'No BackendEngineeringPlan supplied via GeneratorOptions — no REST API to generate.',
         ),
       );
       return GenerationResult(diagnostics: diagnostics);
@@ -99,10 +103,16 @@ class RestApiGenerator implements Generator {
 
     final BackendEngineeringPlan plan;
     try {
-      plan = backendEngineeringPlanFromJson(jsonDecode(planJson) as Map<String, dynamic>);
+      plan = backendEngineeringPlanFromJson(
+        jsonDecode(planJson) as Map<String, dynamic>,
+      );
     } catch (e) {
       diagnostics.add(
-        GenerationDiagnostic(severity: DiagnosticSeverity.error, category: DiagnosticCategory.general, message: 'Malformed BackendEngineeringPlan supplied: $e'),
+        GenerationDiagnostic(
+          severity: DiagnosticSeverity.error,
+          category: DiagnosticCategory.general,
+          message: 'Malformed BackendEngineeringPlan supplied: $e',
+        ),
       );
       return GenerationResult(diagnostics: diagnostics);
     }
@@ -112,14 +122,18 @@ class RestApiGenerator implements Generator {
         const GenerationDiagnostic(
           severity: DiagnosticSeverity.info,
           category: DiagnosticCategory.general,
-          message: 'BackendEngineeringPlan.api has no endpoints — nothing to generate.',
+          message:
+              'BackendEngineeringPlan.api has no endpoints — nothing to generate.',
         ),
       );
       return GenerationResult(diagnostics: diagnostics);
     }
 
     final model = context.buildGraph.sourceModel;
-    final fieldsByEntity = {for (final e in model.entities) e.id: {for (final f in e.fields) f.name: f}};
+    final fieldsByEntity = {
+      for (final e in model.entities)
+        e.id: {for (final f in e.fields) f.name: f},
+    };
     _reportUnrepresentedConcepts(diagnostics);
 
     final endpointsJson = [
@@ -130,30 +144,52 @@ class RestApiGenerator implements Generator {
           'method': _methodName(endpoint.method),
           'operation': endpoint.operation.name,
           'entityId': endpoint.entityId,
-          'requestModel': _fieldsJson(endpoint.requestFields, fieldsByEntity[endpoint.entityId] ?? const {}),
+          'requestModel': _fieldsJson(
+            endpoint.requestFields,
+            fieldsByEntity[endpoint.entityId] ?? const {},
+          ),
           'responseModel': _responseModelJson(endpoint, model),
         },
     ];
 
     final openApiPaths = <String, dynamic>{};
     for (final endpoint in plan.api.endpoints) {
-      final pathItem = (openApiPaths[endpoint.path] ??= <String, dynamic>{}) as Map<String, dynamic>;
+      final pathItem =
+          (openApiPaths[endpoint.path] ??= <String, dynamic>{})
+              as Map<String, dynamic>;
       pathItem[_methodName(endpoint.method)] = {
         'operationId': endpoint.id,
-        if (endpoint.requestFields.isNotEmpty) 'requestBody': _fieldsJson(endpoint.requestFields, fieldsByEntity[endpoint.entityId] ?? const {}),
+        if (endpoint.requestFields.isNotEmpty)
+          'requestBody': _fieldsJson(
+            endpoint.requestFields,
+            fieldsByEntity[endpoint.entityId] ?? const {},
+          ),
         'responses': {'200': _responseModelJson(endpoint, model)},
       };
     }
 
     final content = jsonEncode({
       'endpoints': endpointsJson,
-      'authentication': {'requiresCredentials': plan.authentication.requiresCredentials, 'providerIndependent': plan.authentication.providerIndependent},
+      'authentication': {
+        'requiresCredentials': plan.authentication.requiresCredentials,
+        'providerIndependent': plan.authentication.providerIndependent,
+      },
       'openapi': {'openapi': '3.0.0', 'paths': openApiPaths},
     });
 
-    final artifact = Artifact(id: 'rest-api-artifacts', path: 'api/${context.target.id}.json', kind: ArtifactKind.manifest, content: content);
+    final artifact = Artifact(
+      id: 'rest-api-artifacts',
+      path: 'api/${context.target.id}.json',
+      kind: ArtifactKind.manifest,
+      content: content,
+    );
 
-    return GenerationResult(artifactGroups: [ArtifactGroup(id: 'rest-api', artifacts: [artifact])], diagnostics: diagnostics);
+    return GenerationResult(
+      artifactGroups: [
+        ArtifactGroup(id: 'rest-api', artifacts: [artifact]),
+      ],
+      diagnostics: diagnostics,
+    );
   }
 
   /// Real join: `ApiRequestField.name` and `ImplementationField.name` both
@@ -164,9 +200,16 @@ class RestApiGenerator implements Generator {
   /// match. A request field with no match (should not occur given the
   /// shared source, but never assumed) is reported honestly with `type:
   /// null` rather than a fabricated guess.
-  List<Map<String, dynamic>> _fieldsJson(List<ApiRequestField> requestFields, Map<String, ImplementationField> fieldsByName) => [
+  List<Map<String, dynamic>> _fieldsJson(
+    List<ApiRequestField> requestFields,
+    Map<String, ImplementationField> fieldsByName,
+  ) => [
     for (final rf in requestFields)
-      {'name': rf.name, 'required': rf.required, 'type': fieldsByName[rf.name]?.type.name},
+      {
+        'name': rf.name,
+        'required': rf.required,
+        'type': fieldsByName[rf.name]?.type.name,
+      },
   ];
 
   /// Real response shape for `get`/`list`/`search`: the target entity's own
@@ -174,16 +217,28 @@ class RestApiGenerator implements Generator {
   /// model here — the SAME real, entity-shaped fields are already named
   /// via `requestModel` for those operations, so this stays a real,
   /// non-duplicated derivation.
-  Map<String, dynamic> _responseModelJson(ApiEndpoint endpoint, CanonicalImplementationModel model) {
-    if (endpoint.operation != ApiOperation.get && endpoint.operation != ApiOperation.list && endpoint.operation != ApiOperation.search) {
+  Map<String, dynamic> _responseModelJson(
+    ApiEndpoint endpoint,
+    CanonicalImplementationModel model,
+  ) {
+    if (endpoint.operation != ApiOperation.get &&
+        endpoint.operation != ApiOperation.list &&
+        endpoint.operation != ApiOperation.search) {
       return const {'body': null};
     }
-    final entity = model.entities.where((e) => e.id == endpoint.entityId).firstOrNull;
+    final entity = model.entities
+        .where((e) => e.id == endpoint.entityId)
+        .firstOrNull;
     if (entity == null) return const {'body': null};
-    final isList = endpoint.operation == ApiOperation.list || endpoint.operation == ApiOperation.search;
+    final isList =
+        endpoint.operation == ApiOperation.list ||
+        endpoint.operation == ApiOperation.search;
     return {
       'body': isList ? 'array' : 'object',
-      'fields': [for (final f in entity.fields) {'name': f.name, 'type': f.type.name, 'required': f.required}],
+      'fields': [
+        for (final f in entity.fields)
+          {'name': f.name, 'type': f.type.name, 'required': f.required},
+      ],
     };
   }
 
@@ -192,7 +247,8 @@ class RestApiGenerator implements Generator {
       const GenerationDiagnostic(
         severity: DiagnosticSeverity.info,
         category: DiagnosticCategory.skippedFeature,
-        message: 'Authorization Rules are not represented — no per-endpoint role/scope concept exists anywhere upstream '
+        message:
+            'Authorization Rules are not represented — no per-endpoint role/scope concept exists anywhere upstream '
             '(AuthenticationModel carries only requiresCredentials/providerIndependent, Implementation Milestone R8).',
       ),
     );
@@ -200,7 +256,8 @@ class RestApiGenerator implements Generator {
       const GenerationDiagnostic(
         severity: DiagnosticSeverity.info,
         category: DiagnosticCategory.skippedFeature,
-        message: 'Error Models are not represented — no per-endpoint failure-mode signal exists anywhere upstream; a generic '
+        message:
+            'Error Models are not represented — no per-endpoint failure-mode signal exists anywhere upstream; a generic '
             'RESTful convention would be invented, not derived, violating the standing "never fabricate" constraint.',
       ),
     );

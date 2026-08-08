@@ -43,34 +43,42 @@ class InteractionEngineeringResult {
 class InteractionEngineering {
   const InteractionEngineering();
 
-  static const Map<InteractionPattern, ({bool implemented, String rationale})> _catalog = {
+  static const Map<InteractionPattern, ({bool implemented, String rationale})>
+  _catalog = {
     InteractionPattern.singleSelection: (
       implemented: true,
-      rationale: 'Detail views select a single record by ID via referenceSelector/list navigation — real, existing.',
+      rationale:
+          'Detail views select a single record by ID via referenceSelector/list navigation — real, existing.',
     ),
     InteractionPattern.confirmation: (
       implemented: true,
-      rationale: 'Delete actions show a confirmation dialog before executing (verified in stage11_user_path_certification_test.dart).',
+      rationale:
+          'Delete actions show a confirmation dialog before executing (verified in stage11_user_path_certification_test.dart).',
     ),
     InteractionPattern.batchSelection: (
       implemented: false,
-      rationale: 'No multi-select/batch-action mechanism exists in ExperienceRenderer or component_registry today.',
+      rationale:
+          'No multi-select/batch-action mechanism exists in ExperienceRenderer or component_registry today.',
     ),
     InteractionPattern.undo: (
       implemented: false,
-      rationale: 'No undo mechanism exists in BehaviorInterpreter today (mutations are immediate and final).',
+      rationale:
+          'No undo mechanism exists in BehaviorInterpreter today (mutations are immediate and final).',
     ),
     InteractionPattern.redo: (
       implemented: false,
-      rationale: 'No redo mechanism exists — depends on undo, which does not exist.',
+      rationale:
+          'No redo mechanism exists — depends on undo, which does not exist.',
     ),
     InteractionPattern.contextMenu: (
       implemented: false,
-      rationale: 'No context-menu component type is registered in RuntimeComponentRegistry.',
+      rationale:
+          'No context-menu component type is registered in RuntimeComponentRegistry.',
     ),
     InteractionPattern.grouping: (
       implemented: false,
-      rationale: 'DataQuery supports sort but not group-by; no grouped-list rendering exists.',
+      rationale:
+          'DataQuery supports sort but not group-by; no grouped-list rendering exists.',
     ),
   };
 
@@ -85,7 +93,9 @@ class InteractionEngineering {
           id: 'interaction-pattern:${pattern.name}',
           category: EngineeringDecisionCategory.interaction,
           subjectId: pattern.name,
-          decision: meta.implemented ? '${pattern.name} is available' : '${pattern.name} is not yet implemented',
+          decision: meta.implemented
+              ? '${pattern.name} is available'
+              : '${pattern.name} is not yet implemented',
           rationale: meta.rationale,
           confidence: Confidence(
             score: meta.implemented ? 1.0 : 0.0,

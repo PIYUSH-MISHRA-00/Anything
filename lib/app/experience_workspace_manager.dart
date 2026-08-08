@@ -50,14 +50,19 @@ class ExperienceWorkspaceManager {
 
   final List<ActivityEvent> _timeline = [];
 
-  ExperienceWorkspaceManager({required IntentSessionManager sessionManager, ActivityRepository? activity})
-    : _sessionManager = sessionManager,
-      _activity = activity ?? ActivityRepository();
+  ExperienceWorkspaceManager({
+    required IntentSessionManager sessionManager,
+    ActivityRepository? activity,
+  }) : _sessionManager = sessionManager,
+       _activity = activity ?? ActivityRepository();
 
   /// Real, in-order snapshot of every session this workspace currently
   /// considers open — filters out any id `IntentSessionManager` no longer
   /// recognizes (never fabricated).
-  List<SessionState> get openSessions => [for (final id in _openSessionIds) if (_sessionManager.sessionFor(id) case final s?) s];
+  List<SessionState> get openSessions => [
+    for (final id in _openSessionIds)
+      if (_sessionManager.sessionFor(id) case final s?) s,
+  ];
 
   List<String> get openSessionIds => List.unmodifiable(_openSessionIds);
 
@@ -65,7 +70,9 @@ class ExperienceWorkspaceManager {
 
   /// `null` when no session is active, or the active one is no longer
   /// tracked by `IntentSessionManager` — never a stale/fabricated result.
-  SessionState? get activeSession => _activeSessionId == null ? null : _sessionManager.sessionFor(_activeSessionId!);
+  SessionState? get activeSession => _activeSessionId == null
+      ? null
+      : _sessionManager.sessionFor(_activeSessionId!);
 
   List<ActivityEvent> get timeline => List.unmodifiable(_timeline);
 
@@ -88,7 +95,11 @@ class ExperienceWorkspaceManager {
     final result = await _sessionManager.startSession(intent);
     _openSessionIds.add(result.sessionId);
     _activeSessionId ??= result.sessionId;
-    await _record(type: 'workspace_opened', sessionId: result.sessionId, message: 'Opened session ${result.sessionId}');
+    await _record(
+      type: 'workspace_opened',
+      sessionId: result.sessionId,
+      message: 'Opened session ${result.sessionId}',
+    );
     return result;
   }
 
@@ -105,17 +116,27 @@ class ExperienceWorkspaceManager {
     required String experienceId,
     required String experienceName,
   }) async {
-    final result = await _sessionManager.startSessionForExistingExperience(experienceId: experienceId, experienceName: experienceName);
+    final result = await _sessionManager.startSessionForExistingExperience(
+      experienceId: experienceId,
+      experienceName: experienceName,
+    );
     _openSessionIds.add(result.sessionId);
     _activeSessionId ??= result.sessionId;
-    await _record(type: 'workspace_opened', sessionId: result.sessionId, message: 'Opened session ${result.sessionId}');
+    await _record(
+      type: 'workspace_opened',
+      sessionId: result.sessionId,
+      message: 'Opened session ${result.sessionId}',
+    );
     return result;
   }
 
   /// Continues an already-open experience: delegates entirely to the real,
   /// unmodified `IntentSessionManager.continueSession()` — never
   /// re-implements evolution/regeneration logic.
-  Future<SessionContinueResult> continueExperience(String sessionId, Intent intent) async {
+  Future<SessionContinueResult> continueExperience(
+    String sessionId,
+    Intent intent,
+  ) async {
     if (!_openSessionIds.contains(sessionId)) {
       throw StateError('Session $sessionId is not open in this workspace.');
     }
@@ -133,17 +154,27 @@ class ExperienceWorkspaceManager {
     if (_activeSessionId == sessionId) {
       _activeSessionId = _openSessionIds.isEmpty ? null : _openSessionIds.last;
     }
-    await _record(type: 'workspace_closed', sessionId: sessionId, message: 'Closed session $sessionId');
+    await _record(
+      type: 'workspace_closed',
+      sessionId: sessionId,
+      message: 'Closed session $sessionId',
+    );
   }
 
   /// Real, honest validation: switching to a session the workspace does
   /// not consider open is a real programming error, never a silent no-op.
   Future<void> switchActiveExperience(String sessionId) async {
     if (!_openSessionIds.contains(sessionId)) {
-      throw StateError('Cannot switch to session $sessionId — it is not open in this workspace.');
+      throw StateError(
+        'Cannot switch to session $sessionId — it is not open in this workspace.',
+      );
     }
     _activeSessionId = sessionId;
-    await _record(type: 'workspace_switched', sessionId: sessionId, message: 'Switched to session $sessionId');
+    await _record(
+      type: 'workspace_switched',
+      sessionId: sessionId,
+      message: 'Switched to session $sessionId',
+    );
   }
 
   /// A caller (the real, live `ExperienceHostScreen`, once fully wired)
@@ -158,12 +189,19 @@ class ExperienceWorkspaceManager {
   /// Real bridge for a caller that only knows an `experienceId` (not a
   /// `sessionId`) — a harmless no-op when no open session matches, never a
   /// fabricated update.
-  void reportRuntimeStateForExperience(String experienceId, ExperienceSession runtimeState) {
+  void reportRuntimeStateForExperience(
+    String experienceId,
+    ExperienceSession runtimeState,
+  ) {
     final session = sessionForExperience(experienceId);
     if (session != null) updateRuntimeState(session.sessionId, runtimeState);
   }
 
-  Future<void> _record({required String type, required String sessionId, required String message}) async {
+  Future<void> _record({
+    required String type,
+    required String sessionId,
+    required String message,
+  }) async {
     final state = _sessionManager.sessionFor(sessionId);
     final event = ActivityEvent(
       id: '$sessionId-workspace-${_timeline.length}',

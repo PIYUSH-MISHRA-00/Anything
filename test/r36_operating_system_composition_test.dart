@@ -64,12 +64,25 @@ import 'package:anything/software_cognition/software_cognition_coordinator.dart'
 ExperiencePackage _minimalPackage() {
   final now = DateTime(2026);
   return ExperiencePackage(
-    manifest: ExperienceManifest(experienceId: 'exp-ctor-check', name: 'Test', description: 'd', category: 'general', entryPoint: 's1', version: '1', createdAt: now, updatedAt: now),
+    manifest: ExperienceManifest(
+      experienceId: 'exp-ctor-check',
+      name: 'Test',
+      description: 'd',
+      category: 'general',
+      entryPoint: 's1',
+      version: '1',
+      createdAt: now,
+      updatedAt: now,
+    ),
     interface: const InterfaceDefinition(screens: []),
     behavior: const BehaviorGraph(),
     state: const StateSchema(),
     capabilityDeclarations: const [],
-    provenance: const PackageProvenance(creationEngineVersion: 'test', specVersion: 1, planVersion: 1),
+    provenance: const PackageProvenance(
+      creationEngineVersion: 'test',
+      specVersion: 1,
+      planVersion: 1,
+    ),
     integrity: PackageIntegrity(contentHash: 'h', computedAt: now),
   );
 }
@@ -81,8 +94,33 @@ SemanticApp _app(String name, {bool withGear = false}) => SemanticApp(
   name: name,
   purpose: 'Track $name',
   entities: [
-    SemanticEntity(id: 'trip', name: 'Trip', displayField: 'title', fields: const [SemanticField(id: 'title', name: 'Title', type: BlueprintFieldType.text, required: true)]),
-    if (withGear) const SemanticEntity(id: 'gear', name: 'Gear', displayField: 'title', fields: [SemanticField(id: 'title', name: 'Title', type: BlueprintFieldType.text, required: true)]),
+    SemanticEntity(
+      id: 'trip',
+      name: 'Trip',
+      displayField: 'title',
+      fields: const [
+        SemanticField(
+          id: 'title',
+          name: 'Title',
+          type: BlueprintFieldType.text,
+          required: true,
+        ),
+      ],
+    ),
+    if (withGear)
+      const SemanticEntity(
+        id: 'gear',
+        name: 'Gear',
+        displayField: 'title',
+        fields: [
+          SemanticField(
+            id: 'title',
+            name: 'Title',
+            type: BlueprintFieldType.text,
+            required: true,
+          ),
+        ],
+      ),
   ],
   requiredCapabilities: const ['storage'],
 );
@@ -90,7 +128,15 @@ SemanticApp _app(String name, {bool withGear = false}) => SemanticApp(
 CapabilityRegistry _registryWithStorage() {
   final registry = CapabilityRegistry();
   registry.register(
-    const CapabilityDescriptor(id: 'storage', version: '1.0.0', name: 'Storage', description: 'Local storage', category: CapabilityCategory.storage, inputContract: 'data', outputContract: 'stored data'),
+    const CapabilityDescriptor(
+      id: 'storage',
+      version: '1.0.0',
+      name: 'Storage',
+      description: 'Local storage',
+      category: CapabilityCategory.storage,
+      inputContract: 'data',
+      outputContract: 'stored data',
+    ),
   );
   return registry;
 }
@@ -168,22 +214,49 @@ class _Rig {
   });
 
   static _Rig create(List<SemanticApp> reasonerSequence, {String? dbName}) {
-    final name = dbName ?? 'r36_composition_${DateTime.now().microsecondsSinceEpoch}.db';
+    final name =
+        dbName ?? 'r36_composition_${DateTime.now().microsecondsSinceEpoch}.db';
     final repository = SqliteExperienceRepository(dbName: name);
     final worldModel = WorldModelCoordinator();
     final softwareCognition = SoftwareCognitionCoordinator();
-    final engineeringMemory = EngineeringMemoryRepository(experienceRepository: repository);
+    final engineeringMemory = EngineeringMemoryRepository(
+      experienceRepository: repository,
+    );
     final activity = ActivityRepository();
     final reasoner = _SequencedReasoner(reasonerSequence);
-    final kernel = AnythingKernel(providerRegistry: _FakeProviderRegistry(), capabilityRegistry: _registryWithStorage(), reasoner: reasoner, worldModel: worldModel, softwareCognition: softwareCognition);
+    final kernel = AnythingKernel(
+      providerRegistry: _FakeProviderRegistry(),
+      capabilityRegistry: _registryWithStorage(),
+      reasoner: reasoner,
+      worldModel: worldModel,
+      softwareCognition: softwareCognition,
+    );
 
     // The EXACT same 4 named args AppComposition.production() now passes
     // (Implementation Specification IS-R36) — matching, not re-deriving,
     // HomeScreen's own pre-R36 local construction call.
-    final creationCoordinator = ExperienceCreationCoordinator(kernel: kernel, repository: repository, worldModel: worldModel, softwareCognition: softwareCognition, engineeringMemory: engineeringMemory);
-    final lifecycleCoordinator = EngineeringLifecycleCoordinator(kernel: kernel, engineeringMemory: engineeringMemory, repository: repository);
-    final sessionManager = IntentSessionManager(creationCoordinator: creationCoordinator, lifecycleCoordinator: lifecycleCoordinator, engineeringMemory: engineeringMemory, activity: activity);
-    final workspace = ExperienceWorkspaceManager(sessionManager: sessionManager, activity: activity);
+    final creationCoordinator = ExperienceCreationCoordinator(
+      kernel: kernel,
+      repository: repository,
+      worldModel: worldModel,
+      softwareCognition: softwareCognition,
+      engineeringMemory: engineeringMemory,
+    );
+    final lifecycleCoordinator = EngineeringLifecycleCoordinator(
+      kernel: kernel,
+      engineeringMemory: engineeringMemory,
+      repository: repository,
+    );
+    final sessionManager = IntentSessionManager(
+      creationCoordinator: creationCoordinator,
+      lifecycleCoordinator: lifecycleCoordinator,
+      engineeringMemory: engineeringMemory,
+      activity: activity,
+    );
+    final workspace = ExperienceWorkspaceManager(
+      sessionManager: sessionManager,
+      activity: activity,
+    );
     final router = UniversalIntentRouter(workspace: workspace);
     final workspaceRuntime = AutonomousWorkspaceRuntime(workspace: workspace);
     final bus = EventBus();
@@ -227,98 +300,150 @@ void main() {
     SharedPreferences.setMockInitialValues({});
   });
 
-  group('AppComposition.production() itself (R36) — the real composition root, exercised directly', () {
-    // REALITY: with no AI provider ever configured/saved in this test's
-    // CredentialVault, `AnythingProviderRegistry.activeProvider` is real,
-    // honestly null — `AnythingKernel.processIntent()`'s own Step 5 (the
-    // ONE mandatory reasoning call, per this project's own AI boundary)
-    // detects this BEFORE any network/LLM call and returns a real, local,
-    // deterministic `ReasoningProviderRequired` -> `ProviderRequired`
-    // (confirmed by reading `lib/kernel/anything_kernel.dart`). Exercising
-    // `AppComposition.production()`'s REAL graph through this real,
-    // network-free outcome is therefore safe and honest — never a
-    // fabricated network-free assumption.
-    test('constructs the full R31-R36 service graph without throwing — every new field is real, non-null, and correctly typed', () async {
-      final composition = AppComposition.production();
-      addTearDown(() => composition.experienceRepository.close());
+  group(
+    'AppComposition.production() itself (R36) — the real composition root, exercised directly',
+    () {
+      // REALITY: with no AI provider ever configured/saved in this test's
+      // CredentialVault, `AnythingProviderRegistry.activeProvider` is real,
+      // honestly null — `AnythingKernel.processIntent()`'s own Step 5 (the
+      // ONE mandatory reasoning call, per this project's own AI boundary)
+      // detects this BEFORE any network/LLM call and returns a real, local,
+      // deterministic `ReasoningProviderRequired` -> `ProviderRequired`
+      // (confirmed by reading `lib/kernel/anything_kernel.dart`). Exercising
+      // `AppComposition.production()`'s REAL graph through this real,
+      // network-free outcome is therefore safe and honest — never a
+      // fabricated network-free assumption.
+      test(
+        'constructs the full R31-R36 service graph without throwing — every new field is real, non-null, and correctly typed',
+        () async {
+          final composition = AppComposition.production();
+          addTearDown(() => composition.experienceRepository.close());
 
-      expect(composition.experienceCreationCoordinator, isA<ExperienceCreationCoordinator>());
-      expect(composition.engineeringLifecycleCoordinator, isA<EngineeringLifecycleCoordinator>());
-      expect(composition.intentSessionManager, isA<IntentSessionManager>());
-      expect(composition.workspaceManager, isA<ExperienceWorkspaceManager>());
-      expect(composition.intentRouter, isA<UniversalIntentRouter>());
-      expect(composition.workspaceRuntime, isA<AutonomousWorkspaceRuntime>());
-      expect(composition.eventBus, isA<EventBus>());
-      expect(composition.eventPublisher, isA<WorkspaceEventPublisher>());
-    });
+          expect(
+            composition.experienceCreationCoordinator,
+            isA<ExperienceCreationCoordinator>(),
+          );
+          expect(
+            composition.engineeringLifecycleCoordinator,
+            isA<EngineeringLifecycleCoordinator>(),
+          );
+          expect(composition.intentSessionManager, isA<IntentSessionManager>());
+          expect(
+            composition.workspaceManager,
+            isA<ExperienceWorkspaceManager>(),
+          );
+          expect(composition.intentRouter, isA<UniversalIntentRouter>());
+          expect(
+            composition.workspaceRuntime,
+            isA<AutonomousWorkspaceRuntime>(),
+          );
+          expect(composition.eventBus, isA<EventBus>());
+          expect(composition.eventPublisher, isA<WorkspaceEventPublisher>());
+        },
+      );
 
-    test('singleton lifetime — workspaceManager/intentRouter/workspaceRuntime constructed from ONE production() call share the SAME underlying workspace, proven by a real cross-service observation, never a private-field assumption', () async {
-      final composition = AppComposition.production();
-      addTearDown(() => composition.experienceRepository.close());
+      test(
+        'singleton lifetime — workspaceManager/intentRouter/workspaceRuntime constructed from ONE production() call share the SAME underlying workspace, proven by a real cross-service observation, never a private-field assumption',
+        () async {
+          final composition = AppComposition.production();
+          addTearDown(() => composition.experienceRepository.close());
 
-      final routeResult = await composition.intentRouter.route(Intent.create(expression: 'track my camping trips'));
-      // A real, honest, network-free outcome (no provider configured) —
-      // `ExperienceWorkspaceManager.openExperience()` still tracks the
-      // session as open regardless of the coordinator's outcome (R32's own,
-      // unmodified contract).
-      expect(routeResult.creationResult, isA<CreationProviderRequired>());
-      expect(routeResult.sessionId, isNotNull);
+          final routeResult = await composition.intentRouter.route(
+            Intent.create(expression: 'track my camping trips'),
+          );
+          // A real, honest, network-free outcome (no provider configured) —
+          // `ExperienceWorkspaceManager.openExperience()` still tracks the
+          // session as open regardless of the coordinator's outcome (R32's own,
+          // unmodified contract).
+          expect(routeResult.creationResult, isA<CreationProviderRequired>());
+          expect(routeResult.sessionId, isNotNull);
 
-      // If `composition.intentRouter` held a DIFFERENT `ExperienceWorkspaceManager`
-      // than `composition.workspaceManager`, this session would not appear
-      // here — proving real, shared identity through actual behavior, not
-      // reflection.
-      expect(composition.workspaceManager.openSessionIds, contains(routeResult.sessionId));
+          // If `composition.intentRouter` held a DIFFERENT `ExperienceWorkspaceManager`
+          // than `composition.workspaceManager`, this session would not appear
+          // here — proving real, shared identity through actual behavior, not
+          // reflection.
+          expect(
+            composition.workspaceManager.openSessionIds,
+            contains(routeResult.sessionId),
+          );
 
-      // `composition.workspaceRuntime` must observe the SAME session too —
-      // proving IT also holds the SAME `composition.workspaceManager`.
-      final snapshot = composition.workspaceRuntime.captureRuntimeState();
-      expect(snapshot.sessions.map((s) => s.sessionId), contains(routeResult.sessionId));
-    });
+          // `composition.workspaceRuntime` must observe the SAME session too —
+          // proving IT also holds the SAME `composition.workspaceManager`.
+          final snapshot = composition.workspaceRuntime.captureRuntimeState();
+          expect(
+            snapshot.sessions.map((s) => s.sessionId),
+            contains(routeResult.sessionId),
+          );
+        },
+      );
 
-    test('EventBus sharing — a real event published via composition.eventPublisher is received by a subscriber obtained via composition.eventBus, a completely independent access path through the SAME composition', () async {
-      final composition = AppComposition.production();
-      addTearDown(() => composition.experienceRepository.close());
+      test(
+        'EventBus sharing — a real event published via composition.eventPublisher is received by a subscriber obtained via composition.eventBus, a completely independent access path through the SAME composition',
+        () async {
+          final composition = AppComposition.production();
+          addTearDown(() => composition.experienceRepository.close());
 
-      final received = <IntentRouted>[];
-      composition.eventBus.on<IntentRouted>().listen(received.add);
+          final received = <IntentRouted>[];
+          composition.eventBus.on<IntentRouted>().listen(received.add);
 
-      final routeResult = await composition.intentRouter.route(Intent.create(expression: 'track my camping trips'));
-      composition.eventPublisher.publishIntentRouted(routeResult);
-      await Future.delayed(Duration.zero);
+          final routeResult = await composition.intentRouter.route(
+            Intent.create(expression: 'track my camping trips'),
+          );
+          composition.eventPublisher.publishIntentRouted(routeResult);
+          await Future.delayed(Duration.zero);
 
-      expect(received, hasLength(1));
-      expect(received.single.sessionId, routeResult.sessionId);
-      expect(received.single.action, routeResult.action.name);
-    });
+          expect(received, hasLength(1));
+          expect(received.single.sessionId, routeResult.sessionId);
+          expect(received.single.action, routeResult.action.name);
+        },
+      );
 
-    test('workspace lifetime == application singleton (real, honest finding, documented in docs/architecture/OPERATING_SYSTEM_COMPOSITION.md): every read of composition.workspaceManager across this composition\'s lifetime returns the IDENTICAL instance — no multi-workspace concept exists in this codebase', () async {
-      final composition = AppComposition.production();
-      addTearDown(() => composition.experienceRepository.close());
+      test(
+        'workspace lifetime == application singleton (real, honest finding, documented in docs/architecture/OPERATING_SYSTEM_COMPOSITION.md): every read of composition.workspaceManager across this composition\'s lifetime returns the IDENTICAL instance — no multi-workspace concept exists in this codebase',
+        () async {
+          final composition = AppComposition.production();
+          addTearDown(() => composition.experienceRepository.close());
 
-      final firstRead = composition.workspaceManager;
-      await composition.intentRouter.route(Intent.create(expression: 'track my camping trips'));
-      final secondRead = composition.workspaceManager;
+          final firstRead = composition.workspaceManager;
+          await composition.intentRouter.route(
+            Intent.create(expression: 'track my camping trips'),
+          );
+          final secondRead = composition.workspaceManager;
 
-      expect(identical(firstRead, secondRead), isTrue, reason: 'AppComposition.workspaceManager is a final field set exactly once at production() time — real proof there is no per-access reconstruction');
-    });
-  });
+          expect(
+            identical(firstRead, secondRead),
+            isTrue,
+            reason:
+                'AppComposition.workspaceManager is a final field set exactly once at production() time — real proof there is no per-access reconstruction',
+          );
+        },
+      );
+    },
+  );
 
-  group('Dependency injection (R36) — a real, injected test double is honored throughout the graph, never silently replaced', () {
-    test('the FAKE kernel/reasoner injected into the rig\'s ExperienceCreationCoordinator is the ONE actually used end-to-end through IntentSessionManager -> ExperienceWorkspaceManager -> UniversalIntentRouter, never silently swapped for a real one', () async {
-      final rig = _Rig.create([_app('Camp Log')]);
-      final result = await rig.router.route(Intent.create(expression: 'track my camping trips'));
+  group(
+    'Dependency injection (R36) — a real, injected test double is honored throughout the graph, never silently replaced',
+    () {
+      test(
+        'the FAKE kernel/reasoner injected into the rig\'s ExperienceCreationCoordinator is the ONE actually used end-to-end through IntentSessionManager -> ExperienceWorkspaceManager -> UniversalIntentRouter, never silently swapped for a real one',
+        () async {
+          final rig = _Rig.create([_app('Camp Log')]);
+          final result = await rig.router.route(
+            Intent.create(expression: 'track my camping trips'),
+          );
 
-      // A REAL AnythingKernel with no provider would return ProviderRequired
-      // (proven above) — this test's rig instead used an injected FAKE
-      // reasoner that always succeeds, so reaching CreationCreated here is
-      // itself the proof the injected double, not a real Kernel, was
-      // actually invoked.
-      expect(result.creationResult, isA<CreationCreated>());
-      expect(rig.workspace.openSessionIds, contains(result.sessionId));
-      await rig.repository.close();
-    });
-  });
+          // A REAL AnythingKernel with no provider would return ProviderRequired
+          // (proven above) — this test's rig instead used an injected FAKE
+          // reasoner that always succeeds, so reaching CreationCreated here is
+          // itself the proof the injected double, not a real Kernel, was
+          // actually invoked.
+          expect(result.creationResult, isA<CreationCreated>());
+          expect(rig.workspace.openSessionIds, contains(result.sessionId));
+          await rig.repository.close();
+        },
+      );
+    },
+  );
 
   group('ExperienceCreationCoordinator relocation (R36) — behavior preservation', () {
     // REALITY before R36: HomeScreen.initState() constructed
@@ -331,135 +456,221 @@ void main() {
     // identically: a successful creation via the coordinator built with this
     // exact arg shape ingests into the SAME shared worldModel/engineeringMemory
     // instances it was given — never a private, disconnected copy.
-    test('a successful creation via the relocated construction shape ingests into the SAME shared worldModel and engineeringMemory it was constructed with', () async {
-      final rig = _Rig.create([_app('Camp Log')]);
-      final beforeGraphSize = rig.worldModel.model.graph.nodes.length;
+    test(
+      'a successful creation via the relocated construction shape ingests into the SAME shared worldModel and engineeringMemory it was constructed with',
+      () async {
+        final rig = _Rig.create([_app('Camp Log')]);
+        final beforeGraphSize = rig.worldModel.model.graph.nodes.length;
 
-      final result = await rig.creationCoordinator.createFromIntent(Intent.create(expression: 'track my camping trips'));
-      expect(result, isA<CreationCreated>());
-      final experienceId = (result as CreationCreated).experienceId;
+        final result = await rig.creationCoordinator.createFromIntent(
+          Intent.create(expression: 'track my camping trips'),
+        );
+        expect(result, isA<CreationCreated>());
+        final experienceId = (result as CreationCreated).experienceId;
 
-      expect(rig.worldModel.model.graph.nodes.length, greaterThan(beforeGraphSize));
-      final record = await rig.engineeringMemory.load(experienceId);
-      expect(record, isNotNull, reason: 'engineering memory persistence (R5) must still run through the relocated construction, unmodified');
+        expect(
+          rig.worldModel.model.graph.nodes.length,
+          greaterThan(beforeGraphSize),
+        );
+        final record = await rig.engineeringMemory.load(experienceId);
+        expect(
+          record,
+          isNotNull,
+          reason:
+              'engineering memory persistence (R5) must still run through the relocated construction, unmodified',
+        );
 
-      await rig.repository.close();
-    });
+        await rig.repository.close();
+      },
+    );
   });
 
-  group('Regression (R36) — ExperienceWorkspaceManager/UniversalIntentRouter/EngineeringLifecycleCoordinator/AutonomousWorkspaceRuntime/EventBus behavior is completely unaffected by being reachable from AppComposition', () {
-    test('ExperienceWorkspaceManager.openExperience() called directly (bypassing AppComposition entirely) behaves exactly as R32 built it', () async {
-      final rig = _Rig.create([_app('Camp Log')]);
-      final result = await rig.workspace.openExperience(Intent.create(expression: 'track my camping trips'));
-      expect(result.creationResult, isA<CreationCreated>());
-      await rig.repository.close();
-    });
+  group(
+    'Regression (R36) — ExperienceWorkspaceManager/UniversalIntentRouter/EngineeringLifecycleCoordinator/AutonomousWorkspaceRuntime/EventBus behavior is completely unaffected by being reachable from AppComposition',
+    () {
+      test(
+        'ExperienceWorkspaceManager.openExperience() called directly (bypassing AppComposition entirely) behaves exactly as R32 built it',
+        () async {
+          final rig = _Rig.create([_app('Camp Log')]);
+          final result = await rig.workspace.openExperience(
+            Intent.create(expression: 'track my camping trips'),
+          );
+          expect(result.creationResult, isA<CreationCreated>());
+          await rig.repository.close();
+        },
+      );
 
-    test('EngineeringLifecycleCoordinator.evolveExperience() called directly still returns noEngineeringMemory honestly for an experience it never saw create — unaffected by R36', () async {
-      final rig = _Rig.create([_app('Camp Log')]);
-      final lifecycleResult = await rig.lifecycleCoordinator.evolveExperience(experienceId: 'never-created', intent: Intent.create(expression: 'add a field'));
-      expect(lifecycleResult.outcome, LifecycleOutcome.noEngineeringMemory);
-      await rig.repository.close();
-    });
-  });
+      test(
+        'EngineeringLifecycleCoordinator.evolveExperience() called directly still returns noEngineeringMemory honestly for an experience it never saw create — unaffected by R36',
+        () async {
+          final rig = _Rig.create([_app('Camp Log')]);
+          final lifecycleResult = await rig.lifecycleCoordinator
+              .evolveExperience(
+                experienceId: 'never-created',
+                intent: Intent.create(expression: 'add a field'),
+              );
+          expect(lifecycleResult.outcome, LifecycleOutcome.noEngineeringMemory);
+          await rig.repository.close();
+        },
+      );
+    },
+  );
 
   group('Backward compatibility (R36) — HomeScreen', () {
-    test('HomeScreen() constructed WITHOUT any of the 5 optional fields — every field defaults to null, construction never throws (constructor byte-for-byte unchanged)', () {
-      const screen = HomeScreen();
-      expect(screen.composition, isNull);
-      expect(screen.workspaceManager, isNull);
-      expect(screen.intentRouter, isNull);
-      expect(screen.workspaceRuntime, isNull);
-      expect(screen.eventBus, isNull);
-    });
+    test(
+      'HomeScreen() constructed WITHOUT any of the 5 optional fields — every field defaults to null, construction never throws (constructor byte-for-byte unchanged)',
+      () {
+        const screen = HomeScreen();
+        expect(screen.composition, isNull);
+        expect(screen.workspaceManager, isNull);
+        expect(screen.intentRouter, isNull);
+        expect(screen.workspaceRuntime, isNull);
+        expect(screen.eventBus, isNull);
+      },
+    );
 
-    testWidgets('a bare HomeScreen() pumped with no injected composition renders without throwing — now sourcing its ExperienceCreationCoordinator from the extended AppComposition.production(), proving the relocation is safe in the real, live widget path', (tester) async {
-      await tester.pumpWidget(const MaterialApp(home: Scaffold(body: HomeScreen())));
-      await tester.pump();
-      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
-      await tester.pump();
-
-      expect(find.byType(HomeScreen), findsOneWidget);
-      expect(tester.takeException(), isNull);
-
-      final state = tester.state<HomeScreenState>(find.byType(HomeScreen));
-      // Real proof the new services resolved from AppComposition.production()
-      // (no widget-level override was supplied) rather than staying null.
-      expect(state.intentRouterInUse, isA<UniversalIntentRouter>());
-    });
-
-    testWidgets('real, end-to-end wiring: HomeScreen forwards its resolved workspaceManager/workspaceRuntime/eventBus into ExperienceHostScreen at its real navigation call site, never silently dropping an injected test double', (tester) async {
-      final rig = _Rig.create([_app('Camp Log')], dbName: _defaultDbName);
-      late CreationResult seedResult;
-      await tester.runAsync(() async {
-        seedResult = await rig.creationCoordinator.createFromIntent(Intent.create(expression: 'track my camping trips'));
-        // Force this row to the front of listAll()'s real `last_used_at DESC`
-        // ordering regardless of any stale rows an earlier run left behind
-        // (see this file's own `_defaultDbName` doc comment).
-        await rig.repository.touchLastUsed((seedResult as CreationCreated).experienceId);
-      });
-      expect(seedResult, isA<CreationCreated>());
-      final experienceName = (seedResult as CreationCreated).package.manifest.name;
-
-      await tester.pumpWidget(
-        MaterialApp(home: Scaffold(body: HomeScreen(workspaceManager: rig.workspace, workspaceRuntime: rig.workspaceRuntime, eventBus: rig.bus))),
-      );
-      for (var i = 0; i < 8; i++) {
-        await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 60)));
+    testWidgets(
+      'a bare HomeScreen() pumped with no injected composition renders without throwing — now sourcing its ExperienceCreationCoordinator from the extended AppComposition.production(), proving the relocation is safe in the real, live widget path',
+      (tester) async {
+        await tester.pumpWidget(
+          const MaterialApp(home: Scaffold(body: HomeScreen())),
+        );
         await tester.pump();
-      }
-
-      final tile = find.widgetWithText(ListTile, experienceName);
-      expect(tile, findsOneWidget, reason: 'the seeded Experience must appear in Recent, read from the SAME default repository HomeScreen itself opens');
-
-      await tester.tap(tile);
-      for (var i = 0; i < 8; i++) {
-        await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 60)));
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 100)),
+        );
         await tester.pump();
-      }
 
-      expect(find.byType(ExperienceHostScreen), findsOneWidget);
-      final hostWidget = tester.widget<ExperienceHostScreen>(find.byType(ExperienceHostScreen));
-      expect(hostWidget.workspaceManager, same(rig.workspace), reason: 'the real navigation call site must forward the SAME resolved instance, never a fresh/dropped one');
-      expect(hostWidget.workspaceRuntime, same(rig.workspaceRuntime));
-      expect(hostWidget.eventBus, same(rig.bus));
+        expect(find.byType(HomeScreen), findsOneWidget);
+        expect(tester.takeException(), isNull);
 
-      await tester.runAsync(() => rig.repository.close());
-    });
+        final state = tester.state<HomeScreenState>(find.byType(HomeScreen));
+        // Real proof the new services resolved from AppComposition.production()
+        // (no widget-level override was supplied) rather than staying null.
+        expect(state.intentRouterInUse, isA<UniversalIntentRouter>());
+      },
+    );
+
+    testWidgets(
+      'real, end-to-end wiring: HomeScreen forwards its resolved workspaceManager/workspaceRuntime/eventBus into ExperienceHostScreen at its real navigation call site, never silently dropping an injected test double',
+      (tester) async {
+        final rig = _Rig.create([_app('Camp Log')], dbName: _defaultDbName);
+        late CreationResult seedResult;
+        await tester.runAsync(() async {
+          seedResult = await rig.creationCoordinator.createFromIntent(
+            Intent.create(expression: 'track my camping trips'),
+          );
+          // Force this row to the front of listAll()'s real `last_used_at DESC`
+          // ordering regardless of any stale rows an earlier run left behind
+          // (see this file's own `_defaultDbName` doc comment).
+          await rig.repository.touchLastUsed(
+            (seedResult as CreationCreated).experienceId,
+          );
+        });
+        expect(seedResult, isA<CreationCreated>());
+        final experienceName =
+            (seedResult as CreationCreated).package.manifest.name;
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: HomeScreen(
+                workspaceManager: rig.workspace,
+                workspaceRuntime: rig.workspaceRuntime,
+                eventBus: rig.bus,
+              ),
+            ),
+          ),
+        );
+        for (var i = 0; i < 8; i++) {
+          await tester.runAsync(
+            () => Future<void>.delayed(const Duration(milliseconds: 60)),
+          );
+          await tester.pump();
+        }
+
+        final tile = find.widgetWithText(ListTile, experienceName);
+        expect(
+          tile,
+          findsOneWidget,
+          reason:
+              'the seeded Experience must appear in Recent, read from the SAME default repository HomeScreen itself opens',
+        );
+
+        await tester.tap(tile);
+        for (var i = 0; i < 8; i++) {
+          await tester.runAsync(
+            () => Future<void>.delayed(const Duration(milliseconds: 60)),
+          );
+          await tester.pump();
+        }
+
+        expect(find.byType(ExperienceHostScreen), findsOneWidget);
+        final hostWidget = tester.widget<ExperienceHostScreen>(
+          find.byType(ExperienceHostScreen),
+        );
+        expect(
+          hostWidget.workspaceManager,
+          same(rig.workspace),
+          reason:
+              'the real navigation call site must forward the SAME resolved instance, never a fresh/dropped one',
+        );
+        expect(hostWidget.workspaceRuntime, same(rig.workspaceRuntime));
+        expect(hostWidget.eventBus, same(rig.bus));
+
+        await tester.runAsync(() => rig.repository.close());
+      },
+    );
   });
 
   group('Backward compatibility (R36) — ExperienceHostScreen', () {
-    test('ExperienceHostScreen() constructed WITHOUT any optional field still defaults every field to null (constructor byte-for-byte unchanged by R36)', () {
-      // Confirms R36 added no new field/param here — R35 already gave it
-      // workspaceManager/workspaceRuntime/eventBus; R36 only changed WHERE
-      // the values threaded into them, at HomeScreen's own call site, come
-      // from.
-      final widget = ExperienceHostScreen(package: _minimalPackage());
-      expect(widget.workspaceManager, isNull);
-      expect(widget.workspaceRuntime, isNull);
-      expect(widget.eventBus, isNull);
-    });
+    test(
+      'ExperienceHostScreen() constructed WITHOUT any optional field still defaults every field to null (constructor byte-for-byte unchanged by R36)',
+      () {
+        // Confirms R36 added no new field/param here — R35 already gave it
+        // workspaceManager/workspaceRuntime/eventBus; R36 only changed WHERE
+        // the values threaded into them, at HomeScreen's own call site, come
+        // from.
+        final widget = ExperienceHostScreen(package: _minimalPackage());
+        expect(widget.workspaceManager, isNull);
+        expect(widget.workspaceRuntime, isNull);
+        expect(widget.eventBus, isNull);
+      },
+    );
   });
 
-  group('Performance (R36) — real Stopwatch/ProcessInfo.currentRss measurements, never fabricated', () {
-    test('AppComposition.production() full graph construction latency', () async {
-      final stopwatch = Stopwatch()..start();
-      final composition = AppComposition.production();
-      stopwatch.stop();
-      // ignore: avoid_print
-      print('R36 AppComposition.production() construction: ${stopwatch.elapsedMicroseconds}us');
-      await composition.experienceRepository.close();
-    });
+  group(
+    'Performance (R36) — real Stopwatch/ProcessInfo.currentRss measurements, never fabricated',
+    () {
+      test(
+        'AppComposition.production() full graph construction latency',
+        () async {
+          final stopwatch = Stopwatch()..start();
+          final composition = AppComposition.production();
+          stopwatch.stop();
+          // ignore: avoid_print
+          print(
+            'R36 AppComposition.production() construction: ${stopwatch.elapsedMicroseconds}us',
+          );
+          await composition.experienceRepository.close();
+        },
+      );
 
-    test('memory: real process RSS delta across repeated AppComposition.production() construct/close cycles', () async {
-      final rssBefore = ProcessInfo.currentRss;
-      for (var i = 0; i < 10; i++) {
-        final composition = AppComposition.production();
-        await composition.experienceRepository.close();
-      }
-      final rssAfter = ProcessInfo.currentRss;
-      // ignore: avoid_print
-      print('R36 memory: RSS before=${rssBefore ~/ 1024}KB after=${rssAfter ~/ 1024}KB delta=${(rssAfter - rssBefore) ~/ 1024}KB for 10 production() construct/close cycles');
-    });
-  });
+      test(
+        'memory: real process RSS delta across repeated AppComposition.production() construct/close cycles',
+        () async {
+          final rssBefore = ProcessInfo.currentRss;
+          for (var i = 0; i < 10; i++) {
+            final composition = AppComposition.production();
+            await composition.experienceRepository.close();
+          }
+          final rssAfter = ProcessInfo.currentRss;
+          // ignore: avoid_print
+          print(
+            'R36 memory: RSS before=${rssBefore ~/ 1024}KB after=${rssAfter ~/ 1024}KB delta=${(rssAfter - rssBefore) ~/ 1024}KB for 10 production() construct/close cycles',
+          );
+        },
+      );
+    },
+  );
 }

@@ -76,7 +76,12 @@ SemanticApp _lighthouseApp() {
         name: 'MaintenanceVisit',
         displayField: 'summary',
         fields: [
-          const SemanticField(id: 'summary', name: 'Summary', type: BlueprintFieldType.text, required: true),
+          const SemanticField(
+            id: 'summary',
+            name: 'Summary',
+            type: BlueprintFieldType.text,
+            required: true,
+          ),
           const SemanticField(
             id: 'lighthouseId',
             name: 'Lighthouse',
@@ -90,7 +95,12 @@ SemanticApp _lighthouseApp() {
         id: 'lighthouse',
         name: 'Lighthouse',
         fields: [
-          SemanticField(id: 'name', name: 'Name', type: BlueprintFieldType.text, required: true),
+          SemanticField(
+            id: 'name',
+            name: 'Name',
+            type: BlueprintFieldType.text,
+            required: true,
+          ),
         ],
       ),
     ],
@@ -105,7 +115,11 @@ SemanticApp _lighthouseApp() {
       ),
     ],
     actions: [
-      const SemanticAction(id: 'log_visit', name: 'Log Visit', targetEntityId: 'visit'),
+      const SemanticAction(
+        id: 'log_visit',
+        name: 'Log Visit',
+        targetEntityId: 'visit',
+      ),
       const SemanticAction(
         id: 'remove_visit',
         name: 'Remove Visit',
@@ -117,35 +131,49 @@ SemanticApp _lighthouseApp() {
 }
 
 void main() {
-  test('a never-before-seen domain reaches an approved EngineeringPlan using only GenericState', () async {
-    final kernel = AnythingKernel(
-      providerRegistry: _FakeProviderRegistry(),
-      capabilityRegistry: _registryWithStorage(),
-      reasoner: _FixedReasoner(_lighthouseApp()),
-    );
+  test(
+    'a never-before-seen domain reaches an approved EngineeringPlan using only GenericState',
+    () async {
+      final kernel = AnythingKernel(
+        providerRegistry: _FakeProviderRegistry(),
+        capabilityRegistry: _registryWithStorage(),
+        reasoner: _FixedReasoner(_lighthouseApp()),
+      );
 
-    final outcome = await kernel.processIntent(Intent.create(expression: 'log lighthouse maintenance visits'));
+      final outcome = await kernel.processIntent(
+        Intent.create(expression: 'log lighthouse maintenance visits'),
+      );
 
-    expect(outcome, isA<ExecutionPlanReady>());
-    final ready = outcome as ExecutionPlanReady;
-    expect(ready.engineeringPlan, isNotNull);
-    expect(ready.engineeringPlan!.outcome, EngineeringRefinementOutcome.approved);
+      expect(outcome, isA<ExecutionPlanReady>());
+      final ready = outcome as ExecutionPlanReady;
+      expect(ready.engineeringPlan, isNotNull);
+      expect(
+        ready.engineeringPlan!.outcome,
+        EngineeringRefinementOutcome.approved,
+      );
 
-    final candidate = ready.engineeringPlan!.finalCandidate;
-    expect(candidate.behaviors, hasLength(2));
-    for (final behavior in candidate.behaviors) {
-      for (final transition in behavior.stateMachine.transitions) {
-        expect(GenericState.values, contains(transition.from));
-        expect(GenericState.values, contains(transition.to));
+      final candidate = ready.engineeringPlan!.finalCandidate;
+      expect(candidate.behaviors, hasLength(2));
+      for (final behavior in candidate.behaviors) {
+        for (final transition in behavior.stateMachine.transitions) {
+          expect(GenericState.values, contains(transition.from));
+          expect(GenericState.values, contains(transition.to));
+        }
+        // No entity/domain-specific identifier ever leaks into a state name —
+        // GenericState is a fixed enum, so this is true by construction, but
+        // asserted explicitly against the domain vocabulary as a regression
+        // guard against ever adding a per-entity state in the future.
+        final domainWords = [
+          'visit',
+          'lighthouse',
+          'Visit',
+          'Lighthouse',
+          'Maintenance',
+        ];
+        for (final state in GenericState.values) {
+          expect(domainWords.any((w) => state.name.contains(w)), isFalse);
+        }
       }
-      // No entity/domain-specific identifier ever leaks into a state name —
-      // GenericState is a fixed enum, so this is true by construction, but
-      // asserted explicitly against the domain vocabulary as a regression
-      // guard against ever adding a per-entity state in the future.
-      final domainWords = ['visit', 'lighthouse', 'Visit', 'Lighthouse', 'Maintenance'];
-      for (final state in GenericState.values) {
-        expect(domainWords.any((w) => state.name.contains(w)), isFalse);
-      }
-    }
-  });
+    },
+  );
 }

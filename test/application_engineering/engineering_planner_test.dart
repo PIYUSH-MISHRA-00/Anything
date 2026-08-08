@@ -21,14 +21,24 @@ SemanticApp _hiveApp() {
         name: 'Inspection',
         displayField: 'notes',
         fields: [
-          SemanticField(id: 'notes', name: 'Notes', type: BlueprintFieldType.text, required: true),
+          SemanticField(
+            id: 'notes',
+            name: 'Notes',
+            type: BlueprintFieldType.text,
+            required: true,
+          ),
         ],
       ),
       const SemanticEntity(
         id: 'hive',
         name: 'Hive',
         fields: [
-          SemanticField(id: 'label', name: 'Label', type: BlueprintFieldType.text, required: true),
+          SemanticField(
+            id: 'label',
+            name: 'Label',
+            type: BlueprintFieldType.text,
+            required: true,
+          ),
         ],
       ),
     ],
@@ -43,7 +53,11 @@ SemanticApp _hiveApp() {
       ),
     ],
     actions: [
-      const SemanticAction(id: 'add_inspection', name: 'Add Inspection', targetEntityId: 'inspection'),
+      const SemanticAction(
+        id: 'add_inspection',
+        name: 'Add Inspection',
+        targetEntityId: 'inspection',
+      ),
     ],
     requiredCapabilities: const ['clock'],
   );
@@ -56,7 +70,9 @@ void main() {
   test('assembles every engineering concern into one candidate', () {
     final app = _hiveApp();
     final candidate = architecturePlanner.plan(app);
-    final result = engineeringPlanner.plan(EngineeringContext(architecture: candidate, app: app));
+    final result = engineeringPlanner.plan(
+      EngineeringContext(architecture: candidate, app: app),
+    );
 
     expect(result.behaviors, hasLength(2));
     expect(result.data.indexes, isNotEmpty);
@@ -89,7 +105,10 @@ void main() {
       EngineeringContext(architecture: sparseCandidate, app: sparseApp),
     );
 
-    expect(richResult.overallConfidence.score, isNot(sparseResult.overallConfidence.score));
+    expect(
+      richResult.overallConfidence.score,
+      isNot(sparseResult.overallConfidence.score),
+    );
     expect(richResult.overallConfidence.score, greaterThan(0));
     expect(richResult.overallConfidence.score, lessThanOrEqualTo(1));
   });
@@ -97,7 +116,9 @@ void main() {
   test('allDecisions flattens every sub-module\'s decisions', () {
     final app = _hiveApp();
     final candidate = architecturePlanner.plan(app);
-    final result = engineeringPlanner.plan(EngineeringContext(architecture: candidate, app: app));
+    final result = engineeringPlanner.plan(
+      EngineeringContext(architecture: candidate, app: app),
+    );
     expect(result.allDecisions.length, greaterThan(10));
   });
 }

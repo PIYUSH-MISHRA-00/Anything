@@ -23,27 +23,46 @@ class SolutionArchitecturePlanner {
   static const List<UnmodeledConcept> standingGaps = [
     UnmodeledConcept(
       name: 'realtime',
-      reason: 'No websocket/push/live-channel concept exists anywhere in ArchitectureCandidate or BackendEngineeringPlan to derive from.',
+      reason:
+          'No websocket/push/live-channel concept exists anywhere in ArchitectureCandidate or BackendEngineeringPlan to derive from.',
     ),
-    UnmodeledConcept(name: 'messaging', reason: 'No message-queue/pub-sub concept exists anywhere upstream.'),
+    UnmodeledConcept(
+      name: 'messaging',
+      reason: 'No message-queue/pub-sub concept exists anywhere upstream.',
+    ),
     UnmodeledConcept(
       name: 'notifications',
-      reason: 'CapabilityCategory has no notification category; NotificationCapability is a runtime capability, not an architecture-level decision.',
+      reason:
+          'CapabilityCategory has no notification category; NotificationCapability is a runtime capability, not an architecture-level decision.',
     ),
-    UnmodeledConcept(name: 'observability', reason: 'No tracing/telemetry concept exists anywhere upstream.'),
-    UnmodeledConcept(name: 'monitoring', reason: 'No health-check/alerting concept exists anywhere upstream.'),
+    UnmodeledConcept(
+      name: 'observability',
+      reason: 'No tracing/telemetry concept exists anywhere upstream.',
+    ),
+    UnmodeledConcept(
+      name: 'monitoring',
+      reason: 'No health-check/alerting concept exists anywhere upstream.',
+    ),
     UnmodeledConcept(
       name: 'configuration',
-      reason: 'No environment/config-variable concept exists anywhere upstream (SecretReference names secrets only, never config).',
+      reason:
+          'No environment/config-variable concept exists anywhere upstream (SecretReference names secrets only, never config).',
     ),
     UnmodeledConcept(
       name: 'policies',
-      reason: 'PermissionDecision models capability access control; no distinct business/data policy concept exists upstream.',
+      reason:
+          'PermissionDecision models capability access control; no distinct business/data policy concept exists upstream.',
     ),
-    UnmodeledConcept(name: 'scaling', reason: 'No load/instance/throughput concept exists anywhere upstream.'),
+    UnmodeledConcept(
+      name: 'scaling',
+      reason: 'No load/instance/throughput concept exists anywhere upstream.',
+    ),
   ];
 
-  SemanticSolutionArchitecture plan(ArchitectureCandidate frontend, BackendEngineeringPlan backend) {
+  SemanticSolutionArchitecture plan(
+    ArchitectureCandidate frontend,
+    BackendEngineeringPlan backend,
+  ) {
     return SemanticSolutionArchitecture(
       frontend: frontend,
       backend: backend,
@@ -53,23 +72,35 @@ class SolutionArchitecturePlanner {
     );
   }
 
-  List<SolutionComponent> _planComponents(ArchitectureCandidate frontend, BackendEngineeringPlan backend) => [
+  List<SolutionComponent> _planComponents(
+    ArchitectureCandidate frontend,
+    BackendEngineeringPlan backend,
+  ) => [
     for (final entity in frontend.entities)
       SolutionComponent(
         id: entity.entityId,
         name: entity.name,
         responsibility: 'Owns and manages ${entity.name} records and behavior.',
-        hasBackendPresence: backend.api.endpointsForEntity(entity.entityId).isNotEmpty,
+        hasBackendPresence: backend.api
+            .endpointsForEntity(entity.entityId)
+            .isNotEmpty,
         storageKind: entity.storage.name,
         dependsOnComponentIds: [
-          for (final fk in (backend.database.tableById(entity.entityId)?.foreignKeys ?? const [])) fk.referencesTableId,
+          for (final fk
+              in (backend.database.tableById(entity.entityId)?.foreignKeys ??
+                  const []))
+            fk.referencesTableId,
         ],
-        contractIds: backend.api.endpointsForEntity(entity.entityId).map((e) => e.id).toList(),
+        contractIds: backend.api
+            .endpointsForEntity(entity.entityId)
+            .map((e) => e.id)
+            .toList(),
       ),
   ];
 
   CachingModel _planCaching(BackendEngineeringPlan backend) => CachingModel(
-    employsCaching: backend.backgroundJobs.sourceStrategy == SyncStrategy.cacheFirst,
+    employsCaching:
+        backend.backgroundJobs.sourceStrategy == SyncStrategy.cacheFirst,
     sourceStrategy: backend.backgroundJobs.sourceStrategy,
   );
 }

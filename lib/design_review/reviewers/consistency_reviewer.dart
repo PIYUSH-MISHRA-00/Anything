@@ -15,21 +15,33 @@ class ConsistencyReviewer {
 
   List<ReviewIssue> review(ReviewContext context) {
     final issues = <ReviewIssue>[];
-    final entityIds = context.architecture.entities.map((e) => e.entityId).toSet();
-    final capabilityIds = context.architecture.capabilities.map((c) => c.capabilityId).toSet();
+    final entityIds = context.architecture.entities
+        .map((e) => e.entityId)
+        .toSet();
+    final capabilityIds = context.architecture.capabilities
+        .map((c) => c.capabilityId)
+        .toSet();
 
     for (final feature in context.featureGraph.nodes) {
       if (feature.priority != FeaturePriority.mandatory) continue;
 
       String? missingReferenceId;
-      if (feature.id.startsWith('feature:persistence:') || feature.id.startsWith('feature:data:')) {
+      if (feature.id.startsWith('feature:persistence:') ||
+          feature.id.startsWith('feature:data:')) {
         final entityId = feature.candidate.sourceNodeIds
-            .map((id) => id.replaceFirst('entity:', '').replaceFirst('storage:', ''))
+            .map(
+              (id) =>
+                  id.replaceFirst('entity:', '').replaceFirst('storage:', ''),
+            )
             .firstOrNull;
-        if (entityId != null && !entityIds.contains(entityId)) missingReferenceId = entityId;
+        if (entityId != null && !entityIds.contains(entityId)) {
+          missingReferenceId = entityId;
+        }
       } else if (feature.id.startsWith('feature:capability:')) {
         final capabilityId = feature.id.replaceFirst('feature:capability:', '');
-        if (!capabilityIds.contains(capabilityId)) missingReferenceId = capabilityId;
+        if (!capabilityIds.contains(capabilityId)) {
+          missingReferenceId = capabilityId;
+        }
       }
 
       if (missingReferenceId != null) {
@@ -38,9 +50,16 @@ class ConsistencyReviewer {
             id: 'consistency:missingMandatoryFeature:${feature.id}',
             category: ReviewCategory.consistency,
             severity: ReviewSeverity.critical,
-            reason: 'Mandatory feature "${feature.name}" references "$missingReferenceId", which is missing from the final architecture',
-            evidence: ReviewEvidence(affectedGraph: 'FeatureGraph', affectedNodeId: feature.id),
-            recommendation: const ReviewRecommendation(description: 'Reconcile the final architecture with Feature Discovery\'s findings'),
+            reason:
+                'Mandatory feature "${feature.name}" references "$missingReferenceId", which is missing from the final architecture',
+            evidence: ReviewEvidence(
+              affectedGraph: 'FeatureGraph',
+              affectedNodeId: feature.id,
+            ),
+            recommendation: const ReviewRecommendation(
+              description:
+                  'Reconcile the final architecture with Feature Discovery\'s findings',
+            ),
             confidence: Confidence.full,
           ),
         );

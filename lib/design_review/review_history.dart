@@ -31,7 +31,9 @@ class ReviewSession {
     fingerprint: fingerprint,
     outcome: result.outcome,
     issueCount: result.finalIteration.issues.length,
-    criticalCount: result.finalIteration.issues.where((i) => i.severity == ReviewSeverity.critical).length,
+    criticalCount: result.finalIteration.issues
+        .where((i) => i.severity == ReviewSeverity.critical)
+        .length,
     recordedAt: startedAt,
   );
 }
@@ -59,7 +61,8 @@ class ReviewHistory {
 
   List<ReviewSession> get sessions => List.unmodifiable(_sessions);
 
-  List<ReviewSnapshot> get snapshots => _sessions.map((s) => s.snapshot).toList();
+  List<ReviewSnapshot> get snapshots =>
+      _sessions.map((s) => s.snapshot).toList();
 
   int get sessionCount => _sessions.length;
 }

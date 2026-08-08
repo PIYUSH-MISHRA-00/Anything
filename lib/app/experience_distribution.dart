@@ -123,12 +123,13 @@ class MarketplaceMetadata {
     'publisherSignature': publisherSignature,
   };
 
-  factory MarketplaceMetadata.fromJson(Map<String, dynamic> json) => MarketplaceMetadata(
-    listingId: json['listingId'] as String?,
-    publisherId: json['publisherId'] as String?,
-    publisherName: json['publisherName'] as String?,
-    publisherSignature: json['publisherSignature'] as String?,
-  );
+  factory MarketplaceMetadata.fromJson(Map<String, dynamic> json) =>
+      MarketplaceMetadata(
+        listingId: json['listingId'] as String?,
+        publisherId: json['publisherId'] as String?,
+        publisherName: json['publisherName'] as String?,
+        publisherSignature: json['publisherSignature'] as String?,
+      );
 }
 
 /// Future enterprise deployment metadata (Task 8). Architecture only.
@@ -141,7 +142,11 @@ class EnterpriseDistributionMetadata {
   /// here evaluates or enforces anything.
   final String? policyId;
 
-  const EnterpriseDistributionMetadata({this.organizationId, this.deploymentId, this.policyId});
+  const EnterpriseDistributionMetadata({
+    this.organizationId,
+    this.deploymentId,
+    this.policyId,
+  });
 
   Map<String, dynamic> toJson() => {
     'organizationId': organizationId,
@@ -218,19 +223,29 @@ class ExperienceDistributionManifest {
   factory ExperienceDistributionManifest.fromJson(Map<String, dynamic> json) {
     return ExperienceDistributionManifest(
       envelopeVersion: (json['envelopeVersion'] as num?)?.toInt() ?? 0,
-      manifest: ExperienceManifest.fromJson(Map<String, dynamic>.from(json['manifest'] as Map)),
+      manifest: ExperienceManifest.fromJson(
+        Map<String, dynamic>.from(json['manifest'] as Map),
+      ),
       provenance: json['provenance'] == null
           ? const ExperienceProvenance()
-          : ExperienceProvenance.fromJson(Map<String, dynamic>.from(json['provenance'] as Map)),
+          : ExperienceProvenance.fromJson(
+              Map<String, dynamic>.from(json['provenance'] as Map),
+            ),
       fingerprint: ExperienceFingerprint(json['fingerprint'] as String? ?? ''),
       wasProtected: json['wasProtected'] == true,
       marketplace: json['marketplace'] == null
           ? null
-          : MarketplaceMetadata.fromJson(Map<String, dynamic>.from(json['marketplace'] as Map)),
+          : MarketplaceMetadata.fromJson(
+              Map<String, dynamic>.from(json['marketplace'] as Map),
+            ),
       enterprise: json['enterprise'] == null
           ? null
-          : EnterpriseDistributionMetadata.fromJson(Map<String, dynamic>.from(json['enterprise'] as Map)),
-      dependencies: [for (final d in (json['dependencies'] as List? ?? [])) d as String],
+          : EnterpriseDistributionMetadata.fromJson(
+              Map<String, dynamic>.from(json['enterprise'] as Map),
+            ),
+      dependencies: [
+        for (final d in (json['dependencies'] as List? ?? [])) d as String,
+      ],
     );
   }
 }
@@ -240,7 +255,10 @@ class ExperienceDistributionPackage {
   final ExperienceDistributionManifest envelope;
   final ExperiencePackage package;
 
-  const ExperienceDistributionPackage({required this.envelope, required this.package});
+  const ExperienceDistributionPackage({
+    required this.envelope,
+    required this.package,
+  });
 
   Map<String, dynamic> toJson() => {
     'envelope': envelope.toJson(),
@@ -263,12 +281,24 @@ class PackageVerificationResult {
   final List<VerificationFailure> failures;
   final List<String> messages;
 
-  const PackageVerificationResult({required this.isValid, this.failures = const [], this.messages = const []});
+  const PackageVerificationResult({
+    required this.isValid,
+    this.failures = const [],
+    this.messages = const [],
+  });
 
-  static const PackageVerificationResult valid = PackageVerificationResult(isValid: true);
+  static const PackageVerificationResult valid = PackageVerificationResult(
+    isValid: true,
+  );
 
-  factory PackageVerificationResult.invalid(VerificationFailure failure, String message) =>
-      PackageVerificationResult(isValid: false, failures: [failure], messages: [message]);
+  factory PackageVerificationResult.invalid(
+    VerificationFailure failure,
+    String message,
+  ) => PackageVerificationResult(
+    isValid: false,
+    failures: [failure],
+    messages: [message],
+  );
 }
 
 /// THE package verifier (IS-R53 Task 6).
@@ -291,14 +321,16 @@ class ExperiencePackageVerifier {
     final envelope = distribution.envelope;
 
     if (envelope.envelopeVersion <= 0 ||
-        envelope.envelopeVersion > ExperienceDistributionManifest.currentEnvelopeVersion) {
+        envelope.envelopeVersion >
+            ExperienceDistributionManifest.currentEnvelopeVersion) {
       return PackageVerificationResult.invalid(
         VerificationFailure.unsupportedEnvelopeVersion,
         'unsupported envelope version ${envelope.envelopeVersion}',
       );
     }
 
-    if (envelope.experienceId.isEmpty || distribution.package.manifest.experienceId.isEmpty) {
+    if (envelope.experienceId.isEmpty ||
+        distribution.package.manifest.experienceId.isEmpty) {
       return PackageVerificationResult.invalid(
         VerificationFailure.malformed,
         'envelope or package is missing an experienceId',
@@ -315,7 +347,9 @@ class ExperiencePackageVerifier {
 
     // Structure, size, references, limits and integrity — delegated, never
     // re-implemented.
-    final validation = ExperiencePackageValidator.validate(distribution.package);
+    final validation = ExperiencePackageValidator.validate(
+      distribution.package,
+    );
     if (!validation.isValid) {
       return PackageVerificationResult(
         isValid: false,
@@ -328,7 +362,9 @@ class ExperiencePackageVerifier {
     // what the envelope claims? An absent fingerprint is not a failure —
     // older envelopes may not carry one — but a PRESENT and WRONG one is.
     if (envelope.fingerprint.isPresent) {
-      final actual = ExperiencePackage.computeIntegrityHash(distribution.package);
+      final actual = ExperiencePackage.computeIntegrityHash(
+        distribution.package,
+      );
       if (actual != envelope.fingerprint.value) {
         return PackageVerificationResult.invalid(
           VerificationFailure.fingerprintMismatch,
@@ -357,13 +393,24 @@ class ImportResult {
     this.error,
   });
 
-  factory ImportResult.success({required String experienceId, required ExperienceProvenance provenance}) =>
-      ImportResult._(succeeded: true, experienceId: experienceId, provenance: provenance);
+  factory ImportResult.success({
+    required String experienceId,
+    required ExperienceProvenance provenance,
+  }) => ImportResult._(
+    succeeded: true,
+    experienceId: experienceId,
+    provenance: provenance,
+  );
 
   factory ImportResult.rejected(PackageVerificationResult verification) =>
-      ImportResult._(succeeded: false, verification: verification, error: verification.messages.join('; '));
+      ImportResult._(
+        succeeded: false,
+        verification: verification,
+        error: verification.messages.join('; '),
+      );
 
-  factory ImportResult.failed(String error) => ImportResult._(succeeded: false, error: error);
+  factory ImportResult.failed(String error) =>
+      ImportResult._(succeeded: false, error: error);
 }
 
 /// THE one owner of Experience movement (IS-R53 Task 2).
@@ -435,7 +482,10 @@ class ExperienceDistributionFramework {
   ///
   /// Reads current metadata, provenance, fingerprint and protection state from
   /// the repository. Changes no persistence and mutates nothing.
-  Future<ExperienceDistributionPackage?> export(String experienceId, {ExperiencePackage? package}) async {
+  Future<ExperienceDistributionPackage?> export(
+    String experienceId, {
+    ExperiencePackage? package,
+  }) async {
     final metadata = await repository.getMetadata(experienceId);
     if (metadata == null) return null;
 
@@ -446,7 +496,9 @@ class ExperienceDistributionFramework {
       envelope: ExperienceDistributionManifest(
         manifest: resolved.manifest,
         provenance: metadata.provenance,
-        fingerprint: ExperienceFingerprint(ExperiencePackage.computeIntegrityHash(resolved)),
+        fingerprint: ExperienceFingerprint(
+          ExperiencePackage.computeIntegrityHash(resolved),
+        ),
         wasProtected: metadata.isProtected,
       ),
       package: resolved,
@@ -481,7 +533,9 @@ class ExperienceDistributionFramework {
       author: distribution.envelope.provenance.author,
       fingerprint: distribution.envelope.fingerprint.isPresent
           ? distribution.envelope.fingerprint
-          : ExperienceFingerprint(ExperiencePackage.computeIntegrityHash(distribution.package)),
+          : ExperienceFingerprint(
+              ExperiencePackage.computeIntegrityHash(distribution.package),
+            ),
       marketplace: distribution.envelope.marketplace,
     );
 
@@ -496,7 +550,8 @@ class ExperienceDistributionFramework {
     // did not. (Protection state is still deliberately not carried across: the
     // installer commits `isProtected: false` and only
     // `ExperienceProtectionService` can make it true.)
-    final target = installer ?? ExperienceInstallationFramework(repository: repository);
+    final target =
+        installer ?? ExperienceInstallationFramework(repository: repository);
     final installation = await target.install(
       package: distribution.package,
       provenance: provenance,
@@ -508,6 +563,9 @@ class ExperienceDistributionFramework {
       return ImportResult.failed(installation.messages.join('; '));
     }
 
-    return ImportResult.success(experienceId: manifest.experienceId, provenance: provenance);
+    return ImportResult.success(
+      experienceId: manifest.experienceId,
+      provenance: provenance,
+    );
   }
 }

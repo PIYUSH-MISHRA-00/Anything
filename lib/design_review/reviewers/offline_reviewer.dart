@@ -5,7 +5,8 @@
 /// posture itself.
 library;
 
-import '../../application_engineering/persistence_offline_sync_engineering.dart' show ConflictStrategy;
+import '../../application_engineering/persistence_offline_sync_engineering.dart'
+    show ConflictStrategy;
 import '../../software_architect/architecture_types.dart' show SyncStrategy;
 import '../../software_architect/confidence.dart';
 import '../review_context.dart';
@@ -22,15 +23,23 @@ class OfflineReviewer {
     // implies a real sync target, which today never exists (V3: "no
     // server component" — always SyncStrategy.none). If this ever
     // diverges it is a genuine design inconsistency worth catching.
-    if (engineering.offline.conflictStrategy != ConflictStrategy.none && engineering.synchronization.strategy == SyncStrategy.none) {
+    if (engineering.offline.conflictStrategy != ConflictStrategy.none &&
+        engineering.synchronization.strategy == SyncStrategy.none) {
       issues.add(
         ReviewIssue(
           id: 'offline:conflictWithoutSync',
           category: ReviewCategory.offline,
           severity: ReviewSeverity.critical,
-          reason: 'A conflict-resolution strategy is set but synchronization strategy is none — nothing to conflict against',
-          evidence: const ReviewEvidence(affectedGraph: 'EngineeringCandidate.offline', affectedNodeId: 'conflictStrategy'),
-          recommendation: const ReviewRecommendation(description: 'Set conflictStrategy to none until a real sync target exists'),
+          reason:
+              'A conflict-resolution strategy is set but synchronization strategy is none — nothing to conflict against',
+          evidence: const ReviewEvidence(
+            affectedGraph: 'EngineeringCandidate.offline',
+            affectedNodeId: 'conflictStrategy',
+          ),
+          recommendation: const ReviewRecommendation(
+            description:
+                'Set conflictStrategy to none until a real sync target exists',
+          ),
           confidence: Confidence.full,
         ),
       );
@@ -45,9 +54,15 @@ class OfflineReviewer {
             id: 'offline:noDurabilityDecision:${decision.subjectId}',
             category: ReviewCategory.offline,
             severity: ReviewSeverity.critical,
-            reason: 'Entity "${decision.subjectId}" has no real persistence decision recorded',
-            evidence: ReviewEvidence(affectedGraph: 'EngineeringCandidate.persistence', affectedNodeId: decision.subjectId),
-            recommendation: const ReviewRecommendation(description: 'Run PersistenceEngineering for this entity'),
+            reason:
+                'Entity "${decision.subjectId}" has no real persistence decision recorded',
+            evidence: ReviewEvidence(
+              affectedGraph: 'EngineeringCandidate.persistence',
+              affectedNodeId: decision.subjectId,
+            ),
+            recommendation: const ReviewRecommendation(
+              description: 'Run PersistenceEngineering for this entity',
+            ),
             confidence: Confidence.full,
           ),
         );

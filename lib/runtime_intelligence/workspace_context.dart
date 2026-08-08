@@ -8,5 +8,8 @@ class WorkspaceContext {
   final List<String> experienceIds;
   final int totalSessions;
 
-  const WorkspaceContext({required this.experienceIds, required this.totalSessions});
+  const WorkspaceContext({
+    required this.experienceIds,
+    required this.totalSessions,
+  });
 }

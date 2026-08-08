@@ -27,7 +27,9 @@ class RepositoryCognitionResult {
     required this.attribution,
   });
 
-  bool get isSound => copyright.isTransformative && !const SoftwareReview().hasCriticalIssues(issues);
+  bool get isSound =>
+      copyright.isTransformative &&
+      !const SoftwareReview().hasCriticalIssues(issues);
 }
 
 class PackageCognitionResult {
@@ -35,7 +37,11 @@ class PackageCognitionResult {
   final List<SoftwareReviewIssue> issues;
   final AttributionCompleteness attribution;
 
-  const PackageCognitionResult({required this.model, required this.issues, required this.attribution});
+  const PackageCognitionResult({
+    required this.model,
+    required this.issues,
+    required this.attribution,
+  });
 
   bool get isSound => !const SoftwareReview().hasCriticalIssues(issues);
 }
@@ -62,34 +68,79 @@ class SoftwareCognitionEngine {
   RepositoryCognitionResult understandRepository(RepositoryContext context) {
     final model = _repositoryAnalyzer.analyze(context);
     final issues = _review.reviewRepository(model);
-    final copyright = _copyrightBoundary.check(originalSource: context.source, digestText: model.summary.toDigestText());
+    final copyright = _copyrightBoundary.check(
+      originalSource: context.source,
+      digestText: model.summary.toDigestText(),
+    );
     final attribution = _attributionCheck.evaluate(context.metadata.provenance);
-    return RepositoryCognitionResult(model: model, issues: issues, copyright: copyright, attribution: attribution);
+    return RepositoryCognitionResult(
+      model: model,
+      issues: issues,
+      copyright: copyright,
+      attribution: attribution,
+    );
   }
 
-  Future<RepositoryCognitionResult?> understandRepositoryFromUrl(String url, {required String name, String description = ''}) async {
-    final model = await _repositoryAnalyzer.acquireFromUrl(url, name: name, description: description);
+  Future<RepositoryCognitionResult?> understandRepositoryFromUrl(
+    String url, {
+    required String name,
+    String description = '',
+  }) async {
+    final model = await _repositoryAnalyzer.acquireFromUrl(
+      url,
+      name: name,
+      description: description,
+    );
     if (model == null) return null;
     final issues = _review.reviewRepository(model);
     // The original source text isn't retained past acquisition (never
     // stored on RepositoryModel) — the copyright check here validates the
     // digest is bounded relative to itself rather than re-fetching.
-    final copyright = CopyrightBoundaryResult(violations: model.summary.toDigestText().length > 2000 ? ['digest exceeds the expected bounded summary length'] : const []);
+    final copyright = CopyrightBoundaryResult(
+      violations: model.summary.toDigestText().length > 2000
+          ? ['digest exceeds the expected bounded summary length']
+          : const [],
+    );
     final attribution = _attributionCheck.evaluate(model.metadata.provenance);
-    return RepositoryCognitionResult(model: model, issues: issues, copyright: copyright, attribution: attribution);
+    return RepositoryCognitionResult(
+      model: model,
+      issues: issues,
+      copyright: copyright,
+      attribution: attribution,
+    );
   }
 
-  PackageCognitionResult understandPackageFromPubspec({required String pubspecSource, required PackageMetadata metadata}) {
-    final model = _packageAnalyzer.analyzePubspec(pubspecSource: pubspecSource, metadata: metadata);
+  PackageCognitionResult understandPackageFromPubspec({
+    required String pubspecSource,
+    required PackageMetadata metadata,
+  }) {
+    final model = _packageAnalyzer.analyzePubspec(
+      pubspecSource: pubspecSource,
+      metadata: metadata,
+    );
     final issues = _review.reviewPackage(model);
     final attribution = _attributionCheck.evaluate(metadata.provenance);
-    return PackageCognitionResult(model: model, issues: issues, attribution: attribution);
+    return PackageCognitionResult(
+      model: model,
+      issues: issues,
+      attribution: attribution,
+    );
   }
 
-  PackageCognitionResult understandPackageFromDescription({required String text, required PackageMetadata metadata}) {
-    final model = _packageAnalyzer.analyzeFromDescription(text: text, metadata: metadata);
+  PackageCognitionResult understandPackageFromDescription({
+    required String text,
+    required PackageMetadata metadata,
+  }) {
+    final model = _packageAnalyzer.analyzeFromDescription(
+      text: text,
+      metadata: metadata,
+    );
     final issues = _review.reviewPackage(model);
     final attribution = _attributionCheck.evaluate(metadata.provenance);
-    return PackageCognitionResult(model: model, issues: issues, attribution: attribution);
+    return PackageCognitionResult(
+      model: model,
+      issues: issues,
+      attribution: attribution,
+    );
   }
 }

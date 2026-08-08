@@ -18,7 +18,11 @@ class AutomationSchedule {
   final List<AutomationConstraint> constraints;
   final DateTime? at;
 
-  const AutomationSchedule({required this.frequency, this.constraints = const [], this.at});
+  const AutomationSchedule({
+    required this.frequency,
+    this.constraints = const [],
+    this.at,
+  });
 }
 
 class BackgroundBudget {

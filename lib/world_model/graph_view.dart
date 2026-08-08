@@ -16,21 +16,40 @@ class GraphView {
   final List<WorldNode> nodes;
   final List<WorldEdge> edges;
 
-  const GraphView({required this.focus, this.nodes = const [], this.edges = const []});
+  const GraphView({
+    required this.focus,
+    this.nodes = const [],
+    this.edges = const [],
+  });
 
   /// Everything reachable from [focus] in either direction, up to
   /// [maxDepth] — a real, bounded traversal, never the whole graph
   /// unless [focus] is genuinely connected to everything.
-  factory GraphView.centeredOn(WorldGraph graph, EntityIdentity focus, {int maxDepth = 3}) {
+  factory GraphView.centeredOn(
+    WorldGraph graph,
+    EntityIdentity focus, {
+    int maxDepth = 3,
+  }) {
     const traversal = GraphTraversal();
     final forwardSteps = traversal.forward(graph, focus, maxDepth: maxDepth);
     final reverseSteps = traversal.reverse(graph, focus, maxDepth: maxDepth);
-    final reachableIds = {focus, ...forwardSteps.map((s) => s.nodeId), ...reverseSteps.map((s) => s.nodeId)};
+    final reachableIds = {
+      focus,
+      ...forwardSteps.map((s) => s.nodeId),
+      ...reverseSteps.map((s) => s.nodeId),
+    };
 
     const projection = GraphProjection();
     final sub = projection.project(graph);
-    final nodes = sub.nodes.where((n) => reachableIds.contains(n.identity)).toList();
-    final edges = sub.edges.where((e) => reachableIds.contains(e.fromId) && reachableIds.contains(e.toId)).toList();
+    final nodes = sub.nodes
+        .where((n) => reachableIds.contains(n.identity))
+        .toList();
+    final edges = sub.edges
+        .where(
+          (e) =>
+              reachableIds.contains(e.fromId) && reachableIds.contains(e.toId),
+        )
+        .toList();
 
     return GraphView(focus: focus, nodes: nodes, edges: edges);
   }

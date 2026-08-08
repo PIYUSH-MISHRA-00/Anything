@@ -20,47 +20,70 @@ void main() {
     databaseFactory = databaseFactoryFfiNoIsolate;
   });
 
-  test('persist() then restore() on a FRESH coordinator (simulating a process restart) recovers the real graph', () async {
-    final experienceRepo = SqliteExperienceRepository(dbName: 'world_persist_${DateTime.now().microsecondsSinceEpoch}.db');
-    final persistence = WorldModelRepository(experienceRepository: experienceRepo);
+  test(
+    'persist() then restore() on a FRESH coordinator (simulating a process restart) recovers the real graph',
+    () async {
+      final experienceRepo = SqliteExperienceRepository(
+        dbName: 'world_persist_${DateTime.now().microsecondsSinceEpoch}.db',
+      );
+      final persistence = WorldModelRepository(
+        experienceRepository: experienceRepo,
+      );
 
-    final calculator = createCalculatorPackage();
-    final metadata = ExperienceMetadataRecord(
-      id: calculator.manifest.experienceId,
-      name: calculator.manifest.name,
-      description: calculator.manifest.description,
-      category: 'utility',
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-    );
+      final calculator = createCalculatorPackage();
+      final metadata = ExperienceMetadataRecord(
+        id: calculator.manifest.experienceId,
+        name: calculator.manifest.name,
+        description: calculator.manifest.description,
+        category: 'utility',
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
 
-    final firstProcess = WorldModelCoordinator(persistence: persistence);
-    firstProcess.ingestExperience(metadata, calculator);
-    await firstProcess.persist();
+      final firstProcess = WorldModelCoordinator(persistence: persistence);
+      firstProcess.ingestExperience(metadata, calculator);
+      await firstProcess.persist();
 
-    // A brand-new coordinator instance — nothing in memory — standing in
-    // for a real process restart.
-    final secondProcess = WorldModelCoordinator(persistence: persistence);
-    expect(secondProcess.model.graph.nodes, isEmpty); // confirms it's genuinely fresh before restore
+      // A brand-new coordinator instance — nothing in memory — standing in
+      // for a real process restart.
+      final secondProcess = WorldModelCoordinator(persistence: persistence);
+      expect(
+        secondProcess.model.graph.nodes,
+        isEmpty,
+      ); // confirms it's genuinely fresh before restore
 
-    await secondProcess.restore();
-    expect(secondProcess.model.graph.nodesOfKind(WorldNodeKind.experience), isNotEmpty);
-    expect(
-      secondProcess.model.graph.nodesOfKind(WorldNodeKind.experience).map((n) => n.id),
-      firstProcess.model.graph.nodesOfKind(WorldNodeKind.experience).map((n) => n.id),
-    );
+      await secondProcess.restore();
+      expect(
+        secondProcess.model.graph.nodesOfKind(WorldNodeKind.experience),
+        isNotEmpty,
+      );
+      expect(
+        secondProcess.model.graph
+            .nodesOfKind(WorldNodeKind.experience)
+            .map((n) => n.id),
+        firstProcess.model.graph
+            .nodesOfKind(WorldNodeKind.experience)
+            .map((n) => n.id),
+      );
 
-    await experienceRepo.close();
-  });
+      await experienceRepo.close();
+    },
+  );
 
-  test('restore() on a coordinator with no persistence configured is a harmless no-op', () async {
-    final coordinator = WorldModelCoordinator();
-    await coordinator.restore(); // must not throw
-    expect(coordinator.model.graph.nodes, isEmpty);
-  });
+  test(
+    'restore() on a coordinator with no persistence configured is a harmless no-op',
+    () async {
+      final coordinator = WorldModelCoordinator();
+      await coordinator.restore(); // must not throw
+      expect(coordinator.model.graph.nodes, isEmpty);
+    },
+  );
 
-  test('persist() on a coordinator with no persistence configured is a harmless no-op', () async {
-    final coordinator = WorldModelCoordinator();
-    await coordinator.persist(); // must not throw
-  });
+  test(
+    'persist() on a coordinator with no persistence configured is a harmless no-op',
+    () async {
+      final coordinator = WorldModelCoordinator();
+      await coordinator.persist(); // must not throw
+    },
+  );
 }

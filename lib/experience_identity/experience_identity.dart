@@ -64,7 +64,16 @@ import '../synthesis/app_blueprint.dart';
 /// this identity module usable from contexts that only have one side's
 /// types in scope (matches `ImplementationDataType`'s own established
 /// mirror-not-import convention relative to `DatabaseColumnType`, R9).
-enum ScreenRole { list, detail, form, dashboard, calendar, settings, empty, summary }
+enum ScreenRole {
+  list,
+  detail,
+  form,
+  dashboard,
+  calendar,
+  settings,
+  empty,
+  summary,
+}
 
 /// A screen's real structural identity — entity + role, never the
 /// incidental id string either pipeline happens to spell it with.
@@ -78,7 +87,10 @@ class ScreenIdentity {
   const ScreenIdentity({this.entityId, required this.role});
 
   @override
-  bool operator ==(Object other) => other is ScreenIdentity && other.entityId == entityId && other.role == role;
+  bool operator ==(Object other) =>
+      other is ScreenIdentity &&
+      other.entityId == entityId &&
+      other.role == role;
 
   @override
   int get hashCode => Object.hash(entityId, role);
@@ -99,7 +111,10 @@ class ActionIdentity {
   const ActionIdentity({required this.entityId, required this.role});
 
   @override
-  bool operator ==(Object other) => other is ActionIdentity && other.entityId == entityId && other.role == role;
+  bool operator ==(Object other) =>
+      other is ActionIdentity &&
+      other.entityId == entityId &&
+      other.role == role;
 
   @override
   int get hashCode => Object.hash(entityId, role);
@@ -119,32 +134,48 @@ ScreenRole _mapBlueprintViewType(BlueprintViewType type) => switch (type) {
   BlueprintViewType.summary => ScreenRole.summary,
 };
 
-ScreenRole _mapImplementationViewKind(ImplementationViewKind kind) => switch (kind) {
-  ImplementationViewKind.dashboard => ScreenRole.dashboard,
-  ImplementationViewKind.calendar => ScreenRole.calendar,
-  ImplementationViewKind.settings => ScreenRole.settings,
-  ImplementationViewKind.empty => ScreenRole.empty,
-  ImplementationViewKind.summary => ScreenRole.summary,
-};
+ScreenRole _mapImplementationViewKind(ImplementationViewKind kind) =>
+    switch (kind) {
+      ImplementationViewKind.dashboard => ScreenRole.dashboard,
+      ImplementationViewKind.calendar => ScreenRole.calendar,
+      ImplementationViewKind.settings => ScreenRole.settings,
+      ImplementationViewKind.empty => ScreenRole.empty,
+      ImplementationViewKind.summary => ScreenRole.summary,
+    };
 
 /// Legacy projection — derived from `sourceEntityId`/`viewType`, the real
 /// structured fields; `view.id` is never read here (Implementation
 /// Milestone R22's whole point).
-ScreenIdentity legacyScreenIdentity(BlueprintView view) => ScreenIdentity(entityId: view.sourceEntityId, role: _mapBlueprintViewType(view.viewType));
+ScreenIdentity legacyScreenIdentity(BlueprintView view) => ScreenIdentity(
+  entityId: view.sourceEntityId,
+  role: _mapBlueprintViewType(view.viewType),
+);
 
-List<ScreenIdentity> legacyScreenIdentities(AppBlueprint blueprint) => blueprint.views.map(legacyScreenIdentity).toList();
+List<ScreenIdentity> legacyScreenIdentities(AppBlueprint blueprint) =>
+    blueprint.views.map(legacyScreenIdentity).toList();
 
 /// Legacy action projection — `null` for any `BlueprintActionType` with no
 /// real compiler-side counterpart (toggle/increment/decrement/setValue/
 /// clearValue/changeStatus/navigate) — never fabricated.
-ActionIdentity? legacyActionIdentity(BlueprintAction action) => switch (action.actionType) {
-  BlueprintActionType.create => ActionIdentity(entityId: action.targetEntityId, role: ActionRole.create),
-  BlueprintActionType.update => ActionIdentity(entityId: action.targetEntityId, role: ActionRole.update),
-  BlueprintActionType.delete => ActionIdentity(entityId: action.targetEntityId, role: ActionRole.delete),
-  _ => null,
-};
+ActionIdentity? legacyActionIdentity(BlueprintAction action) =>
+    switch (action.actionType) {
+      BlueprintActionType.create => ActionIdentity(
+        entityId: action.targetEntityId,
+        role: ActionRole.create,
+      ),
+      BlueprintActionType.update => ActionIdentity(
+        entityId: action.targetEntityId,
+        role: ActionRole.update,
+      ),
+      BlueprintActionType.delete => ActionIdentity(
+        entityId: action.targetEntityId,
+        role: ActionRole.delete,
+      ),
+      _ => null,
+    };
 
-List<ActionIdentity> legacyActionIdentities(AppBlueprint blueprint) => blueprint.actions.map(legacyActionIdentity).nonNulls.toList();
+List<ActionIdentity> legacyActionIdentities(AppBlueprint blueprint) =>
+    blueprint.actions.map(legacyActionIdentity).nonNulls.toList();
 
 /// Compiler projection — mirrors `RuntimeExperienceGenerator._buildInterface`'s
 /// own real screen-synthesis conditions exactly (`hasList`/`hasCreate`/
@@ -157,37 +188,70 @@ List<ActionIdentity> legacyActionIdentities(AppBlueprint blueprint) => blueprint
 /// honest 2-vs-1 count difference for that identity is the correct,
 /// expected signal — not something to hide by inventing a `formEdit` role
 /// legacy could never produce.
-List<ScreenIdentity> compilerScreenIdentities(CanonicalImplementationModel model) {
+List<ScreenIdentity> compilerScreenIdentities(
+  CanonicalImplementationModel model,
+) {
   final identities = <ScreenIdentity>[];
   for (final entity in model.entities) {
-    final controller = model.controllers.where((c) => c.entityId == entity.id).firstOrNull;
-    final kinds = controller?.operations.map((o) => o.kind).toSet() ?? <ImplementationOperationKind>{};
-    final hasList = kinds.contains(ImplementationOperationKind.list) || kinds.contains(ImplementationOperationKind.search);
+    final controller = model.controllers
+        .where((c) => c.entityId == entity.id)
+        .firstOrNull;
+    final kinds =
+        controller?.operations.map((o) => o.kind).toSet() ??
+        <ImplementationOperationKind>{};
+    final hasList =
+        kinds.contains(ImplementationOperationKind.list) ||
+        kinds.contains(ImplementationOperationKind.search);
     final hasCreate = kinds.contains(ImplementationOperationKind.create);
     final hasUpdate = kinds.contains(ImplementationOperationKind.update);
-    final hasDetail = kinds.contains(ImplementationOperationKind.get) || kinds.contains(ImplementationOperationKind.delete);
-    if (hasList) identities.add(ScreenIdentity(entityId: entity.id, role: ScreenRole.list));
-    if (hasCreate) identities.add(ScreenIdentity(entityId: entity.id, role: ScreenRole.form));
-    if (hasUpdate) identities.add(ScreenIdentity(entityId: entity.id, role: ScreenRole.form));
-    if (hasDetail) identities.add(ScreenIdentity(entityId: entity.id, role: ScreenRole.detail));
+    final hasDetail =
+        kinds.contains(ImplementationOperationKind.get) ||
+        kinds.contains(ImplementationOperationKind.delete);
+    if (hasList) {
+      identities.add(
+        ScreenIdentity(entityId: entity.id, role: ScreenRole.list),
+      );
+    }
+    if (hasCreate) {
+      identities.add(
+        ScreenIdentity(entityId: entity.id, role: ScreenRole.form),
+      );
+    }
+    if (hasUpdate) {
+      identities.add(
+        ScreenIdentity(entityId: entity.id, role: ScreenRole.form),
+      );
+    }
+    if (hasDetail) {
+      identities.add(
+        ScreenIdentity(entityId: entity.id, role: ScreenRole.detail),
+      );
+    }
   }
   for (final view in model.views) {
-    identities.add(ScreenIdentity(entityId: view.sourceEntityId, role: _mapImplementationViewKind(view.kind)));
+    identities.add(
+      ScreenIdentity(
+        entityId: view.sourceEntityId,
+        role: _mapImplementationViewKind(view.kind),
+      ),
+    );
   }
   return identities;
 }
 
 /// Compiler action projection — mirrors `RuntimeExperienceGenerator._buildBehavior`'s
 /// own real create/update/delete-only scope exactly.
-List<ActionIdentity> compilerActionIdentities(CanonicalImplementationModel model) => [
+List<ActionIdentity> compilerActionIdentities(
+  CanonicalImplementationModel model,
+) => [
   for (final controller in model.controllers)
     for (final op in controller.operations)
       if (switch (op.kind) {
-        ImplementationOperationKind.create => ActionRole.create,
-        ImplementationOperationKind.update => ActionRole.update,
-        ImplementationOperationKind.delete => ActionRole.delete,
-        _ => null,
-      }
+            ImplementationOperationKind.create => ActionRole.create,
+            ImplementationOperationKind.update => ActionRole.update,
+            ImplementationOperationKind.delete => ActionRole.delete,
+            _ => null,
+          }
           case final role?)
         ActionIdentity(entityId: controller.entityId, role: role),
 ];

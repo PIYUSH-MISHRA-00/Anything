@@ -37,7 +37,8 @@ class ExperienceServiceResolver {
   List<String>? _declaredCapabilities;
   String? _sessionId;
 
-  ExperienceServiceResolver({CapabilityPlatform? capabilityPlatform}) : _capabilityPlatform = capabilityPlatform;
+  ExperienceServiceResolver({CapabilityPlatform? capabilityPlatform})
+    : _capabilityPlatform = capabilityPlatform;
 
   /// Resolve a list of service definitions. [experienceId] and
   /// [declaredCapabilities] (Implementation Milestone R1) scope the

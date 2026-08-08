@@ -19,25 +19,42 @@ class BackgroundJob {
   final AutomationPlan plan;
   final AutomationSchedule schedule;
 
-  const BackgroundJob({required this.id, required this.plan, required this.schedule});
+  const BackgroundJob({
+    required this.id,
+    required this.plan,
+    required this.schedule,
+  });
 }
 
 class BackgroundCoordinator {
   final BackgroundBudget budget;
   final BackgroundPolicy policy;
 
-  const BackgroundCoordinator({this.budget = const BackgroundBudget(), this.policy = const BackgroundPolicy()});
+  const BackgroundCoordinator({
+    this.budget = const BackgroundBudget(),
+    this.policy = const BackgroundPolicy(),
+  });
 
   /// Only ever reads AutomationPlans already validated eligible by
   /// AutomationExecutor — never plans a job for a blocked plan.
   List<BackgroundJob> queue(List<AutomationPlan> eligiblePlans) {
     final filtered = policy.allowConditionalSchedules
         ? eligiblePlans
-        : eligiblePlans.where((p) => p.schedule.frequency != ScheduleFrequency.conditional).toList();
+        : eligiblePlans
+              .where(
+                (p) => p.schedule.frequency != ScheduleFrequency.conditional,
+              )
+              .toList();
 
     return filtered
         .take(budget.maxJobs)
-        .map((plan) => BackgroundJob(id: 'job:${plan.id}', plan: plan, schedule: plan.schedule))
+        .map(
+          (plan) => BackgroundJob(
+            id: 'job:${plan.id}',
+            plan: plan,
+            schedule: plan.schedule,
+          ),
+        )
         .toList();
   }
 }

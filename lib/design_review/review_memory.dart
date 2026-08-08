@@ -31,10 +31,14 @@ class ReviewMemory {
   }
 
   List<ReviewDecision> decisionsFor(String fingerprint) {
-    return _sessions.where((s) => s.fingerprint == fingerprint).expand((s) => s.decisions).toList();
+    return _sessions
+        .where((s) => s.fingerprint == fingerprint)
+        .expand((s) => s.decisions)
+        .toList();
   }
 
-  List<ReviewSnapshot> get snapshots => _sessions.map((s) => s.snapshot).toList();
+  List<ReviewSnapshot> get snapshots =>
+      _sessions.map((s) => s.snapshot).toList();
 
   int get sessionCount => _sessions.length;
 }

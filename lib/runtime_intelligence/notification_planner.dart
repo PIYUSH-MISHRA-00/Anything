@@ -14,14 +14,20 @@ class NotificationPlan {
   final String description;
   final AutomationSchedule schedule;
 
-  const NotificationPlan({required this.id, required this.description, required this.schedule});
+  const NotificationPlan({
+    required this.id,
+    required this.description,
+    required this.schedule,
+  });
 }
 
 class NotificationPlanner {
   const NotificationPlanner();
 
   NotificationPlan? plan(AutomationPlan automationPlan) {
-    final hasNotificationStep = automationPlan.steps.any((s) => s.capabilityId == 'notifications');
+    final hasNotificationStep = automationPlan.steps.any(
+      (s) => s.capabilityId == 'notifications',
+    );
     if (!hasNotificationStep) return null;
 
     return NotificationPlan(

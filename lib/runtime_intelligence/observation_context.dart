@@ -7,5 +7,9 @@ class ObservationContext {
   final String? experienceId;
   final DateTime startedAt;
 
-  const ObservationContext({required this.sessionId, this.experienceId, required this.startedAt});
+  const ObservationContext({
+    required this.sessionId,
+    this.experienceId,
+    required this.startedAt,
+  });
 }

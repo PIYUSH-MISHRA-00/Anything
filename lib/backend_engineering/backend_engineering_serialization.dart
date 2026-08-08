@@ -4,7 +4,8 @@
 /// field round-trips.
 library;
 
-import '../software_architect/architecture_types.dart' show StorageKind, SyncStrategy;
+import '../software_architect/architecture_types.dart'
+    show StorageKind, SyncStrategy;
 import 'api_specification.dart';
 import 'authentication_model.dart';
 import 'background_jobs_model.dart';
@@ -22,10 +23,24 @@ extension BackendEngineeringPlanJson on BackendEngineeringPlan {
               'id': t.id,
               'name': t.name,
               'columns': t.columns
-                  .map((c) => {'id': c.id, 'name': c.name, 'type': c.type.name, 'required': c.required, 'isPrimaryKey': c.isPrimaryKey})
+                  .map(
+                    (c) => {
+                      'id': c.id,
+                      'name': c.name,
+                      'type': c.type.name,
+                      'required': c.required,
+                      'isPrimaryKey': c.isPrimaryKey,
+                    },
+                  )
                   .toList(),
               'foreignKeys': t.foreignKeys
-                  .map((f) => {'columnId': f.columnId, 'referencesTableId': f.referencesTableId, 'onDelete': f.onDelete})
+                  .map(
+                    (f) => {
+                      'columnId': f.columnId,
+                      'referencesTableId': f.referencesTableId,
+                      'onDelete': f.onDelete,
+                    },
+                  )
                   .toList(),
             },
           )
@@ -40,24 +55,38 @@ extension BackendEngineeringPlanJson on BackendEngineeringPlan {
               'method': e.method.name,
               'operation': e.operation.name,
               'entityId': e.entityId,
-              'requestFields': e.requestFields.map((f) => {'name': f.name, 'required': f.required}).toList(),
+              'requestFields': e.requestFields
+                  .map((f) => {'name': f.name, 'required': f.required})
+                  .toList(),
             },
           )
           .toList(),
     },
-    'authentication': {'requiresCredentials': authentication.requiresCredentials, 'providerIndependent': authentication.providerIndependent},
-    'storage': {
-      'requirements': storage.requirements.map((r) => {'entityId': r.entityId, 'kind': r.kind.name}).toList(),
+    'authentication': {
+      'requiresCredentials': authentication.requiresCredentials,
+      'providerIndependent': authentication.providerIndependent,
     },
-    'backgroundJobs': {'requiresBackgroundSync': backgroundJobs.requiresBackgroundSync, 'sourceStrategy': backgroundJobs.sourceStrategy.name},
+    'storage': {
+      'requirements': storage.requirements
+          .map((r) => {'entityId': r.entityId, 'kind': r.kind.name})
+          .toList(),
+    },
+    'backgroundJobs': {
+      'requiresBackgroundSync': backgroundJobs.requiresBackgroundSync,
+      'sourceStrategy': backgroundJobs.sourceStrategy.name,
+    },
     'deployment': {
       'requiresBackend': deployment.requiresBackend,
-      'secretReferences': deployment.secretReferences.map((s) => s.name).toList(),
+      'secretReferences': deployment.secretReferences
+          .map((s) => s.name)
+          .toList(),
     },
   };
 }
 
-BackendEngineeringPlan backendEngineeringPlanFromJson(Map<String, dynamic> json) {
+BackendEngineeringPlan backendEngineeringPlanFromJson(
+  Map<String, dynamic> json,
+) {
   final databaseJson = json['database'] as Map<String, dynamic>;
   final apiJson = json['api'] as Map<String, dynamic>;
   final authJson = json['authentication'] as Map<String, dynamic>;
@@ -84,7 +113,11 @@ BackendEngineeringPlan backendEngineeringPlanFromJson(Map<String, dynamic> json)
           }).toList(),
           foreignKeys: (tj['foreignKeys'] as List).map((f) {
             final fj = f as Map<String, dynamic>;
-            return ForeignKeyConstraint(columnId: fj['columnId'] as String, referencesTableId: fj['referencesTableId'] as String, onDelete: fj['onDelete'] as String);
+            return ForeignKeyConstraint(
+              columnId: fj['columnId'] as String,
+              referencesTableId: fj['referencesTableId'] as String,
+              onDelete: fj['onDelete'] as String,
+            );
           }).toList(),
         );
       }).toList(),
@@ -100,25 +133,38 @@ BackendEngineeringPlan backendEngineeringPlanFromJson(Map<String, dynamic> json)
           entityId: ej['entityId'] as String,
           requestFields: (ej['requestFields'] as List).map((f) {
             final fj = f as Map<String, dynamic>;
-            return ApiRequestField(name: fj['name'] as String, required: fj['required'] as bool);
+            return ApiRequestField(
+              name: fj['name'] as String,
+              required: fj['required'] as bool,
+            );
           }).toList(),
         );
       }).toList(),
     ),
-    authentication: AuthenticationModel(requiresCredentials: authJson['requiresCredentials'] as bool, providerIndependent: authJson['providerIndependent'] as bool),
+    authentication: AuthenticationModel(
+      requiresCredentials: authJson['requiresCredentials'] as bool,
+      providerIndependent: authJson['providerIndependent'] as bool,
+    ),
     storage: BackendStorageModel(
       requirements: (storageJson['requirements'] as List).map((r) {
         final rj = r as Map<String, dynamic>;
-        return StorageRequirement(entityId: rj['entityId'] as String, kind: StorageKind.values.byName(rj['kind'] as String));
+        return StorageRequirement(
+          entityId: rj['entityId'] as String,
+          kind: StorageKind.values.byName(rj['kind'] as String),
+        );
       }).toList(),
     ),
     backgroundJobs: BackgroundJobsModel(
       requiresBackgroundSync: bgJson['requiresBackgroundSync'] as bool,
-      sourceStrategy: SyncStrategy.values.byName(bgJson['sourceStrategy'] as String),
+      sourceStrategy: SyncStrategy.values.byName(
+        bgJson['sourceStrategy'] as String,
+      ),
     ),
     deployment: DeploymentSpecificationModel(
       requiresBackend: deployJson['requiresBackend'] as bool,
-      secretReferences: (deployJson['secretReferences'] as List).map((s) => SecretReference(s as String)).toList(),
+      secretReferences: (deployJson['secretReferences'] as List)
+          .map((s) => SecretReference(s as String))
+          .toList(),
     ),
   );
 }

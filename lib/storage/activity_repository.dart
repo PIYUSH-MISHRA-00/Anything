@@ -97,20 +97,30 @@ class ActivityRepository {
       final evaluation = retention.evaluate(
         domain: LifecycleDomain.activity,
         candidates: [
-          for (final e in events) LifecycleCandidate(id: e.id, timestamp: e.timestamp),
+          for (final e in events)
+            LifecycleCandidate(id: e.id, timestamp: e.timestamp),
         ],
       );
       final reclaimed = evaluation.reclaimedIds.toSet();
-      final retained = [for (final e in events) if (!reclaimed.contains(e.id)) e];
+      final retained = [
+        for (final e in events)
+          if (!reclaimed.contains(e.id)) e,
+      ];
 
-      return (value: jsonEncode([for (final e in retained) e.toJson()]), result: null);
+      return (
+        value: jsonEncode([for (final e in retained) e.toJson()]),
+        result: null,
+      );
     });
   }
 
   static List<ActivityEvent> _decode(String? raw) {
     if (raw == null || raw.isEmpty) return [];
     final List<dynamic> jsonList = jsonDecode(raw);
-    return [for (final j in jsonList) ActivityEvent.fromJson(j as Map<String, dynamic>)];
+    return [
+      for (final j in jsonList)
+        ActivityEvent.fromJson(j as Map<String, dynamic>),
+    ];
   }
 
   /// List activity events.

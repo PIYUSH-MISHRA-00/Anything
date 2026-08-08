@@ -41,7 +41,18 @@ const Map<String, String> _layerHints = {
 
 /// Well-known storage-related dependency names — matched case-
 /// insensitively as substrings against already-declared dependencies.
-const List<String> _storageDependencyHints = ['sqlite', 'sqflite', 'postgres', 'mongodb', 'mongo', 'redis', 'mysql', 'firebase', 'hive', 'realm'];
+const List<String> _storageDependencyHints = [
+  'sqlite',
+  'sqflite',
+  'postgres',
+  'mongodb',
+  'mongo',
+  'redis',
+  'mysql',
+  'firebase',
+  'hive',
+  'realm',
+];
 
 /// Well-known authentication-related dependency names (Implementation
 /// Milestone R14) — same documented, non-exhaustive substring-match
@@ -63,7 +74,15 @@ const List<String> _authDependencyHints = [
 /// Well-known navigation/routing-related dependency names (Implementation
 /// Milestone R14) — same documented, non-exhaustive substring-match
 /// convention as [_storageDependencyHints].
-const List<String> _navigationDependencyHints = ['go_router', 'auto_route', 'fluro', 'beamer', 'react-router', 'vue-router', 'navigator'];
+const List<String> _navigationDependencyHints = [
+  'go_router',
+  'auto_route',
+  'fluro',
+  'beamer',
+  'react-router',
+  'vue-router',
+  'navigator',
+];
 
 /// Well-known realtime/live-channel dependency names (Implementation
 /// Milestone R17) — same documented, non-exhaustive substring-match
@@ -71,14 +90,28 @@ const List<String> _navigationDependencyHints = ['go_router', 'auto_route', 'flu
 /// anywhere in `ArchitectureCandidate`/`BackendEngineeringPlan` (see
 /// `lib/solution_architecture/`), so this dependency-hint analyzer is
 /// its only real source of evidence in this codebase.
-const List<String> _realtimeDependencyHints = ['socket.io', 'websocket', 'pusher', 'ably', 'signalr', 'phoenix_socket', 'firebase_database'];
+const List<String> _realtimeDependencyHints = [
+  'socket.io',
+  'websocket',
+  'pusher',
+  'ably',
+  'signalr',
+  'phoenix_socket',
+  'firebase_database',
+];
 
 /// Well-known caching dependency names (Implementation Milestone R17) —
 /// same convention. Overlaps `_storageDependencyHints`' `redis` entry
 /// deliberately: Redis is real-world both a store and a cache; this is
 /// not a duplicate claim, just the same dependency carrying two honest
 /// meanings.
-const List<String> _cachingDependencyHints = ['redis', 'memcached', 'hazelcast', 'ehcache', 'caffeine'];
+const List<String> _cachingDependencyHints = [
+  'redis',
+  'memcached',
+  'hazelcast',
+  'ehcache',
+  'caffeine',
+];
 
 class ArchitectureAnalyzer {
   const ArchitectureAnalyzer();
@@ -86,7 +119,11 @@ class ArchitectureAnalyzer {
   ArchitectureGraph analyze(RepositoryModel model) {
     final topLevelDirs = model.structure.entries
         .where((e) => e.isDirectory)
-        .map((e) => e.path.endsWith('/') ? e.path.substring(0, e.path.length - 1) : e.path)
+        .map(
+          (e) => e.path.endsWith('/')
+              ? e.path.substring(0, e.path.length - 1)
+              : e.path,
+        )
         .where((dirName) => !dirName.contains('/'))
         .map((dirName) => dirName.toLowerCase())
         .toSet();
@@ -98,7 +135,16 @@ class ArchitectureAnalyzer {
     }
 
     final nodes = layers
-        .map((layer) => SoftwareNode(identity: SoftwareIdentity.stable(SoftwareNodeKind.architectureLayer, layer), kind: SoftwareNodeKind.architectureLayer, label: layer))
+        .map(
+          (layer) => SoftwareNode(
+            identity: SoftwareIdentity.stable(
+              SoftwareNodeKind.architectureLayer,
+              layer,
+            ),
+            kind: SoftwareNodeKind.architectureLayer,
+            label: layer,
+          ),
+        )
         .toList();
     return ArchitectureGraph(SemanticSoftwareGraph(nodes: nodes));
   }
@@ -108,9 +154,21 @@ class StorageAnalyzer {
   const StorageAnalyzer();
 
   DatabaseGraph analyze(RepositoryModel model) {
-    final matches = model.dependencies.where((dep) => _storageDependencyHints.any((hint) => dep.toLowerCase().contains(hint))).toList();
+    final matches = model.dependencies
+        .where(
+          (dep) => _storageDependencyHints.any(
+            (hint) => dep.toLowerCase().contains(hint),
+          ),
+        )
+        .toList();
     final nodes = matches
-        .map((dep) => SoftwareNode(identity: SoftwareIdentity.stable(SoftwareNodeKind.database, dep), kind: SoftwareNodeKind.database, label: dep))
+        .map(
+          (dep) => SoftwareNode(
+            identity: SoftwareIdentity.stable(SoftwareNodeKind.database, dep),
+            kind: SoftwareNodeKind.database,
+            label: dep,
+          ),
+        )
         .toList();
     return DatabaseGraph(SemanticSoftwareGraph(nodes: nodes));
   }
@@ -132,11 +190,20 @@ class AuthenticationPatternAnalyzer {
   const AuthenticationPatternAnalyzer();
 
   AuthenticationPatternGraph analyze(RepositoryModel model) {
-    final matches = model.dependencies.where((dep) => _authDependencyHints.any((hint) => dep.toLowerCase().contains(hint))).toList();
+    final matches = model.dependencies
+        .where(
+          (dep) => _authDependencyHints.any(
+            (hint) => dep.toLowerCase().contains(hint),
+          ),
+        )
+        .toList();
     final nodes = matches
         .map(
           (dep) => SoftwareNode(
-            identity: SoftwareIdentity.stable(SoftwareNodeKind.authenticationPattern, dep),
+            identity: SoftwareIdentity.stable(
+              SoftwareNodeKind.authenticationPattern,
+              dep,
+            ),
             kind: SoftwareNodeKind.authenticationPattern,
             label: dep,
           ),
@@ -150,11 +217,20 @@ class NavigationPatternAnalyzer {
   const NavigationPatternAnalyzer();
 
   NavigationPatternGraph analyze(RepositoryModel model) {
-    final matches = model.dependencies.where((dep) => _navigationDependencyHints.any((hint) => dep.toLowerCase().contains(hint))).toList();
+    final matches = model.dependencies
+        .where(
+          (dep) => _navigationDependencyHints.any(
+            (hint) => dep.toLowerCase().contains(hint),
+          ),
+        )
+        .toList();
     final nodes = matches
         .map(
           (dep) => SoftwareNode(
-            identity: SoftwareIdentity.stable(SoftwareNodeKind.navigationPattern, dep),
+            identity: SoftwareIdentity.stable(
+              SoftwareNodeKind.navigationPattern,
+              dep,
+            ),
             kind: SoftwareNodeKind.navigationPattern,
             label: dep,
           ),
@@ -180,11 +256,20 @@ class RealtimePatternAnalyzer {
   const RealtimePatternAnalyzer();
 
   RealtimePatternGraph analyze(RepositoryModel model) {
-    final matches = model.dependencies.where((dep) => _realtimeDependencyHints.any((hint) => dep.toLowerCase().contains(hint))).toList();
+    final matches = model.dependencies
+        .where(
+          (dep) => _realtimeDependencyHints.any(
+            (hint) => dep.toLowerCase().contains(hint),
+          ),
+        )
+        .toList();
     final nodes = matches
         .map(
           (dep) => SoftwareNode(
-            identity: SoftwareIdentity.stable(SoftwareNodeKind.realtimePattern, dep),
+            identity: SoftwareIdentity.stable(
+              SoftwareNodeKind.realtimePattern,
+              dep,
+            ),
             kind: SoftwareNodeKind.realtimePattern,
             label: dep,
           ),
@@ -198,11 +283,20 @@ class CachingPatternAnalyzer {
   const CachingPatternAnalyzer();
 
   CachingPatternGraph analyze(RepositoryModel model) {
-    final matches = model.dependencies.where((dep) => _cachingDependencyHints.any((hint) => dep.toLowerCase().contains(hint))).toList();
+    final matches = model.dependencies
+        .where(
+          (dep) => _cachingDependencyHints.any(
+            (hint) => dep.toLowerCase().contains(hint),
+          ),
+        )
+        .toList();
     final nodes = matches
         .map(
           (dep) => SoftwareNode(
-            identity: SoftwareIdentity.stable(SoftwareNodeKind.cachingPattern, dep),
+            identity: SoftwareIdentity.stable(
+              SoftwareNodeKind.cachingPattern,
+              dep,
+            ),
             kind: SoftwareNodeKind.cachingPattern,
             label: dep,
           ),
@@ -218,11 +312,23 @@ class CachingPatternAnalyzer {
 class DependencyProjections {
   const DependencyProjections();
 
-  DependencyGraph dependencyGraph(RepositoryModel model) =>
-      DependencyGraph(projectByRelationship(model.graph.graph, {SoftwareRelationshipKind.dependsOn}));
+  DependencyGraph dependencyGraph(RepositoryModel model) => DependencyGraph(
+    projectByRelationship(model.graph.graph, {
+      SoftwareRelationshipKind.dependsOn,
+    }),
+  );
 
-  ImportGraph importGraph(RepositoryModel model) => ImportGraph(projectByRelationship(model.graph.graph, {SoftwareRelationshipKind.imports}));
+  ImportGraph importGraph(RepositoryModel model) => ImportGraph(
+    projectByRelationship(model.graph.graph, {
+      SoftwareRelationshipKind.imports,
+    }),
+  );
 
   CodeRelationshipGraph codeRelationshipGraph(RepositoryModel model) =>
-      CodeRelationshipGraph(projectByRelationship(model.graph.graph, {SoftwareRelationshipKind.calls, SoftwareRelationshipKind.references}));
+      CodeRelationshipGraph(
+        projectByRelationship(model.graph.graph, {
+          SoftwareRelationshipKind.calls,
+          SoftwareRelationshipKind.references,
+        }),
+      );
 }

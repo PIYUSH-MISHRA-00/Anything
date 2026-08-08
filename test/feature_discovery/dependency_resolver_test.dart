@@ -27,7 +27,12 @@ const _relational = FeatureCandidate(
   category: FeatureCategory.relational,
   rationale: 'r',
 );
-const _offline = FeatureCandidate(id: 'feature:offline', name: 'Offline', category: FeatureCategory.offline, rationale: 'r');
+const _offline = FeatureCandidate(
+  id: 'feature:offline',
+  name: 'Offline',
+  category: FeatureCategory.offline,
+  rationale: 'r',
+);
 const _permissionStrategy = FeatureCandidate(
   id: 'feature:permission:strategy',
   name: 'Permission strategy',
@@ -47,83 +52,137 @@ void main() {
   group('StorageDependencyResolver', () {
     const resolver = StorageDependencyResolver();
 
-    test('every persistence feature depends on the real SQLite storage primitive', () {
-      final deps = resolver.resolve(candidate: _persistence, allCandidates: [_persistence]);
-      expect(deps, hasLength(1));
-      expect(deps.single.dependsOnKind, DependencyNodeKind.storage);
-      expect(deps.single.dependsOnId, 'storage:sqlite');
-    });
+    test(
+      'every persistence feature depends on the real SQLite storage primitive',
+      () {
+        final deps = resolver.resolve(
+          candidate: _persistence,
+          allCandidates: [_persistence],
+        );
+        expect(deps, hasLength(1));
+        expect(deps.single.dependsOnKind, DependencyNodeKind.storage);
+        expect(deps.single.dependsOnId, 'storage:sqlite');
+      },
+    );
 
     test('ignores non-persistence candidates', () {
-      expect(resolver.resolve(candidate: _search, allCandidates: [_search]), isEmpty);
+      expect(
+        resolver.resolve(candidate: _search, allCandidates: [_search]),
+        isEmpty,
+      );
     });
   });
 
   group('NavigationDependencyResolver', () {
     const resolver = NavigationDependencyResolver();
 
-    test('search and relational features depend on the app navigation graph', () {
-      expect(resolver.resolve(candidate: _search, allCandidates: [_search]), hasLength(1));
-      expect(resolver.resolve(candidate: _relational, allCandidates: [_relational]), hasLength(1));
-    });
+    test(
+      'search and relational features depend on the app navigation graph',
+      () {
+        expect(
+          resolver.resolve(candidate: _search, allCandidates: [_search]),
+          hasLength(1),
+        );
+        expect(
+          resolver.resolve(
+            candidate: _relational,
+            allCandidates: [_relational],
+          ),
+          hasLength(1),
+        );
+      },
+    );
 
     test('ignores unrelated categories', () {
-      expect(resolver.resolve(candidate: _persistence, allCandidates: [_persistence]), isEmpty);
+      expect(
+        resolver.resolve(
+          candidate: _persistence,
+          allCandidates: [_persistence],
+        ),
+        isEmpty,
+      );
     });
   });
 
   group('OfflineDependencyResolver', () {
     const resolver = OfflineDependencyResolver();
 
-    test('offline strategy depends on storage only when persistence exists', () {
-      final withPersistence = resolver.resolve(candidate: _offline, allCandidates: [_offline, _persistence]);
-      expect(withPersistence, hasLength(1));
+    test(
+      'offline strategy depends on storage only when persistence exists',
+      () {
+        final withPersistence = resolver.resolve(
+          candidate: _offline,
+          allCandidates: [_offline, _persistence],
+        );
+        expect(withPersistence, hasLength(1));
 
-      final withoutPersistence = resolver.resolve(candidate: _offline, allCandidates: [_offline]);
-      expect(withoutPersistence, isEmpty);
-    });
+        final withoutPersistence = resolver.resolve(
+          candidate: _offline,
+          allCandidates: [_offline],
+        );
+        expect(withoutPersistence, isEmpty);
+      },
+    );
   });
 
   group('PermissionDependencyResolver', () {
     const resolver = PermissionDependencyResolver();
 
-    test('expands the aggregate permission-strategy feature into per-capability primitives', () {
-      final deps = resolver.resolve(candidate: _permissionStrategy, allCandidates: [_permissionStrategy]);
-      expect(deps, hasLength(1));
-      expect(deps.single.dependsOnKind, DependencyNodeKind.permission);
-      expect(deps.single.dependsOnId, 'permission:camera');
-    });
+    test(
+      'expands the aggregate permission-strategy feature into per-capability primitives',
+      () {
+        final deps = resolver.resolve(
+          candidate: _permissionStrategy,
+          allCandidates: [_permissionStrategy],
+        );
+        expect(deps, hasLength(1));
+        expect(deps.single.dependsOnKind, DependencyNodeKind.permission);
+        expect(deps.single.dependsOnId, 'permission:camera');
+      },
+    );
   });
 
   group('CapabilityDependencyResolver', () {
     const resolver = CapabilityDependencyResolver();
 
     test('links credential storage back to the triggering capability', () {
-      final deps = resolver.resolve(candidate: _credentialStorage, allCandidates: [_credentialStorage]);
+      final deps = resolver.resolve(
+        candidate: _credentialStorage,
+        allCandidates: [_credentialStorage],
+      );
       expect(deps, hasLength(1));
       expect(deps.single.dependsOnKind, DependencyNodeKind.capability);
       expect(deps.single.dependsOnId, 'capability:oauth');
     });
 
     test('ignores features other than credential storage', () {
-      expect(resolver.resolve(candidate: _persistence, allCandidates: [_persistence]), isEmpty);
+      expect(
+        resolver.resolve(
+          candidate: _persistence,
+          allCandidates: [_persistence],
+        ),
+        isEmpty,
+      );
     });
   });
 
   group('DependencyGraphBuilder', () {
-    test('assembles one node per feature plus one per unique concrete primitive', () {
-      const builder = DependencyGraphBuilder();
-      final graph = builder.build([_persistence, _search, _offline]);
+    test(
+      'assembles one node per feature plus one per unique concrete primitive',
+      () {
+        const builder = DependencyGraphBuilder();
+        final graph = builder.build([_persistence, _search, _offline]);
 
-      expect(graph.nodeById('feature:persistence:inspection'), isNotNull);
-      expect(graph.nodeById('storage:sqlite'), isNotNull);
-      expect(graph.nodeById('navigation:global'), isNotNull);
+        expect(graph.nodeById('feature:persistence:inspection'), isNotNull);
+        expect(graph.nodeById('storage:sqlite'), isNotNull);
+        expect(graph.nodeById('navigation:global'), isNotNull);
 
-      // storage:sqlite is depended on by both persistence and offline —
-      // exactly one node, not duplicated.
-      final storageNodes = graph.nodes.where((n) => n.id == 'storage:sqlite');
-      expect(storageNodes, hasLength(1));
-    });
+        // storage:sqlite is depended on by both persistence and offline —
+        // exactly one node, not duplicated.
+        final storageNodes = graph.nodes.where((n) => n.id == 'storage:sqlite');
+        expect(storageNodes, hasLength(1));
+      },
+    );
 
     test('every resolved dependency becomes a real typed edge', () {
       const builder = DependencyGraphBuilder();

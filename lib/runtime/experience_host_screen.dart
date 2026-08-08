@@ -170,7 +170,8 @@ class ExperienceHostScreen extends StatefulWidget {
   State<ExperienceHostScreen> createState() => _ExperienceHostScreenState();
 }
 
-class _ExperienceHostScreenState extends State<ExperienceHostScreen> with WidgetsBindingObserver {
+class _ExperienceHostScreenState extends State<ExperienceHostScreen>
+    with WidgetsBindingObserver {
   late final AnythingRuntime _runtime;
   late final ExperienceRuntimeController _runtimeController;
   late final WorkspaceLifecyclePolicyEngine _policyEngine;
@@ -212,7 +213,9 @@ class _ExperienceHostScreenState extends State<ExperienceHostScreen> with Widget
   @override
   void initState() {
     super.initState();
-    _runtime = widget.runtime ?? AnythingRuntime(capabilityPlatform: widget.capabilityPlatform);
+    _runtime =
+        widget.runtime ??
+        AnythingRuntime(capabilityPlatform: widget.capabilityPlatform);
     // Implementation Specification IS-R38: real, additive owner of this
     // runtime's lifecycle — wraps the SAME `_runtime` this screen already
     // owns; only used below for the reload (`_runModification`/
@@ -225,11 +228,17 @@ class _ExperienceHostScreenState extends State<ExperienceHostScreen> with Widget
     // routing the initial load through the controller too would change
     // that string to `'runtime_started'` and break that real, existing
     // test for no behavioral gain.
-    _runtimeController = widget.runtimeController ??
+    _runtimeController =
+        widget.runtimeController ??
         ExperienceRuntimeController(
           runtime: _runtime,
           workspace: widget.workspaceManager,
-          eventPublisher: widget.eventBus == null ? null : WorkspaceEventPublisher(bus: widget.eventBus!, source: 'experience-host-screen'),
+          eventPublisher: widget.eventBus == null
+              ? null
+              : WorkspaceEventPublisher(
+                  bus: widget.eventBus!,
+                  source: 'experience-host-screen',
+                ),
           experienceId: widget.experienceId,
         );
     // Implementation Specification IS-R39: real, additive owner of THIS
@@ -240,9 +249,12 @@ class _ExperienceHostScreenState extends State<ExperienceHostScreen> with Widget
     // therefore completely unaffected); real app usage now genuinely
     // pauses/resumes this runtime when the OS backgrounds/foregrounds the
     // app. See `docs/architecture/WORKSPACE_LIFECYCLE_POLICY_ENGINE.md`.
-    _policyEngine = WorkspaceLifecyclePolicyEngine(eventPublisher: _runtimeController.eventPublisher);
+    _policyEngine = WorkspaceLifecyclePolicyEngine(
+      eventPublisher: _runtimeController.eventPublisher,
+    );
     WidgetsBinding.instance.addObserver(this);
-    _modificationCoordinator = widget.modificationCoordinator ??
+    _modificationCoordinator =
+        widget.modificationCoordinator ??
         ExperienceModificationCoordinator(
           worldModel: widget.worldModel,
           engineeringMemory: widget.engineeringMemory,
@@ -345,8 +357,15 @@ class _ExperienceHostScreenState extends State<ExperienceHostScreen> with Widget
     final eventBus = widget.eventBus;
     final experienceId = widget.experienceId;
     if (eventBus == null || experienceId == null) return;
-    final sessionId = widget.workspaceManager?.sessionForExperience(experienceId)?.sessionId ?? experienceId;
-    WorkspaceEventPublisher(bus: eventBus, source: 'experience-host-screen').publishWorkspaceUpdated('runtime_loaded', sessionId);
+    final sessionId =
+        widget.workspaceManager
+            ?.sessionForExperience(experienceId)
+            ?.sessionId ??
+        experienceId;
+    WorkspaceEventPublisher(
+      bus: eventBus,
+      source: 'experience-host-screen',
+    ).publishWorkspaceUpdated('runtime_loaded', sessionId);
   }
 
   /// Real, additive, safe registration (Implementation Specification
@@ -359,9 +378,15 @@ class _ExperienceHostScreenState extends State<ExperienceHostScreen> with Widget
     final supervisor = widget.runtimeSupervisor;
     final experienceId = widget.experienceId;
     if (supervisor == null || experienceId == null) return;
-    final sessionId = widget.workspaceManager?.sessionForExperience(experienceId)?.sessionId;
+    final sessionId = widget.workspaceManager
+        ?.sessionForExperience(experienceId)
+        ?.sessionId;
     if (sessionId == null) return;
-    supervisor.register(sessionId, _runtimeController, experienceId: experienceId);
+    supervisor.register(
+      sessionId,
+      _runtimeController,
+      experienceId: experienceId,
+    );
     _registeredSupervisorSessionId = sessionId;
   }
 
@@ -401,8 +426,14 @@ class _ExperienceHostScreenState extends State<ExperienceHostScreen> with Widget
       return;
     }
     final decision = _policyEngine.evaluateAppLifecycle(state);
-    if (decision.action == RuntimePolicyAction.pause && _runtime.status != RuntimeStatus.running) return;
-    if (decision.action == RuntimePolicyAction.resume && _runtime.status != RuntimeStatus.paused) return;
+    if (decision.action == RuntimePolicyAction.pause &&
+        _runtime.status != RuntimeStatus.running) {
+      return;
+    }
+    if (decision.action == RuntimePolicyAction.resume &&
+        _runtime.status != RuntimeStatus.paused) {
+      return;
+    }
     unawaited(_policyEngine.apply(decision, _runtimeController));
   }
 
@@ -487,7 +518,10 @@ class _ExperienceHostScreenState extends State<ExperienceHostScreen> with Widget
                           child: CircularProgressIndicator(strokeWidth: 2),
                         ),
                         const SizedBox(width: 12),
-                        Text(_modificationStage, style: Theme.of(sheetContext).textTheme.bodySmall),
+                        Text(
+                          _modificationStage,
+                          style: Theme.of(sheetContext).textTheme.bodySmall,
+                        ),
                       ],
                     ),
                   ),
@@ -497,7 +531,9 @@ class _ExperienceHostScreenState extends State<ExperienceHostScreen> with Widget
                   children: [
                     Expanded(
                       child: TextButton(
-                        onPressed: _isModifying ? null : () => Navigator.pop(sheetContext),
+                        onPressed: _isModifying
+                            ? null
+                            : () => Navigator.pop(sheetContext),
                         child: const Text('Cancel'),
                       ),
                     ),
@@ -508,13 +544,18 @@ class _ExperienceHostScreenState extends State<ExperienceHostScreen> with Widget
                             : () => _runModification(
                                 controller.text,
                                 sheetContext,
-                                (stage) => setSheetState(() => _modificationStage = stage),
+                                (stage) => setSheetState(
+                                  () => _modificationStage = stage,
+                                ),
                               ),
                         child: _isModifying
                             ? const SizedBox(
                                 width: 18,
                                 height: 18,
-                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
                               )
                             : const Text('Submit'),
                       ),
@@ -600,7 +641,10 @@ class _ExperienceHostScreenState extends State<ExperienceHostScreen> with Widget
       await _runtimeController.reload(package: _currentPackage);
       if (!mounted) return;
       setState(() => _router = _runtime.router);
-      _reseedAfterReload(preferredScreenId: preReloadScreenId, preferredTabIndex: preReloadTabIndex);
+      _reseedAfterReload(
+        preferredScreenId: preReloadScreenId,
+        preferredTabIndex: preReloadTabIndex,
+      );
 
       final previousForUndo = result.previousPackage;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -615,7 +659,9 @@ class _ExperienceHostScreenState extends State<ExperienceHostScreen> with Widget
         ),
       );
     } else if (result is ModificationCoordinatorFailed) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(result.message)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(result.message)));
     }
   }
 
@@ -628,14 +674,24 @@ class _ExperienceHostScreenState extends State<ExperienceHostScreen> with Widget
     if (router == null) return;
 
     final screens = _currentPackage.interface.screens;
-    if (preferredScreenId != null && screens.any((s) => s.id == preferredScreenId)) {
-      router.navigate(NavigationRequest(action: NavigationAction.push, targetScreenId: preferredScreenId));
+    if (preferredScreenId != null &&
+        screens.any((s) => s.id == preferredScreenId)) {
+      router.navigate(
+        NavigationRequest(
+          action: NavigationAction.push,
+          targetScreenId: preferredScreenId,
+        ),
+      );
       return;
     }
-    if (preferredTabIndex != null && preferredTabIndex < _navigationItems.length) {
+    if (preferredTabIndex != null &&
+        preferredTabIndex < _navigationItems.length) {
       setState(() => _currentTabIndex = preferredTabIndex);
       router.navigate(
-        NavigationRequest(action: NavigationAction.push, targetScreenId: _getScreenIdForTab(preferredTabIndex)),
+        NavigationRequest(
+          action: NavigationAction.push,
+          targetScreenId: _getScreenIdForTab(preferredTabIndex),
+        ),
       );
       return;
     }
@@ -675,9 +731,9 @@ class _ExperienceHostScreenState extends State<ExperienceHostScreen> with Widget
       // delay real user feedback for the full ~4s default display
       // duration (found via this milestone's own widget testing).
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Change undone')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Change undone')));
     } else if (result is ModificationCoordinatorFailed) {
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
       ScaffoldMessenger.of(context).showSnackBar(
@@ -707,7 +763,11 @@ class _ExperienceHostScreenState extends State<ExperienceHostScreen> with Widget
       isScrollControlled: true,
       builder: (sheetContext) => FutureBuilder<List<ActivityEvent>>(
         future: _activity.list().then(
-          (events) => events.where((e) => e.experienceId == experienceId && e.type == 'updated').toList(),
+          (events) => events
+              .where(
+                (e) => e.experienceId == experienceId && e.type == 'updated',
+              )
+              .toList(),
         ),
         builder: (sheetContext, snapshot) {
           final events = snapshot.data ?? const <ActivityEvent>[];
@@ -719,10 +779,18 @@ class _ExperienceHostScreenState extends State<ExperienceHostScreen> with Widget
                 children: [
                   const Padding(
                     padding: EdgeInsets.fromLTRB(24, 24, 24, 8),
-                    child: Text('Evolution history', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),
+                    child: Text(
+                      'Evolution history',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
                   if (!snapshot.hasData)
-                    const Expanded(child: Center(child: CircularProgressIndicator()))
+                    const Expanded(
+                      child: Center(child: CircularProgressIndicator()),
+                    )
                   else if (events.isEmpty)
                     const Expanded(child: Center(child: Text('No changes yet')))
                   else
@@ -732,11 +800,15 @@ class _ExperienceHostScreenState extends State<ExperienceHostScreen> with Widget
                         itemBuilder: (context, index) {
                           final event = events[index];
                           final isMostRecent = index == 0;
-                          final durationLabel = event.durationMs == null ? '' : ' · ${event.durationMs}ms';
+                          final durationLabel = event.durationMs == null
+                              ? ''
+                              : ' · ${event.durationMs}ms';
                           return ListTile(
                             leading: const Icon(Icons.history),
                             title: Text(event.message),
-                            subtitle: Text('${event.timestamp.toLocal()}$durationLabel'),
+                            subtitle: Text(
+                              '${event.timestamp.toLocal()}$durationLabel',
+                            ),
                             trailing: isMostRecent && canUndoMostRecent
                                 ? const Chip(label: Text('Undo available'))
                                 : null,

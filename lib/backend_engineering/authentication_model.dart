@@ -22,5 +22,8 @@ class AuthenticationModel {
   /// specification never names a specific identity provider.
   final bool providerIndependent;
 
-  const AuthenticationModel({required this.requiresCredentials, this.providerIndependent = true});
+  const AuthenticationModel({
+    required this.requiresCredentials,
+    this.providerIndependent = true,
+  });
 }

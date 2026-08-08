@@ -24,7 +24,12 @@ SemanticApp _hiveApp() {
         name: 'Inspection',
         displayField: 'notes',
         fields: [
-          SemanticField(id: 'notes', name: 'Notes', type: BlueprintFieldType.text, required: true),
+          SemanticField(
+            id: 'notes',
+            name: 'Notes',
+            type: BlueprintFieldType.text,
+            required: true,
+          ),
           SemanticField(
             id: 'hiveId',
             name: 'Hive',
@@ -38,7 +43,12 @@ SemanticApp _hiveApp() {
         id: 'hive',
         name: 'Hive',
         fields: [
-          SemanticField(id: 'label', name: 'Label', type: BlueprintFieldType.text, required: true),
+          SemanticField(
+            id: 'label',
+            name: 'Label',
+            type: BlueprintFieldType.text,
+            required: true,
+          ),
         ],
       ),
     ],
@@ -60,7 +70,11 @@ SemanticApp _hiveApp() {
       ),
     ],
     actions: [
-      const SemanticAction(id: 'add_inspection', name: 'Add Inspection', targetEntityId: 'inspection'),
+      const SemanticAction(
+        id: 'add_inspection',
+        name: 'Add Inspection',
+        targetEntityId: 'inspection',
+      ),
     ],
     derivedValues: [
       const SemanticDerivedValue(
@@ -84,7 +98,9 @@ void main() {
 
     test('recommends an index on display field and reference fields', () {
       final result = dataEngineering.plan(context);
-      final indexed = result.indexes.map((i) => '${i.entityId}.${i.fieldId}').toSet();
+      final indexed = result.indexes
+          .map((i) => '${i.entityId}.${i.fieldId}')
+          .toSet();
       expect(indexed, contains('inspection.notes'));
       expect(indexed, contains('inspection.hiveId'));
     });
@@ -104,12 +120,18 @@ void main() {
   group('NavigationEngineering', () {
     const navigationEngineering = NavigationEngineering();
 
-    test('every screen is deep-linkable and history/recovery decisions are real', () {
-      final result = navigationEngineering.plan(context);
-      expect(result.deepLinkableScreenIds, unorderedEquals(candidate.navigation.screenIds));
-      expect(result.historyDecision.decision, contains('history'));
-      expect(result.recoveryDecision.rationale, contains('ExperienceRouter'));
-    });
+    test(
+      'every screen is deep-linkable and history/recovery decisions are real',
+      () {
+        final result = navigationEngineering.plan(context);
+        expect(
+          result.deepLinkableScreenIds,
+          unorderedEquals(candidate.navigation.screenIds),
+        );
+        expect(result.historyDecision.decision, contains('history'));
+        expect(result.recoveryDecision.rationale, contains('ExperienceRouter'));
+      },
+    );
   });
 
   group('InteractionEngineering', () {
@@ -131,7 +153,9 @@ void main() {
 
     test('unimplemented patterns carry zero confidence, never fabricated', () {
       final result = interactionEngineering.plan(context);
-      final undo = result.patterns.firstWhere((d) => d.pattern == InteractionPattern.undo);
+      final undo = result.patterns.firstWhere(
+        (d) => d.pattern == InteractionPattern.undo,
+      );
       expect(undo.decision.confidence.score, 0.0);
     });
   });

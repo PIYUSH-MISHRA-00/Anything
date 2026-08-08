@@ -101,18 +101,36 @@ class ExperienceDiffer {
       }
     }
     for (final entry in beforeComponents.entries) {
-      if (!afterComponents.containsKey(entry.key)) removedComponents.add(entry.value);
+      if (!afterComponents.containsKey(entry.key)) {
+        removedComponents.add(entry.value);
+      }
     }
 
-    final beforeCaps = {for (final c in before.capabilityDeclarations) c.capabilityId: c};
-    final afterCaps = {for (final c in after.capabilityDeclarations) c.capabilityId: c};
-    final addedCapabilities = afterCaps.entries.where((e) => !beforeCaps.containsKey(e.key)).map((e) => e.value).toList();
-    final removedCapabilities = beforeCaps.entries.where((e) => !afterCaps.containsKey(e.key)).map((e) => e.value).toList();
+    final beforeCaps = {
+      for (final c in before.capabilityDeclarations) c.capabilityId: c,
+    };
+    final afterCaps = {
+      for (final c in after.capabilityDeclarations) c.capabilityId: c,
+    };
+    final addedCapabilities = afterCaps.entries
+        .where((e) => !beforeCaps.containsKey(e.key))
+        .map((e) => e.value)
+        .toList();
+    final removedCapabilities = beforeCaps.entries
+        .where((e) => !afterCaps.containsKey(e.key))
+        .map((e) => e.value)
+        .toList();
 
     final beforeServices = {for (final s in before.services) s.id: s};
     final afterServices = {for (final s in after.services) s.id: s};
-    final addedServices = afterServices.entries.where((e) => !beforeServices.containsKey(e.key)).map((e) => e.value).toList();
-    final removedServices = beforeServices.entries.where((e) => !afterServices.containsKey(e.key)).map((e) => e.value).toList();
+    final addedServices = afterServices.entries
+        .where((e) => !beforeServices.containsKey(e.key))
+        .map((e) => e.value)
+        .toList();
+    final removedServices = beforeServices.entries
+        .where((e) => !afterServices.containsKey(e.key))
+        .map((e) => e.value)
+        .toList();
 
     return ExperienceDiff(
       addedScreens: addedScreens,
@@ -123,9 +141,13 @@ class ExperienceDiffer {
       removedCapabilities: removedCapabilities,
       addedServices: addedServices,
       removedServices: removedServices,
-      behaviorChanged: before.behavior.toJson().toString() != after.behavior.toJson().toString(),
-      stateChanged: before.state.toJson().toString() != after.state.toJson().toString(),
-      dataSchemaChanged: before.data?.toJson().toString() != after.data?.toJson().toString(),
+      behaviorChanged:
+          before.behavior.toJson().toString() !=
+          after.behavior.toJson().toString(),
+      stateChanged:
+          before.state.toJson().toString() != after.state.toJson().toString(),
+      dataSchemaChanged:
+          before.data?.toJson().toString() != after.data?.toJson().toString(),
     );
   }
 

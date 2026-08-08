@@ -141,7 +141,12 @@ class SqliteExperienceRepository {
   Future<Database> _initDatabase() async {
     final dbPath = await getDatabasesPath();
     final path = p.join(dbPath, _dbName);
-    return await openDatabase(path, version: 3, onCreate: _createTables, onUpgrade: _upgradeTables);
+    return await openDatabase(
+      path,
+      version: 3,
+      onCreate: _createTables,
+      onUpgrade: _upgradeTables,
+    );
   }
 
   Future<void> _createTables(Database db, int version) async {
@@ -188,7 +193,11 @@ class SqliteExperienceRepository {
   /// changes any public API, and is safe to run against a database that
   /// already has these indexes (fresh installs get them via
   /// `_createTables` directly).
-  Future<void> _upgradeTables(Database db, int oldVersion, int newVersion) async {
+  Future<void> _upgradeTables(
+    Database db,
+    int oldVersion,
+    int newVersion,
+  ) async {
     if (oldVersion < 2) {
       await _createIndexes(db);
     }
@@ -208,8 +217,12 @@ class SqliteExperienceRepository {
   /// index lets SQLite satisfy that ordering directly instead of a full
   /// table scan + sort as the experiences table grows.
   Future<void> _createIndexes(Database db) async {
-    await db.execute('CREATE INDEX IF NOT EXISTS idx_experiences_last_used ON experiences(last_used_at DESC, created_at DESC)');
-    await db.execute('CREATE INDEX IF NOT EXISTS idx_experiences_category ON experiences(category)');
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_experiences_last_used ON experiences(last_used_at DESC, created_at DESC)',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_experiences_category ON experiences(category)',
+    );
   }
 
   /// Save experience metadata.
@@ -227,7 +240,10 @@ class SqliteExperienceRepository {
   /// This is deliberately NOT a transaction API on the repository. The
   /// repository still owns every table name and every statement; it merely
   /// accepts the executor it should write through. Ownership did not move.
-  Future<void> saveMetadata(ExperienceMetadataRecord record, {DatabaseExecutor? using}) async {
+  Future<void> saveMetadata(
+    ExperienceMetadataRecord record, {
+    DatabaseExecutor? using,
+  }) async {
     final db = using ?? await database;
     await db.insert('experiences', {
       'id': record.id,
@@ -245,7 +261,10 @@ class SqliteExperienceRepository {
   }
 
   /// Save a complete ExperiencePackage.
-  Future<void> savePackage(ExperiencePackage package, {DatabaseExecutor? using}) async {
+  Future<void> savePackage(
+    ExperiencePackage package, {
+    DatabaseExecutor? using,
+  }) async {
     final db = using ?? await database;
     final jsonStr = jsonEncode(package.toJson());
     final hash = ExperiencePackage.computeIntegrityHash(package);
@@ -342,7 +361,10 @@ class SqliteExperienceRepository {
   }
 
   /// Delete only the plaintext package data (used after protection).
-  Future<void> deletePackage(String experienceId, {DatabaseExecutor? using}) async {
+  Future<void> deletePackage(
+    String experienceId, {
+    DatabaseExecutor? using,
+  }) async {
     final db = using ?? await database;
     await db.delete(
       'experience_packages',
@@ -396,7 +418,10 @@ class SqliteExperienceRepository {
   }
 
   /// Delete a protected envelope (used after successful unprotection).
-  Future<void> deleteProtectedEnvelope(String experienceId, {DatabaseExecutor? using}) async {
+  Future<void> deleteProtectedEnvelope(
+    String experienceId, {
+    DatabaseExecutor? using,
+  }) async {
     final db = using ?? await database;
     await db.delete(
       'protected_envelopes',

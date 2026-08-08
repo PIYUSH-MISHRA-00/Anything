@@ -11,5 +11,8 @@ class BackendEngineeringContext {
   final ArchitectureCandidate architecture;
   final SemanticApp app;
 
-  const BackendEngineeringContext({required this.architecture, required this.app});
+  const BackendEngineeringContext({
+    required this.architecture,
+    required this.app,
+  });
 }

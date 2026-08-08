@@ -130,23 +130,54 @@ class SolutionExecutionOrchestrator {
     // executed subset.
     for (final plan in strategy.targets) {
       if (plan.classification == ExecutionTargetClassification.notApplicable) {
-        stages.add(StageOutcome(target: plan.target, status: StageStatus.skippedNotApplicable, attempts: 0, errors: [plan.reason]));
-      } else if (plan.classification == ExecutionTargetClassification.applicableNoGenerator) {
-        stages.add(StageOutcome(target: plan.target, status: StageStatus.skippedNoGenerator, attempts: 0, errors: [plan.reason]));
+        stages.add(
+          StageOutcome(
+            target: plan.target,
+            status: StageStatus.skippedNotApplicable,
+            attempts: 0,
+            errors: [plan.reason],
+          ),
+        );
+      } else if (plan.classification ==
+          ExecutionTargetClassification.applicableNoGenerator) {
+        stages.add(
+          StageOutcome(
+            target: plan.target,
+            status: StageStatus.skippedNoGenerator,
+            attempts: 0,
+            errors: [plan.reason],
+          ),
+        );
       }
     }
 
     for (final level in levels.levels) {
-      final actionable = level.where((t) => strategy.forTarget(t).classification == ExecutionTargetClassification.applicableWithGenerator);
+      final actionable = level.where(
+        (t) =>
+            strategy.forTarget(t).classification ==
+            ExecutionTargetClassification.applicableWithGenerator,
+      );
       final results = await Future.wait(
         actionable.map(
-          (target) => _runStage(target: target, model: model, id: id, name: name, affected: affected, backendPlan: backendPlan, maxAttempts: maxAttempts),
+          (target) => _runStage(
+            target: target,
+            model: model,
+            id: id,
+            name: name,
+            affected: affected,
+            backendPlan: backendPlan,
+            maxAttempts: maxAttempts,
+          ),
         ),
       );
       stages.addAll(results);
     }
 
-    return OrchestrationReport(levels: levels.levels, levelOrderingComplete: levels.isComplete, stages: stages);
+    return OrchestrationReport(
+      levels: levels.levels,
+      levelOrderingComplete: levels.isComplete,
+      stages: stages,
+    );
   }
 
   /// Real dispatch (Implementation Specification IS-R26, extended IS-R27)
@@ -165,12 +196,31 @@ class SolutionExecutionOrchestrator {
     required int maxAttempts,
   }) {
     if (target == ExecutionTargetKind.backendService) {
-      return _runBackendServiceStage(model: model, id: id, name: name, backendPlan: backendPlan, maxAttempts: maxAttempts);
+      return _runBackendServiceStage(
+        model: model,
+        id: id,
+        name: name,
+        backendPlan: backendPlan,
+        maxAttempts: maxAttempts,
+      );
     }
     if (target == ExecutionTargetKind.restApi) {
-      return _runRestApiStage(model: model, id: id, name: name, backendPlan: backendPlan, maxAttempts: maxAttempts);
+      return _runRestApiStage(
+        model: model,
+        id: id,
+        name: name,
+        backendPlan: backendPlan,
+        maxAttempts: maxAttempts,
+      );
     }
-    return _runRuntimeExperienceStage(target: target, model: model, id: id, name: name, affected: affected, maxAttempts: maxAttempts);
+    return _runRuntimeExperienceStage(
+      target: target,
+      model: model,
+      id: id,
+      name: name,
+      affected: affected,
+      maxAttempts: maxAttempts,
+    );
   }
 
   /// Unchanged since R25 (renamed from `_runStage`) — byte-for-byte
@@ -190,7 +240,12 @@ class SolutionExecutionOrchestrator {
       final ExperiencePackage? package;
       final GenerationResult compilerResult;
       if (affected != null && !affected.isEmpty) {
-        final result = const IncrementalCompilerSynthesizer().synthesize(fullModel: model, affected: affected, id: id, name: name);
+        final result = const IncrementalCompilerSynthesizer().synthesize(
+          fullModel: model,
+          affected: affected,
+          id: id,
+          name: name,
+        );
         package = result.package;
         compilerResult = result.compilerResult;
       } else {
@@ -199,18 +254,43 @@ class SolutionExecutionOrchestrator {
         compilerResult = result.result;
       }
 
-      final compilerErrors = compilerResult.diagnostics.where((d) => d.severity == DiagnosticSeverity.error).map((d) => d.message).toList();
-      final validation = package != null ? ExperiencePackageValidator.validate(package) : null;
+      final compilerErrors = compilerResult.diagnostics
+          .where((d) => d.severity == DiagnosticSeverity.error)
+          .map((d) => d.message)
+          .toList();
+      final validation = package != null
+          ? ExperiencePackageValidator.validate(package)
+          : null;
 
-      final succeeded = package != null && compilerErrors.isEmpty && (validation?.isValid ?? false);
+      final succeeded =
+          package != null &&
+          compilerErrors.isEmpty &&
+          (validation?.isValid ?? false);
       if (succeeded) {
         stopwatch.stop();
-        return StageOutcome(target: target, status: StageStatus.succeeded, attempts: attempt, package: package, latency: stopwatch.elapsed);
+        return StageOutcome(
+          target: target,
+          status: StageStatus.succeeded,
+          attempts: attempt,
+          package: package,
+          latency: stopwatch.elapsed,
+        );
       }
       if (attempt >= maxAttempts) {
         stopwatch.stop();
-        final errors = [...compilerErrors, ...?validation?.errors, if (package == null && compilerErrors.isEmpty) 'Compiler pipeline produced no artifact for this target.'];
-        return StageOutcome(target: target, status: StageStatus.failed, attempts: attempt, errors: errors, latency: stopwatch.elapsed);
+        final errors = [
+          ...compilerErrors,
+          ...?validation?.errors,
+          if (package == null && compilerErrors.isEmpty)
+            'Compiler pipeline produced no artifact for this target.',
+        ];
+        return StageOutcome(
+          target: target,
+          status: StageStatus.failed,
+          attempts: attempt,
+          errors: errors,
+          latency: stopwatch.elapsed,
+        );
       }
       // Real bounded retry — see this file's own doc comment on why this
       // rarely changes a deterministic pipeline's outcome.
@@ -240,32 +320,63 @@ class SolutionExecutionOrchestrator {
         target: target,
         status: StageStatus.failed,
         attempts: 1,
-        errors: const ['No BackendEngineeringPlan supplied to SolutionExecutionOrchestrator.execute() — required for a backendService stage.'],
+        errors: const [
+          'No BackendEngineeringPlan supplied to SolutionExecutionOrchestrator.execute() — required for a backendService stage.',
+        ],
         latency: stopwatch.elapsed,
       );
     }
 
-    final options = GeneratorOptions(values: {'backendEngineeringPlan': jsonEncode(backendPlan.toJson())});
+    final options = GeneratorOptions(
+      values: {'backendEngineeringPlan': jsonEncode(backendPlan.toJson())},
+    );
 
     var attempt = 0;
     while (true) {
       attempt++;
-      final outcome = runGeneratorPipeline(model, generator: const BackendServiceGenerator(), id: id, name: name, options: options);
-      final compilerErrors = outcome.result.diagnostics.where((d) => d.severity == DiagnosticSeverity.error).map((d) => d.message).toList();
+      final outcome = runGeneratorPipeline(
+        model,
+        generator: const BackendServiceGenerator(),
+        id: id,
+        name: name,
+        options: options,
+      );
+      final compilerErrors = outcome.result.diagnostics
+          .where((d) => d.severity == DiagnosticSeverity.error)
+          .map((d) => d.message)
+          .toList();
       final artifacts = outcome.result.allArtifacts;
-      final invalidJson = artifacts.where((a) => a.content != null && !_isValidJson(a.content!)).map((a) => 'Artifact ${a.id} is not valid JSON');
+      final invalidJson = artifacts
+          .where((a) => a.content != null && !_isValidJson(a.content!))
+          .map((a) => 'Artifact ${a.id} is not valid JSON');
 
       final errors = [...compilerErrors, ...invalidJson];
       final succeeded = artifacts.isNotEmpty && errors.isEmpty;
 
       if (succeeded) {
         stopwatch.stop();
-        return StageOutcome(target: target, status: StageStatus.succeeded, attempts: attempt, backendArtifacts: artifacts, latency: stopwatch.elapsed);
+        return StageOutcome(
+          target: target,
+          status: StageStatus.succeeded,
+          attempts: attempt,
+          backendArtifacts: artifacts,
+          latency: stopwatch.elapsed,
+        );
       }
       if (attempt >= maxAttempts) {
         stopwatch.stop();
-        final allErrors = [...errors, if (artifacts.isEmpty && compilerErrors.isEmpty) 'Backend Service Generator produced no artifacts for this target.'];
-        return StageOutcome(target: target, status: StageStatus.failed, attempts: attempt, errors: allErrors, latency: stopwatch.elapsed);
+        final allErrors = [
+          ...errors,
+          if (artifacts.isEmpty && compilerErrors.isEmpty)
+            'Backend Service Generator produced no artifacts for this target.',
+        ];
+        return StageOutcome(
+          target: target,
+          status: StageStatus.failed,
+          attempts: attempt,
+          errors: allErrors,
+          latency: stopwatch.elapsed,
+        );
       }
       // Real bounded retry — same rationale as `_runRuntimeExperienceStage`.
     }
@@ -292,32 +403,63 @@ class SolutionExecutionOrchestrator {
         target: target,
         status: StageStatus.failed,
         attempts: 1,
-        errors: const ['No BackendEngineeringPlan supplied to SolutionExecutionOrchestrator.execute() — required for a restApi stage.'],
+        errors: const [
+          'No BackendEngineeringPlan supplied to SolutionExecutionOrchestrator.execute() — required for a restApi stage.',
+        ],
         latency: stopwatch.elapsed,
       );
     }
 
-    final options = GeneratorOptions(values: {'backendEngineeringPlan': jsonEncode(backendPlan.toJson())});
+    final options = GeneratorOptions(
+      values: {'backendEngineeringPlan': jsonEncode(backendPlan.toJson())},
+    );
 
     var attempt = 0;
     while (true) {
       attempt++;
-      final outcome = runGeneratorPipeline(model, generator: const RestApiGenerator(), id: id, name: name, options: options);
-      final compilerErrors = outcome.result.diagnostics.where((d) => d.severity == DiagnosticSeverity.error).map((d) => d.message).toList();
+      final outcome = runGeneratorPipeline(
+        model,
+        generator: const RestApiGenerator(),
+        id: id,
+        name: name,
+        options: options,
+      );
+      final compilerErrors = outcome.result.diagnostics
+          .where((d) => d.severity == DiagnosticSeverity.error)
+          .map((d) => d.message)
+          .toList();
       final artifacts = outcome.result.allArtifacts;
-      final invalidJson = artifacts.where((a) => a.content != null && !_isValidJson(a.content!)).map((a) => 'Artifact ${a.id} is not valid JSON');
+      final invalidJson = artifacts
+          .where((a) => a.content != null && !_isValidJson(a.content!))
+          .map((a) => 'Artifact ${a.id} is not valid JSON');
 
       final errors = [...compilerErrors, ...invalidJson];
       final succeeded = artifacts.isNotEmpty && errors.isEmpty;
 
       if (succeeded) {
         stopwatch.stop();
-        return StageOutcome(target: target, status: StageStatus.succeeded, attempts: attempt, backendArtifacts: artifacts, latency: stopwatch.elapsed);
+        return StageOutcome(
+          target: target,
+          status: StageStatus.succeeded,
+          attempts: attempt,
+          backendArtifacts: artifacts,
+          latency: stopwatch.elapsed,
+        );
       }
       if (attempt >= maxAttempts) {
         stopwatch.stop();
-        final allErrors = [...errors, if (artifacts.isEmpty && compilerErrors.isEmpty) 'REST API Generator produced no artifacts for this target.'];
-        return StageOutcome(target: target, status: StageStatus.failed, attempts: attempt, errors: allErrors, latency: stopwatch.elapsed);
+        final allErrors = [
+          ...errors,
+          if (artifacts.isEmpty && compilerErrors.isEmpty)
+            'REST API Generator produced no artifacts for this target.',
+        ];
+        return StageOutcome(
+          target: target,
+          status: StageStatus.failed,
+          attempts: attempt,
+          errors: allErrors,
+          latency: stopwatch.elapsed,
+        );
       }
       // Real bounded retry — same rationale as `_runRuntimeExperienceStage`.
     }

@@ -16,7 +16,11 @@ class LifecycleHook {
   final String realizedBy;
   final EngineeringDecision decision;
 
-  const LifecycleHook({required this.kind, required this.realizedBy, required this.decision});
+  const LifecycleHook({
+    required this.kind,
+    required this.realizedBy,
+    required this.decision,
+  });
 }
 
 class LifecycleEngineeringResult {
@@ -32,7 +36,8 @@ class LifecycleEngineering {
     LifecycleHookKind.onPersist: 'SqliteExperienceRepository.savePackage()',
     LifecycleHookKind.onOpen: 'ExperienceOpeningCoordinator (trusted opening)',
     LifecycleHookKind.onClose: 'AnythingRuntime + ExperienceDatabase.close()',
-    LifecycleHookKind.onReopen: 'Fresh ExperienceOpeningCoordinator + fresh ExperienceDatabase at the same path',
+    LifecycleHookKind.onReopen:
+        'Fresh ExperienceOpeningCoordinator + fresh ExperienceDatabase at the same path',
   };
 
   LifecycleEngineeringResult plan() {

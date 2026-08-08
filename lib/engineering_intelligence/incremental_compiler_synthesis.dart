@@ -78,7 +78,12 @@ class IncrementalCompilerSynthesizer {
   /// real, honest no-op result (`package: null`) rather than silently
   /// falling back to a full regeneration — a caller with no real diff
   /// signal has nothing to incrementally synthesize.
-  IncrementalSynthesisResult synthesize({required CanonicalImplementationModel fullModel, required AffectedEntities affected, required String id, required String name}) {
+  IncrementalSynthesisResult synthesize({
+    required CanonicalImplementationModel fullModel,
+    required AffectedEntities affected,
+    required String id,
+    required String name,
+  }) {
     final stopwatch = Stopwatch()..start();
     if (affected.isEmpty) {
       stopwatch.stop();
@@ -95,24 +100,42 @@ class IncrementalCompilerSynthesizer {
     final ids = affected.entityIds;
     final scoped = CanonicalImplementationModel(
       entities: fullModel.entities.where((e) => ids.contains(e.id)).toList(),
-      repositories: fullModel.repositories.where((r) => ids.contains(r.entityId)).toList(),
-      controllers: fullModel.controllers.where((c) => ids.contains(c.entityId)).toList(),
+      repositories: fullModel.repositories
+          .where((r) => ids.contains(r.entityId))
+          .toList(),
+      controllers: fullModel.controllers
+          .where((c) => ids.contains(c.entityId))
+          .toList(),
       dtos: fullModel.dtos.where((d) => ids.contains(d.entityId)).toList(),
-      validators: fullModel.validators.where((v) => ids.contains(v.entityId)).toList(),
-      services: fullModel.services.where((s) => ids.contains(s.entityId)).toList(),
+      validators: fullModel.validators
+          .where((v) => ids.contains(v.entityId))
+          .toList(),
+      services: fullModel.services
+          .where((s) => ids.contains(s.entityId))
+          .toList(),
       // Cross-cutting/non-entity-keyed specs are honestly NOT scoped —
       // filtering them further risks silently dropping real, unrelated
       // requirements (see this file's own top-level doc comment).
       dependencies: fullModel.dependencies,
-      stateContainers: fullModel.stateContainers.where((s) => ids.contains(s.entityId)).toList(),
+      stateContainers: fullModel.stateContainers
+          .where((s) => ids.contains(s.entityId))
+          .toList(),
       navigation: fullModel.navigation,
       capabilityAdapters: fullModel.capabilityAdapters,
       authentication: fullModel.authentication,
-      storageAdapters: fullModel.storageAdapters.where((s) => ids.contains(s.entityId)).toList(),
+      storageAdapters: fullModel.storageAdapters
+          .where((s) => ids.contains(s.entityId))
+          .toList(),
       backgroundWorker: fullModel.backgroundWorker,
       corroboratedPatterns: fullModel.corroboratedPatterns,
-      derivedValues: fullModel.derivedValues.where((d) => ids.contains(d.sourceEntityId)).toList(),
-      views: fullModel.views.where((v) => v.sourceEntityId != null && ids.contains(v.sourceEntityId)).toList(),
+      derivedValues: fullModel.derivedValues
+          .where((d) => ids.contains(d.sourceEntityId))
+          .toList(),
+      views: fullModel.views
+          .where(
+            (v) => v.sourceEntityId != null && ids.contains(v.sourceEntityId),
+          )
+          .toList(),
     );
 
     final outcome = runCompilerPipeline(scoped, id: id, name: name);
@@ -131,10 +154,21 @@ class IncrementalCompilerSynthesizer {
   /// `EvolutionDiffPlanBuilder`/`ExperienceDiffer` R4 already built, so
   /// the resulting plan is indistinguishable, to `applyEvolutionPlan()`,
   /// from a legacy-sourced one — never a second apply path.
-  EvolutionDiffPlan? buildEvolutionPlan({required String experienceId, required ExperiencePackage previousPackage, required IncrementalSynthesisResult result}) {
+  EvolutionDiffPlan? buildEvolutionPlan({
+    required String experienceId,
+    required ExperiencePackage previousPackage,
+    required IncrementalSynthesisResult result,
+  }) {
     final newPackage = result.package;
     if (newPackage == null) return null;
-    final experienceDiff = const ExperienceDiffer().diff(previousPackage, newPackage);
-    return const EvolutionDiffPlanBuilder().build(experienceId: experienceId, experienceDiff: experienceDiff, candidatePackage: newPackage);
+    final experienceDiff = const ExperienceDiffer().diff(
+      previousPackage,
+      newPackage,
+    );
+    return const EvolutionDiffPlanBuilder().build(
+      experienceId: experienceId,
+      experienceDiff: experienceDiff,
+      candidatePackage: newPackage,
+    );
   }
 }

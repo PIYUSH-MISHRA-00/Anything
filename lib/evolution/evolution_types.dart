@@ -56,7 +56,11 @@ class EvolutionReason {
   final EvolutionEvidence evidence;
   final Confidence confidence;
 
-  const EvolutionReason({required this.summary, required this.evidence, required this.confidence});
+  const EvolutionReason({
+    required this.summary,
+    required this.evidence,
+    required this.confidence,
+  });
 }
 
 /// Typed cost estimate — every dimension a [ComplexityLevel], never an
@@ -178,5 +182,9 @@ class EvolutionDependency {
   final String toId;
   final EvolutionDependencyKind kind;
 
-  const EvolutionDependency({required this.fromId, required this.toId, required this.kind});
+  const EvolutionDependency({
+    required this.fromId,
+    required this.toId,
+    required this.kind,
+  });
 }

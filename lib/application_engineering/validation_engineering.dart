@@ -43,8 +43,11 @@ class ValidationEngineering {
             id: 'validation:entity:${entity.entityId}',
             category: EngineeringDecisionCategory.validation,
             subjectId: entity.entityId,
-            decision: satisfied ? '${entity.name} has persistable fields' : '${entity.name} has no fields',
-            rationale: 'An entity with zero fields cannot be meaningfully displayed or persisted.',
+            decision: satisfied
+                ? '${entity.name} has persistable fields'
+                : '${entity.name} has no fields',
+            rationale:
+                'An entity with zero fields cannot be meaningfully displayed or persisted.',
             confidence: Confidence.full,
           ),
         ),
@@ -62,7 +65,8 @@ class ValidationEngineering {
             category: EngineeringDecisionCategory.validation,
             subjectId: '${rel.fromEntityId}.${rel.fieldId}',
             decision: 'Delete policy is explicitly ${rel.deletePolicy.name}',
-            rationale: 'Every relationship must have an explicit delete policy — never left undefined.',
+            rationale:
+                'Every relationship must have an explicit delete policy — never left undefined.',
             confidence: Confidence.full,
           ),
         ),
@@ -81,8 +85,11 @@ class ValidationEngineering {
               id: 'validation:action:${action.id}',
               category: EngineeringDecisionCategory.validation,
               subjectId: action.id,
-              decision: satisfied ? '${action.name} has at least one effect' : '${action.name} has no effect',
-              rationale: 'An action with no effect is a dead end — it would do nothing when triggered.',
+              decision: satisfied
+                  ? '${action.name} has at least one effect'
+                  : '${action.name} has no effect',
+              rationale:
+                  'An action with no effect is a dead end — it would do nothing when triggered.',
               confidence: Confidence.full,
             ),
           ),
@@ -102,8 +109,11 @@ class ValidationEngineering {
               id: 'validation:transition:${machine.entityId}:${transition.eventId}',
               category: EngineeringDecisionCategory.validation,
               subjectId: '${machine.entityId}:${transition.eventId}',
-              decision: satisfied ? 'Transition changes state' : 'Transition is a no-op self-loop',
-              rationale: 'A transition from a state to itself carries no information and likely indicates a planning defect.',
+              decision: satisfied
+                  ? 'Transition changes state'
+                  : 'Transition is a no-op self-loop',
+              rationale:
+                  'A transition from a state to itself carries no information and likely indicates a planning defect.',
               confidence: Confidence.full,
             ),
           ),

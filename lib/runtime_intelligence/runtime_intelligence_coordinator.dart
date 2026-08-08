@@ -75,7 +75,11 @@ class RuntimeIntelligenceCoordinator {
   }) {
     final observationEngine = ObservationEngine(
       memory: observationMemory,
-      context: ObservationContext(sessionId: sessionId, experienceId: experienceId, startedAt: DateTime.now()),
+      context: ObservationContext(
+        sessionId: sessionId,
+        experienceId: experienceId,
+        startedAt: DateTime.now(),
+      ),
     );
     if (router != null) observationEngine.observeRouter(router);
     for (final controller in queryControllers) {
@@ -93,12 +97,22 @@ class RuntimeIntelligenceCoordinator {
     EvolutionRoadmap? evolutionRoadmap,
     int minOccurrences = 2,
   }) {
-    final result = _engine.run(observationMemory, learningMemory, evolutionRoadmap: evolutionRoadmap, minOccurrences: minOccurrences);
+    final result = _engine.run(
+      observationMemory,
+      learningMemory,
+      evolutionRoadmap: evolutionRoadmap,
+      minOccurrences: minOccurrences,
+    );
 
     final version = automationHistory.recordCount + 1;
     for (final plan in result.automationPlans) {
       final report = _executor.validate(plan, capabilityRegistry);
-      final record = AutomationRecord(plan: plan, report: report, plannedAt: DateTime.now(), version: version);
+      final record = AutomationRecord(
+        plan: plan,
+        report: report,
+        plannedAt: DateTime.now(),
+        version: version,
+      );
       automationHistory.record(record);
       automationMemory.record(record);
     }
@@ -122,25 +136,41 @@ class RuntimeIntelligenceCoordinator {
     EvolutionRoadmap? evolutionRoadmap,
     int minOccurrences = 2,
   }) {
-    final result = runIntelligence(capabilityRegistry: capabilityRegistry, evolutionRoadmap: evolutionRoadmap, minOccurrences: minOccurrences);
+    final result = runIntelligence(
+      capabilityRegistry: capabilityRegistry,
+      evolutionRoadmap: evolutionRoadmap,
+      minOccurrences: minOccurrences,
+    );
     worldModel.ingestUsage(result.usageGraph);
     worldModel.ingestLearning(result.learned);
     return result;
   }
 
   WorkspaceContext workspaceContext() {
-    final experienceIds = observationMemory.records.map((r) => r.experienceId).whereType<String>().toSet().toList();
-    return WorkspaceContext(experienceIds: experienceIds, totalSessions: experienceIds.length);
+    final experienceIds = observationMemory.records
+        .map((r) => r.experienceId)
+        .whereType<String>()
+        .toSet()
+        .toList();
+    return WorkspaceContext(
+      experienceIds: experienceIds,
+      totalSessions: experienceIds.length,
+    );
   }
 
   /// Builds a structural fingerprint for one Experience from its already-
   /// persisted metadata/package — capability ids and entity field TYPE
   /// names only, never field values or record data.
-  ExperienceFingerprint fingerprintOf(ExperienceMetadataRecord metadata, ExperiencePackage package) {
+  ExperienceFingerprint fingerprintOf(
+    ExperienceMetadataRecord metadata,
+    ExperiencePackage package,
+  ) {
     return ExperienceFingerprint(
       experienceId: metadata.id,
       name: metadata.name,
-      capabilityIds: package.capabilityDeclarations.map((c) => c.capabilityId).toList(),
+      capabilityIds: package.capabilityDeclarations
+          .map((c) => c.capabilityId)
+          .toList(),
       entityFieldTypeNames: (package.data?.entities ?? const [])
           .expand((entity) => entity.fields)
           .map((field) => field.type)
@@ -152,7 +182,9 @@ class RuntimeIntelligenceCoordinator {
   /// Reads every persisted Experience's package to build a real,
   /// inference-only ExperienceRelationshipGraph. Read-only — never
   /// mutates any Experience.
-  Future<ExperienceRelationshipGraph> buildRelationshipGraph(SqliteExperienceRepository repository) async {
+  Future<ExperienceRelationshipGraph> buildRelationshipGraph(
+    SqliteExperienceRepository repository,
+  ) async {
     final allMetadata = await repository.listAll();
     final fingerprints = <ExperienceFingerprint>[];
     for (final metadata in allMetadata) {
@@ -163,13 +195,19 @@ class RuntimeIntelligenceCoordinator {
     return ExperienceRelationshipGraph.infer(fingerprints);
   }
 
-  Future<CollaborationGraph> buildCollaborationGraph(SqliteExperienceRepository repository) async {
+  Future<CollaborationGraph> buildCollaborationGraph(
+    SqliteExperienceRepository repository,
+  ) async {
     final relationshipGraph = await buildRelationshipGraph(repository);
     return CollaborationGraph.fromRelationshipGraph(relationshipGraph);
   }
 
   SessionContext session(String sessionId, {String? experienceId}) =>
-      SessionContext(sessionId: sessionId, experienceId: experienceId, startedAt: DateTime.now());
+      SessionContext(
+        sessionId: sessionId,
+        experienceId: experienceId,
+        startedAt: DateTime.now(),
+      );
 
   /// Persists every observation captured so far, plus a real, honest
   /// SUMMARY of learned patterns and planned automations (never a

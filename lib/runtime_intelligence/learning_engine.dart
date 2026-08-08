@@ -12,15 +12,27 @@ import 'usage_graph.dart';
 class LearningEngine {
   final PatternDetector _detector;
 
-  const LearningEngine({PatternDetector detector = const PatternDetector()}) : _detector = detector;
+  const LearningEngine({PatternDetector detector = const PatternDetector()})
+    : _detector = detector;
 
-  List<LearningRecord> learn(UsageGraph graph, LearningMemory memory, {int minOccurrences = 2}) {
+  List<LearningRecord> learn(
+    UsageGraph graph,
+    LearningMemory memory, {
+    int minOccurrences = 2,
+  }) {
     final patterns = _detector.detect(graph, minOccurrences: minOccurrences);
     final version = memory.currentVersion + 1;
     final now = DateTime.now();
 
     final records = patterns
-        .map((pattern) => LearningRecord(id: 'learning:${pattern.id}:v$version', pattern: pattern, learnedAt: now, version: version))
+        .map(
+          (pattern) => LearningRecord(
+            id: 'learning:${pattern.id}:v$version',
+            pattern: pattern,
+            learnedAt: now,
+            version: version,
+          ),
+        )
         .toList();
 
     for (final record in records) {

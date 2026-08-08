@@ -11,7 +11,11 @@ class AutomationCandidate {
   final String capabilityId;
   final String description;
 
-  const AutomationCandidate({required this.id, required this.capabilityId, required this.description});
+  const AutomationCandidate({
+    required this.id,
+    required this.capabilityId,
+    required this.description,
+  });
 }
 
 class AutomationPlan {

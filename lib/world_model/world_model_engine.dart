@@ -18,7 +18,8 @@ import 'world_snapshot.dart';
 class WorldModelEngine {
   final WorldPlanner _planner;
 
-  const WorldModelEngine({WorldPlanner planner = const WorldPlanner()}) : _planner = planner;
+  const WorldModelEngine({WorldPlanner planner = const WorldPlanner()})
+    : _planner = planner;
 
   /// Plans and, only if approved (clean merge + consistent graph),
   /// commits [update] onto [current]. Returns the new WorldModel and
@@ -37,8 +38,15 @@ class WorldModelEngine {
       return current;
     }
 
-    final newVersion = WorldVersion(number: current.version.number + 1, createdAt: DateTime.now());
-    final newModel = WorldModel(graph: planResult.graph, context: context ?? current.context, version: newVersion);
+    final newVersion = WorldVersion(
+      number: current.version.number + 1,
+      createdAt: DateTime.now(),
+    );
+    final newModel = WorldModel(
+      graph: planResult.graph,
+      context: context ?? current.context,
+      version: newVersion,
+    );
 
     final snapshot = WorldSnapshot(version: newVersion, graph: newModel.graph);
     history?.record(snapshot);
@@ -47,5 +55,8 @@ class WorldModelEngine {
     return newModel;
   }
 
-  WorldModel empty() => WorldModel(graph: const WorldGraph(), version: WorldVersion(number: 0, createdAt: DateTime.now()));
+  WorldModel empty() => WorldModel(
+    graph: const WorldGraph(),
+    version: WorldVersion(number: 0, createdAt: DateTime.now()),
+  );
 }

@@ -77,7 +77,10 @@ class PickedFile {
 /// The OS file-selection seam. Real implementation uses `file_picker`;
 /// tests inject a deterministic one.
 abstract class FilePicker {
-  Future<PickedFile?> pick({List<String>? allowedExtensions, bool imagesOnly = false});
+  Future<PickedFile?> pick({
+    List<String>? allowedExtensions,
+    bool imagesOnly = false,
+  });
 }
 
 /// Real `package:file_picker`-backed selection.
@@ -85,9 +88,16 @@ class PlatformFilePicker implements FilePicker {
   const PlatformFilePicker();
 
   @override
-  Future<PickedFile?> pick({List<String>? allowedExtensions, bool imagesOnly = false}) async {
+  Future<PickedFile?> pick({
+    List<String>? allowedExtensions,
+    bool imagesOnly = false,
+  }) async {
     final result = await picker_pkg.FilePicker.platform.pickFiles(
-      type: imagesOnly ? picker_pkg.FileType.image : (allowedExtensions == null ? picker_pkg.FileType.any : picker_pkg.FileType.custom),
+      type: imagesOnly
+          ? picker_pkg.FileType.image
+          : (allowedExtensions == null
+                ? picker_pkg.FileType.any
+                : picker_pkg.FileType.custom),
       allowedExtensions: imagesOnly ? null : allowedExtensions,
       withData: false,
     );
@@ -161,7 +171,10 @@ class RealFileService implements FileService {
   }
 
   @override
-  Future<FileReference?> pickFile({List<String>? allowedExtensions, int? maxSizeBytes}) {
+  Future<FileReference?> pickFile({
+    List<String>? allowedExtensions,
+    int? maxSizeBytes,
+  }) {
     return _pick(allowedExtensions: allowedExtensions, imagesOnly: false);
   }
 
@@ -170,8 +183,14 @@ class RealFileService implements FileService {
     return _pick(imagesOnly: true);
   }
 
-  Future<FileReference?> _pick({List<String>? allowedExtensions, required bool imagesOnly}) async {
-    final picked = await _picker.pick(allowedExtensions: allowedExtensions, imagesOnly: imagesOnly);
+  Future<FileReference?> _pick({
+    List<String>? allowedExtensions,
+    required bool imagesOnly,
+  }) async {
+    final picked = await _picker.pick(
+      allowedExtensions: allowedExtensions,
+      imagesOnly: imagesOnly,
+    );
     if (picked == null) return null;
 
     // Size is reported, never enforced here: FileCapability owns the size
@@ -220,7 +239,9 @@ class RealFileService implements FileService {
 
   /// Whether [experienceId] currently owns an adopted [fileId].
   Future<bool> ownsAdoptedFile(String fileId, String experienceId) async {
-    final target = await _resolveInside(p.join('experiences', experienceId, fileId));
+    final target = await _resolveInside(
+      p.join('experiences', experienceId, fileId),
+    );
     return target != null && target.existsSync();
   }
 
@@ -237,8 +258,14 @@ class RealFileService implements FileService {
   /// EXPORT — copies an adopted file out under [exportName], inside the
   /// sandbox's `exports/` area. Returns the written path, or null if the
   /// source is missing or the name would escape the sandbox.
-  Future<String?> exportFile(String fileId, String experienceId, String exportName) async {
-    final source = await _resolveInside(p.join('experiences', experienceId, fileId));
+  Future<String?> exportFile(
+    String fileId,
+    String experienceId,
+    String exportName,
+  ) async {
+    final source = await _resolveInside(
+      p.join('experiences', experienceId, fileId),
+    );
     if (source == null || !source.existsSync()) return null;
 
     final destination = await _resolveInside(p.join('exports', exportName));
@@ -289,7 +316,10 @@ class RealFileService implements FileService {
       final dir = Directory(p.join(root.path, entry.value));
       if (!dir.existsSync()) continue;
 
-      final files = [for (final e in dir.listSync(recursive: true)) if (e is File) e];
+      final files = [
+        for (final e in dir.listSync(recursive: true))
+          if (e is File) e,
+      ];
       if (files.isEmpty) continue;
 
       final evaluation = retention.evaluate(
@@ -317,7 +347,8 @@ class RealFileService implements FileService {
   }
 
   /// WORKSPACE ASSETS — shared, Experience-neutral storage.
-  Future<File?> workspaceAsset(String name) => _resolveInside(p.join('workspace', name));
+  Future<File?> workspaceAsset(String name) =>
+      _resolveInside(p.join('workspace', name));
 
   /// Resolves [relative] inside the sandbox root, or returns null if it would
   /// escape. Rejection rather than sanitisation is deliberate: quietly

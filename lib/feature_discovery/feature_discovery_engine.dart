@@ -45,7 +45,10 @@ class FeatureDiscoveryEngine {
   /// set exists purely so the Credential Storage -> Kaalka -> Permission
   /// Strategy dependency chain is real, tested code with a documented,
   /// currently-dormant trigger, never a fabricated always-on feature.
-  static const Set<String> credentialRequiringCapabilities = {'oauth', 'accounts'};
+  static const Set<String> credentialRequiringCapabilities = {
+    'oauth',
+    'accounts',
+  };
 
   List<FeatureCandidate> discover(FeatureDiscoveryContext context) {
     final app = context.app;
@@ -120,7 +123,9 @@ class FeatureDiscoveryEngine {
       }
     }
 
-    for (final capNode in requirements.nodesOfType(RequirementNodeType.capability)) {
+    for (final capNode in requirements.nodesOfType(
+      RequirementNodeType.capability,
+    )) {
       candidates.add(
         FeatureCandidate(
           id: 'feature:capability:${capNode.label}',
@@ -140,13 +145,19 @@ class FeatureDiscoveryEngine {
           id: 'feature:navigation',
           name: 'Navigation',
           category: FeatureCategory.navigation,
-          sourceNodeIds: requirements.nodesOfType(RequirementNodeType.navigation).map((n) => n.id).toList(),
-          rationale: '${app.views.length} view(s) require navigation between them.',
+          sourceNodeIds: requirements
+              .nodesOfType(RequirementNodeType.navigation)
+              .map((n) => n.id)
+              .toList(),
+          rationale:
+              '${app.views.length} view(s) require navigation between them.',
         ),
       );
     }
 
-    final constraintNodes = requirements.nodesOfType(RequirementNodeType.constraint);
+    final constraintNodes = requirements.nodesOfType(
+      RequirementNodeType.constraint,
+    );
     if (constraintNodes.isNotEmpty) {
       candidates.add(
         FeatureCandidate(
@@ -154,7 +165,8 @@ class FeatureDiscoveryEngine {
           name: 'Validation',
           category: FeatureCategory.validation,
           sourceNodeIds: constraintNodes.map((n) => n.id).toList(),
-          rationale: '${constraintNodes.length} explicit field constraint(s) require enforcement.',
+          rationale:
+              '${constraintNodes.length} explicit field constraint(s) require enforcement.',
         ),
       );
     }
@@ -167,7 +179,8 @@ class FeatureDiscoveryEngine {
           name: 'State management',
           category: FeatureCategory.state,
           sourceNodeIds: stateNodes.map((n) => n.id).toList(),
-          rationale: '${stateNodes.length} entity list(s) require reactive state.',
+          rationale:
+              '${stateNodes.length} entity list(s) require reactive state.',
         ),
       );
     }
@@ -179,7 +192,8 @@ class FeatureDiscoveryEngine {
           name: 'Reporting — ${dv.name}',
           category: FeatureCategory.reporting,
           sourceNodeIds: ['entity:${dv.sourceEntityId}'],
-          rationale: '"${dv.name}" is a computed aggregate — a reporting/dashboard feature.',
+          rationale:
+              '"${dv.name}" is a computed aggregate — a reporting/dashboard feature.',
         ),
       );
     }
@@ -192,7 +206,9 @@ class FeatureDiscoveryEngine {
         id: 'feature:offline',
         name: 'Offline strategy',
         category: FeatureCategory.offline,
-        rationale: offlineReq?.description ?? 'Every application needs an explicit offline posture.',
+        rationale:
+            offlineReq?.description ??
+            'Every application needs an explicit offline posture.',
       ),
     );
 
@@ -201,13 +217,18 @@ class FeatureDiscoveryEngine {
         id: 'feature:security:protection',
         name: 'Data protection',
         category: FeatureCategory.security,
-        rationale: 'Kaalka-based time-protection is available for any generated Experience, opt-in.',
+        rationale:
+            'Kaalka-based time-protection is available for any generated Experience, opt-in.',
       ),
     );
 
-    final capabilityCandidates = candidates.where((c) => c.category == FeatureCategory.capability).toList();
+    final capabilityCandidates = candidates
+        .where((c) => c.category == FeatureCategory.capability)
+        .toList();
     final permissionTriggers = capabilityCandidates
-        .where((c) => permissionRequiringCapabilities.contains(_capabilityIdOf(c)))
+        .where(
+          (c) => permissionRequiringCapabilities.contains(_capabilityIdOf(c)),
+        )
         .toList();
     if (permissionTriggers.isNotEmpty) {
       candidates.add(
@@ -216,13 +237,16 @@ class FeatureDiscoveryEngine {
           name: 'Permission strategy',
           category: FeatureCategory.permission,
           sourceNodeIds: permissionTriggers.map((c) => c.id).toList(),
-          rationale: '${permissionTriggers.length} required capability(ies) need a declared platform permission strategy.',
+          rationale:
+              '${permissionTriggers.length} required capability(ies) need a declared platform permission strategy.',
         ),
       );
     }
 
     final credentialTriggers = capabilityCandidates
-        .where((c) => credentialRequiringCapabilities.contains(_capabilityIdOf(c)))
+        .where(
+          (c) => credentialRequiringCapabilities.contains(_capabilityIdOf(c)),
+        )
         .toList();
     if (credentialTriggers.isNotEmpty) {
       candidates.add(
@@ -231,7 +255,8 @@ class FeatureDiscoveryEngine {
           name: 'Credential storage',
           category: FeatureCategory.security,
           sourceNodeIds: credentialTriggers.map((c) => c.id).toList(),
-          rationale: '${credentialTriggers.length} required capability(ies) resolve credentials — needs vault-backed storage.',
+          rationale:
+              '${credentialTriggers.length} required capability(ies) resolve credentials — needs vault-backed storage.',
         ),
       );
     }
@@ -251,9 +276,15 @@ class FeatureDiscoveryEngine {
     const complexityAnalyzer = FeatureComplexityAnalyzer();
 
     final nodes = candidates.map((candidate) {
-      final result = priorityAnalyzer.analyze(candidate, requirements: context.requirements);
+      final result = priorityAnalyzer.analyze(
+        candidate,
+        requirements: context.requirements,
+      );
       final complexity = complexityAnalyzer.analyze(candidate);
-      final dependents = edges.where((e) => e.fromFeatureId == candidate.id).map((e) => e.toFeatureId).toList();
+      final dependents = edges
+          .where((e) => e.fromFeatureId == candidate.id)
+          .map((e) => e.toFeatureId)
+          .toList();
 
       return FeatureNode(
         candidate: candidate,
@@ -269,7 +300,9 @@ class FeatureDiscoveryEngine {
           whyOptional: result.priority == FeaturePriority.optional
               ? 'Priority: optional — ${result.decision.rationale}'
               : null,
-          whyDependent: dependents.isNotEmpty ? 'Depends on: ${dependents.join(', ')}' : null,
+          whyDependent: dependents.isNotEmpty
+              ? 'Depends on: ${dependents.join(', ')}'
+              : null,
         ),
       );
     }).toList();
@@ -283,7 +316,11 @@ class FeatureDiscoveryEngine {
       priorCapabilityIds: context.priorCapabilityIds,
     );
 
-    return FeatureGraph(nodes: nodes, edges: edges, overallConfidence: overallConfidence);
+    return FeatureGraph(
+      nodes: nodes,
+      edges: edges,
+      overallConfidence: overallConfidence,
+    );
   }
 
   /// Feature-to-feature edges: Search -> requires -> Index -> requires ->
@@ -292,7 +329,10 @@ class FeatureDiscoveryEngine {
   /// (Kaalka) + Permission Strategy; Relational/Reporting -> dependsOn ->
   /// the owning entity's Persistence; Offline -> dependsOn -> every
   /// Persistence feature.
-  List<FeatureEdge> _buildEdges(List<FeatureCandidate> candidates, FeatureDiscoveryContext context) {
+  List<FeatureEdge> _buildEdges(
+    List<FeatureCandidate> candidates,
+    FeatureDiscoveryContext context,
+  ) {
     final byId = {for (final c in candidates) c.id: c};
     final edges = <FeatureEdge>[];
 
@@ -301,12 +341,24 @@ class FeatureDiscoveryEngine {
       final searchId = 'feature:search:${view.id}';
       final indexId = 'feature:index:${view.id}';
       if (!byId.containsKey(searchId) || !byId.containsKey(indexId)) continue;
-      edges.add(FeatureEdge(fromFeatureId: searchId, toFeatureId: indexId, kind: FeatureRelationKind.requires));
+      edges.add(
+        FeatureEdge(
+          fromFeatureId: searchId,
+          toFeatureId: indexId,
+          kind: FeatureRelationKind.requires,
+        ),
+      );
 
       final entityId = view.sourceEntityId;
       final persistenceId = 'feature:persistence:$entityId';
       if (entityId != null && byId.containsKey(persistenceId)) {
-        edges.add(FeatureEdge(fromFeatureId: indexId, toFeatureId: persistenceId, kind: FeatureRelationKind.requires));
+        edges.add(
+          FeatureEdge(
+            fromFeatureId: indexId,
+            toFeatureId: persistenceId,
+            kind: FeatureRelationKind.requires,
+          ),
+        );
       }
     }
 
@@ -317,7 +369,11 @@ class FeatureDiscoveryEngine {
         final persistenceId = 'feature:persistence:${entity.id}';
         if (byId.containsKey(relationalId) && byId.containsKey(persistenceId)) {
           edges.add(
-            FeatureEdge(fromFeatureId: relationalId, toFeatureId: persistenceId, kind: FeatureRelationKind.dependsOn),
+            FeatureEdge(
+              fromFeatureId: relationalId,
+              toFeatureId: persistenceId,
+              kind: FeatureRelationKind.dependsOn,
+            ),
           );
         }
       }
@@ -328,19 +384,32 @@ class FeatureDiscoveryEngine {
       final persistenceId = 'feature:persistence:${dv.sourceEntityId}';
       if (byId.containsKey(reportingId) && byId.containsKey(persistenceId)) {
         edges.add(
-          FeatureEdge(fromFeatureId: reportingId, toFeatureId: persistenceId, kind: FeatureRelationKind.dependsOn),
+          FeatureEdge(
+            fromFeatureId: reportingId,
+            toFeatureId: persistenceId,
+            kind: FeatureRelationKind.dependsOn,
+          ),
         );
       }
     }
 
     if (byId.containsKey('feature:offline')) {
-      for (final c in candidates.where((c) => c.category == FeatureCategory.persistence)) {
-        edges.add(FeatureEdge(fromFeatureId: 'feature:offline', toFeatureId: c.id, kind: FeatureRelationKind.dependsOn));
+      for (final c in candidates.where(
+        (c) => c.category == FeatureCategory.persistence,
+      )) {
+        edges.add(
+          FeatureEdge(
+            fromFeatureId: 'feature:offline',
+            toFeatureId: c.id,
+            kind: FeatureRelationKind.dependsOn,
+          ),
+        );
       }
     }
 
     if (byId.containsKey('feature:permission:strategy')) {
-      for (final capFeatureId in byId['feature:permission:strategy']!.sourceNodeIds) {
+      for (final capFeatureId
+          in byId['feature:permission:strategy']!.sourceNodeIds) {
         if (byId.containsKey(capFeatureId)) {
           edges.add(
             FeatureEdge(
@@ -358,7 +427,11 @@ class FeatureDiscoveryEngine {
       for (final capFeatureId in byId[credentialId]!.sourceNodeIds) {
         if (byId.containsKey(capFeatureId)) {
           edges.add(
-            FeatureEdge(fromFeatureId: capFeatureId, toFeatureId: credentialId, kind: FeatureRelationKind.dependsOn),
+            FeatureEdge(
+              fromFeatureId: capFeatureId,
+              toFeatureId: credentialId,
+              kind: FeatureRelationKind.dependsOn,
+            ),
           );
         }
       }
@@ -385,5 +458,6 @@ class FeatureDiscoveryEngine {
     return edges;
   }
 
-  String _capabilityIdOf(FeatureCandidate c) => c.id.replaceFirst('feature:capability:', '');
+  String _capabilityIdOf(FeatureCandidate c) =>
+      c.id.replaceFirst('feature:capability:', '');
 }

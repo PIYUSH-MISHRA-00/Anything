@@ -14,7 +14,11 @@ class InteractionEdge {
   final String toId;
   final InteractionRelation relation;
 
-  const InteractionEdge({required this.fromId, required this.toId, required this.relation});
+  const InteractionEdge({
+    required this.fromId,
+    required this.toId,
+    required this.relation,
+  });
 }
 
 class InteractionGraph {
@@ -25,7 +29,8 @@ class InteractionGraph {
 
   RilNode? nodeById(String id) => nodes.where((n) => n.id == id).firstOrNull;
 
-  List<InteractionEdge> edgesFrom(String id) => edges.where((e) => e.fromId == id).toList();
+  List<InteractionEdge> edgesFrom(String id) =>
+      edges.where((e) => e.fromId == id).toList();
 
   /// Builds the real followed-by chain of screens visited in this
   /// session, in observed order, de-duplicating consecutive repeats
@@ -33,7 +38,11 @@ class InteractionGraph {
   /// self-loop).
   factory InteractionGraph.fromRecords(List<ObservationRecord> records) {
     final screenSequence = records
-        .where((r) => r.category == ObservationCategory.navigation && r.screenId != null)
+        .where(
+          (r) =>
+              r.category == ObservationCategory.navigation &&
+              r.screenId != null,
+        )
         .map((r) => r.screenId!)
         .toList();
 
@@ -41,7 +50,9 @@ class InteractionGraph {
     final seenIds = <String>{};
     for (final screenId in screenSequence) {
       if (seenIds.add(screenId)) {
-        nodes.add(RilNode(id: screenId, kind: RilNodeKind.screen, label: screenId));
+        nodes.add(
+          RilNode(id: screenId, kind: RilNodeKind.screen, label: screenId),
+        );
       }
     }
 
@@ -50,7 +61,13 @@ class InteractionGraph {
       final from = screenSequence[i - 1];
       final to = screenSequence[i];
       if (from == to) continue;
-      edges.add(InteractionEdge(fromId: from, toId: to, relation: InteractionRelation.followedBy));
+      edges.add(
+        InteractionEdge(
+          fromId: from,
+          toId: to,
+          relation: InteractionRelation.followedBy,
+        ),
+      );
     }
 
     return InteractionGraph(nodes: nodes, edges: edges);

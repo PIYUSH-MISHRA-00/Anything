@@ -23,14 +23,24 @@ SemanticApp _hiveApp() {
         name: 'Inspection',
         displayField: 'notes',
         fields: [
-          SemanticField(id: 'notes', name: 'Notes', type: BlueprintFieldType.text, required: true),
+          SemanticField(
+            id: 'notes',
+            name: 'Notes',
+            type: BlueprintFieldType.text,
+            required: true,
+          ),
         ],
       ),
       const SemanticEntity(
         id: 'hive',
         name: 'Hive',
         fields: [
-          SemanticField(id: 'label', name: 'Label', type: BlueprintFieldType.text, required: true),
+          SemanticField(
+            id: 'label',
+            name: 'Label',
+            type: BlueprintFieldType.text,
+            required: true,
+          ),
         ],
       ),
     ],
@@ -52,7 +62,11 @@ SemanticApp _hiveApp() {
       ),
     ],
     actions: [
-      const SemanticAction(id: 'add_inspection', name: 'Add Inspection', targetEntityId: 'inspection'),
+      const SemanticAction(
+        id: 'add_inspection',
+        name: 'Add Inspection',
+        targetEntityId: 'inspection',
+      ),
       const SemanticAction(
         id: 'delete_inspection',
         name: 'Delete Inspection',
@@ -72,19 +86,33 @@ void main() {
     final results = behaviorEngineering.plan(candidate);
     expect(results, hasLength(2));
     for (final r in results) {
-      expect(r.eventGraph.actionById('action:${r.eventGraph.entityId}:read'), isNotNull);
+      expect(
+        r.eventGraph.actionById('action:${r.eventGraph.entityId}:read'),
+        isNotNull,
+      );
     }
   });
 
   test('CRUD actions are gated on real InteractionDecision flags', () {
     final candidate = architecturePlanner.plan(_hiveApp());
     final results = behaviorEngineering.plan(candidate);
-    final inspection = results.firstWhere((r) => r.eventGraph.entityId == 'inspection');
+    final inspection = results.firstWhere(
+      (r) => r.eventGraph.entityId == 'inspection',
+    );
     // add_inspection + delete_inspection actions exist -> create/delete present.
-    expect(inspection.eventGraph.actionById('action:inspection:create'), isNotNull);
-    expect(inspection.eventGraph.actionById('action:inspection:delete'), isNotNull);
+    expect(
+      inspection.eventGraph.actionById('action:inspection:create'),
+      isNotNull,
+    );
+    expect(
+      inspection.eventGraph.actionById('action:inspection:delete'),
+      isNotNull,
+    );
     // No update/toggle/setValue action declared -> no update event.
-    expect(inspection.eventGraph.actionById('action:inspection:update'), isNull);
+    expect(
+      inspection.eventGraph.actionById('action:inspection:update'),
+      isNull,
+    );
 
     final hive = results.firstWhere((r) => r.eventGraph.entityId == 'hive');
     // No actions target hive -> only the always-present read.
@@ -92,37 +120,54 @@ void main() {
     expect(hive.eventGraph.actionById('action:hive:read'), isNotNull);
   });
 
-  test('every state transition uses only GenericState — never a domain name', () {
-    final candidate = architecturePlanner.plan(_hiveApp());
-    final results = behaviorEngineering.plan(candidate);
-    for (final r in results) {
-      for (final t in r.stateMachine.transitions) {
-        expect(GenericState.values, contains(t.from));
-        expect(GenericState.values, contains(t.to));
-      }
-    }
-  });
-
-  test('every action effect uses a real BehaviorInterpreter operation kind', () {
-    final candidate = architecturePlanner.plan(_hiveApp());
-    final results = behaviorEngineering.plan(candidate);
-    const realKinds = {EffectKind.dataMutation, EffectKind.dataQuery};
-    for (final r in results) {
-      for (final action in r.eventGraph.actions) {
-        for (final effect in action.effects) {
-          expect(realKinds, contains(effect.kind));
+  test(
+    'every state transition uses only GenericState — never a domain name',
+    () {
+      final candidate = architecturePlanner.plan(_hiveApp());
+      final results = behaviorEngineering.plan(candidate);
+      for (final r in results) {
+        for (final t in r.stateMachine.transitions) {
+          expect(GenericState.values, contains(t.from));
+          expect(GenericState.values, contains(t.to));
         }
       }
-    }
-  });
+    },
+  );
+
+  test(
+    'every action effect uses a real BehaviorInterpreter operation kind',
+    () {
+      final candidate = architecturePlanner.plan(_hiveApp());
+      final results = behaviorEngineering.plan(candidate);
+      const realKinds = {EffectKind.dataMutation, EffectKind.dataQuery};
+      for (final r in results) {
+        for (final action in r.eventGraph.actions) {
+          for (final effect in action.effects) {
+            expect(realKinds, contains(effect.kind));
+          }
+        }
+      }
+    },
+  );
 
   test('create/delete produce done/failed completion transitions', () {
     final candidate = architecturePlanner.plan(_hiveApp());
     final results = behaviorEngineering.plan(candidate);
-    final inspection = results.firstWhere((r) => r.eventGraph.entityId == 'inspection');
-    expect(inspection.stateMachine.hasTransitionFor('evt:inspection:create'), isTrue);
-    expect(inspection.stateMachine.hasTransitionFor('evt:inspection:create:done'), isTrue);
-    expect(inspection.stateMachine.hasTransitionFor('evt:inspection:create:failed'), isTrue);
+    final inspection = results.firstWhere(
+      (r) => r.eventGraph.entityId == 'inspection',
+    );
+    expect(
+      inspection.stateMachine.hasTransitionFor('evt:inspection:create'),
+      isTrue,
+    );
+    expect(
+      inspection.stateMachine.hasTransitionFor('evt:inspection:create:done'),
+      isTrue,
+    );
+    expect(
+      inspection.stateMachine.hasTransitionFor('evt:inspection:create:failed'),
+      isTrue,
+    );
     final done = inspection.stateMachine.transitions.firstWhere(
       (t) => t.eventId == 'evt:inspection:create:done',
     );

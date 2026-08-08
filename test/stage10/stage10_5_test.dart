@@ -105,11 +105,7 @@ void main() {
         );
         expect(ctx.blueprint, isNull);
 
-        final blueprint = AppBlueprint(
-          id: 'bp',
-          name: 'BP',
-          description: 'BP',
-        );
+        final blueprint = AppBlueprint(id: 'bp', name: 'BP', description: 'BP');
         final ctxBp = CreationContext(
           intent: intent,
           specification: spec,
@@ -169,81 +165,74 @@ void main() {
         expect(ready.specification, isA<ExperienceSpec>());
       });
 
-      test(
-        'CreationEngine produces package with blueprint data',
-        () async {
-          final intent = Intent.create(
-            expression: 'Make me an app to manage equipment I lend to people',
-          );
+      test('CreationEngine produces package with blueprint data', () async {
+        final intent = Intent.create(
+          expression: 'Make me an app to manage equipment I lend to people',
+        );
 
-          final kernelResult = await kernel.processIntent(intent);
-          final ready = kernelResult as ExecutionPlanReady;
-          final engine = CreationEngine();
+        final kernelResult = await kernel.processIntent(intent);
+        final ready = kernelResult as ExecutionPlanReady;
+        final engine = CreationEngine();
 
-          final creationResult = await engine.create(
-            CreationContext(
-              intent: intent,
-              specification: ready.specification,
-              plan: ready.plan,
-              blueprint: ready.blueprint,
-              platformContext: const PlatformContext(
-                platform: 'android',
-                sdkVersion: 34,
-              ),
-              securityPolicy: const CreationSecurityPolicy(),
+        final creationResult = await engine.create(
+          CreationContext(
+            intent: intent,
+            specification: ready.specification,
+            plan: ready.plan,
+            blueprint: ready.blueprint,
+            platformContext: const PlatformContext(
+              platform: 'android',
+              sdkVersion: 34,
             ),
-          );
+            securityPolicy: const CreationSecurityPolicy(),
+          ),
+        );
 
-          expect(creationResult, isA<CreationReady>());
-          final pkg = (creationResult as CreationReady).package;
+        expect(creationResult, isA<CreationReady>());
+        final pkg = (creationResult as CreationReady).package;
 
-          expect(pkg.data, isNotNull);
-          expect(pkg.data!.entities, isNotEmpty);
-          expect(pkg.interface.screens, isNotEmpty);
-          expect(pkg.behavior.nodes, isNotEmpty);
-          expect(pkg.state.variables, isNotEmpty);
-          expect(pkg.manifest.name, isNotEmpty);
-        },
-      );
+        expect(pkg.data, isNotNull);
+        expect(pkg.data!.entities, isNotEmpty);
+        expect(pkg.interface.screens, isNotEmpty);
+        expect(pkg.behavior.nodes, isNotEmpty);
+        expect(pkg.state.variables, isNotEmpty);
+        expect(pkg.manifest.name, isNotEmpty);
+      });
 
-      test(
-        'Lending package has correct semantic preservation',
-        () async {
-          final intent = Intent.create(
-            expression: 'Make me an app to manage equipment I lend to people',
-          );
+      test('Lending package has correct semantic preservation', () async {
+        final intent = Intent.create(
+          expression: 'Make me an app to manage equipment I lend to people',
+        );
 
-          final kernelResult = await kernel.processIntent(intent);
-          final ready = kernelResult as ExecutionPlanReady;
-          final engine = CreationEngine();
+        final kernelResult = await kernel.processIntent(intent);
+        final ready = kernelResult as ExecutionPlanReady;
+        final engine = CreationEngine();
 
-          final creationResult = await engine.create(
-            CreationContext(
-              intent: intent,
-              specification: ready.specification,
-              plan: ready.plan,
-              blueprint: ready.blueprint,
-              platformContext: const PlatformContext(
-                platform: 'android',
-                sdkVersion: 34,
-              ),
-              securityPolicy: const CreationSecurityPolicy(),
+        final creationResult = await engine.create(
+          CreationContext(
+            intent: intent,
+            specification: ready.specification,
+            plan: ready.plan,
+            blueprint: ready.blueprint,
+            platformContext: const PlatformContext(
+              platform: 'android',
+              sdkVersion: 34,
             ),
-          );
+            securityPolicy: const CreationSecurityPolicy(),
+          ),
+        );
 
-          final pkg = (creationResult as CreationReady).package;
+        final pkg = (creationResult as CreationReady).package;
 
-          final entityNames =
-              pkg.data!.entities.map((e) => e.name).toList();
-          expect(entityNames, contains('Person'));
-          expect(entityNames, contains('Equipment'));
-          expect(entityNames, contains('Loan'));
+        final entityNames = pkg.data!.entities.map((e) => e.name).toList();
+        expect(entityNames, contains('Person'));
+        expect(entityNames, contains('Equipment'));
+        expect(entityNames, contains('Loan'));
 
-          for (final entity in pkg.data!.entities) {
-            expect(entity.fields, isNotEmpty);
-          }
-        },
-      );
+        for (final entity in pkg.data!.entities) {
+          expect(entity.fields, isNotEmpty);
+        }
+      });
 
       test('Package validates through production validator', () async {
         final intent = Intent.create(

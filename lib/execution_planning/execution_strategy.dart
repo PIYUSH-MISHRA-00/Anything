@@ -41,7 +41,11 @@ enum ExecutionTargetKind {
 /// [Generator] implementation exists to fulfill it yet — a real,
 /// structurally meaningful gap, never silently dropped.
 /// `applicableWithGenerator`: real signal AND a real, existing generator.
-enum ExecutionTargetClassification { notApplicable, applicableNoGenerator, applicableWithGenerator }
+enum ExecutionTargetClassification {
+  notApplicable,
+  applicableNoGenerator,
+  applicableWithGenerator,
+}
 
 /// One target's real, honest plan entry. Every field traces to real
 /// upstream data or is empty/zero when there is none — nothing fabricated.
@@ -105,13 +109,24 @@ class ExecutionStrategy {
   /// The only targets an actual [Generator] run should ever be attempted
   /// for.
   List<ExecutionTargetPlan> get actionableTargets =>
-      targets.where((t) => t.classification == ExecutionTargetClassification.applicableWithGenerator).toList()
+      targets
+          .where(
+            (t) =>
+                t.classification ==
+                ExecutionTargetClassification.applicableWithGenerator,
+          )
+          .toList()
         ..sort((a, b) => a.executionOrder.compareTo(b.executionOrder));
 
-  List<ExecutionTargetPlan> get applicableTargets => targets
-      .where((t) => t.classification != ExecutionTargetClassification.notApplicable)
-      .toList()
-    ..sort((a, b) => a.executionOrder.compareTo(b.executionOrder));
+  List<ExecutionTargetPlan> get applicableTargets =>
+      targets
+          .where(
+            (t) =>
+                t.classification != ExecutionTargetClassification.notApplicable,
+          )
+          .toList()
+        ..sort((a, b) => a.executionOrder.compareTo(b.executionOrder));
 
-  ExecutionTargetPlan forTarget(ExecutionTargetKind kind) => targets.firstWhere((t) => t.target == kind);
+  ExecutionTargetPlan forTarget(ExecutionTargetKind kind) =>
+      targets.firstWhere((t) => t.target == kind);
 }

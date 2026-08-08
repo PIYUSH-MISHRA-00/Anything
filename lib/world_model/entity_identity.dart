@@ -19,20 +19,25 @@ class EntityIdentity {
   /// Reuses an already-stable id that exists elsewhere (a capability id
   /// from CapabilityDescriptor, an experience id from
   /// ExperienceMetadataRecord) — never re-derived, never duplicated.
-  factory EntityIdentity.stable(WorldNodeKind kind, String id) => EntityIdentity._('${kind.name}:$id');
+  factory EntityIdentity.stable(WorldNodeKind kind, String id) =>
+      EntityIdentity._('${kind.name}:$id');
 
   /// Builds a deterministic structural fingerprint for something with no
   /// existing stable id (an entity shape, a workflow, a recommendation).
   /// Two structurally-identical things — regardless of which Experience
   /// or session produced them — always resolve to the exact same
   /// identity, satisfying "no duplicate identities" without a database.
-  factory EntityIdentity.structural(WorldNodeKind kind, List<String> signature) {
+  factory EntityIdentity.structural(
+    WorldNodeKind kind,
+    List<String> signature,
+  ) {
     final sorted = [...signature]..sort();
     return EntityIdentity._('${kind.name}:${sorted.join(',')}');
   }
 
   @override
-  bool operator ==(Object other) => other is EntityIdentity && other.value == value;
+  bool operator ==(Object other) =>
+      other is EntityIdentity && other.value == value;
 
   @override
   int get hashCode => value.hashCode;
@@ -48,5 +53,9 @@ class EntityReference {
   final WorldNodeKind kind;
   final String label;
 
-  const EntityReference({required this.identity, required this.kind, required this.label});
+  const EntityReference({
+    required this.identity,
+    required this.kind,
+    required this.label,
+  });
 }

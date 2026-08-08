@@ -11,7 +11,11 @@ class WorldNode {
   final WorldNodeKind kind;
   final String label;
 
-  const WorldNode({required this.identity, required this.kind, required this.label});
+  const WorldNode({
+    required this.identity,
+    required this.kind,
+    required this.label,
+  });
 
   String get id => identity.value;
 }

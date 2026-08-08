@@ -15,14 +15,17 @@ import 'evolution_test_support.dart';
 void main() {
   const engine = EvolutionEngine();
 
-  test('a real design produces a real EvolutionResult with a fully-populated roadmap', () {
-    final context = buildEvolutionContext(fieldSurveyApp());
-    final result = engine.evolve(context);
+  test(
+    'a real design produces a real EvolutionResult with a fully-populated roadmap',
+    () {
+      final context = buildEvolutionContext(fieldSurveyApp());
+      final result = engine.evolve(context);
 
-    expect(result.cycle.outcome, isNot(EvolutionOutcome.budgetExhausted));
-    expect(result.roadmap.milestones, hasLength(6));
-    expect(result.graph.nodes, isNotEmpty);
-  });
+      expect(result.cycle.outcome, isNot(EvolutionOutcome.budgetExhausted));
+      expect(result.roadmap.milestones, hasLength(6));
+      expect(result.graph.nodes, isNotEmpty);
+    },
+  );
 
   test('the fingerprint is deterministic for the same structural shape', () {
     final contextA = buildEvolutionContext(fieldSurveyApp());
@@ -48,7 +51,10 @@ void main() {
     final result = engine.evolve(context);
     final metrics = EvolutionMetrics.from(result);
 
-    expect(metrics.totalOpportunitiesFound, result.cycle.finalIteration.opportunities.length);
+    expect(
+      metrics.totalOpportunitiesFound,
+      result.cycle.finalIteration.opportunities.length,
+    );
     expect(
       metrics.totalProposalsAccepted + metrics.totalProposalsRejected,
       lessThanOrEqualTo(metrics.totalOpportunitiesFound),
@@ -56,15 +62,21 @@ void main() {
     expect(metrics.iterationsRun, 1);
   });
 
-  test('a design with zero opportunities is reported honestly, not fabricated', () {
-    // fieldSurveyApp always has some deferred features, so this checks the
-    // structural invariant instead: outcome is `planned` iff opportunities exist.
-    final context = buildEvolutionContext(fieldSurveyApp());
-    final result = engine.evolve(context);
-    final hasOpportunities = result.cycle.finalIteration.opportunities.isNotEmpty;
-    expect(
-      result.cycle.outcome,
-      hasOpportunities ? EvolutionOutcome.planned : EvolutionOutcome.noOpportunities,
-    );
-  });
+  test(
+    'a design with zero opportunities is reported honestly, not fabricated',
+    () {
+      // fieldSurveyApp always has some deferred features, so this checks the
+      // structural invariant instead: outcome is `planned` iff opportunities exist.
+      final context = buildEvolutionContext(fieldSurveyApp());
+      final result = engine.evolve(context);
+      final hasOpportunities =
+          result.cycle.finalIteration.opportunities.isNotEmpty;
+      expect(
+        result.cycle.outcome,
+        hasOpportunities
+            ? EvolutionOutcome.planned
+            : EvolutionOutcome.noOpportunities,
+      );
+    },
+  );
 }

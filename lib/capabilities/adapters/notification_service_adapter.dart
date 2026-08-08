@@ -51,7 +51,6 @@ library;
 
 import 'dart:convert';
 
-
 import '../../app/retention_policy_engine.dart';
 import '../../storage/durable_collection_store.dart';
 import '../../core/events/events.dart';
@@ -213,12 +212,16 @@ class RealNotificationService implements NotificationService {
     final evaluation = retention.evaluate(
       domain: LifecycleDomain.notifications,
       candidates: [
-        for (final n in all) LifecycleCandidate(id: n.id, timestamp: n.scheduledTime),
+        for (final n in all)
+          LifecycleCandidate(id: n.id, timestamp: n.scheduledTime),
       ],
     );
     if (!evaluation.reclaimsAnything) return all;
     final reclaimed = evaluation.reclaimedIds.toSet();
-    return [for (final n in all) if (!reclaimed.contains(n.id)) n];
+    return [
+      for (final n in all)
+        if (!reclaimed.contains(n.id)) n,
+    ];
   }
 
   @override
@@ -296,8 +299,9 @@ class RealNotificationService implements NotificationService {
   /// once, a duplicate alarm is worse than a missed one, and the previous
   /// behaviour was neither. Recorded as gap G-38.
   Future<List<ScheduledNotification>> deliverDue(DateTime now) async {
-    final due =
-        await store.update<List<ScheduledNotification>>(_storageKey, (current) {
+    final due = await store.update<List<ScheduledNotification>>(_storageKey, (
+      current,
+    ) {
       final all = _decode(current);
       final claimed = all.where((n) => !n.scheduledTime.isAfter(now)).toList();
       if (claimed.isEmpty) {

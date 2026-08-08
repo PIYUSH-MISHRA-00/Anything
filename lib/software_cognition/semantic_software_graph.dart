@@ -6,7 +6,8 @@ library;
 
 import 'software_identity.dart';
 import 'software_node.dart';
-import 'software_types.dart' show SoftwareNodeKind, SoftwareEvidence, SoftwareConfidence;
+import 'software_types.dart'
+    show SoftwareNodeKind, SoftwareEvidence, SoftwareConfidence;
 
 class SemanticSoftwareGraph {
   final List<SoftwareNode> nodes;
@@ -14,11 +15,14 @@ class SemanticSoftwareGraph {
 
   const SemanticSoftwareGraph({this.nodes = const [], this.edges = const []});
 
-  List<SoftwareNode> nodesOfKind(SoftwareNodeKind kind) => nodes.where((n) => n.kind == kind).toList();
+  List<SoftwareNode> nodesOfKind(SoftwareNodeKind kind) =>
+      nodes.where((n) => n.kind == kind).toList();
 
-  List<SoftwareEdge> edgesFrom(SoftwareIdentity id) => edges.where((e) => e.fromId == id).toList();
+  List<SoftwareEdge> edgesFrom(SoftwareIdentity id) =>
+      edges.where((e) => e.fromId == id).toList();
 
-  List<SoftwareEdge> edgesTo(SoftwareIdentity id) => edges.where((e) => e.toId == id).toList();
+  List<SoftwareEdge> edgesTo(SoftwareIdentity id) =>
+      edges.where((e) => e.toId == id).toList();
 
   SoftwareNode? nodeById(SoftwareIdentity id) {
     for (final n in nodes) {
@@ -28,7 +32,10 @@ class SemanticSoftwareGraph {
   }
 
   SemanticSoftwareGraph concat(SemanticSoftwareGraph other) =>
-      SemanticSoftwareGraph(nodes: [...nodes, ...other.nodes], edges: [...edges, ...other.edges]);
+      SemanticSoftwareGraph(
+        nodes: [...nodes, ...other.nodes],
+        edges: [...edges, ...other.edges],
+      );
 }
 
 /// A real, surfaced conflict — two nodes with the same identity but a
@@ -65,7 +72,9 @@ class SoftwareMerge {
       if (existing == null) {
         byId[node.identity] = node;
       } else if (existing.kind != node.kind || existing.label != node.label) {
-        conflicts.add(SoftwareGraphConflict(existing: existing, incoming: node));
+        conflicts.add(
+          SoftwareGraphConflict(existing: existing, incoming: node),
+        );
       }
     }
 
@@ -77,7 +86,10 @@ class SoftwareMerge {
     }
 
     return SoftwareMergeResult(
-      graph: SemanticSoftwareGraph(nodes: byId.values.toList(), edges: mergedEdges),
+      graph: SemanticSoftwareGraph(
+        nodes: byId.values.toList(),
+        edges: mergedEdges,
+      ),
       conflicts: conflicts,
     );
   }
@@ -89,10 +101,15 @@ class SoftwareMerge {
 class SoftwareProjection {
   const SoftwareProjection();
 
-  SemanticSoftwareGraph projectKinds(SemanticSoftwareGraph graph, Set<SoftwareNodeKind> kinds) {
+  SemanticSoftwareGraph projectKinds(
+    SemanticSoftwareGraph graph,
+    Set<SoftwareNodeKind> kinds,
+  ) {
     final keptNodes = graph.nodes.where((n) => kinds.contains(n.kind)).toList();
     final keptIds = keptNodes.map((n) => n.identity).toSet();
-    final keptEdges = graph.edges.where((e) => keptIds.contains(e.fromId) && keptIds.contains(e.toId)).toList();
+    final keptEdges = graph.edges
+        .where((e) => keptIds.contains(e.fromId) && keptIds.contains(e.toId))
+        .toList();
     return SemanticSoftwareGraph(nodes: keptNodes, edges: keptEdges);
   }
 }
@@ -109,5 +126,9 @@ class SoftwareTransformation {
   final SoftwareEvidence tracedTo;
   final SoftwareConfidence confidence;
 
-  const SoftwareTransformation({required this.description, required this.tracedTo, required this.confidence});
+  const SoftwareTransformation({
+    required this.description,
+    required this.tracedTo,
+    required this.confidence,
+  });
 }

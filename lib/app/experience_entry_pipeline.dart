@@ -108,7 +108,10 @@ class ExperienceEntryPipeline {
   /// clarification/provider-required snackbars) — this pipeline never owns
   /// that UI orchestration, matching `HomeScreen._createExperience()`'s own
   /// real, existing contract exactly.
-  Future<RoutingResult> submitIntent(Intent intent, {RouteTarget target = const RouteTarget.newExperience()}) {
+  Future<RoutingResult> submitIntent(
+    Intent intent, {
+    RouteTarget target = const RouteTarget.newExperience(),
+  }) {
     return intentExecutionPipeline.execute(intent, target: target);
   }
 
@@ -119,7 +122,10 @@ class ExperienceEntryPipeline {
   /// open for it) and activates it. Returns the real `OpenResult` so the
   /// caller can react to `OpenProtectionInputRequired`/`OpenNotFound`/
   /// `OpenInvalid`/`OpenFailed` exactly as before.
-  Future<OpenResult> activateExperience(NavigatorState navigator, String experienceId) async {
+  Future<OpenResult> activateExperience(
+    NavigatorState navigator,
+    String experienceId,
+  ) async {
     final result = await openingCoordinator.openExperience(experienceId);
     if (result is OpenReady) await _registerAndActivate(navigator, result);
     return result;
@@ -132,13 +138,21 @@ class ExperienceEntryPipeline {
     required String experienceId,
     required TimeSeed timeSeed,
   }) async {
-    final result = await openingCoordinator.openProtectedExperienceWithSeed(experienceId: experienceId, timeSeed: timeSeed);
+    final result = await openingCoordinator.openProtectedExperienceWithSeed(
+      experienceId: experienceId,
+      timeSeed: timeSeed,
+    );
     if (result is OpenReady) await _registerAndActivate(navigator, result);
     return result;
   }
 
-  Future<void> _registerAndActivate(NavigatorState navigator, OpenReady result) async {
-    var sessionId = workspaceManager?.sessionForExperience(result.experienceId)?.sessionId;
+  Future<void> _registerAndActivate(
+    NavigatorState navigator,
+    OpenReady result,
+  ) async {
+    var sessionId = workspaceManager
+        ?.sessionForExperience(result.experienceId)
+        ?.sessionId;
     if (sessionId == null && workspaceManager != null) {
       final started = await workspaceManager!.openExistingExperience(
         experienceId: result.experienceId,

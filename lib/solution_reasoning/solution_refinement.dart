@@ -27,8 +27,12 @@ class SolutionRefinement {
       if (fixable.isEmpty) break;
 
       final dropIds = fixable.map((i) => i.subjectId).toSet();
-      final remaining = candidates.where((c) => !dropIds.contains(c.id)).toList();
-      if (remaining.isEmpty) break; // never drop every candidate — keep the last known-non-empty set
+      final remaining = candidates
+          .where((c) => !dropIds.contains(c.id))
+          .toList();
+      if (remaining.isEmpty) {
+        break; // never drop every candidate — keep the last known-non-empty set
+      }
 
       candidates = remaining;
       iteration++;
@@ -44,6 +48,10 @@ class SolutionRefinement {
               ? SolutionRefinementOutcome.budgetExhausted
               : SolutionRefinementOutcome.refinementRequired);
 
-    return SolutionHistory(reviewHistory: history, finalCandidates: candidates, outcome: outcome);
+    return SolutionHistory(
+      reviewHistory: history,
+      finalCandidates: candidates,
+      outcome: outcome,
+    );
   }
 }

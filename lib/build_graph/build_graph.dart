@@ -26,10 +26,18 @@ class BuildGraphNode {
   final BuildNodeKind kind;
   final String label;
 
-  const BuildGraphNode({required this.id, required this.kind, required this.label});
+  const BuildGraphNode({
+    required this.id,
+    required this.kind,
+    required this.label,
+  });
 
   @override
-  bool operator ==(Object other) => other is BuildGraphNode && other.id == id && other.kind == kind && other.label == label;
+  bool operator ==(Object other) =>
+      other is BuildGraphNode &&
+      other.id == id &&
+      other.kind == kind &&
+      other.label == label;
 
   @override
   int get hashCode => Object.hash(id, kind, label);
@@ -40,10 +48,18 @@ class BuildGraphEdge {
   final String toId;
   final BuildRelationshipKind kind;
 
-  const BuildGraphEdge({required this.fromId, required this.toId, required this.kind});
+  const BuildGraphEdge({
+    required this.fromId,
+    required this.toId,
+    required this.kind,
+  });
 
   @override
-  bool operator ==(Object other) => other is BuildGraphEdge && other.fromId == fromId && other.toId == toId && other.kind == kind;
+  bool operator ==(Object other) =>
+      other is BuildGraphEdge &&
+      other.fromId == fromId &&
+      other.toId == toId &&
+      other.kind == kind;
 
   @override
   int get hashCode => Object.hash(fromId, toId, kind);

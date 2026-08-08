@@ -42,7 +42,11 @@ ApplicationReasoningContext _context(
   NetworkNeed networkNeed = NetworkNeed.none,
 }) {
   return ApplicationReasoningContext(
-    understanding: _understand(objective, desiredOutcome: desiredOutcome, networkNeed: networkNeed),
+    understanding: _understand(
+      objective,
+      desiredOutcome: desiredOutcome,
+      networkNeed: networkNeed,
+    ),
   );
 }
 
@@ -204,9 +208,7 @@ void main() {
     const reasoner = DeterministicReasoner();
 
     test('handles collection intent', () async {
-      final result = await reasoner.reason(
-        _context('Create a list of plants'),
-      );
+      final result = await reasoner.reason(_context('Create a list of plants'));
       expect(result, isA<ReasoningReady>());
 
       final ready = result as ReasoningReady;
@@ -216,9 +218,7 @@ void main() {
     });
 
     test('handles tracker intent', () async {
-      final result = await reasoner.reason(
-        _context('Create a list of habits'),
-      );
+      final result = await reasoner.reason(_context('Create a list of habits'));
       expect(result, isA<ReasoningReady>());
 
       final ready = result as ReasoningReady;
@@ -258,9 +258,7 @@ void main() {
     });
 
     test('blueprint has no domain-specific hardcoding', () async {
-      final result = await planner.plan(
-        _context('Create a list of plants'),
-      );
+      final result = await planner.plan(_context('Create a list of plants'));
       expect(result.blueprint.tags, isA<List<String>>());
       expect(result.blueprint.tags, isNotEmpty);
     });
@@ -819,9 +817,7 @@ void main() {
     test(
       'intent -> understanding -> planner -> blueprint -> package',
       () async {
-        final result = await planner.plan(
-          _context('Create a list of plants'),
-        );
+        final result = await planner.plan(_context('Create a list of plants'));
 
         final validation = BlueprintValidator.validate(result.blueprint);
         expect(validation.isValid, isTrue);
@@ -857,9 +853,7 @@ void main() {
     });
 
     test('no app-specific production screens in generated packages', () async {
-      final result = await planner.plan(
-        _context('Create a list of anything'),
-      );
+      final result = await planner.plan(_context('Create a list of anything'));
 
       final package = GenericPackageBuilder.build(result.blueprint);
 
@@ -891,9 +885,7 @@ void main() {
     final planner = SynthesisPlanner(reasoner);
 
     test('synthesizes Plant Care app with no Plant template', () async {
-      final result = await planner.plan(
-        _context('Create a list of plants'),
-      );
+      final result = await planner.plan(_context('Create a list of plants'));
       final blueprint = result.blueprint;
 
       expect(blueprint.entities, isNotEmpty);
@@ -915,9 +907,7 @@ void main() {
 
     test('synthesizes borrowed items app', () async {
       final result = await planner.plan(
-        _context(
-          'Create a list of borrowed books',
-        ),
+        _context('Create a list of borrowed books'),
       );
       final blueprint = result.blueprint;
 

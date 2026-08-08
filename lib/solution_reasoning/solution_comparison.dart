@@ -20,7 +20,13 @@ class SolutionComparison {
     final scored = candidates.where((c) => c.score != null).toList();
 
     final nodes = scored
-        .map((c) => SolutionNode(candidateId: c.id, label: c.label, overallScore: c.score!.overall.score))
+        .map(
+          (c) => SolutionNode(
+            candidateId: c.id,
+            label: c.label,
+            overallScore: c.score!.overall.score,
+          ),
+        )
         .toList();
 
     final edges = <SolutionEdge>[];
@@ -32,8 +38,10 @@ class SolutionComparison {
         final aComplexity = solutionComplexityRank(a.complexity);
         final bComplexity = solutionComplexityRank(b.complexity);
 
-        final aAtLeastAsGood = aScore >= bScore - _epsilon && aComplexity <= bComplexity;
-        final aStrictlyBetter = aScore > bScore + _epsilon || aComplexity < bComplexity;
+        final aAtLeastAsGood =
+            aScore >= bScore - _epsilon && aComplexity <= bComplexity;
+        final aStrictlyBetter =
+            aScore > bScore + _epsilon || aComplexity < bComplexity;
 
         if (aAtLeastAsGood && aStrictlyBetter) {
           edges.add(
@@ -41,17 +49,21 @@ class SolutionComparison {
               fromCandidateId: a.id,
               toCandidateId: b.id,
               kind: SolutionRelationKind.dominates,
-              rationale: '"${a.label}" scores at least as well (${aScore.toStringAsFixed(2)} vs '
+              rationale:
+                  '"${a.label}" scores at least as well (${aScore.toStringAsFixed(2)} vs '
                   '${bScore.toStringAsFixed(2)}) at no greater complexity ($aComplexity vs $bComplexity).',
             ),
           );
-        } else if ((aScore - bScore).abs() < _epsilon && aComplexity == bComplexity && a.id.compareTo(b.id) < 0) {
+        } else if ((aScore - bScore).abs() < _epsilon &&
+            aComplexity == bComplexity &&
+            a.id.compareTo(b.id) < 0) {
           edges.add(
             SolutionEdge(
               fromCandidateId: a.id,
               toCandidateId: b.id,
               kind: SolutionRelationKind.equivalentTo,
-              rationale: 'Both score ${aScore.toStringAsFixed(2)} at the same complexity rank ($aComplexity).',
+              rationale:
+                  'Both score ${aScore.toStringAsFixed(2)} at the same complexity rank ($aComplexity).',
             ),
           );
         } else if (a.id.compareTo(b.id) < 0) {
@@ -60,13 +72,16 @@ class SolutionComparison {
               fromCandidateId: a.id,
               toCandidateId: b.id,
               kind: SolutionRelationKind.alternativeTo,
-              rationale: 'Neither dominates the other — a genuine tradeoff between them.',
+              rationale:
+                  'Neither dominates the other — a genuine tradeoff between them.',
             ),
           );
         }
       }
     }
 
-    return SolutionComparisonResult(graph: SolutionGraph(nodes: nodes, edges: edges));
+    return SolutionComparisonResult(
+      graph: SolutionGraph(nodes: nodes, edges: edges),
+    );
   }
 }

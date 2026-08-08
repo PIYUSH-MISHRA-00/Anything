@@ -28,11 +28,23 @@ class PerformanceReviewer {
         ReviewIssue(
           id: 'performance:$dimension',
           category: ReviewCategory.performance,
-          severity: level == ComplexityLevel.high ? ReviewSeverity.warning : ReviewSeverity.info,
+          severity: level == ComplexityLevel.high
+              ? ReviewSeverity.warning
+              : ReviewSeverity.info,
           reason: '$dimension cost is ${level.name} for this solution',
-          evidence: ReviewEvidence(affectedGraph: graph, affectedNodeId: dimension),
-          recommendation: ReviewRecommendation(description: 'Consider the ${level.name} $dimension cost when reviewing this solution'),
-          confidence: const Confidence(score: 0.7, reason: 'Derived from the solution\'s own real FeatureComplexity profile.'),
+          evidence: ReviewEvidence(
+            affectedGraph: graph,
+            affectedNodeId: dimension,
+          ),
+          recommendation: ReviewRecommendation(
+            description:
+                'Consider the ${level.name} $dimension cost when reviewing this solution',
+          ),
+          confidence: const Confidence(
+            score: 0.7,
+            reason:
+                'Derived from the solution\'s own real FeatureComplexity profile.',
+          ),
         ),
       );
     }
@@ -43,21 +55,37 @@ class PerformanceReviewer {
     report('network', complexity.networkCost, 'SolutionCandidate.complexity');
     report('battery', complexity.batteryCost, 'SolutionCandidate.complexity');
     report('runtime', complexity.runtime, 'SolutionCandidate.complexity');
-    report('modification', complexity.modificationCost, 'SolutionCandidate.complexity');
+    report(
+      'modification',
+      complexity.modificationCost,
+      'SolutionCandidate.complexity',
+    );
 
     // Startup: proxied by total engineered behavior node count — more
     // nodes means more to parse before the first frame renders.
-    final totalNodes = context.engineering.behaviors.expand((b) => b.eventGraph.actions).length;
+    final totalNodes = context.engineering.behaviors
+        .expand((b) => b.eventGraph.actions)
+        .length;
     if (totalNodes > 20) {
       issues.add(
         ReviewIssue(
           id: 'performance:startup',
           category: ReviewCategory.performance,
           severity: ReviewSeverity.info,
-          reason: 'Engineered behavior has $totalNodes actions — a real, if modest, startup parse cost',
-          evidence: const ReviewEvidence(affectedGraph: 'EngineeringCandidate.behaviors', affectedNodeId: 'startup'),
-          recommendation: const ReviewRecommendation(description: 'No action needed below RuntimeSecurityLimits.maxBehaviorNodesPerPackage'),
-          confidence: const Confidence(score: 0.6, reason: 'Action count is a real but indirect proxy for parse cost.'),
+          reason:
+              'Engineered behavior has $totalNodes actions — a real, if modest, startup parse cost',
+          evidence: const ReviewEvidence(
+            affectedGraph: 'EngineeringCandidate.behaviors',
+            affectedNodeId: 'startup',
+          ),
+          recommendation: const ReviewRecommendation(
+            description:
+                'No action needed below RuntimeSecurityLimits.maxBehaviorNodesPerPackage',
+          ),
+          confidence: const Confidence(
+            score: 0.6,
+            reason: 'Action count is a real but indirect proxy for parse cost.',
+          ),
         ),
       );
     }
@@ -72,7 +100,10 @@ class PerformanceReviewer {
 class MaintainabilityReviewer {
   const MaintainabilityReviewer();
 
-  List<ReviewIssue> review(ReviewContext context, {required int otherIssueCount}) {
+  List<ReviewIssue> review(
+    ReviewContext context, {
+    required int otherIssueCount,
+  }) {
     final complexity = context.solution.complexity;
     final issues = <ReviewIssue>[];
 
@@ -88,10 +119,20 @@ class MaintainabilityReviewer {
           id: 'maintainability:highComplexity',
           category: ReviewCategory.maintainability,
           severity: ReviewSeverity.warning,
-          reason: '$highComplexityDimensions of 3 core complexity dimensions are high — this design will be costly to maintain',
-          evidence: const ReviewEvidence(affectedGraph: 'SolutionCandidate.complexity', affectedNodeId: 'maintainability'),
-          recommendation: const ReviewRecommendation(description: 'Consider a lower-richness/lower-complexity solution variant'),
-          confidence: const Confidence(score: 0.6, reason: 'A structural proxy, not a measured maintenance cost.'),
+          reason:
+              '$highComplexityDimensions of 3 core complexity dimensions are high — this design will be costly to maintain',
+          evidence: const ReviewEvidence(
+            affectedGraph: 'SolutionCandidate.complexity',
+            affectedNodeId: 'maintainability',
+          ),
+          recommendation: const ReviewRecommendation(
+            description:
+                'Consider a lower-richness/lower-complexity solution variant',
+          ),
+          confidence: const Confidence(
+            score: 0.6,
+            reason: 'A structural proxy, not a measured maintenance cost.',
+          ),
         ),
       );
     }
@@ -102,10 +143,20 @@ class MaintainabilityReviewer {
           id: 'maintainability:highIssueVolume',
           category: ReviewCategory.maintainability,
           severity: ReviewSeverity.info,
-          reason: '$otherIssueCount findings were raised elsewhere in this review — a real signal of design surface area',
-          evidence: const ReviewEvidence(affectedGraph: 'ReviewResult', affectedNodeId: 'issueVolume'),
-          recommendation: const ReviewRecommendation(description: 'Address the highest-severity findings first'),
-          confidence: const Confidence(score: 0.5, reason: 'Issue volume correlates with, but does not prove, maintenance burden.'),
+          reason:
+              '$otherIssueCount findings were raised elsewhere in this review — a real signal of design surface area',
+          evidence: const ReviewEvidence(
+            affectedGraph: 'ReviewResult',
+            affectedNodeId: 'issueVolume',
+          ),
+          recommendation: const ReviewRecommendation(
+            description: 'Address the highest-severity findings first',
+          ),
+          confidence: const Confidence(
+            score: 0.5,
+            reason:
+                'Issue volume correlates with, but does not prove, maintenance burden.',
+          ),
         ),
       );
     }

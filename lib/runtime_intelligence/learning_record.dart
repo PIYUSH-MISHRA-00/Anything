@@ -11,5 +11,10 @@ class LearningRecord {
   final DateTime learnedAt;
   final int version;
 
-  const LearningRecord({required this.id, required this.pattern, required this.learnedAt, required this.version});
+  const LearningRecord({
+    required this.id,
+    required this.pattern,
+    required this.learnedAt,
+    required this.version,
+  });
 }

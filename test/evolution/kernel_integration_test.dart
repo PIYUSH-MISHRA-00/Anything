@@ -70,55 +70,91 @@ SemanticApp _fieldSurveyApp() {
         id: 'entry',
         name: 'Entry',
         displayField: 'title',
-        fields: [SemanticField(id: 'title', name: 'Title', type: BlueprintFieldType.text, required: true)],
+        fields: [
+          SemanticField(
+            id: 'title',
+            name: 'Title',
+            type: BlueprintFieldType.text,
+            required: true,
+          ),
+        ],
       ),
     ],
     views: const [
-      SemanticView(id: 'entries_list', name: 'Entries', purpose: 'list', sourceEntityId: 'entry', viewType: BlueprintViewType.list, isDefault: true),
+      SemanticView(
+        id: 'entries_list',
+        name: 'Entries',
+        purpose: 'list',
+        sourceEntityId: 'entry',
+        viewType: BlueprintViewType.list,
+        isDefault: true,
+      ),
     ],
-    actions: const [SemanticAction(id: 'add_entry', name: 'Add Entry', targetEntityId: 'entry')],
+    actions: const [
+      SemanticAction(
+        id: 'add_entry',
+        name: 'Add Entry',
+        targetEntityId: 'entry',
+      ),
+    ],
   );
 }
 
 Future<ExecutionPlanReady> _runKernel(AnythingKernel kernel) async {
-  final outcome = await kernel.processIntent(Intent.create(expression: 'track my field survey entries'));
+  final outcome = await kernel.processIntent(
+    Intent.create(expression: 'track my field survey entries'),
+  );
   expect(outcome, isA<ExecutionPlanReady>());
   return outcome as ExecutionPlanReady;
 }
 
 void main() {
-  test('processIntent runs Evolution Planning and returns a real roadmap owning all 6 phases', () async {
-    final kernel = AnythingKernel(
-      providerRegistry: _FakeProviderRegistry(),
-      capabilityRegistry: _registryWithStorage(),
-      reasoner: _FixedReasoner(_fieldSurveyApp()),
-    );
-    final ready = await _runKernel(kernel);
+  test(
+    'processIntent runs Evolution Planning and returns a real roadmap owning all 6 phases',
+    () async {
+      final kernel = AnythingKernel(
+        providerRegistry: _FakeProviderRegistry(),
+        capabilityRegistry: _registryWithStorage(),
+        reasoner: _FixedReasoner(_fieldSurveyApp()),
+      );
+      final ready = await _runKernel(kernel);
 
-    expect(ready.evolutionRoadmap, isNotNull);
-    expect(ready.evolutionRoadmap!.milestones, hasLength(6));
-  });
+      expect(ready.evolutionRoadmap, isNotNull);
+      expect(ready.evolutionRoadmap!.milestones, hasLength(6));
+    },
+  );
 
-  test('the same Kernel instance reuses EvolutionMemory across two structurally-identical requests', () async {
-    final kernel = AnythingKernel(
-      providerRegistry: _FakeProviderRegistry(),
-      capabilityRegistry: _registryWithStorage(),
-      reasoner: _FixedReasoner(_fieldSurveyApp()),
-    );
+  test(
+    'the same Kernel instance reuses EvolutionMemory across two structurally-identical requests',
+    () async {
+      final kernel = AnythingKernel(
+        providerRegistry: _FakeProviderRegistry(),
+        capabilityRegistry: _registryWithStorage(),
+        reasoner: _FixedReasoner(_fieldSurveyApp()),
+      );
 
-    final first = await _runKernel(kernel);
-    final second = await _runKernel(kernel);
+      final first = await _runKernel(kernel);
+      final second = await _runKernel(kernel);
 
-    expect(first.evolutionRoadmap!.fingerprint, second.evolutionRoadmap!.fingerprint);
-  });
+      expect(
+        first.evolutionRoadmap!.fingerprint,
+        second.evolutionRoadmap!.fingerprint,
+      );
+    },
+  );
 
-  test('evolution planning never blocks creation — an approved design always reaches ExecutionPlanReady', () async {
-    final kernel = AnythingKernel(
-      providerRegistry: _FakeProviderRegistry(),
-      capabilityRegistry: _registryWithStorage(),
-      reasoner: _FixedReasoner(_fieldSurveyApp()),
-    );
-    final outcome = await kernel.processIntent(Intent.create(expression: 'track my field survey entries'));
-    expect(outcome, isA<ExecutionPlanReady>());
-  });
+  test(
+    'evolution planning never blocks creation — an approved design always reaches ExecutionPlanReady',
+    () async {
+      final kernel = AnythingKernel(
+        providerRegistry: _FakeProviderRegistry(),
+        capabilityRegistry: _registryWithStorage(),
+        reasoner: _FixedReasoner(_fieldSurveyApp()),
+      );
+      final outcome = await kernel.processIntent(
+        Intent.create(expression: 'track my field survey entries'),
+      );
+      expect(outcome, isA<ExecutionPlanReady>());
+    },
+  );
 }

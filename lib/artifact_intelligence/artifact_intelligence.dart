@@ -85,7 +85,11 @@ class CompatibilityCheck {
   final bool passed;
   final String description;
 
-  const CompatibilityCheck({required this.name, required this.passed, required this.description});
+  const CompatibilityCheck({
+    required this.name,
+    required this.passed,
+    required this.description,
+  });
 }
 
 /// The real, corpus-level result — every field is a plain, traceable
@@ -109,29 +113,44 @@ class ArtifactIntelligenceReport {
     required this.deploymentBlockers,
   });
 
-  ArtifactKnowledge? knowledgeFor(ExecutionTargetKind target) => knowledge.where((k) => k.target == target).firstOrNull;
+  ArtifactKnowledge? knowledgeFor(ExecutionTargetKind target) =>
+      knowledge.where((k) => k.target == target).firstOrNull;
 
-  bool get allCompatibilityChecksPassed => compatibilityChecks.every((c) => c.passed);
+  bool get allCompatibilityChecksPassed =>
+      compatibilityChecks.every((c) => c.passed);
 }
 
 class ArtifactIntelligenceEngine {
   const ArtifactIntelligenceEngine();
 
-  ArtifactIntelligenceReport analyze(OrchestrationReport report, ExecutionStrategy strategy) {
-    final knowledge = [for (final stage in report.stages) _knowledgeFor(stage, strategy)];
+  ArtifactIntelligenceReport analyze(
+    OrchestrationReport report,
+    ExecutionStrategy strategy,
+  ) {
+    final knowledge = [
+      for (final stage in report.stages) _knowledgeFor(stage, strategy),
+    ];
     final compatibilityChecks = _compatibilityChecks(report);
     final blockers = _deploymentBlockers(report, strategy);
 
     return ArtifactIntelligenceReport(
       knowledge: knowledge,
       compatibilityChecks: compatibilityChecks,
-      deploymentReady: report.succeeded && blockers.isEmpty && compatibilityChecks.every((c) => c.passed),
+      deploymentReady:
+          report.succeeded &&
+          blockers.isEmpty &&
+          compatibilityChecks.every((c) => c.passed),
       deploymentBlockers: blockers,
     );
   }
 
-  ArtifactKnowledge _knowledgeFor(StageOutcome stage, ExecutionStrategy strategy) {
-    final plan = strategy.targets.where((t) => t.target == stage.target).firstOrNull;
+  ArtifactKnowledge _knowledgeFor(
+    StageOutcome stage,
+    ExecutionStrategy strategy,
+  ) {
+    final plan = strategy.targets
+        .where((t) => t.target == stage.target)
+        .firstOrNull;
     final consumedBy = [
       for (final other in strategy.targets)
         if (other.dependencies.contains(stage.target)) other.target,
@@ -152,11 +171,16 @@ class ArtifactIntelligenceEngine {
   /// dependencies must have themselves succeeded — a dependency that was
   /// only skipped (never `failed`) would otherwise pass `succeeded`
   /// silently.
-  List<String> _deploymentBlockers(OrchestrationReport report, ExecutionStrategy strategy) {
+  List<String> _deploymentBlockers(
+    OrchestrationReport report,
+    ExecutionStrategy strategy,
+  ) {
     final blockers = <String>[];
     for (final stage in report.stages) {
       if (stage.status != StageStatus.succeeded) continue;
-      final plan = strategy.targets.where((t) => t.target == stage.target).firstOrNull;
+      final plan = strategy.targets
+          .where((t) => t.target == stage.target)
+          .firstOrNull;
       if (plan == null) continue;
       for (final dep in plan.dependencies) {
         final depOutcome = report.outcomeFor(dep);
@@ -187,12 +211,18 @@ class ArtifactIntelligenceEngine {
   List<CompatibilityCheck> _compatibilityChecks(OrchestrationReport report) {
     final backend = report.outcomeFor(ExecutionTargetKind.backendService);
     final restApi = report.outcomeFor(ExecutionTargetKind.restApi);
-    if (backend?.status != StageStatus.succeeded || restApi?.status != StageStatus.succeeded) return const [];
+    if (backend?.status != StageStatus.succeeded ||
+        restApi?.status != StageStatus.succeeded) {
+      return const [];
+    }
     final backendAuth = _authSection(backend?.backendArtifacts);
     final restApiAuth = _authSection(restApi?.backendArtifacts);
     if (backendAuth == null || restApiAuth == null) return const [];
 
-    final matches = const DeepCollectionEquality().equals(backendAuth, restApiAuth);
+    final matches = const DeepCollectionEquality().equals(
+      backendAuth,
+      restApiAuth,
+    );
     return [
       CompatibilityCheck(
         name: 'backendService.authentication == restApi.authentication',
@@ -211,7 +241,9 @@ class ArtifactIntelligenceEngine {
       if (content == null) continue;
       try {
         final decoded = jsonDecode(content) as Map<String, dynamic>;
-        if (decoded['authentication'] is Map<String, dynamic>) return decoded['authentication'] as Map<String, dynamic>;
+        if (decoded['authentication'] is Map<String, dynamic>) {
+          return decoded['authentication'] as Map<String, dynamic>;
+        }
       } catch (_) {
         continue;
       }

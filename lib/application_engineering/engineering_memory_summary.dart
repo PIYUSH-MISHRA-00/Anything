@@ -56,14 +56,17 @@ class EngineeringDecisionSummary {
     'confidenceScore': confidenceScore,
   };
 
-  factory EngineeringDecisionSummary.fromJson(Map<String, dynamic> json) => EngineeringDecisionSummary(
-    id: json['id'] as String,
-    category: EngineeringDecisionCategory.values.byName(json['category'] as String),
-    subjectId: json['subjectId'] as String,
-    decision: json['decision'] as String,
-    rationale: json['rationale'] as String,
-    confidenceScore: (json['confidenceScore'] as num).toDouble(),
-  );
+  factory EngineeringDecisionSummary.fromJson(Map<String, dynamic> json) =>
+      EngineeringDecisionSummary(
+        id: json['id'] as String,
+        category: EngineeringDecisionCategory.values.byName(
+          json['category'] as String,
+        ),
+        subjectId: json['subjectId'] as String,
+        decision: json['decision'] as String,
+        rationale: json['rationale'] as String,
+        confidenceScore: (json['confidenceScore'] as num).toDouble(),
+      );
 }
 
 class EngineeringMemorySummary {
@@ -97,7 +100,9 @@ class EngineeringMemorySummary {
       iteration: candidate.iteration,
       outcome: plan.outcome,
       reviewIssueCount: review.issues.length,
-      criticalReviewIssueCount: review.issues.where((i) => i.severity.name == 'critical').length,
+      criticalReviewIssueCount: review.issues
+          .where((i) => i.severity.name == 'critical')
+          .length,
       overallConfidenceScore: candidate.overallConfidence.score,
       decisions: candidate.allDecisions
           .map(
@@ -124,15 +129,21 @@ class EngineeringMemorySummary {
     'decisions': decisions.map((d) => d.toJson()).toList(),
   };
 
-  factory EngineeringMemorySummary.fromJson(Map<String, dynamic> json) => EngineeringMemorySummary(
+  factory EngineeringMemorySummary.fromJson(
+    Map<String, dynamic> json,
+  ) => EngineeringMemorySummary(
     candidateId: json['candidateId'] as String,
     iteration: json['iteration'] as int,
-    outcome: EngineeringRefinementOutcome.values.byName(json['outcome'] as String),
+    outcome: EngineeringRefinementOutcome.values.byName(
+      json['outcome'] as String,
+    ),
     reviewIssueCount: json['reviewIssueCount'] as int,
     criticalReviewIssueCount: json['criticalReviewIssueCount'] as int,
     overallConfidenceScore: (json['overallConfidenceScore'] as num).toDouble(),
     decisions: (json['decisions'] as List)
-        .map((d) => EngineeringDecisionSummary.fromJson(d as Map<String, dynamic>))
+        .map(
+          (d) => EngineeringDecisionSummary.fromJson(d as Map<String, dynamic>),
+        )
         .toList(),
   );
 }

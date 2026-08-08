@@ -14,5 +14,9 @@ class RuntimeContext {
   final WorkspaceContext workspace;
   final UsageGraph usageGraph;
 
-  const RuntimeContext({required this.session, required this.workspace, required this.usageGraph});
+  const RuntimeContext({
+    required this.session,
+    required this.workspace,
+    required this.usageGraph,
+  });
 }

@@ -146,8 +146,11 @@ class ExperienceProtectionService {
     ExperienceCommitFramework? commitFramework,
   }) : _provider = provider ?? KaalkaProtectionProvider(),
        _repository = repository ?? SqliteExperienceRepository(),
-       _commits = commitFramework ??
-           ExperienceCommitFramework(repository: repository ?? SqliteExperienceRepository());
+       _commits =
+           commitFramework ??
+           ExperienceCommitFramework(
+             repository: repository ?? SqliteExperienceRepository(),
+           );
 
   /// Expose the provider for testing/introspection.
   ProtectionProvider get provider => _provider;
@@ -224,7 +227,8 @@ class ExperienceProtectionService {
       );
       if (!committed.succeeded) {
         return ProtectionFailed(
-          message: 'Protection failed: ${committed.error ?? "could not be saved"}',
+          message:
+              'Protection failed: ${committed.error ?? "could not be saved"}',
         );
       }
 

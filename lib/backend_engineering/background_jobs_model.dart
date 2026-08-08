@@ -17,5 +17,8 @@ class BackgroundJobsModel {
   final bool requiresBackgroundSync;
   final SyncStrategy sourceStrategy;
 
-  const BackgroundJobsModel({required this.requiresBackgroundSync, required this.sourceStrategy});
+  const BackgroundJobsModel({
+    required this.requiresBackgroundSync,
+    required this.sourceStrategy,
+  });
 }

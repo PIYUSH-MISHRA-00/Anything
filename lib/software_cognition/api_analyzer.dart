@@ -36,7 +36,16 @@ class SchemaAnalyzer {
     final nodes = <SoftwareNode>[];
     if (schemas is Map) {
       for (final name in schemas.keys) {
-        nodes.add(SoftwareNode(identity: SoftwareIdentity.stable(SoftwareNodeKind.schema, name.toString()), kind: SoftwareNodeKind.schema, label: name.toString()));
+        nodes.add(
+          SoftwareNode(
+            identity: SoftwareIdentity.stable(
+              SoftwareNodeKind.schema,
+              name.toString(),
+            ),
+            kind: SoftwareNodeKind.schema,
+            label: name.toString(),
+          ),
+        );
       }
     }
     return SchemaGraph(SemanticSoftwareGraph(nodes: nodes));
@@ -46,7 +55,8 @@ class SchemaAnalyzer {
 class APIAnalyzer {
   final SchemaAnalyzer _schemaAnalyzer;
 
-  const APIAnalyzer({SchemaAnalyzer schemaAnalyzer = const SchemaAnalyzer()}) : _schemaAnalyzer = schemaAnalyzer;
+  const APIAnalyzer({SchemaAnalyzer schemaAnalyzer = const SchemaAnalyzer()})
+    : _schemaAnalyzer = schemaAnalyzer;
 
   /// Real endpoints derived from an OpenAPI spec's `paths` object —
   /// `{path: {method: {...}}}` — every entry becomes one endpoint node,
@@ -73,11 +83,23 @@ class APIAnalyzer {
         if (methods is! Map) continue;
         for (final method in methods.keys) {
           final label = '${method.toString().toUpperCase()} ${pathEntry.key}';
-          nodes.add(SoftwareNode(identity: SoftwareIdentity.stable(SoftwareNodeKind.endpoint, label), kind: SoftwareNodeKind.endpoint, label: label));
+          nodes.add(
+            SoftwareNode(
+              identity: SoftwareIdentity.stable(
+                SoftwareNodeKind.endpoint,
+                label,
+              ),
+              kind: SoftwareNodeKind.endpoint,
+              label: label,
+            ),
+          );
         }
       }
     }
-    return APIGraph(endpoints: EndpointGraph(SemanticSoftwareGraph(nodes: nodes)), schemas: _schemaAnalyzer.fromOpenApiSpec(spec));
+    return APIGraph(
+      endpoints: EndpointGraph(SemanticSoftwareGraph(nodes: nodes)),
+      schemas: _schemaAnalyzer.fromOpenApiSpec(spec),
+    );
   }
 
   /// Endpoint hints derived purely from decorator names WebWeaveX's own
@@ -87,8 +109,17 @@ class APIAnalyzer {
   APIGraph fromDecorators(List<String> decorators) {
     final nodes = decorators
         .where((d) => _httpVerbs.contains(d.toLowerCase()))
-        .map((d) => SoftwareNode(identity: SoftwareIdentity.stable(SoftwareNodeKind.endpoint, d), kind: SoftwareNodeKind.endpoint, label: d))
+        .map(
+          (d) => SoftwareNode(
+            identity: SoftwareIdentity.stable(SoftwareNodeKind.endpoint, d),
+            kind: SoftwareNodeKind.endpoint,
+            label: d,
+          ),
+        )
         .toList();
-    return APIGraph(endpoints: EndpointGraph(SemanticSoftwareGraph(nodes: nodes)), schemas: const SchemaGraph(SemanticSoftwareGraph()));
+    return APIGraph(
+      endpoints: EndpointGraph(SemanticSoftwareGraph(nodes: nodes)),
+      schemas: const SchemaGraph(SemanticSoftwareGraph()),
+    );
   }
 }

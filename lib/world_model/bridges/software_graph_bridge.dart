@@ -37,41 +37,66 @@ WorldNodeKind _mapNodeKind(sc.SoftwareNodeKind kind) => switch (kind) {
   sc.SoftwareNodeKind.cachingPattern => WorldNodeKind.softwareComponent,
 };
 
-RelationshipKind _mapEdgeKind(sc.SoftwareRelationshipKind kind) => switch (kind) {
-  sc.SoftwareRelationshipKind.contains => RelationshipKind.contains,
-  sc.SoftwareRelationshipKind.dependsOn => RelationshipKind.dependsOn,
-  sc.SoftwareRelationshipKind.imports => RelationshipKind.dependsOn,
-  sc.SoftwareRelationshipKind.calls => RelationshipKind.references,
-  sc.SoftwareRelationshipKind.implements_ => RelationshipKind.extends_,
-  sc.SoftwareRelationshipKind.exposes => RelationshipKind.produces,
-  sc.SoftwareRelationshipKind.references => RelationshipKind.references,
-  sc.SoftwareRelationshipKind.derivedFrom => RelationshipKind.derivedFrom,
-  sc.SoftwareRelationshipKind.similarTo => RelationshipKind.relatesTo,
-};
+RelationshipKind _mapEdgeKind(sc.SoftwareRelationshipKind kind) =>
+    switch (kind) {
+      sc.SoftwareRelationshipKind.contains => RelationshipKind.contains,
+      sc.SoftwareRelationshipKind.dependsOn => RelationshipKind.dependsOn,
+      sc.SoftwareRelationshipKind.imports => RelationshipKind.dependsOn,
+      sc.SoftwareRelationshipKind.calls => RelationshipKind.references,
+      sc.SoftwareRelationshipKind.implements_ => RelationshipKind.extends_,
+      sc.SoftwareRelationshipKind.exposes => RelationshipKind.produces,
+      sc.SoftwareRelationshipKind.references => RelationshipKind.references,
+      sc.SoftwareRelationshipKind.derivedFrom => RelationshipKind.derivedFrom,
+      sc.SoftwareRelationshipKind.similarTo => RelationshipKind.relatesTo,
+    };
 
 class SoftwareGraphBridge {
   final EntityResolver _resolver;
 
-  const SoftwareGraphBridge({EntityResolver resolver = const EntityResolver()}) : _resolver = resolver;
+  const SoftwareGraphBridge({EntityResolver resolver = const EntityResolver()})
+    : _resolver = resolver;
 
   GraphUpdate bridge(SemanticSoftwareGraph graph) {
     final nodes = <WorldNode>[
       for (final node in graph.nodes)
-        WorldNode(identity: _resolver.resolve(_mapNodeKind(node.kind), stableId: node.id), kind: _mapNodeKind(node.kind), label: node.label),
+        WorldNode(
+          identity: _resolver.resolve(
+            _mapNodeKind(node.kind),
+            stableId: node.id,
+          ),
+          kind: _mapNodeKind(node.kind),
+          label: node.label,
+        ),
     ];
 
     final edges = <WorldEdge>[
       for (final edge in graph.edges)
         WorldEdge(
-          fromId: _resolver.resolve(_mapNodeKind(_kindOf(graph, edge.fromId) ?? sc.SoftwareNodeKind.component), stableId: edge.fromId.value),
-          toId: _resolver.resolve(_mapNodeKind(_kindOf(graph, edge.toId) ?? sc.SoftwareNodeKind.component), stableId: edge.toId.value),
+          fromId: _resolver.resolve(
+            _mapNodeKind(
+              _kindOf(graph, edge.fromId) ?? sc.SoftwareNodeKind.component,
+            ),
+            stableId: edge.fromId.value,
+          ),
+          toId: _resolver.resolve(
+            _mapNodeKind(
+              _kindOf(graph, edge.toId) ?? sc.SoftwareNodeKind.component,
+            ),
+            stableId: edge.toId.value,
+          ),
           kind: _mapEdgeKind(edge.kind),
-          evidence: GraphEvidence(sourceGraph: 'SoftwareCognition', sourceNodeId: edge.evidence.sourceArtifact),
+          evidence: GraphEvidence(
+            sourceGraph: 'SoftwareCognition',
+            sourceNodeId: edge.evidence.sourceArtifact,
+          ),
         ),
     ];
 
     return GraphUpdate(addedNodes: nodes, addedEdges: edges);
   }
 
-  sc.SoftwareNodeKind? _kindOf(SemanticSoftwareGraph graph, sc.SoftwareIdentity id) => graph.nodeById(id)?.kind;
+  sc.SoftwareNodeKind? _kindOf(
+    SemanticSoftwareGraph graph,
+    sc.SoftwareIdentity id,
+  ) => graph.nodeById(id)?.kind;
 }

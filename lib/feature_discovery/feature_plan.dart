@@ -14,7 +14,11 @@ class FeaturePlan {
   final List<FeatureReviewResult> reviewHistory;
   final FeatureRefinementOutcome outcome;
 
-  const FeaturePlan({required this.finalGraph, required this.reviewHistory, required this.outcome});
+  const FeaturePlan({
+    required this.finalGraph,
+    required this.reviewHistory,
+    required this.outcome,
+  });
 
   FeatureReviewResult get finalReview => reviewHistory.last;
 }

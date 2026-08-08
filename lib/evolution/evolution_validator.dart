@@ -10,7 +10,10 @@ class EvolutionValidationResult {
   final bool isValid;
   final List<String> errors;
 
-  const EvolutionValidationResult({required this.isValid, this.errors = const []});
+  const EvolutionValidationResult({
+    required this.isValid,
+    this.errors = const [],
+  });
 }
 
 class EvolutionValidator {
@@ -18,6 +21,9 @@ class EvolutionValidator {
 
   EvolutionValidationResult validate(ExperiencePackage package) {
     final result = ExperiencePackageValidator.validate(package);
-    return EvolutionValidationResult(isValid: result.isValid, errors: result.errors);
+    return EvolutionValidationResult(
+      isValid: result.isValid,
+      errors: result.errors,
+    );
   }
 }

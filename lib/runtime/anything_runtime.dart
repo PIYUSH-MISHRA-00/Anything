@@ -57,7 +57,9 @@ class AnythingRuntime {
   }) : _behaviorInterpreter = behaviorInterpreter ?? BehaviorInterpreter(),
        _stateEngine = stateEngine ?? ExperienceStateEngine(),
        _dataRuntime = dataRuntime ?? ExperienceDataRuntime(),
-       _serviceResolver = serviceResolver ?? ExperienceServiceResolver(capabilityPlatform: capabilityPlatform),
+       _serviceResolver =
+           serviceResolver ??
+           ExperienceServiceResolver(capabilityPlatform: capabilityPlatform),
        _renderer = renderer ?? ExperienceRenderer();
 
   /// Open an ExperiencePackage and create a running session.
@@ -86,7 +88,9 @@ class AnythingRuntime {
       _serviceResolver.resolve(
         package.services,
         experienceId: package.manifest.experienceId,
-        declaredCapabilities: package.capabilityDeclarations.map((c) => c.capabilityId).toList(),
+        declaredCapabilities: package.capabilityDeclarations
+            .map((c) => c.capabilityId)
+            .toList(),
       );
 
       // Build router from interface screens

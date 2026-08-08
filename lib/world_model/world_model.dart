@@ -11,5 +11,9 @@ class WorldModel {
   final WorldContext context;
   final WorldVersion version;
 
-  const WorldModel({required this.graph, this.context = const WorldContext(), required this.version});
+  const WorldModel({
+    required this.graph,
+    this.context = const WorldContext(),
+    required this.version,
+  });
 }

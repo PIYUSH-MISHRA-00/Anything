@@ -380,7 +380,11 @@ class KnowledgeCache {
       domain: LifecycleDomain.knowledge,
       candidates: [
         for (final s in summaries)
-          LifecycleCandidate(id: s.cacheKey, timestamp: s.newestRetrievedAt, sizeBytes: s.totalBytes),
+          LifecycleCandidate(
+            id: s.cacheKey,
+            timestamp: s.newestRetrievedAt,
+            sizeBytes: s.totalBytes,
+          ),
       ],
       now: now,
     );

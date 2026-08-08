@@ -15,18 +15,23 @@ class SoftwareIdentity {
 
   /// Reuses an already-stable id (a package name, a repository URL) —
   /// never re-derived.
-  factory SoftwareIdentity.stable(SoftwareNodeKind kind, String id) => SoftwareIdentity._('${kind.name}:$id');
+  factory SoftwareIdentity.stable(SoftwareNodeKind kind, String id) =>
+      SoftwareIdentity._('${kind.name}:$id');
 
   /// Deterministic structural fingerprint for something with no existing
   /// stable id (a detected pattern, an inferred architecture layer). Two
   /// structurally-identical things always resolve to the same identity.
-  factory SoftwareIdentity.structural(SoftwareNodeKind kind, List<String> signature) {
+  factory SoftwareIdentity.structural(
+    SoftwareNodeKind kind,
+    List<String> signature,
+  ) {
     final sorted = [...signature]..sort();
     return SoftwareIdentity._('${kind.name}:${sorted.join(',')}');
   }
 
   @override
-  bool operator ==(Object other) => other is SoftwareIdentity && other.value == value;
+  bool operator ==(Object other) =>
+      other is SoftwareIdentity && other.value == value;
 
   @override
   int get hashCode => value.hashCode;
@@ -42,7 +47,8 @@ class SoftwareIdentity {
 class SoftwareFingerprint {
   final List<String> signature;
 
-  SoftwareFingerprint(List<String> signature) : signature = ([...signature]..sort());
+  SoftwareFingerprint(List<String> signature)
+    : signature = ([...signature]..sort());
 
   /// Jaccard similarity (intersection / union) over the two fingerprints'
   /// signature sets — deterministic, symmetric, bounded [0.0, 1.0].
@@ -58,7 +64,8 @@ class SoftwareFingerprint {
 
   @override
   bool operator ==(Object other) =>
-      other is SoftwareFingerprint && other.signature.join(',') == signature.join(',');
+      other is SoftwareFingerprint &&
+      other.signature.join(',') == signature.join(',');
 
   @override
   int get hashCode => signature.join(',').hashCode;

@@ -36,9 +36,15 @@ class SemanticGraph {
   /// Projects the semantic-relevant subset of a real WorldGraph — never
   /// a separately-maintained graph that could drift from it.
   factory SemanticGraph.projectFrom(WorldGraph graph) {
-    final semanticNodes = graph.nodes.where((n) => _semanticKinds.contains(n.kind)).toList();
+    final semanticNodes = graph.nodes
+        .where((n) => _semanticKinds.contains(n.kind))
+        .toList();
     final semanticIds = semanticNodes.map((n) => n.identity).toSet();
-    final semanticEdges = graph.edges.where((e) => semanticIds.contains(e.fromId) && semanticIds.contains(e.toId)).toList();
+    final semanticEdges = graph.edges
+        .where(
+          (e) => semanticIds.contains(e.fromId) && semanticIds.contains(e.toId),
+        )
+        .toList();
     return SemanticGraph(nodes: semanticNodes, edges: semanticEdges);
   }
 }

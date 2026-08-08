@@ -38,17 +38,28 @@ class FeatureConfidenceAnalyzer {
     Set<String> priorCapabilityIds = const {},
   }) {
     if (decisions.isEmpty) {
-      return const Confidence(score: 0.0, reason: 'No features were discovered.', risk: RiskLevel.high);
+      return const Confidence(
+        score: 0.0,
+        reason: 'No features were discovered.',
+        risk: RiskLevel.high,
+      );
     }
 
-    final meanScore = decisions.map((d) => d.confidence.score).reduce((a, b) => a + b) / decisions.length;
-    final missing = decisions.expand((d) => d.confidence.missingKnowledge).toSet().toList();
+    final meanScore =
+        decisions.map((d) => d.confidence.score).reduce((a, b) => a + b) /
+        decisions.length;
+    final missing = decisions
+        .expand((d) => d.confidence.missingKnowledge)
+        .toSet()
+        .toList();
     final worstRisk = decisions
         .map((d) => d.confidence.risk)
         .fold(RiskLevel.none, (worst, r) => r.index > worst.index ? r : worst);
     final lowCount = decisions.where((d) => d.confidence.isLow).length;
 
-    final reasonParts = <String>['Mean of ${decisions.length} discovered feature(s); $lowCount below 0.5.'];
+    final reasonParts = <String>[
+      'Mean of ${decisions.length} discovered feature(s); $lowCount below 0.5.',
+    ];
 
     // Real, structural, bounded blend — never overrides the base score,
     // only nudges it by a small, explainable amount capped at ±0.1 total,
@@ -57,7 +68,11 @@ class FeatureConfidenceAnalyzer {
     var adjustedScore = meanScore;
 
     if (knowledge != null && !knowledge.isEmpty && knowledge.nodes.isNotEmpty) {
-      final meanTrust = knowledge.nodes.map((n) => n.trust.confidence).reduce((a, b) => a + b) / knowledge.nodes.length;
+      final meanTrust =
+          knowledge.nodes
+              .map((n) => n.trust.confidence)
+              .reduce((a, b) => a + b) /
+          knowledge.nodes.length;
       // Centered on 0.5 trust (neutral) — genuinely high-trust knowledge
       // nudges up, genuinely low-trust knowledge nudges down, never a
       // one-directional "knowledge exists therefore confident" fallacy.
@@ -70,7 +85,9 @@ class FeatureConfidenceAnalyzer {
     }
 
     if (priorCapabilityIds.isNotEmpty) {
-      reasonParts.add('${priorCapabilityIds.length} capability(ies) already familiar from prior Experiences.');
+      reasonParts.add(
+        '${priorCapabilityIds.length} capability(ies) already familiar from prior Experiences.',
+      );
       adjustedScore += 0.05;
     }
 

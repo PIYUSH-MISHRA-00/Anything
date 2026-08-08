@@ -29,5 +29,8 @@ class DeploymentSpecificationModel {
   final bool requiresBackend;
   final List<SecretReference> secretReferences;
 
-  const DeploymentSpecificationModel({required this.requiresBackend, this.secretReferences = const []});
+  const DeploymentSpecificationModel({
+    required this.requiresBackend,
+    this.secretReferences = const [],
+  });
 }

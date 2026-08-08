@@ -14,14 +14,24 @@ import 'solution_score.dart';
 import 'solution_tradeoff.dart';
 import 'solution_variation_types.dart';
 
-enum SolutionRelationKind { dominates, dominatedBy, equivalentTo, alternativeTo, conflictsWith }
+enum SolutionRelationKind {
+  dominates,
+  dominatedBy,
+  equivalentTo,
+  alternativeTo,
+  conflictsWith,
+}
 
 class SolutionNode {
   final String candidateId;
   final String label;
   final double overallScore;
 
-  const SolutionNode({required this.candidateId, required this.label, required this.overallScore});
+  const SolutionNode({
+    required this.candidateId,
+    required this.label,
+    required this.overallScore,
+  });
 }
 
 class SolutionEdge {
@@ -44,11 +54,14 @@ class SolutionGraph {
 
   const SolutionGraph({this.nodes = const [], this.edges = const []});
 
-  SolutionNode? nodeById(String id) => nodes.where((n) => n.candidateId == id).firstOrNull;
+  SolutionNode? nodeById(String id) =>
+      nodes.where((n) => n.candidateId == id).firstOrNull;
 
-  List<SolutionEdge> edgesFrom(String id) => edges.where((e) => e.fromCandidateId == id).toList();
+  List<SolutionEdge> edgesFrom(String id) =>
+      edges.where((e) => e.fromCandidateId == id).toList();
 
-  List<SolutionEdge> edgesTo(String id) => edges.where((e) => e.toCandidateId == id).toList();
+  List<SolutionEdge> edgesTo(String id) =>
+      edges.where((e) => e.toCandidateId == id).toList();
 }
 
 /// One fully-engineered candidate solution: Architecture -> Engineering ->
@@ -103,7 +116,11 @@ class SolutionCandidate {
 
   List<CapabilityDecision> get capabilities => architecture.capabilities;
 
-  SolutionCandidate copyWith({List<SolutionTradeoff>? tradeoffs, SolutionScore? score, SolutionExplanation? explanation}) {
+  SolutionCandidate copyWith({
+    List<SolutionTradeoff>? tradeoffs,
+    SolutionScore? score,
+    SolutionExplanation? explanation,
+  }) {
     return SolutionCandidate(
       id: id,
       label: label,

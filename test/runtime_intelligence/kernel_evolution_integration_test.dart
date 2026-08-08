@@ -80,52 +80,99 @@ SemanticApp _fieldSurveyApp() {
         id: 'entry',
         name: 'Entry',
         displayField: 'title',
-        fields: [SemanticField(id: 'title', name: 'Title', type: BlueprintFieldType.text, required: true)],
+        fields: [
+          SemanticField(
+            id: 'title',
+            name: 'Title',
+            type: BlueprintFieldType.text,
+            required: true,
+          ),
+        ],
       ),
     ],
     views: const [
-      SemanticView(id: 'entries_list', name: 'Entries', purpose: 'list', sourceEntityId: 'entry', viewType: BlueprintViewType.list, isDefault: true),
+      SemanticView(
+        id: 'entries_list',
+        name: 'Entries',
+        purpose: 'list',
+        sourceEntityId: 'entry',
+        viewType: BlueprintViewType.list,
+        isDefault: true,
+      ),
     ],
-    actions: const [SemanticAction(id: 'add_entry', name: 'Add Entry', targetEntityId: 'entry')],
+    actions: const [
+      SemanticAction(
+        id: 'add_entry',
+        name: 'Add Entry',
+        targetEntityId: 'entry',
+      ),
+    ],
   );
 }
 
 void main() {
-  test('RuntimeIntelligenceEngine consumes a real Kernel-produced EvolutionRoadmap and never duplicates its proposals', () async {
-    final kernel = AnythingKernel(
-      providerRegistry: _FakeProviderRegistry(),
-      capabilityRegistry: _registryWithStorage(),
-      reasoner: _FixedReasoner(_fieldSurveyApp()),
-    );
-    final outcome = await kernel.processIntent(Intent.create(expression: 'track my field survey entries'));
-
-    expect(outcome, isA<ExecutionPlanReady>());
-    final ready = outcome as ExecutionPlanReady;
-    expect(ready.evolutionRoadmap, isNotNull);
-
-    // Simulate observed usage that happens to recreate one of Evolution's
-    // own already-surfaced opportunities by description text overlap is
-    // unlikely with synthetic data, but the real proof is that the call
-    // succeeds end-to-end with a REAL roadmap object, not a stub.
-    final observationMemory = ObservationMemory();
-    DateTime t(int i) => DateTime(2026, 1, 1).add(Duration(seconds: i));
-    for (final exp in ['e1', 'e2']) {
-      observationMemory.record(
-        ObservationRecord(id: '$exp-0', category: ObservationCategory.navigation, experienceId: exp, screenId: 'a', timestamp: t(0)),
+  test(
+    'RuntimeIntelligenceEngine consumes a real Kernel-produced EvolutionRoadmap and never duplicates its proposals',
+    () async {
+      final kernel = AnythingKernel(
+        providerRegistry: _FakeProviderRegistry(),
+        capabilityRegistry: _registryWithStorage(),
+        reasoner: _FixedReasoner(_fieldSurveyApp()),
       );
-      observationMemory.record(
-        ObservationRecord(id: '$exp-1', category: ObservationCategory.navigation, experienceId: exp, screenId: 'b', timestamp: t(1)),
+      final outcome = await kernel.processIntent(
+        Intent.create(expression: 'track my field survey entries'),
       );
-    }
 
-    const engine = RuntimeIntelligenceEngine();
-    final result = engine.run(observationMemory, LearningMemory(), evolutionRoadmap: ready.evolutionRoadmap, minOccurrences: 2);
+      expect(outcome, isA<ExecutionPlanReady>());
+      final ready = outcome as ExecutionPlanReady;
+      expect(ready.evolutionRoadmap, isNotNull);
 
-    // No recommendation should ever collide with a real Evolution proposal
-    // description — proves the dedup path executed against real data.
-    final evolutionDescriptions = ready.evolutionRoadmap!.allProposals.map((p) => p.candidate.opportunity.description).toSet();
-    for (final recommendation in result.recommendations) {
-      expect(evolutionDescriptions.contains(recommendation.description), isFalse);
-    }
-  });
+      // Simulate observed usage that happens to recreate one of Evolution's
+      // own already-surfaced opportunities by description text overlap is
+      // unlikely with synthetic data, but the real proof is that the call
+      // succeeds end-to-end with a REAL roadmap object, not a stub.
+      final observationMemory = ObservationMemory();
+      DateTime t(int i) => DateTime(2026, 1, 1).add(Duration(seconds: i));
+      for (final exp in ['e1', 'e2']) {
+        observationMemory.record(
+          ObservationRecord(
+            id: '$exp-0',
+            category: ObservationCategory.navigation,
+            experienceId: exp,
+            screenId: 'a',
+            timestamp: t(0),
+          ),
+        );
+        observationMemory.record(
+          ObservationRecord(
+            id: '$exp-1',
+            category: ObservationCategory.navigation,
+            experienceId: exp,
+            screenId: 'b',
+            timestamp: t(1),
+          ),
+        );
+      }
+
+      const engine = RuntimeIntelligenceEngine();
+      final result = engine.run(
+        observationMemory,
+        LearningMemory(),
+        evolutionRoadmap: ready.evolutionRoadmap,
+        minOccurrences: 2,
+      );
+
+      // No recommendation should ever collide with a real Evolution proposal
+      // description — proves the dedup path executed against real data.
+      final evolutionDescriptions = ready.evolutionRoadmap!.allProposals
+          .map((p) => p.candidate.opportunity.description)
+          .toSet();
+      for (final recommendation in result.recommendations) {
+        expect(
+          evolutionDescriptions.contains(recommendation.description),
+          isFalse,
+        );
+      }
+    },
+  );
 }

@@ -13,8 +13,12 @@ class AutomationPlanner {
 
   /// Returns null for recommendations that aren't automation/workflow
   /// shaped — never fabricates a plan for something that isn't one.
-  AutomationPlan? plan(Recommendation recommendation, {ScheduleFrequency frequency = ScheduleFrequency.daily}) {
-    if (recommendation.kind != RecommendationKind.automation && recommendation.kind != RecommendationKind.workflow) {
+  AutomationPlan? plan(
+    Recommendation recommendation, {
+    ScheduleFrequency frequency = ScheduleFrequency.daily,
+  }) {
+    if (recommendation.kind != RecommendationKind.automation &&
+        recommendation.kind != RecommendationKind.workflow) {
       return null;
     }
 
@@ -22,7 +26,11 @@ class AutomationPlanner {
       id: 'automation:${recommendation.id}',
       description: recommendation.description,
       steps: [
-        AutomationCandidate(id: 'step:${recommendation.id}:trigger', capabilityId: 'clock', description: 'Trigger on schedule'),
+        AutomationCandidate(
+          id: 'step:${recommendation.id}:trigger',
+          capabilityId: 'clock',
+          description: 'Trigger on schedule',
+        ),
         AutomationCandidate(
           id: 'step:${recommendation.id}:notify',
           capabilityId: 'notifications',

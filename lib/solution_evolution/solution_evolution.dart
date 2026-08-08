@@ -53,7 +53,13 @@ import '../software_architect/requirement_graph_diff.dart';
 
 /// One real action this engine recommends — never an instruction to
 /// execute anything itself.
-enum EvolutionAction { noAction, validate, regenerateRuntime, regenerateBackend, regenerateRestApi }
+enum EvolutionAction {
+  noAction,
+  validate,
+  regenerateRuntime,
+  regenerateBackend,
+  regenerateRestApi,
+}
 
 /// Whether a caller should use `IncrementalCompilerSynthesizer` (R24) or
 /// a full `SolutionExecutionOrchestrator.execute()` (R25-R27) run —
@@ -100,9 +106,17 @@ class SolutionEvolutionEngine {
     required ArchitectureCandidate afterArchitecture,
     required ExecutionStrategy afterExecutionStrategy,
   }) {
-    final requirementDiff = _requirementDiffer.diff(beforeRequirements, afterRequirements);
-    final architectureDiff = _architectureDiffer.diff(beforeArchitecture, afterArchitecture);
-    final affected = _analyzer.fromRequirementDiff(requirementDiff).merge(_analyzer.fromArchitectureDiff(architectureDiff));
+    final requirementDiff = _requirementDiffer.diff(
+      beforeRequirements,
+      afterRequirements,
+    );
+    final architectureDiff = _architectureDiffer.diff(
+      beforeArchitecture,
+      afterArchitecture,
+    );
+    final affected = _analyzer
+        .fromRequirementDiff(requirementDiff)
+        .merge(_analyzer.fromArchitectureDiff(architectureDiff));
 
     if (affected.isEmpty) {
       return RegenerationPlan(
@@ -115,9 +129,21 @@ class SolutionEvolutionEngine {
     }
 
     final actions = <EvolutionAction>{};
-    if (_applicable(afterExecutionStrategy, ExecutionTargetKind.runtimeExperience)) actions.add(EvolutionAction.regenerateRuntime);
-    if (_applicable(afterExecutionStrategy, ExecutionTargetKind.backendService)) actions.add(EvolutionAction.regenerateBackend);
-    if (_applicable(afterExecutionStrategy, ExecutionTargetKind.restApi)) actions.add(EvolutionAction.regenerateRestApi);
+    if (_applicable(
+      afterExecutionStrategy,
+      ExecutionTargetKind.runtimeExperience,
+    )) {
+      actions.add(EvolutionAction.regenerateRuntime);
+    }
+    if (_applicable(
+      afterExecutionStrategy,
+      ExecutionTargetKind.backendService,
+    )) {
+      actions.add(EvolutionAction.regenerateBackend);
+    }
+    if (_applicable(afterExecutionStrategy, ExecutionTargetKind.restApi)) {
+      actions.add(EvolutionAction.regenerateRestApi);
+    }
 
     if (actions.isEmpty) {
       // Real entities changed, but nothing in this solution is
@@ -146,15 +172,24 @@ class SolutionEvolutionEngine {
     // path (see this file's own top-level doc comment) — their presence
     // forces a full compilation; Runtime-Experience-only changes may use
     // the real incremental path.
-    final needsFull = actions.contains(EvolutionAction.regenerateBackend) || actions.contains(EvolutionAction.regenerateRestApi);
+    final needsFull =
+        actions.contains(EvolutionAction.regenerateBackend) ||
+        actions.contains(EvolutionAction.regenerateRestApi);
     final mode = needsFull ? CompilationMode.full : CompilationMode.incremental;
 
-    return RegenerationPlan(actions: actions, compilationMode: mode, affectedEntities: affected, requirementDiff: requirementDiff, architectureDiff: architectureDiff);
+    return RegenerationPlan(
+      actions: actions,
+      compilationMode: mode,
+      affectedEntities: affected,
+      requirementDiff: requirementDiff,
+      architectureDiff: architectureDiff,
+    );
   }
 
   bool _applicable(ExecutionStrategy strategy, ExecutionTargetKind target) {
     final plan = strategy.targets.where((t) => t.target == target).firstOrNull;
-    return plan?.classification == ExecutionTargetClassification.applicableWithGenerator;
+    return plan?.classification ==
+        ExecutionTargetClassification.applicableWithGenerator;
   }
 
   /// Pure, honest restatement of `ArtifactIntelligenceReport.deploymentReady`
@@ -162,5 +197,8 @@ class SolutionEvolutionEngine {
   /// readiness logic; `ArtifactIntelligenceEngine` already computes the
   /// real, richer readiness signal (including the real dependency-fulfilment
   /// check `OrchestrationReport.succeeded` alone does not make).
-  DeploymentDecision decideDeployment(ArtifactIntelligenceReport report) => report.deploymentReady ? DeploymentDecision.allowed : DeploymentDecision.blocked;
+  DeploymentDecision decideDeployment(ArtifactIntelligenceReport report) =>
+      report.deploymentReady
+      ? DeploymentDecision.allowed
+      : DeploymentDecision.blocked;
 }

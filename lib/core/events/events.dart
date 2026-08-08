@@ -17,7 +17,17 @@ import 'dart:async';
 
 /// Real, closed vocabulary matching R35's own "EVENT MODEL: Category" —
 /// `general` covers every pre-R35 event (backward compatible default).
-enum EventCategory { general, intent, session, workspace, runtime, lifecycle, artifact, deployment, notification }
+enum EventCategory {
+  general,
+  intent,
+  session,
+  workspace,
+  runtime,
+  lifecycle,
+  artifact,
+  deployment,
+  notification,
+}
 
 /// Real, closed vocabulary matching R35's own "EVENT MODEL: Severity."
 enum EventSeverity { info, warning, error }
@@ -244,16 +254,28 @@ class IntentRouted extends AnythingEvent {
   /// imports application-layer types" layering.
   final String action;
 
-  const IntentRouted({required super.id, required super.timestamp, required super.source, super.correlationId, this.sessionId, required this.action})
-    : super(eventCategory: EventCategory.intent);
+  const IntentRouted({
+    required super.id,
+    required super.timestamp,
+    required super.source,
+    super.correlationId,
+    this.sessionId,
+    required this.action,
+  }) : super(eventCategory: EventCategory.intent);
 }
 
 class SessionCreated extends AnythingEvent {
   final String sessionId;
   final String? experienceId;
 
-  const SessionCreated({required super.id, required super.timestamp, required super.source, super.correlationId, required this.sessionId, this.experienceId})
-    : super(eventCategory: EventCategory.session);
+  const SessionCreated({
+    required super.id,
+    required super.timestamp,
+    required super.source,
+    super.correlationId,
+    required this.sessionId,
+    this.experienceId,
+  }) : super(eventCategory: EventCategory.session);
 }
 
 class SessionContinued extends AnythingEvent {
@@ -263,15 +285,26 @@ class SessionContinued extends AnythingEvent {
   /// layering reason as [IntentRouted.action].
   final String outcome;
 
-  const SessionContinued({required super.id, required super.timestamp, required super.source, super.correlationId, required this.sessionId, required this.outcome})
-    : super(eventCategory: EventCategory.session);
+  const SessionContinued({
+    required super.id,
+    required super.timestamp,
+    required super.source,
+    super.correlationId,
+    required this.sessionId,
+    required this.outcome,
+  }) : super(eventCategory: EventCategory.session);
 }
 
 class SessionSwitched extends AnythingEvent {
   final String sessionId;
 
-  const SessionSwitched({required super.id, required super.timestamp, required super.source, super.correlationId, required this.sessionId})
-    : super(eventCategory: EventCategory.session);
+  const SessionSwitched({
+    required super.id,
+    required super.timestamp,
+    required super.source,
+    super.correlationId,
+    required this.sessionId,
+  }) : super(eventCategory: EventCategory.session);
 }
 
 class WorkspaceUpdated extends AnythingEvent {
@@ -280,8 +313,14 @@ class WorkspaceUpdated extends AnythingEvent {
   final String change;
   final String sessionId;
 
-  const WorkspaceUpdated({required super.id, required super.timestamp, required super.source, super.correlationId, required this.change, required this.sessionId})
-    : super(eventCategory: EventCategory.workspace);
+  const WorkspaceUpdated({
+    required super.id,
+    required super.timestamp,
+    required super.source,
+    super.correlationId,
+    required this.change,
+    required this.sessionId,
+  }) : super(eventCategory: EventCategory.workspace);
 }
 
 class RuntimeSnapshotCaptured extends AnythingEvent {
@@ -302,8 +341,14 @@ class LifecycleCompleted extends AnythingEvent {
   final String sessionId;
   final String outcome;
 
-  const LifecycleCompleted({required super.id, required super.timestamp, required super.source, super.correlationId, required this.sessionId, required this.outcome})
-    : super(eventCategory: EventCategory.lifecycle);
+  const LifecycleCompleted({
+    required super.id,
+    required super.timestamp,
+    required super.source,
+    super.correlationId,
+    required this.sessionId,
+    required this.outcome,
+  }) : super(eventCategory: EventCategory.lifecycle);
 }
 
 class ArtifactUpdated extends AnythingEvent {
@@ -323,22 +368,43 @@ class ArtifactUpdated extends AnythingEvent {
 class DeploymentAllowed extends AnythingEvent {
   final String sessionId;
 
-  const DeploymentAllowed({required super.id, required super.timestamp, required super.source, super.correlationId, required this.sessionId})
-    : super(eventCategory: EventCategory.deployment);
+  const DeploymentAllowed({
+    required super.id,
+    required super.timestamp,
+    required super.source,
+    super.correlationId,
+    required this.sessionId,
+  }) : super(eventCategory: EventCategory.deployment);
 }
 
 class DeploymentBlocked extends AnythingEvent {
   final String sessionId;
 
-  const DeploymentBlocked({required super.id, required super.timestamp, required super.source, super.correlationId, required this.sessionId})
-    : super(eventCategory: EventCategory.deployment, severity: EventSeverity.warning);
+  const DeploymentBlocked({
+    required super.id,
+    required super.timestamp,
+    required super.source,
+    super.correlationId,
+    required this.sessionId,
+  }) : super(
+         eventCategory: EventCategory.deployment,
+         severity: EventSeverity.warning,
+       );
 }
 
 class CommitFailed extends AnythingEvent {
   final String sessionId;
 
-  const CommitFailed({required super.id, required super.timestamp, required super.source, super.correlationId, required this.sessionId})
-    : super(eventCategory: EventCategory.deployment, severity: EventSeverity.error);
+  const CommitFailed({
+    required super.id,
+    required super.timestamp,
+    required super.source,
+    super.correlationId,
+    required this.sessionId,
+  }) : super(
+         eventCategory: EventCategory.deployment,
+         severity: EventSeverity.error,
+       );
 }
 
 class NotificationGenerated extends AnythingEvent {
@@ -380,7 +446,8 @@ class EventBus {
   /// Subscribe to events of a specific type — `on<AnythingEvent>()`
   /// receives everything (every real event `is AnythingEvent`), matching
   /// the original, unmodified, already-tested contract.
-  Stream<T> on<T extends AnythingEvent>() => _controller.stream.where((e) => e is T).cast<T>();
+  Stream<T> on<T extends AnythingEvent>() =>
+      _controller.stream.where((e) => e is T).cast<T>();
 
   /// Publish an event — a real, silent no-op after [dispose] (matches the
   /// original, already-tested "publish after dispose never throws"

@@ -81,7 +81,8 @@ class _ExperiencesScreenState extends State<ExperiencesScreen> {
     // IS-R57: this screen already holds the composition; it now takes the
     // ONE activity repository from it instead of building a tenth.
     _activity = _composition.activityRepository;
-    _entryPipeline = widget.entryPipeline ?? _composition.experienceEntryPipeline;
+    _entryPipeline =
+        widget.entryPipeline ?? _composition.experienceEntryPipeline;
     _loadExperiences();
   }
 

@@ -192,7 +192,9 @@ class LifecycleResult {
     this.previousPackage,
   });
 
-  bool get succeeded => outcome == LifecycleOutcome.deployed || outcome == LifecycleOutcome.noChangeDetected;
+  bool get succeeded =>
+      outcome == LifecycleOutcome.deployed ||
+      outcome == LifecycleOutcome.noChangeDetected;
 }
 
 class EngineeringLifecycleCoordinator {
@@ -218,7 +220,8 @@ class EngineeringLifecycleCoordinator {
   }) : _kernel = kernel,
        _engineeringMemory = engineeringMemory,
        _repository = repository ?? SqliteExperienceRepository(),
-       _modificationCoordinator = modificationCoordinator ?? ExperienceModificationCoordinator();
+       _modificationCoordinator =
+           modificationCoordinator ?? ExperienceModificationCoordinator();
 
   /// The real, single production entry point this specification exists for.
   /// "Before" state: real, persisted `EngineeringMemoryRecord.requirementGraph`/
@@ -227,15 +230,21 @@ class EngineeringLifecycleCoordinator {
   /// comment). "After" state: a fresh run of the SAME, unmodified, single
   /// `AnythingKernel.processIntent()` reasoning call every other production
   /// path already uses — zero new AI call.
-  Future<LifecycleResult> evolveExperience({required String experienceId, required Intent intent}) async {
+  Future<LifecycleResult> evolveExperience({
+    required String experienceId,
+    required Intent intent,
+  }) async {
     final stopwatch = Stopwatch()..start();
 
     final record = await _engineeringMemory.load(experienceId);
-    if (record == null || record.requirementGraph == null || record.architectureCandidate == null) {
+    if (record == null ||
+        record.requirementGraph == null ||
+        record.architectureCandidate == null) {
       stopwatch.stop();
       return LifecycleResult(
         outcome: LifecycleOutcome.noEngineeringMemory,
-        message: 'No historical engineering memory is available for this experience — a diff-based evolution '
+        message:
+            'No historical engineering memory is available for this experience — a diff-based evolution '
             'plan cannot be honestly computed without a real "before" state.',
         executionDuration: stopwatch.elapsed,
       );
@@ -245,7 +254,11 @@ class EngineeringLifecycleCoordinator {
     final previousPackage = await _repository.getPackage(experienceId);
     if (metadata == null || previousPackage == null) {
       stopwatch.stop();
-      return LifecycleResult(outcome: LifecycleOutcome.cannotEvolve, message: 'App not found', executionDuration: stopwatch.elapsed);
+      return LifecycleResult(
+        outcome: LifecycleOutcome.cannotEvolve,
+        message: 'App not found',
+        executionDuration: stopwatch.elapsed,
+      );
     }
 
     final kernelOutcome = await _kernel.processIntent(intent);
@@ -257,7 +270,8 @@ class EngineeringLifecycleCoordinator {
       stopwatch.stop();
       return LifecycleResult(
         outcome: LifecycleOutcome.cannotEvolve,
-        message: 'The fresh reasoning pass for this intent did not reach a complete execution plan.',
+        message:
+            'The fresh reasoning pass for this intent did not reach a complete execution plan.',
         executionDuration: stopwatch.elapsed,
         previousPackage: previousPackage,
       );
@@ -290,7 +304,8 @@ class EngineeringLifecycleCoordinator {
       stopwatch.stop();
       return LifecycleResult(
         outcome: LifecycleOutcome.noActionableTarget,
-        message: 'A real structural change was detected, but no target with a real generator was affected.',
+        message:
+            'A real structural change was detected, but no target with a real generator was affected.',
         regenerationPlan: plan,
         compilationMode: CompilationMode.none,
         executionDuration: stopwatch.elapsed,
@@ -299,7 +314,14 @@ class EngineeringLifecycleCoordinator {
     }
 
     if (plan.compilationMode == CompilationMode.incremental) {
-      return _runIncremental(experienceId: experienceId, name: metadata.name, plan: plan, afterModel: afterModel, previousPackage: previousPackage, stopwatch: stopwatch);
+      return _runIncremental(
+        experienceId: experienceId,
+        name: metadata.name,
+        plan: plan,
+        afterModel: afterModel,
+        previousPackage: previousPackage,
+        stopwatch: stopwatch,
+      );
     }
 
     return _runFull(
@@ -322,20 +344,31 @@ class EngineeringLifecycleCoordinator {
     required ExperiencePackage previousPackage,
     required Stopwatch stopwatch,
   }) async {
-    final result = _incrementalSynthesizer.synthesize(fullModel: afterModel, affected: plan.affectedEntities, id: experienceId, name: name);
+    final result = _incrementalSynthesizer.synthesize(
+      fullModel: afterModel,
+      affected: plan.affectedEntities,
+      id: experienceId,
+      name: name,
+    );
 
     // Real, honest deployment gate for the incremental path — see this
     // file's own top-level "Deployment Flow" doc comment for why
     // ArtifactIntelligenceEngine is not used here.
     final candidate = result.package;
-    final valid = result.succeeded && candidate != null && ExperiencePackageValidator.validate(candidate).isValid;
-    final decision = valid ? DeploymentDecision.allowed : DeploymentDecision.blocked;
+    final valid =
+        result.succeeded &&
+        candidate != null &&
+        ExperiencePackageValidator.validate(candidate).isValid;
+    final decision = valid
+        ? DeploymentDecision.allowed
+        : DeploymentDecision.blocked;
 
     if (!valid) {
       stopwatch.stop();
       return LifecycleResult(
         outcome: LifecycleOutcome.blocked,
-        message: 'The incrementally-regenerated candidate did not pass its real deployment gate.',
+        message:
+            'The incrementally-regenerated candidate did not pass its real deployment gate.',
         regenerationPlan: plan,
         compilationMode: CompilationMode.incremental,
         incrementalResult: result,
@@ -345,13 +378,21 @@ class EngineeringLifecycleCoordinator {
       );
     }
 
-    final evolutionPlan = _incrementalSynthesizer.buildEvolutionPlan(experienceId: experienceId, previousPackage: previousPackage, result: result);
+    final evolutionPlan = _incrementalSynthesizer.buildEvolutionPlan(
+      experienceId: experienceId,
+      previousPackage: previousPackage,
+      result: result,
+    );
     final commitOutcome = await _commit(evolutionPlan);
     stopwatch.stop();
 
     return LifecycleResult(
-      outcome: commitOutcome ? LifecycleOutcome.deployed : LifecycleOutcome.commitFailed,
-      message: commitOutcome ? 'Incremental regeneration deployed.' : "The regenerated candidate passed its deployment gate but couldn't be committed.",
+      outcome: commitOutcome
+          ? LifecycleOutcome.deployed
+          : LifecycleOutcome.commitFailed,
+      message: commitOutcome
+          ? 'Incremental regeneration deployed.'
+          : "The regenerated candidate passed its deployment gate but couldn't be committed.",
       regenerationPlan: plan,
       compilationMode: CompilationMode.incremental,
       incrementalResult: result,
@@ -371,15 +412,25 @@ class EngineeringLifecycleCoordinator {
     required ExperiencePackage previousPackage,
     required Stopwatch stopwatch,
   }) async {
-    final report = await _orchestrator.execute(strategy: afterExecutionStrategy, model: afterModel, id: experienceId, name: name, backendPlan: backendPlan);
-    final artifactReport = _artifactIntelligence.analyze(report, afterExecutionStrategy);
+    final report = await _orchestrator.execute(
+      strategy: afterExecutionStrategy,
+      model: afterModel,
+      id: experienceId,
+      name: name,
+      backendPlan: backendPlan,
+    );
+    final artifactReport = _artifactIntelligence.analyze(
+      report,
+      afterExecutionStrategy,
+    );
     final decision = _evolutionEngine.decideDeployment(artifactReport);
 
     if (decision == DeploymentDecision.blocked) {
       stopwatch.stop();
       return LifecycleResult(
         outcome: LifecycleOutcome.blocked,
-        message: 'The regenerated artifact set did not pass its real deployment gate: ${artifactReport.deploymentBlockers.join('; ')}',
+        message:
+            'The regenerated artifact set did not pass its real deployment gate: ${artifactReport.deploymentBlockers.join('; ')}',
         regenerationPlan: plan,
         compilationMode: CompilationMode.full,
         orchestrationReport: report,
@@ -390,13 +441,21 @@ class EngineeringLifecycleCoordinator {
       );
     }
 
-    final evolutionPlan = _buildEvolutionPlanFromReport(experienceId: experienceId, previousPackage: previousPackage, report: report);
+    final evolutionPlan = _buildEvolutionPlanFromReport(
+      experienceId: experienceId,
+      previousPackage: previousPackage,
+      report: report,
+    );
     final commitOutcome = await _commit(evolutionPlan);
     stopwatch.stop();
 
     return LifecycleResult(
-      outcome: commitOutcome ? LifecycleOutcome.deployed : LifecycleOutcome.commitFailed,
-      message: commitOutcome ? 'Full regeneration deployed.' : "The regenerated artifact set passed its deployment gate but couldn't be committed.",
+      outcome: commitOutcome
+          ? LifecycleOutcome.deployed
+          : LifecycleOutcome.commitFailed,
+      message: commitOutcome
+          ? 'Full regeneration deployed.'
+          : "The regenerated artifact set passed its deployment gate but couldn't be committed.",
       regenerationPlan: plan,
       compilationMode: CompilationMode.full,
       orchestrationReport: report,
@@ -413,16 +472,31 @@ class EngineeringLifecycleCoordinator {
   /// Runtime Experience stage instead of an `IncrementalSynthesisResult`.
   /// Coordinator-local glue only — never a change to either existing
   /// subsystem.
-  EvolutionDiffPlan? _buildEvolutionPlanFromReport({required String experienceId, required ExperiencePackage previousPackage, required OrchestrationReport report}) {
-    final newPackage = report.outcomeFor(ExecutionTargetKind.runtimeExperience)?.package;
+  EvolutionDiffPlan? _buildEvolutionPlanFromReport({
+    required String experienceId,
+    required ExperiencePackage previousPackage,
+    required OrchestrationReport report,
+  }) {
+    final newPackage = report
+        .outcomeFor(ExecutionTargetKind.runtimeExperience)
+        ?.package;
     if (newPackage == null) return null;
-    final experienceDiff = const ExperienceDiffer().diff(previousPackage, newPackage);
-    return const EvolutionDiffPlanBuilder().build(experienceId: experienceId, experienceDiff: experienceDiff, candidatePackage: newPackage);
+    final experienceDiff = const ExperienceDiffer().diff(
+      previousPackage,
+      newPackage,
+    );
+    return const EvolutionDiffPlanBuilder().build(
+      experienceId: experienceId,
+      experienceDiff: experienceDiff,
+      candidatePackage: newPackage,
+    );
   }
 
   Future<bool> _commit(EvolutionDiffPlan? evolutionPlan) async {
     if (evolutionPlan == null) return false;
-    final result = await _modificationCoordinator.applyEvolutionPlan(evolutionPlan);
+    final result = await _modificationCoordinator.applyEvolutionPlan(
+      evolutionPlan,
+    );
     return result is ModificationCoordinatorSucceeded;
   }
 }

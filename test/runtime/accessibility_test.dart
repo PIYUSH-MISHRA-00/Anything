@@ -31,53 +31,116 @@ void main() {
     stateEngine = ExperienceStateEngine();
   });
 
-  Widget wrap(Widget Function(BuildContext ctx) builder) => MaterialApp(home: Builder(builder: builder));
+  Widget wrap(Widget Function(BuildContext ctx) builder) =>
+      MaterialApp(home: Builder(builder: builder));
 
-  testWidgets('a labeled Switch node exposes a real Semantics label a screen reader can announce', (tester) async {
+  testWidgets(
+    'a labeled Switch node exposes a real Semantics label a screen reader can announce',
+    (tester) async {
+      final handle = tester.ensureSemantics();
+      stateEngine.initialize(
+        const StateSchema(
+          variables: [
+            StateVariable(
+              id: 'darkMode',
+              type: 'boolean',
+              defaultValue: false,
+              persistence: 'session',
+            ),
+          ],
+        ),
+      );
+
+      final interface = InterfaceDefinition(
+        screens: [
+          InterfaceScreen(
+            id: 'screen_1',
+            title: 'Settings',
+            children: [
+              InterfaceNode(
+                id: 'sw1',
+                type: 'switch',
+                properties: const {'label': 'Dark Mode'},
+                stateBinding: 'darkMode',
+              ),
+            ],
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        wrap((ctx) => renderer.render(ctx, interface, stateEngine)),
+      );
+
+      final semantics = tester.getSemantics(find.byType(Switch));
+      expect(semantics.label, 'Dark Mode');
+      handle.dispose();
+    },
+  );
+
+  testWidgets(
+    'an unlabeled Switch node still renders correctly (backward compatible, no regression)',
+    (tester) async {
+      stateEngine.initialize(
+        const StateSchema(
+          variables: [
+            StateVariable(
+              id: 'x',
+              type: 'boolean',
+              defaultValue: false,
+              persistence: 'session',
+            ),
+          ],
+        ),
+      );
+
+      final interface = InterfaceDefinition(
+        screens: [
+          InterfaceScreen(
+            id: 'screen_1',
+            title: 'Test',
+            children: [
+              InterfaceNode(
+                id: 'sw1',
+                type: 'switch',
+                properties: const {},
+                stateBinding: 'x',
+              ),
+            ],
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        wrap((ctx) => renderer.render(ctx, interface, stateEngine)),
+      );
+      expect(find.byType(Switch), findsOneWidget);
+    },
+  );
+
+  testWidgets('an icon node exposes its icon name as a real semantic label', (
+    tester,
+  ) async {
     final handle = tester.ensureSemantics();
-    stateEngine.initialize(const StateSchema(variables: [StateVariable(id: 'darkMode', type: 'boolean', defaultValue: false, persistence: 'session')]));
-
     final interface = InterfaceDefinition(
       screens: [
         InterfaceScreen(
           id: 'screen_1',
-          title: 'Settings',
+          title: 'Test',
           children: [
-            InterfaceNode(id: 'sw1', type: 'switch', properties: const {'label': 'Dark Mode'}, stateBinding: 'darkMode'),
+            InterfaceNode(
+              id: 'ic1',
+              type: 'icon',
+              properties: const {'icon': 'star'},
+            ),
           ],
         ),
       ],
     );
 
-    await tester.pumpWidget(wrap((ctx) => renderer.render(ctx, interface, stateEngine)));
-
-    final semantics = tester.getSemantics(find.byType(Switch));
-    expect(semantics.label, 'Dark Mode');
-    handle.dispose();
-  });
-
-  testWidgets('an unlabeled Switch node still renders correctly (backward compatible, no regression)', (tester) async {
-    stateEngine.initialize(const StateSchema(variables: [StateVariable(id: 'x', type: 'boolean', defaultValue: false, persistence: 'session')]));
-
-    final interface = InterfaceDefinition(
-      screens: [
-        InterfaceScreen(id: 'screen_1', title: 'Test', children: [InterfaceNode(id: 'sw1', type: 'switch', properties: const {}, stateBinding: 'x')]),
-      ],
+    await tester.pumpWidget(
+      wrap((ctx) => renderer.render(ctx, interface, stateEngine)),
     );
-
-    await tester.pumpWidget(wrap((ctx) => renderer.render(ctx, interface, stateEngine)));
-    expect(find.byType(Switch), findsOneWidget);
-  });
-
-  testWidgets('an icon node exposes its icon name as a real semantic label', (tester) async {
-    final handle = tester.ensureSemantics();
-    final interface = InterfaceDefinition(
-      screens: [
-        InterfaceScreen(id: 'screen_1', title: 'Test', children: [InterfaceNode(id: 'ic1', type: 'icon', properties: const {'icon': 'star'})]),
-      ],
-    );
-
-    await tester.pumpWidget(wrap((ctx) => renderer.render(ctx, interface, stateEngine)));
 
     final semantics = tester.getSemantics(find.byType(Icon));
     expect(semantics.label, 'star');

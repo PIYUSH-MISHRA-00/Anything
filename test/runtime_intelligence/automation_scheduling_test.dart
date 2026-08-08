@@ -22,10 +22,14 @@ import 'package:anything/software_architect/confidence.dart';
 Recommendation _recommendation(RecommendationKind kind) => Recommendation(
   id: 'rec-${kind.name}',
   kind: kind,
-  description: 'Every morning, open dashboard, refresh knowledge, summarize updates, notify user',
+  description:
+      'Every morning, open dashboard, refresh knowledge, summarize updates, notify user',
   reason: const RecommendationReason(
     summary: 's',
-    evidence: RecommendationEvidence(patternId: 'p', usageGraphNodeOrEdgeId: 'n'),
+    evidence: RecommendationEvidence(
+      patternId: 'p',
+      usageGraphNodeOrEdgeId: 'n',
+    ),
     confidence: Confidence.full,
   ),
 );
@@ -52,17 +56,31 @@ void main() {
   group('AutomationPlanner', () {
     const planner = AutomationPlanner();
 
-    test('plans a real declarative AutomationPlan for an automation-shaped recommendation', () {
-      final plan = planner.plan(_recommendation(RecommendationKind.automation));
-      expect(plan, isNotNull);
-      expect(plan!.steps, isNotEmpty);
-      expect(plan.steps.every((s) => s.capabilityId.isNotEmpty), isTrue);
-    });
+    test(
+      'plans a real declarative AutomationPlan for an automation-shaped recommendation',
+      () {
+        final plan = planner.plan(
+          _recommendation(RecommendationKind.automation),
+        );
+        expect(plan, isNotNull);
+        expect(plan!.steps, isNotEmpty);
+        expect(plan.steps.every((s) => s.capabilityId.isNotEmpty), isTrue);
+      },
+    );
 
-    test('plans nothing for a non-automation, non-workflow recommendation — never fabricates a plan', () {
-      expect(planner.plan(_recommendation(RecommendationKind.newFeature)), isNull);
-      expect(planner.plan(_recommendation(RecommendationKind.securityImprovement)), isNull);
-    });
+    test(
+      'plans nothing for a non-automation, non-workflow recommendation — never fabricates a plan',
+      () {
+        expect(
+          planner.plan(_recommendation(RecommendationKind.newFeature)),
+          isNull,
+        );
+        expect(
+          planner.plan(_recommendation(RecommendationKind.securityImprovement)),
+          isNull,
+        );
+      },
+    );
   });
 
   group('AutomationExecutor — validation only, never executes', () {
@@ -70,43 +88,65 @@ void main() {
     const executor = AutomationExecutor();
 
     test('every step resolves eligible when its capability is registered', () {
-      final plan = planner.plan(_recommendation(RecommendationKind.automation))!;
+      final plan = planner.plan(
+        _recommendation(RecommendationKind.automation),
+      )!;
       final registry = _registryWith(['clock', 'notifications']);
       final report = executor.validate(plan, registry);
       expect(report.allEligible, isTrue);
     });
 
-    test('a step naming an unregistered capability is honestly blocked, never silently skipped', () {
-      final plan = planner.plan(_recommendation(RecommendationKind.automation))!;
-      final registry = _registryWith(['clock']); // 'notifications' missing
-      final report = executor.validate(plan, registry);
-      expect(report.allEligible, isFalse);
-      expect(
-        report.steps.any((s) => s.step.capabilityId == 'notifications' && s.eligibility == AutomationStepEligibility.blockedMissingCapability),
-        isTrue,
-      );
-    });
+    test(
+      'a step naming an unregistered capability is honestly blocked, never silently skipped',
+      () {
+        final plan = planner.plan(
+          _recommendation(RecommendationKind.automation),
+        )!;
+        final registry = _registryWith(['clock']); // 'notifications' missing
+        final report = executor.validate(plan, registry);
+        expect(report.allEligible, isFalse);
+        expect(
+          report.steps.any(
+            (s) =>
+                s.step.capabilityId == 'notifications' &&
+                s.eligibility ==
+                    AutomationStepEligibility.blockedMissingCapability,
+          ),
+          isTrue,
+        );
+      },
+    );
   });
 
   group('AutomationHistory + AutomationMemory', () {
-    test('every planned automation is recorded, versioned, and recallable by plan id', () {
-      const planner = AutomationPlanner();
-      const executor = AutomationExecutor();
-      final history = AutomationHistory();
-      final memory = AutomationMemory();
-      final registry = _registryWith(['clock', 'notifications']);
+    test(
+      'every planned automation is recorded, versioned, and recallable by plan id',
+      () {
+        const planner = AutomationPlanner();
+        const executor = AutomationExecutor();
+        final history = AutomationHistory();
+        final memory = AutomationMemory();
+        final registry = _registryWith(['clock', 'notifications']);
 
-      final plan = planner.plan(_recommendation(RecommendationKind.automation))!;
-      final report = executor.validate(plan, registry);
-      final record = AutomationRecord(plan: plan, report: report, plannedAt: DateTime.now(), version: 1);
+        final plan = planner.plan(
+          _recommendation(RecommendationKind.automation),
+        )!;
+        final report = executor.validate(plan, registry);
+        final record = AutomationRecord(
+          plan: plan,
+          report: report,
+          plannedAt: DateTime.now(),
+          version: 1,
+        );
 
-      history.record(record);
-      memory.record(record);
+        history.record(record);
+        memory.record(record);
 
-      expect(history.records, hasLength(1));
-      expect(memory.recall(plan.id), isNotNull);
-      expect(memory.recall('does-not-exist'), isNull);
-    });
+        expect(history.records, hasLength(1));
+        expect(memory.recall(plan.id), isNotNull);
+        expect(memory.recall('does-not-exist'), isNull);
+      },
+    );
   });
 
   group('BackgroundCoordinator — declarative scheduling only', () {
@@ -115,9 +155,14 @@ void main() {
     test('queues eligible plans up to the budget, never exceeding it', () {
       final plans = List.generate(
         5,
-        (i) => planner.plan(_recommendation(RecommendationKind.automation), frequency: ScheduleFrequency.daily)!,
+        (i) => planner.plan(
+          _recommendation(RecommendationKind.automation),
+          frequency: ScheduleFrequency.daily,
+        )!,
       );
-      const coordinator = BackgroundCoordinator(budget: BackgroundBudget(maxJobs: 3));
+      const coordinator = BackgroundCoordinator(
+        budget: BackgroundBudget(maxJobs: 3),
+      );
       final jobs = coordinator.queue(plans);
       expect(jobs, hasLength(3));
       for (final job in jobs) {
@@ -126,8 +171,13 @@ void main() {
     });
 
     test('a policy that disallows conditional schedules filters them out', () {
-      final conditionalPlan = planner.plan(_recommendation(RecommendationKind.automation), frequency: ScheduleFrequency.conditional)!;
-      const coordinator = BackgroundCoordinator(policy: BackgroundPolicy(allowConditionalSchedules: false));
+      final conditionalPlan = planner.plan(
+        _recommendation(RecommendationKind.automation),
+        frequency: ScheduleFrequency.conditional,
+      )!;
+      const coordinator = BackgroundCoordinator(
+        policy: BackgroundPolicy(allowConditionalSchedules: false),
+      );
       final jobs = coordinator.queue([conditionalPlan]);
       expect(jobs, isEmpty);
     });
@@ -136,19 +186,33 @@ void main() {
   group('NotificationPlanner + ReminderPlanner', () {
     const planner = AutomationPlanner();
 
-    test('NotificationPlanner plans only for automation plans with a real notifications step', () {
-      const notificationPlanner = NotificationPlanner();
-      final plan = planner.plan(_recommendation(RecommendationKind.automation))!;
-      expect(notificationPlanner.plan(plan), isNotNull);
-    });
+    test(
+      'NotificationPlanner plans only for automation plans with a real notifications step',
+      () {
+        const notificationPlanner = NotificationPlanner();
+        final plan = planner.plan(
+          _recommendation(RecommendationKind.automation),
+        )!;
+        expect(notificationPlanner.plan(plan), isNotNull);
+      },
+    );
 
-    test('ReminderPlanner plans only for "once"-scheduled automation plans', () {
-      const reminderPlanner = ReminderPlanner();
-      final oncePlan = planner.plan(_recommendation(RecommendationKind.automation), frequency: ScheduleFrequency.once)!;
-      final dailyPlan = planner.plan(_recommendation(RecommendationKind.automation), frequency: ScheduleFrequency.daily)!;
+    test(
+      'ReminderPlanner plans only for "once"-scheduled automation plans',
+      () {
+        const reminderPlanner = ReminderPlanner();
+        final oncePlan = planner.plan(
+          _recommendation(RecommendationKind.automation),
+          frequency: ScheduleFrequency.once,
+        )!;
+        final dailyPlan = planner.plan(
+          _recommendation(RecommendationKind.automation),
+          frequency: ScheduleFrequency.daily,
+        )!;
 
-      expect(reminderPlanner.plan(oncePlan), isNotNull);
-      expect(reminderPlanner.plan(dailyPlan), isNull);
-    });
+        expect(reminderPlanner.plan(oncePlan), isNotNull);
+        expect(reminderPlanner.plan(dailyPlan), isNull);
+      },
+    );
   });
 }

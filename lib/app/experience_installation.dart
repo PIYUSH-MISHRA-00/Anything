@@ -112,8 +112,10 @@ class CompatibilityEvaluation {
   /// install; they travel with the result so the caller can show them.
   bool get isCompatible => !findings.any((f) => f.blocking);
 
-  List<CompatibilityFinding> get blockers => findings.where((f) => f.blocking).toList();
-  List<CompatibilityFinding> get warnings => findings.where((f) => !f.blocking).toList();
+  List<CompatibilityFinding> get blockers =>
+      findings.where((f) => f.blocking).toList();
+  List<CompatibilityFinding> get warnings =>
+      findings.where((f) => !f.blocking).toList();
 }
 
 /// THE compatibility evaluator (IS-R54 Task 3).
@@ -194,16 +196,28 @@ class ExperienceCompatibilityEvaluator {
 
     // ── Manifest compatibility ──
     if (manifest.experienceId.isEmpty) {
-      findings.add(const CompatibilityFinding(
-          IncompatibilityReason.manifestIncomplete, 'manifest has no experienceId'));
+      findings.add(
+        const CompatibilityFinding(
+          IncompatibilityReason.manifestIncomplete,
+          'manifest has no experienceId',
+        ),
+      );
     }
     if (manifest.entryPoint.isEmpty) {
-      findings.add(const CompatibilityFinding(
-          IncompatibilityReason.manifestIncomplete, 'manifest has no entryPoint'));
+      findings.add(
+        const CompatibilityFinding(
+          IncompatibilityReason.manifestIncomplete,
+          'manifest has no entryPoint',
+        ),
+      );
     }
     if (_parse(manifest.version) == null) {
-      findings.add(CompatibilityFinding(
-          IncompatibilityReason.malformedVersion, 'package version "${manifest.version}" is unparseable'));
+      findings.add(
+        CompatibilityFinding(
+          IncompatibilityReason.malformedVersion,
+          'package version "${manifest.version}" is unparseable',
+        ),
+      );
     }
 
     // ── Runtime version compatibility — the first real consumer of this field ──
@@ -211,18 +225,30 @@ class ExperienceCompatibilityEvaluator {
     if (minimum != null && minimum.isNotEmpty) {
       final comparison = compareVersions(minimum, runtimeVersion);
       if (comparison == null) {
-        findings.add(CompatibilityFinding(IncompatibilityReason.malformedVersion,
-            'minimumRuntimeVersion "$minimum" is unparseable'));
+        findings.add(
+          CompatibilityFinding(
+            IncompatibilityReason.malformedVersion,
+            'minimumRuntimeVersion "$minimum" is unparseable',
+          ),
+        );
       } else if (comparison > 0) {
-        findings.add(CompatibilityFinding(IncompatibilityReason.runtimeTooOld,
-            'needs runtime $minimum, this build is $runtimeVersion'));
+        findings.add(
+          CompatibilityFinding(
+            IncompatibilityReason.runtimeTooOld,
+            'needs runtime $minimum, this build is $runtimeVersion',
+          ),
+        );
       }
     }
 
     // ── Package format compatibility ──
     if (package.packageVersion > experiencePackageVersion) {
-      findings.add(CompatibilityFinding(IncompatibilityReason.packageFormatTooNew,
-          'package format v${package.packageVersion} exceeds supported v$experiencePackageVersion'));
+      findings.add(
+        CompatibilityFinding(
+          IncompatibilityReason.packageFormatTooNew,
+          'package format v${package.packageVersion} exceeds supported v$experiencePackageVersion',
+        ),
+      );
     }
 
     // ── Capability compatibility ──
@@ -234,15 +260,24 @@ class ExperienceCompatibilityEvaluator {
     if (enforceCapabilities && availableCapabilities.isNotEmpty) {
       for (final required in manifest.requiredCapabilities) {
         if (!availableCapabilities.contains(required)) {
-          findings.add(CompatibilityFinding(IncompatibilityReason.capabilityUnavailable,
-              'required capability "$required" is not registered'));
+          findings.add(
+            CompatibilityFinding(
+              IncompatibilityReason.capabilityUnavailable,
+              'required capability "$required" is not registered',
+            ),
+          );
         }
       }
       for (final optional in manifest.optionalCapabilities) {
         if (!availableCapabilities.contains(optional)) {
           // Not blocking: the Experience degrades, it does not fail to install.
-          findings.add(CompatibilityFinding(IncompatibilityReason.capabilityUnavailable,
-              'optional capability "$optional" is not registered', blocking: false));
+          findings.add(
+            CompatibilityFinding(
+              IncompatibilityReason.capabilityUnavailable,
+              'optional capability "$optional" is not registered',
+              blocking: false,
+            ),
+          );
         }
       }
     }
@@ -292,11 +327,15 @@ class DependencyPlan {
 
   static const DependencyPlan empty = DependencyPlan([]);
 
-  List<String> get missing =>
-      nodes.where((n) => n.status == DependencyStatus.missing).map((n) => n.experienceId).toList();
+  List<String> get missing => nodes
+      .where((n) => n.status == DependencyStatus.missing)
+      .map((n) => n.experienceId)
+      .toList();
 
-  List<String> get circular =>
-      nodes.where((n) => n.status == DependencyStatus.circular).map((n) => n.experienceId).toList();
+  List<String> get circular => nodes
+      .where((n) => n.status == DependencyStatus.circular)
+      .map((n) => n.experienceId)
+      .toList();
 
   /// Satisfiable when nothing is missing and nothing is circular.
   bool get isSatisfied => missing.isEmpty && circular.isEmpty;
@@ -405,32 +444,38 @@ List<MigrationRequirement> migrationRequirements({
   final from = installed.data?.schemaVersion;
   final to = incoming.data?.schemaVersion;
   if (from != null && to != null && from != to) {
-    requirements.add(MigrationRequirement(
-      kind: MigrationKind.dataSchema,
-      experienceId: id,
-      fromVersion: '$from',
-      toVersion: '$to',
-    ));
+    requirements.add(
+      MigrationRequirement(
+        kind: MigrationKind.dataSchema,
+        experienceId: id,
+        fromVersion: '$from',
+        toVersion: '$to',
+      ),
+    );
   }
 
   if (installed.packageVersion != incoming.packageVersion) {
-    requirements.add(MigrationRequirement(
-      kind: MigrationKind.packageFormat,
-      experienceId: id,
-      fromVersion: '${installed.packageVersion}',
-      toVersion: '${incoming.packageVersion}',
-    ));
+    requirements.add(
+      MigrationRequirement(
+        kind: MigrationKind.packageFormat,
+        experienceId: id,
+        fromVersion: '${installed.packageVersion}',
+        toVersion: '${incoming.packageVersion}',
+      ),
+    );
   }
 
   final fromRuntime = installed.manifest.minimumRuntimeVersion;
   final toRuntime = incoming.manifest.minimumRuntimeVersion;
   if (fromRuntime != toRuntime && toRuntime != null) {
-    requirements.add(MigrationRequirement(
-      kind: MigrationKind.runtime,
-      experienceId: id,
-      fromVersion: fromRuntime ?? 'unspecified',
-      toVersion: toRuntime,
-    ));
+    requirements.add(
+      MigrationRequirement(
+        kind: MigrationKind.runtime,
+        experienceId: id,
+        fromVersion: fromRuntime ?? 'unspecified',
+        toVersion: toRuntime,
+      ),
+    );
   }
 
   return requirements;
@@ -482,7 +527,8 @@ class InstallationTransaction {
     required this.repository,
     required this.experienceId,
     ExperienceCommitFramework? commitFramework,
-  }) : commitFramework = commitFramework ?? ExperienceCommitFramework(repository: repository);
+  }) : commitFramework =
+           commitFramework ?? ExperienceCommitFramework(repository: repository);
 
   TransactionState get state => _state;
 
@@ -532,8 +578,11 @@ class InstallationTransaction {
   /// Undoes a committed transaction by restoring the prepared snapshot —
   /// through the ONE rollback owner (IS-R55 Task 9).
   Future<void> rollback() async {
-    if (_state != TransactionState.committed && _state != TransactionState.prepared) {
-      throw StateError('cannot roll back a transaction in state ${_state.name}');
+    if (_state != TransactionState.committed &&
+        _state != TransactionState.prepared) {
+      throw StateError(
+        'cannot roll back a transaction in state ${_state.name}',
+      );
     }
     await commitFramework.rollback(
       experienceId: experienceId,
@@ -545,11 +594,19 @@ class InstallationTransaction {
 
   /// Abandons a transaction that never committed. Touches no storage.
   void cancel() {
-    _require(TransactionState.prepared, 'cancel', alsoAllow: TransactionState.open);
+    _require(
+      TransactionState.prepared,
+      'cancel',
+      alsoAllow: TransactionState.open,
+    );
     _state = TransactionState.cancelled;
   }
 
-  void _require(TransactionState expected, String action, {TransactionState? alsoAllow}) {
+  void _require(
+    TransactionState expected,
+    String action, {
+    TransactionState? alsoAllow,
+  }) {
     if (_state != expected && _state != alsoAllow) {
       throw StateError('cannot $action a transaction in state ${_state.name}');
     }
@@ -616,32 +673,30 @@ class InstallationResult {
     List<String> messages = const [],
     ExperiencePackage? previousPackage,
     bool protected = false,
-  }) =>
-      InstallationResult._(
-        succeeded: true,
-        kind: kind,
-        experienceId: experienceId,
-        compatibility: compatibility,
-        dependencies: dependencies,
-        migrations: migrations,
-        messages: messages,
-        previousPackage: previousPackage,
-        protected: protected,
-      );
+  }) => InstallationResult._(
+    succeeded: true,
+    kind: kind,
+    experienceId: experienceId,
+    compatibility: compatibility,
+    dependencies: dependencies,
+    migrations: migrations,
+    messages: messages,
+    previousPackage: previousPackage,
+    protected: protected,
+  );
 
   factory InstallationResult.rejected(
     InstallationFailure failure,
     List<String> messages, {
     CompatibilityEvaluation? compatibility,
     DependencyPlan? dependencies,
-  }) =>
-      InstallationResult._(
-        succeeded: false,
-        failure: failure,
-        messages: messages,
-        compatibility: compatibility,
-        dependencies: dependencies,
-      );
+  }) => InstallationResult._(
+    succeeded: false,
+    failure: failure,
+    messages: messages,
+    compatibility: compatibility,
+    dependencies: dependencies,
+  );
 }
 
 /// THE one owner of committing an Experience (IS-R54 Task 2).
@@ -694,7 +749,8 @@ class ExperienceInstallationFramework {
     ExperienceProvenance provenance = const ExperienceProvenance(),
     List<String> dependencies = const [],
     Set<String> availableCapabilities = const {},
-    String runtimeVersion = ExperienceCompatibilityEvaluator.currentRuntimeVersion,
+    String runtimeVersion =
+        ExperienceCompatibilityEvaluator.currentRuntimeVersion,
     bool protect = false,
     DateTime? at,
   }) async {
@@ -724,8 +780,10 @@ class ExperienceInstallationFramework {
       return InstallationResult.rejected(
         InstallationFailure.dependenciesUnsatisfied,
         [
-          if (plan.missing.isNotEmpty) 'missing dependencies: ${plan.missing.join(", ")}',
-          if (plan.circular.isNotEmpty) 'circular dependency: ${plan.circular.join(", ")}',
+          if (plan.missing.isNotEmpty)
+            'missing dependencies: ${plan.missing.join(", ")}',
+          if (plan.circular.isNotEmpty)
+            'circular dependency: ${plan.circular.join(", ")}',
         ],
         compatibility: evaluation,
         dependencies: plan,
@@ -794,7 +852,9 @@ class ExperienceInstallationFramework {
     var protectedNow = false;
     if (protect) {
       if (protectionService == null) {
-        messages.add('protection was requested but no ExperienceProtectionService is wired');
+        messages.add(
+          'protection was requested but no ExperienceProtectionService is wired',
+        );
       } else {
         final result = await protectionService!.protectWithCurrentTime(
           package: package,
@@ -830,19 +890,19 @@ class ExperienceInstallationFramework {
     ExperienceProvenance provenance = const ExperienceProvenance(),
     List<String> dependencies = const [],
     Set<String> availableCapabilities = const {},
-    String runtimeVersion = ExperienceCompatibilityEvaluator.currentRuntimeVersion,
+    String runtimeVersion =
+        ExperienceCompatibilityEvaluator.currentRuntimeVersion,
     bool protect = false,
     DateTime? at,
-  }) =>
-      install(
-        package: package,
-        provenance: provenance,
-        dependencies: dependencies,
-        availableCapabilities: availableCapabilities,
-        runtimeVersion: runtimeVersion,
-        protect: protect,
-        at: at,
-      );
+  }) => install(
+    package: package,
+    provenance: provenance,
+    dependencies: dependencies,
+    availableCapabilities: availableCapabilities,
+    runtimeVersion: runtimeVersion,
+    protect: protect,
+    at: at,
+  );
 
   /// See [upgrade] — the same one path. A downgrade is not blocked: it is a
   /// legitimate recovery action, and the result reports
@@ -851,16 +911,16 @@ class ExperienceInstallationFramework {
     required ExperiencePackage package,
     ExperienceProvenance provenance = const ExperienceProvenance(),
     Set<String> availableCapabilities = const {},
-    String runtimeVersion = ExperienceCompatibilityEvaluator.currentRuntimeVersion,
+    String runtimeVersion =
+        ExperienceCompatibilityEvaluator.currentRuntimeVersion,
     DateTime? at,
-  }) =>
-      install(
-        package: package,
-        provenance: provenance,
-        availableCapabilities: availableCapabilities,
-        runtimeVersion: runtimeVersion,
-        at: at,
-      );
+  }) => install(
+    package: package,
+    provenance: provenance,
+    availableCapabilities: availableCapabilities,
+    runtimeVersion: runtimeVersion,
+    at: at,
+  );
 
   /// ROLLBACK — restores a package the caller still holds (IS-R54 Task 2),
   /// terminating inside the ONE rollback owner (IS-R55 Task 9).
@@ -882,16 +942,11 @@ class ExperienceInstallationFramework {
   }) async {
     final existing = await repository.getMetadata(experienceId);
     if (existing == null) {
-      return InstallationResult.rejected(
-        InstallationFailure.notInstalled,
-        ['$experienceId is not installed'],
-      );
+      return InstallationResult.rejected(InstallationFailure.notInstalled, [
+        '$experienceId is not installed',
+      ]);
     }
-    return install(
-      package: previousPackage,
-      provenance: provenance,
-      at: at,
-    );
+    return install(package: previousPackage, provenance: provenance, at: at);
   }
 
   /// REPAIR — the installer REQUESTS; the commit framework COORDINATES
@@ -912,15 +967,13 @@ class ExperienceInstallationFramework {
 
     switch (result.outcome) {
       case RepairOutcome.notInstalled:
-        return InstallationResult.rejected(
-          InstallationFailure.notInstalled,
-          ['$experienceId is not installed'],
-        );
+        return InstallationResult.rejected(InstallationFailure.notInstalled, [
+          '$experienceId is not installed',
+        ]);
       case RepairOutcome.unrepairable:
-        return InstallationResult.rejected(
-          InstallationFailure.notInstalled,
-          ['$experienceId ${result.message}'],
-        );
+        return InstallationResult.rejected(InstallationFailure.notInstalled, [
+          '$experienceId ${result.message}',
+        ]);
       case RepairOutcome.healthy:
       case RepairOutcome.repaired:
         return InstallationResult.success(
@@ -934,13 +987,20 @@ class ExperienceInstallationFramework {
   /// Decides what this install IS from the versions, rather than trusting a
   /// caller's label. An unparseable version on either side yields
   /// [InstallationKind.reinstall] — the safe, non-claiming answer.
-  static InstallationKind _kindFor(ExperiencePackage? previous, ExperiencePackage incoming) {
+  static InstallationKind _kindFor(
+    ExperiencePackage? previous,
+    ExperiencePackage incoming,
+  ) {
     if (previous == null) return InstallationKind.freshInstall;
     final comparison = ExperienceCompatibilityEvaluator.compareVersions(
       incoming.manifest.version,
       previous.manifest.version,
     );
-    if (comparison == null || comparison == 0) return InstallationKind.reinstall;
-    return comparison > 0 ? InstallationKind.upgrade : InstallationKind.downgrade;
+    if (comparison == null || comparison == 0) {
+      return InstallationKind.reinstall;
+    }
+    return comparison > 0
+        ? InstallationKind.upgrade
+        : InstallationKind.downgrade;
   }
 }

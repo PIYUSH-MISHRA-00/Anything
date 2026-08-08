@@ -42,7 +42,10 @@ class RequirementGraphDiff {
   });
 
   bool get isEmpty =>
-      addedNodes.isEmpty && removedNodes.isEmpty && addedRelations.isEmpty && removedRelations.isEmpty;
+      addedNodes.isEmpty &&
+      removedNodes.isEmpty &&
+      addedRelations.isEmpty &&
+      removedRelations.isEmpty;
 
   static const RequirementGraphDiff empty = RequirementGraphDiff();
 }
@@ -79,8 +82,12 @@ class RequirementGraphDiffer {
     final beforeRelations = before.relations.map(_RelationKey.of).toSet();
     final afterRelations = after.relations.map(_RelationKey.of).toSet();
 
-    final addedRelations = after.relations.where((r) => !beforeRelations.contains(_RelationKey.of(r))).toList();
-    final removedRelations = before.relations.where((r) => !afterRelations.contains(_RelationKey.of(r))).toList();
+    final addedRelations = after.relations
+        .where((r) => !beforeRelations.contains(_RelationKey.of(r)))
+        .toList();
+    final removedRelations = before.relations
+        .where((r) => !afterRelations.contains(_RelationKey.of(r)))
+        .toList();
 
     return RequirementGraphDiff(
       addedNodes: addedNodes,
@@ -91,7 +98,10 @@ class RequirementGraphDiffer {
   }
 
   bool _nodesEqual(RequirementNode a, RequirementNode b) =>
-      a.type == b.type && a.label == b.label && a.description == b.description && a.source == b.source;
+      a.type == b.type &&
+      a.label == b.label &&
+      a.description == b.description &&
+      a.source == b.source;
 }
 
 class _RelationKey {
@@ -101,11 +111,15 @@ class _RelationKey {
 
   const _RelationKey(this.fromId, this.toId, this.type);
 
-  factory _RelationKey.of(RequirementRelation r) => _RelationKey(r.fromId, r.toId, r.type);
+  factory _RelationKey.of(RequirementRelation r) =>
+      _RelationKey(r.fromId, r.toId, r.type);
 
   @override
   bool operator ==(Object other) =>
-      other is _RelationKey && other.fromId == fromId && other.toId == toId && other.type == type;
+      other is _RelationKey &&
+      other.fromId == fromId &&
+      other.toId == toId &&
+      other.type == type;
 
   @override
   int get hashCode => Object.hash(fromId, toId, type);

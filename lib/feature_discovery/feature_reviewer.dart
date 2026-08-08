@@ -6,7 +6,14 @@ library;
 
 import 'feature_types.dart';
 
-enum FeatureIssueCategory { duplicate, dangling, conflicting, impossible, unnecessary, lowConfidence }
+enum FeatureIssueCategory {
+  duplicate,
+  dangling,
+  conflicting,
+  impossible,
+  unnecessary,
+  lowConfidence,
+}
 
 enum FeatureIssueSeverity { info, warning, critical }
 
@@ -33,8 +40,10 @@ class FeatureReviewResult {
   const FeatureReviewResult({required this.iteration, this.issues = const []});
 
   bool get passed => issues.isEmpty;
-  bool get hasCriticalIssues => issues.any((i) => i.severity == FeatureIssueSeverity.critical);
-  List<FeatureIssue> get autoFixableIssues => issues.where((i) => i.autoFixable).toList();
+  bool get hasCriticalIssues =>
+      issues.any((i) => i.severity == FeatureIssueSeverity.critical);
+  List<FeatureIssue> get autoFixableIssues =>
+      issues.where((i) => i.autoFixable).toList();
 }
 
 class FeatureReviewer {
@@ -76,7 +85,8 @@ class FeatureReviewer {
   void _checkDanglingEdges(FeatureGraph graph, List<FeatureIssue> issues) {
     final ids = graph.nodes.map((n) => n.id).toSet();
     for (final edge in graph.edges) {
-      if (!ids.contains(edge.fromFeatureId) || !ids.contains(edge.toFeatureId)) {
+      if (!ids.contains(edge.fromFeatureId) ||
+          !ids.contains(edge.toFeatureId)) {
         issues.add(
           FeatureIssue(
             category: FeatureIssueCategory.dangling,
@@ -110,13 +120,15 @@ class FeatureReviewer {
 
   void _checkImpossible(FeatureGraph graph, List<FeatureIssue> issues) {
     for (final node in graph.nodes) {
-      if (node.priority == FeaturePriority.mandatory && node.decision.confidence.score == 0.0) {
+      if (node.priority == FeaturePriority.mandatory &&
+          node.decision.confidence.score == 0.0) {
         issues.add(
           FeatureIssue(
             category: FeatureIssueCategory.impossible,
             severity: FeatureIssueSeverity.critical,
             subjectId: node.id,
-            message: '"${node.name}" is mandatory but has zero confidence — contradictory',
+            message:
+                '"${node.name}" is mandatory but has zero confidence — contradictory',
           ),
         );
       }

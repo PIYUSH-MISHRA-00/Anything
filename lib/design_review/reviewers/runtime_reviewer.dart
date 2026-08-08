@@ -25,9 +25,16 @@ class RuntimeReviewer {
             id: 'runtime:overBudget:$dimension',
             category: ReviewCategory.runtime,
             severity: ReviewSeverity.critical,
-            reason: '$dimension is $actual, exceeding RuntimeSecurityLimits ($limit)',
-            evidence: ReviewEvidence(affectedGraph: graph, affectedNodeId: dimension),
-            recommendation: const ReviewRecommendation(description: 'Reduce scope until this fits the trusted runtime budget'),
+            reason:
+                '$dimension is $actual, exceeding RuntimeSecurityLimits ($limit)',
+            evidence: ReviewEvidence(
+              affectedGraph: graph,
+              affectedNodeId: dimension,
+            ),
+            recommendation: const ReviewRecommendation(
+              description:
+                  'Reduce scope until this fits the trusted runtime budget',
+            ),
             confidence: Confidence.full,
           ),
         );
@@ -37,19 +44,34 @@ class RuntimeReviewer {
             id: 'runtime:approachingBudget:$dimension',
             category: ReviewCategory.runtime,
             severity: ReviewSeverity.info,
-            reason: '$dimension is $actual, approaching RuntimeSecurityLimits ($limit)',
-            evidence: ReviewEvidence(affectedGraph: graph, affectedNodeId: dimension),
-            recommendation: const ReviewRecommendation(description: 'No action needed yet; monitor as the design grows'),
+            reason:
+                '$dimension is $actual, approaching RuntimeSecurityLimits ($limit)',
+            evidence: ReviewEvidence(
+              affectedGraph: graph,
+              affectedNodeId: dimension,
+            ),
+            recommendation: const ReviewRecommendation(
+              description: 'No action needed yet; monitor as the design grows',
+            ),
             confidence: Confidence.full,
           ),
         );
       }
     }
 
-    checkBudget('screenCount', blueprint.views.length, RuntimeSecurityLimits.maxScreensPerPackage, 'AppBlueprint.views');
+    checkBudget(
+      'screenCount',
+      blueprint.views.length,
+      RuntimeSecurityLimits.maxScreensPerPackage,
+      'AppBlueprint.views',
+    );
 
-    final eventCount = engineering.behaviors.expand((b) => b.eventGraph.events).length;
-    final actionCount = engineering.behaviors.expand((b) => b.eventGraph.actions).length;
+    final eventCount = engineering.behaviors
+        .expand((b) => b.eventGraph.events)
+        .length;
+    final actionCount = engineering.behaviors
+        .expand((b) => b.eventGraph.actions)
+        .length;
     final estimatedBehaviorNodes = eventCount + actionCount;
     checkBudget(
       'behaviorNodeCount',
@@ -59,10 +81,20 @@ class RuntimeReviewer {
     );
 
     final bindingCount = engineering.bindingGraph.edges.length;
-    checkBudget('bindingCount', bindingCount, RuntimeSecurityLimits.maxBehaviorNodesPerPackage, 'EngineeringCandidate.bindingGraph');
+    checkBudget(
+      'bindingCount',
+      bindingCount,
+      RuntimeSecurityLimits.maxBehaviorNodesPerPackage,
+      'EngineeringCandidate.bindingGraph',
+    );
 
     final stateCount = context.architecture.states.length;
-    checkBudget('stateCount', stateCount, RuntimeSecurityLimits.maxBehaviorNodesPerPackage, 'ArchitectureCandidate.states');
+    checkBudget(
+      'stateCount',
+      stateCount,
+      RuntimeSecurityLimits.maxBehaviorNodesPerPackage,
+      'ArchitectureCandidate.states',
+    );
 
     return issues;
   }

@@ -50,7 +50,12 @@ class WorldSnapshotRecord {
   final int nodeCount;
   final int edgeCount;
 
-  const WorldSnapshotRecord({required this.version, required this.createdAt, required this.nodeCount, required this.edgeCount});
+  const WorldSnapshotRecord({
+    required this.version,
+    required this.createdAt,
+    required this.nodeCount,
+    required this.edgeCount,
+  });
 }
 
 class PersistedLearningSummary {
@@ -96,7 +101,8 @@ class WorldModelRepository {
   bool _tablesEnsured = false;
 
   WorldModelRepository({SqliteExperienceRepository? experienceRepository})
-    : _experienceRepository = experienceRepository ?? SqliteExperienceRepository();
+    : _experienceRepository =
+          experienceRepository ?? SqliteExperienceRepository();
 
   Future<Database> get _db async {
     final db = await _experienceRepository.database;
@@ -127,8 +133,12 @@ class WorldModelRepository {
         PRIMARY KEY (from_id, to_id, kind)
       )
     ''');
-    await db.execute('CREATE INDEX IF NOT EXISTS idx_world_edges_from ON world_graph_edges(from_id)');
-    await db.execute('CREATE INDEX IF NOT EXISTS idx_world_edges_to ON world_graph_edges(to_id)');
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_world_edges_from ON world_graph_edges(from_id)',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_world_edges_to ON world_graph_edges(to_id)',
+    );
     await db.execute('''
       CREATE TABLE IF NOT EXISTS world_snapshots (
         version INTEGER PRIMARY KEY,
@@ -150,7 +160,9 @@ class WorldModelRepository {
         timestamp TEXT NOT NULL
       )
     ''');
-    await db.execute('CREATE INDEX IF NOT EXISTS idx_observation_experience ON observation_records(experience_id)');
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_observation_experience ON observation_records(experience_id)',
+    );
     await db.execute('''
       CREATE TABLE IF NOT EXISTS learning_records (
         id TEXT PRIMARY KEY,
@@ -251,8 +263,14 @@ class WorldModelRepository {
             fromId: identityFromValue(row['from_id'] as String),
             toId: identityFromValue(row['to_id'] as String),
             kind: RelationshipKind.values.byName(row['kind'] as String),
-            evidence: GraphEvidence(sourceGraph: row['evidence_graph'] as String, sourceNodeId: row['evidence_node'] as String),
-            confidence: GraphConfidence(score: row['confidence_score'] as double, reason: row['confidence_reason'] as String),
+            evidence: GraphEvidence(
+              sourceGraph: row['evidence_graph'] as String,
+              sourceNodeId: row['evidence_node'] as String,
+            ),
+            confidence: GraphConfidence(
+              score: row['confidence_score'] as double,
+              reason: row['confidence_reason'] as String,
+            ),
           ),
         )
         .toList();
@@ -327,17 +345,25 @@ class WorldModelRepository {
     await batch.commit(noResult: true);
   }
 
-  Future<List<ObservationRecord>> loadObservations({String? experienceId}) async {
+  Future<List<ObservationRecord>> loadObservations({
+    String? experienceId,
+  }) async {
     final db = await _db;
     final rows = experienceId == null
         ? await db.query('observation_records')
-        : await db.query('observation_records', where: 'experience_id = ?', whereArgs: [experienceId]);
+        : await db.query(
+            'observation_records',
+            where: 'experience_id = ?',
+            whereArgs: [experienceId],
+          );
 
     return rows
         .map(
           (row) => ObservationRecord(
             id: row['id'] as String,
-            category: ObservationCategory.values.byName(row['category'] as String),
+            category: ObservationCategory.values.byName(
+              row['category'] as String,
+            ),
             experienceId: row['experience_id'] as String?,
             screenId: row['screen_id'] as String?,
             entityId: row['entity_id'] as String?,
@@ -377,7 +403,9 @@ class WorldModelRepository {
           (row) => PersistedLearningSummary(
             id: row['id'] as String,
             patternId: row['pattern_id'] as String,
-            patternKind: PatternKind.values.byName(row['pattern_kind'] as String),
+            patternKind: PatternKind.values.byName(
+              row['pattern_kind'] as String,
+            ),
             description: row['description'] as String,
             confidenceScore: row['confidence_score'] as double,
             confidenceReason: row['confidence_reason'] as String,
@@ -393,7 +421,9 @@ class WorldModelRepository {
   // step list, documented honestly).
   // ---------------------------------------------------------------------
 
-  Future<void> recordAutomationSummary(PersistedAutomationSummary summary) async {
+  Future<void> recordAutomationSummary(
+    PersistedAutomationSummary summary,
+  ) async {
     final db = await _db;
     await db.insert('automation_records', {
       'plan_id': summary.planId,
@@ -406,7 +436,10 @@ class WorldModelRepository {
 
   Future<List<PersistedAutomationSummary>> loadAutomationSummaries() async {
     final db = await _db;
-    final rows = await db.query('automation_records', orderBy: 'planned_at ASC');
+    final rows = await db.query(
+      'automation_records',
+      orderBy: 'planned_at ASC',
+    );
     return rows
         .map(
           (row) => PersistedAutomationSummary(

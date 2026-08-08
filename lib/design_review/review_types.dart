@@ -54,7 +54,10 @@ class ReviewRecommendation {
   /// system judgment (conservative by design — see review_refinement.dart).
   final bool autoApplicable;
 
-  const ReviewRecommendation({required this.description, this.autoApplicable = false});
+  const ReviewRecommendation({
+    required this.description,
+    this.autoApplicable = false,
+  });
 }
 
 /// One finding. Every field the milestone's "Review Explanations" section

@@ -30,14 +30,24 @@ class Condition {
 /// A side effect an action produces (a data mutation, a navigation, a
 /// capability invocation — always expressed in terms the existing
 /// BehaviorGraph already executes, never a new runtime primitive).
-enum EffectKind { dataMutation, dataQuery, stateWrite, navigation, capabilityInvocation }
+enum EffectKind {
+  dataMutation,
+  dataQuery,
+  stateWrite,
+  navigation,
+  capabilityInvocation,
+}
 
 class Effect {
   final EffectKind kind;
   final String targetId;
   final String description;
 
-  const Effect({required this.kind, required this.targetId, required this.description});
+  const Effect({
+    required this.kind,
+    required this.targetId,
+    required this.description,
+  });
 }
 
 /// A retry policy for a fallible effect.
@@ -119,7 +129,11 @@ class Transition {
   final GenericState from;
   final GenericState to;
 
-  const Transition({required this.eventId, required this.from, required this.to});
+  const Transition({
+    required this.eventId,
+    required this.from,
+    required this.to,
+  });
 }
 
 /// The complete, typed event graph for one entity.
@@ -173,12 +187,18 @@ class StateMachineDefinition {
     this.transitions = const [],
   });
 
-  bool hasTransitionFor(String eventId) => transitions.any((t) => t.eventId == eventId);
+  bool hasTransitionFor(String eventId) =>
+      transitions.any((t) => t.eventId == eventId);
 }
 
 // ── Binding graph — typed, no string-map lookups ────────────────────────
 
-enum BindingKind { viewToState, stateToData, dataToRuntime, capabilityToRuntime }
+enum BindingKind {
+  viewToState,
+  stateToData,
+  dataToRuntime,
+  capabilityToRuntime,
+}
 
 /// One typed binding edge. Endpoints are structured identifiers
 /// (`entityId.fieldId`-shaped or a bare id), never resolved via a runtime
@@ -189,14 +209,19 @@ class BindingEdge {
   final String fromId;
   final String toId;
 
-  const BindingEdge({required this.kind, required this.fromId, required this.toId});
+  const BindingEdge({
+    required this.kind,
+    required this.fromId,
+    required this.toId,
+  });
 }
 
 class BindingGraph {
   final List<BindingEdge> edges;
   const BindingGraph({this.edges = const []});
 
-  List<BindingEdge> edgesOfKind(BindingKind kind) => edges.where((e) => e.kind == kind).toList();
+  List<BindingEdge> edgesOfKind(BindingKind kind) =>
+      edges.where((e) => e.kind == kind).toList();
 }
 
 // ── The base decision record every *Engineering module produces ────────

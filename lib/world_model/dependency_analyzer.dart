@@ -19,9 +19,14 @@ class DependencyReport {
 class DependencyAnalyzer {
   final GraphTraversal _traversal;
 
-  const DependencyAnalyzer({GraphTraversal traversal = const GraphTraversal()}) : _traversal = traversal;
+  const DependencyAnalyzer({GraphTraversal traversal = const GraphTraversal()})
+    : _traversal = traversal;
 
-  DependencyReport analyze(WorldGraph graph, EntityIdentity subject, {int maxDepth = 5}) {
+  DependencyReport analyze(
+    WorldGraph graph,
+    EntityIdentity subject, {
+    int maxDepth = 5,
+  }) {
     final steps = _traversal.forward(
       graph,
       subject,
@@ -33,7 +38,10 @@ class DependencyAnalyzer {
         RelationshipKind.consumes,
       },
     );
-    final nodes = steps.map((s) => graph.nodeById(s.nodeId)).whereType<WorldNode>().toList();
+    final nodes = steps
+        .map((s) => graph.nodeById(s.nodeId))
+        .whereType<WorldNode>()
+        .toList();
     return DependencyReport(subject: subject, dependencies: nodes);
   }
 }

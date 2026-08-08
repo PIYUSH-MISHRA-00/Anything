@@ -62,7 +62,11 @@ class EngineeringToBlueprintAugmenter {
     final newVariables = <StateVariable>[
       ...state.variables,
       for (final entityId in entityIds)
-        StateVariable(id: '${entityId}_status', type: 'string', defaultValue: 'idle'),
+        StateVariable(
+          id: '${entityId}_status',
+          type: 'string',
+          defaultValue: 'idle',
+        ),
     ];
 
     final existingEventIds = behavior.nodes.map((n) => n.id).toSet();
@@ -71,7 +75,9 @@ class EngineeringToBlueprintAugmenter {
 
     for (final action in blueprint.actions) {
       final eventNodeId = '${action.id}_event';
-      if (!existingEventIds.contains(eventNodeId)) continue; // nothing to attach to
+      if (!existingEventIds.contains(eventNodeId)) {
+        continue; // nothing to attach to
+      }
       final target = _inFlightState[action.actionType];
       if (target == null || target == GenericState.idle) continue;
 
@@ -80,7 +86,10 @@ class EngineeringToBlueprintAugmenter {
         BehaviorNode(
           id: statusNodeId,
           type: 'stateWrite',
-          config: {'stateId': '${action.targetEntityId}_status', 'value': target.name},
+          config: {
+            'stateId': '${action.targetEntityId}_status',
+            'value': target.name,
+          },
         ),
       );
       newEdges.add(BehaviorEdge(from: eventNodeId, to: statusNodeId));

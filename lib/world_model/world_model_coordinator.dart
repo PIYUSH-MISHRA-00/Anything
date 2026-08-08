@@ -54,7 +54,10 @@ class ModificationImpactCheck {
   final ImpactReport impact;
   final GraphValidation currentGraphValidation;
 
-  const ModificationImpactCheck({required this.impact, required this.currentGraphValidation});
+  const ModificationImpactCheck({
+    required this.impact,
+    required this.currentGraphValidation,
+  });
 
   /// Approved only if the World Graph is currently structurally sound —
   /// the impact report itself is informational either way (an empty
@@ -111,16 +114,25 @@ class WorldModelCoordinator {
     WorldMemory? memory,
     WorldModelRepository? persistence,
   }) : _resolver = resolver,
-       _knowledgeBridge = knowledgeBridge ?? KnowledgeGraphBridge(resolver: resolver),
-       _experienceBridge = experienceBridge ?? ExperienceGraphBridge(resolver: resolver),
-       _evolutionBridge = evolutionBridge ?? EvolutionGraphBridge(resolver: resolver),
+       _knowledgeBridge =
+           knowledgeBridge ?? KnowledgeGraphBridge(resolver: resolver),
+       _experienceBridge =
+           experienceBridge ?? ExperienceGraphBridge(resolver: resolver),
+       _evolutionBridge =
+           evolutionBridge ?? EvolutionGraphBridge(resolver: resolver),
        _runtimeBridge = runtimeBridge ?? RuntimeGraphBridge(resolver: resolver),
        _reviewBridge = reviewBridge ?? ReviewGraphBridge(resolver: resolver),
-       _softwareBridge = softwareBridge ?? SoftwareGraphBridge(resolver: resolver),
+       _softwareBridge =
+           softwareBridge ?? SoftwareGraphBridge(resolver: resolver),
        _backendBridge = backendBridge ?? BackendGraphBridge(resolver: resolver),
-       _implementationBridge = implementationBridge ?? ImplementationGraphBridge(resolver: resolver),
-       _solutionArchitectureBridge = solutionArchitectureBridge ?? SolutionArchitectureGraphBridge(resolver: resolver),
-       _requirementBridge = requirementBridge ?? RequirementGraphBridge(resolver: resolver),
+       _implementationBridge =
+           implementationBridge ??
+           ImplementationGraphBridge(resolver: resolver),
+       _solutionArchitectureBridge =
+           solutionArchitectureBridge ??
+           SolutionArchitectureGraphBridge(resolver: resolver),
+       _requirementBridge =
+           requirementBridge ?? RequirementGraphBridge(resolver: resolver),
        _engine = engine,
        _impactAnalyzer = impactAnalyzer,
        _consistency = consistency,
@@ -132,31 +144,67 @@ class WorldModelCoordinator {
   WorldModel get model => _model;
 
   void ingestKnowledge(KnowledgeGraph knowledgeGraph) {
-    _model = _engine.apply(_model, _knowledgeBridge.bridge(knowledgeGraph), history: history, memory: memory);
+    _model = _engine.apply(
+      _model,
+      _knowledgeBridge.bridge(knowledgeGraph),
+      history: history,
+      memory: memory,
+    );
   }
 
-  void ingestExperience(ExperienceMetadataRecord metadata, ExperiencePackage package) {
-    _model = _engine.apply(_model, _experienceBridge.bridge(metadata, package), history: history, memory: memory);
+  void ingestExperience(
+    ExperienceMetadataRecord metadata,
+    ExperiencePackage package,
+  ) {
+    _model = _engine.apply(
+      _model,
+      _experienceBridge.bridge(metadata, package),
+      history: history,
+      memory: memory,
+    );
   }
 
   /// [blueprint] is optional but strongly recommended (Vision Milestone
   /// V10): when supplied, evolution-affected entities unify with
   /// ExperienceGraphBridge's identity for the same real entity instead
   /// of anchoring on a separate, un-unified node for the raw id.
-  void ingestEvolutionRoadmap(EvolutionRoadmap roadmap, {AppBlueprint? blueprint}) {
-    _model = _engine.apply(_model, _evolutionBridge.bridge(roadmap, blueprint: blueprint), history: history, memory: memory);
+  void ingestEvolutionRoadmap(
+    EvolutionRoadmap roadmap, {
+    AppBlueprint? blueprint,
+  }) {
+    _model = _engine.apply(
+      _model,
+      _evolutionBridge.bridge(roadmap, blueprint: blueprint),
+      history: history,
+      memory: memory,
+    );
   }
 
   void ingestUsage(UsageGraph usageGraph) {
-    _model = _engine.apply(_model, _runtimeBridge.bridgeUsage(usageGraph), history: history, memory: memory);
+    _model = _engine.apply(
+      _model,
+      _runtimeBridge.bridgeUsage(usageGraph),
+      history: history,
+      memory: memory,
+    );
   }
 
   void ingestLearning(List<LearningRecord> learned) {
-    _model = _engine.apply(_model, _runtimeBridge.bridgeLearning(learned), history: history, memory: memory);
+    _model = _engine.apply(
+      _model,
+      _runtimeBridge.bridgeLearning(learned),
+      history: history,
+      memory: memory,
+    );
   }
 
   void ingestReviewSession(ReviewSession session) {
-    _model = _engine.apply(_model, _reviewBridge.bridge(session), history: history, memory: memory);
+    _model = _engine.apply(
+      _model,
+      _reviewBridge.bridge(session),
+      history: history,
+      memory: memory,
+    );
   }
 
   /// Ingests a real SemanticSoftwareGraph (Vision Milestone V11's
@@ -164,7 +212,12 @@ class WorldModelCoordinator {
   /// become real World Graph nodes, connected the same way every other
   /// graph already is.
   void ingestSoftwareGraph(SemanticSoftwareGraph softwareGraph) {
-    _model = _engine.apply(_model, _softwareBridge.bridge(softwareGraph), history: history, memory: memory);
+    _model = _engine.apply(
+      _model,
+      _softwareBridge.bridge(softwareGraph),
+      history: history,
+      memory: memory,
+    );
   }
 
   /// Ingests a real `BackendEngineeringPlan` (Implementation Milestone
@@ -172,7 +225,12 @@ class WorldModelCoordinator {
   /// endpoints become real new nodes, connected the same way every other
   /// graph already is.
   void ingestBackendEngineering(BackendEngineeringPlan plan) {
-    _model = _engine.apply(_model, _backendBridge.bridge(plan), history: history, memory: memory);
+    _model = _engine.apply(
+      _model,
+      _backendBridge.bridge(plan),
+      history: history,
+      memory: memory,
+    );
   }
 
   /// Ingests a real `CanonicalImplementationModel` (Implementation
@@ -180,7 +238,12 @@ class WorldModelCoordinator {
   /// `ingestBackendEngineering`; this adds the one genuinely new
   /// contribution, entity-to-capability dependency edges.
   void ingestCanonicalImplementation(CanonicalImplementationModel model) {
-    _model = _engine.apply(_model, _implementationBridge.bridge(model), history: history, memory: memory);
+    _model = _engine.apply(
+      _model,
+      _implementationBridge.bridge(model),
+      history: history,
+      memory: memory,
+    );
   }
 
   /// Ingests a real `SemanticSolutionArchitecture` (Implementation
@@ -189,7 +252,12 @@ class WorldModelCoordinator {
   /// `SolutionArchitectureGraphBridge`'s own doc comment) plus a real
   /// caching signal when present.
   void ingestSolutionArchitecture(SemanticSolutionArchitecture architecture) {
-    _model = _engine.apply(_model, _solutionArchitectureBridge.bridge(architecture), history: history, memory: memory);
+    _model = _engine.apply(
+      _model,
+      _solutionArchitectureBridge.bridge(architecture),
+      history: history,
+      memory: memory,
+    );
   }
 
   /// Ingests a real `RequirementGraph` (Implementation Specification
@@ -197,14 +265,21 @@ class WorldModelCoordinator {
   /// traceability edges, the two real contributions no other bridge
   /// covers (see `RequirementGraphBridge`'s own doc comment).
   void ingestRequirementGraph(RequirementGraph graph) {
-    _model = _engine.apply(_model, _requirementBridge.bridge(graph), history: history, memory: memory);
+    _model = _engine.apply(
+      _model,
+      _requirementBridge.bridge(graph),
+      history: history,
+      memory: memory,
+    );
   }
 
   /// Ingests every real, already-persisted Experience via the existing,
   /// read-only SqliteExperienceRepository — never writes anything to it.
   /// Automatically persists the resulting World Graph afterward when
   /// this coordinator was configured with a WorldModelRepository.
-  Future<void> ingestAllPersistedExperiences(SqliteExperienceRepository repository) async {
+  Future<void> ingestAllPersistedExperiences(
+    SqliteExperienceRepository repository,
+  ) async {
     for (final metadata in await repository.listAll()) {
       final package = await repository.getPackage(metadata.id);
       if (package == null) continue;
@@ -241,15 +316,26 @@ class WorldModelCoordinator {
     if (graph.nodes.isEmpty && graph.edges.isEmpty) return;
     final history = await persistence.loadSnapshotHistory();
     final latestVersion = history.isEmpty ? 0 : history.last.version;
-    _model = WorldModel(graph: graph, context: _model.context, version: WorldVersion(number: latestVersion, createdAt: DateTime.now()));
+    _model = WorldModel(
+      graph: graph,
+      context: _model.context,
+      version: WorldVersion(number: latestVersion, createdAt: DateTime.now()),
+    );
   }
 
-  ImpactReport impactOf(EntityIdentity identity) => _impactAnalyzer.analyze(_model.graph, identity);
+  ImpactReport impactOf(EntityIdentity identity) =>
+      _impactAnalyzer.analyze(_model.graph, identity);
 
   /// A real, tested pre-check a caller can run before invoking the
   /// EXISTING ModificationEngine — never a replacement for it.
   ModificationImpactCheck precheckModification(String experienceId) {
-    final identity = _resolver.resolve(WorldNodeKind.experience, stableId: experienceId);
-    return ModificationImpactCheck(impact: impactOf(identity), currentGraphValidation: _consistency.validate(_model.graph));
+    final identity = _resolver.resolve(
+      WorldNodeKind.experience,
+      stableId: experienceId,
+    );
+    return ModificationImpactCheck(
+      impact: impactOf(identity),
+      currentGraphValidation: _consistency.validate(_model.graph),
+    );
   }
 }

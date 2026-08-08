@@ -14,7 +14,8 @@ import 'package:anything/feature_discovery/dependency_types.dart';
 import 'package:anything/feature_discovery/feature_discovery_context.dart';
 import 'package:anything/feature_discovery/feature_discovery_engine.dart';
 import 'package:anything/kernel/classification/intent_category.dart';
-import 'package:anything/kernel/specification/experience_spec.dart' show NetworkNeed;
+import 'package:anything/kernel/specification/experience_spec.dart'
+    show NetworkNeed;
 import 'package:anything/kernel/understanding/intent_understanding.dart';
 import 'package:anything/software_architect/architecture_candidate.dart';
 import 'package:anything/software_architect/architecture_to_blueprint.dart';
@@ -22,7 +23,8 @@ import 'package:anything/software_architect/requirement_extractor.dart';
 import 'package:anything/solution_reasoning/solution_exploration_context.dart';
 import 'package:anything/solution_reasoning/solution_explorer.dart';
 import 'package:anything/solution_reasoning/solution_types.dart';
-import 'package:anything/solution_reasoning/solution_variation_types.dart' show EngineeringVariation;
+import 'package:anything/solution_reasoning/solution_variation_types.dart'
+    show EngineeringVariation;
 import 'package:anything/synthesis/app_blueprint.dart';
 import 'package:anything/synthesis/application_reasoner.dart';
 
@@ -31,7 +33,9 @@ IntentUnderstanding testUnderstanding() {
     intentId: 'test-${DateTime.now().microsecondsSinceEpoch}',
     objective: 'test',
     category: IntentCategory.create,
-    existingExperience: const ExistingExperienceResolution(status: ExistingExperienceStatus.notChecked),
+    existingExperience: const ExistingExperienceResolution(
+      status: ExistingExperienceStatus.notChecked,
+    ),
     desiredOutcome: '',
     confidence: 0.9,
     networkNeed: NetworkNeed.none,
@@ -52,15 +56,47 @@ SemanticApp fieldSurveyApp() {
         id: 'entry',
         name: 'Entry',
         displayField: 'title',
-        fields: [SemanticField(id: 'title', name: 'Title', type: BlueprintFieldType.text, required: true)],
+        fields: [
+          SemanticField(
+            id: 'title',
+            name: 'Title',
+            type: BlueprintFieldType.text,
+            required: true,
+          ),
+        ],
       ),
     ],
     views: const [
-      SemanticView(id: 'entries_list', name: 'Entries', purpose: 'list', sourceEntityId: 'entry', viewType: BlueprintViewType.list, isDefault: true),
-      SemanticView(id: 'entries_form', name: 'Add Entry', purpose: 'form', sourceEntityId: 'entry', viewType: BlueprintViewType.form),
-      SemanticView(id: 'entries_detail', name: 'Entry Detail', purpose: 'detail', sourceEntityId: 'entry', viewType: BlueprintViewType.detail),
+      SemanticView(
+        id: 'entries_list',
+        name: 'Entries',
+        purpose: 'list',
+        sourceEntityId: 'entry',
+        viewType: BlueprintViewType.list,
+        isDefault: true,
+      ),
+      SemanticView(
+        id: 'entries_form',
+        name: 'Add Entry',
+        purpose: 'form',
+        sourceEntityId: 'entry',
+        viewType: BlueprintViewType.form,
+      ),
+      SemanticView(
+        id: 'entries_detail',
+        name: 'Entry Detail',
+        purpose: 'detail',
+        sourceEntityId: 'entry',
+        viewType: BlueprintViewType.detail,
+      ),
     ],
-    actions: const [SemanticAction(id: 'add_entry', name: 'Add Entry', targetEntityId: 'entry')],
+    actions: const [
+      SemanticAction(
+        id: 'add_entry',
+        name: 'Add Entry',
+        targetEntityId: 'entry',
+      ),
+    ],
     requiredCapabilities: const ['http'],
   );
 }
@@ -79,26 +115,89 @@ SemanticApp multiEntityApp() {
     name: 'Equipment Lending Tracker',
     purpose: 'Manage equipment lending',
     entities: [
-      const SemanticEntity(id: 'person', name: 'Person', fields: [SemanticField(id: 'name', name: 'Name', type: BlueprintFieldType.text, required: true)]),
-      const SemanticEntity(id: 'equipment', name: 'Equipment', fields: [SemanticField(id: 'name', name: 'Name', type: BlueprintFieldType.text, required: true)]),
+      const SemanticEntity(
+        id: 'person',
+        name: 'Person',
+        fields: [
+          SemanticField(
+            id: 'name',
+            name: 'Name',
+            type: BlueprintFieldType.text,
+            required: true,
+          ),
+        ],
+      ),
+      const SemanticEntity(
+        id: 'equipment',
+        name: 'Equipment',
+        fields: [
+          SemanticField(
+            id: 'name',
+            name: 'Name',
+            type: BlueprintFieldType.text,
+            required: true,
+          ),
+        ],
+      ),
       const SemanticEntity(
         id: 'loan',
         name: 'Loan',
         fields: [
-          SemanticField(id: 'personId', name: 'Person', type: BlueprintFieldType.reference, referenceEntityId: 'person'),
-          SemanticField(id: 'equipmentId', name: 'Equipment', type: BlueprintFieldType.reference, referenceEntityId: 'equipment'),
+          SemanticField(
+            id: 'personId',
+            name: 'Person',
+            type: BlueprintFieldType.reference,
+            referenceEntityId: 'person',
+          ),
+          SemanticField(
+            id: 'equipmentId',
+            name: 'Equipment',
+            type: BlueprintFieldType.reference,
+            referenceEntityId: 'equipment',
+          ),
         ],
       ),
     ],
     views: [
-      const SemanticView(id: 'people_list', name: 'People', purpose: 'list', sourceEntityId: 'person', viewType: BlueprintViewType.list, isDefault: true),
-      const SemanticView(id: 'equipment_list', name: 'Equipment', purpose: 'list', sourceEntityId: 'equipment', viewType: BlueprintViewType.list),
-      const SemanticView(id: 'loans_list', name: 'Loans', purpose: 'list', sourceEntityId: 'loan', viewType: BlueprintViewType.list),
+      const SemanticView(
+        id: 'people_list',
+        name: 'People',
+        purpose: 'list',
+        sourceEntityId: 'person',
+        viewType: BlueprintViewType.list,
+        isDefault: true,
+      ),
+      const SemanticView(
+        id: 'equipment_list',
+        name: 'Equipment',
+        purpose: 'list',
+        sourceEntityId: 'equipment',
+        viewType: BlueprintViewType.list,
+      ),
+      const SemanticView(
+        id: 'loans_list',
+        name: 'Loans',
+        purpose: 'list',
+        sourceEntityId: 'loan',
+        viewType: BlueprintViewType.list,
+      ),
     ],
     actions: [
-      const SemanticAction(id: 'add_person', name: 'Add Person', targetEntityId: 'person'),
-      const SemanticAction(id: 'add_equipment', name: 'Add Equipment', targetEntityId: 'equipment'),
-      const SemanticAction(id: 'add_loan', name: 'Add Loan', targetEntityId: 'loan'),
+      const SemanticAction(
+        id: 'add_person',
+        name: 'Add Person',
+        targetEntityId: 'person',
+      ),
+      const SemanticAction(
+        id: 'add_equipment',
+        name: 'Add Equipment',
+        targetEntityId: 'equipment',
+      ),
+      const SemanticAction(
+        id: 'add_loan',
+        name: 'Add Loan',
+        targetEntityId: 'loan',
+      ),
     ],
   );
 }
@@ -119,7 +218,14 @@ SemanticApp dashboardApp() {
       const SemanticEntity(
         id: 'metric_entry',
         name: 'MetricEntry',
-        fields: [SemanticField(id: 'value', name: 'Value', type: BlueprintFieldType.decimal, required: true)],
+        fields: [
+          SemanticField(
+            id: 'value',
+            name: 'Value',
+            type: BlueprintFieldType.decimal,
+            required: true,
+          ),
+        ],
       ),
     ],
     views: const [
@@ -131,9 +237,21 @@ SemanticApp dashboardApp() {
         viewType: BlueprintViewType.dashboard,
         isDefault: true,
       ),
-      SemanticView(id: 'add_metric', name: 'Add Metric', purpose: 'Record a new metric', sourceEntityId: 'metric_entry', viewType: BlueprintViewType.form),
+      SemanticView(
+        id: 'add_metric',
+        name: 'Add Metric',
+        purpose: 'Record a new metric',
+        sourceEntityId: 'metric_entry',
+        viewType: BlueprintViewType.form,
+      ),
     ],
-    actions: const [SemanticAction(id: 'add_metric_action', name: 'Add Metric', targetEntityId: 'metric_entry')],
+    actions: const [
+      SemanticAction(
+        id: 'add_metric_action',
+        name: 'Add Metric',
+        targetEntityId: 'metric_entry',
+      ),
+    ],
   );
 }
 
@@ -144,17 +262,30 @@ class UnusedReasoner implements ApplicationReasoner {
   const UnusedReasoner();
   @override
   Future<AppReasoningResult> reason(ApplicationReasoningContext context) async {
-    throw UnimplementedError('Not expected to be called by blueprint conversion.');
+    throw UnimplementedError(
+      'Not expected to be called by blueprint conversion.',
+    );
   }
 }
 
 ReviewContext buildReviewContext(SemanticApp app) {
-  final requirements = const RequirementExtractor().extract(app: app, understanding: testUnderstanding());
-  final featureGraph = const FeatureDiscoveryEngine().plan(FeatureDiscoveryContext(app: app, requirements: requirements));
-  final dependencyGraph = const DependencyGraphBuilder().build(featureGraph.nodes.map((n) => n.candidate).toList());
+  final requirements = const RequirementExtractor().extract(
+    app: app,
+    understanding: testUnderstanding(),
+  );
+  final featureGraph = const FeatureDiscoveryEngine().plan(
+    FeatureDiscoveryContext(app: app, requirements: requirements),
+  );
+  final dependencyGraph = const DependencyGraphBuilder().build(
+    featureGraph.nodes.map((n) => n.candidate).toList(),
+  );
   final explorationResult = const SolutionExplorer().explore(
     app: app,
-    context: SolutionExplorationContext(app: app, featureGraph: featureGraph, dependencyGraph: dependencyGraph),
+    context: SolutionExplorationContext(
+      app: app,
+      featureGraph: featureGraph,
+      dependencyGraph: dependencyGraph,
+    ),
   );
   final selected = explorationResult.decision!.selected;
   final blueprint = const ArchitectureToBlueprintConverter().convert(
@@ -176,20 +307,42 @@ ReviewContext buildReviewContext(SemanticApp app) {
 /// Rebuilds a ReviewContext with a deliberately-broken EngineeringCandidate
 /// — the standard way these tests manufacture a specific defect for a
 /// reviewer to catch, since EngineeringCandidate has no public mutator.
-ReviewContext withEngineering(ReviewContext context, EngineeringCandidate engineeringCandidate) {
+ReviewContext withEngineering(
+  ReviewContext context,
+  EngineeringCandidate engineeringCandidate,
+) {
   final oldSolution = context.solution;
   final oldPlan = oldSolution.engineeringVariation.plan;
-  final newPlan = EngineeringPlan(finalCandidate: engineeringCandidate, reviewHistory: oldPlan.reviewHistory, outcome: oldPlan.outcome);
-  return _withSolution(context, _copySolutionWith(oldSolution, engineeringVariation: EngineeringVariation(plan: newPlan)));
+  final newPlan = EngineeringPlan(
+    finalCandidate: engineeringCandidate,
+    reviewHistory: oldPlan.reviewHistory,
+    outcome: oldPlan.outcome,
+  );
+  return _withSolution(
+    context,
+    _copySolutionWith(
+      oldSolution,
+      engineeringVariation: EngineeringVariation(plan: newPlan),
+    ),
+  );
 }
 
 /// Rebuilds a ReviewContext with a deliberately-broken ArchitectureCandidate.
-ReviewContext withArchitecture(ReviewContext context, ArchitectureCandidate architecture) {
-  return _withSolution(context, _copySolutionWith(context.solution, architecture: architecture));
+ReviewContext withArchitecture(
+  ReviewContext context,
+  ArchitectureCandidate architecture,
+) {
+  return _withSolution(
+    context,
+    _copySolutionWith(context.solution, architecture: architecture),
+  );
 }
 
 /// Rebuilds a ReviewContext with a deliberately-broken DependencyGraph.
-ReviewContext withDependencyGraph(ReviewContext context, DependencyGraph graph) {
+ReviewContext withDependencyGraph(
+  ReviewContext context,
+  DependencyGraph graph,
+) {
   return ReviewContext(
     app: context.app,
     requirements: context.requirements,
@@ -231,7 +384,10 @@ SolutionCandidate _copySolutionWith(
 /// overallConfidence — security/accessibility aren't included, so tests
 /// that need to manufacture a defect in either reconstruct the full
 /// candidate directly, copying every other field unchanged.
-EngineeringCandidate withSecurityDecisions(EngineeringCandidate engineering, SecurityEngineeringResult security) {
+EngineeringCandidate withSecurityDecisions(
+  EngineeringCandidate engineering,
+  SecurityEngineeringResult security,
+) {
   return EngineeringCandidate(
     id: engineering.id,
     iteration: engineering.iteration,
@@ -253,7 +409,10 @@ EngineeringCandidate withSecurityDecisions(EngineeringCandidate engineering, Sec
   );
 }
 
-EngineeringCandidate withAccessibilityDecisions(EngineeringCandidate engineering, AccessibilityEngineeringResult accessibility) {
+EngineeringCandidate withAccessibilityDecisions(
+  EngineeringCandidate engineering,
+  AccessibilityEngineeringResult accessibility,
+) {
   return EngineeringCandidate(
     id: engineering.id,
     iteration: engineering.iteration,

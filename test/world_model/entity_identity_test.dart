@@ -27,31 +27,63 @@ void main() {
   });
 
   group('EntityIdentity.structural', () {
-    test('two structurally-identical signatures across "different experiences" resolve to the same identity — '
-        'no duplicate identities', () {
-      final personInAppA = EntityIdentity.structural(WorldNodeKind.entity, ['Person', 'text:name', 'text:email']);
-      final personInAppB = EntityIdentity.structural(WorldNodeKind.entity, ['Person', 'text:email', 'text:name']); // different order
-      expect(personInAppA, personInAppB);
-    });
+    test(
+      'two structurally-identical signatures across "different experiences" resolve to the same identity — '
+      'no duplicate identities',
+      () {
+        final personInAppA = EntityIdentity.structural(WorldNodeKind.entity, [
+          'Person',
+          'text:name',
+          'text:email',
+        ]);
+        final personInAppB = EntityIdentity.structural(WorldNodeKind.entity, [
+          'Person',
+          'text:email',
+          'text:name',
+        ]); // different order
+        expect(personInAppA, personInAppB);
+      },
+    );
 
-    test('a structurally different signature produces a different identity', () {
-      final person = EntityIdentity.structural(WorldNodeKind.entity, ['Person', 'text:name']);
-      final task = EntityIdentity.structural(WorldNodeKind.entity, ['Task', 'text:title']);
-      expect(person, isNot(task));
-    });
+    test(
+      'a structurally different signature produces a different identity',
+      () {
+        final person = EntityIdentity.structural(WorldNodeKind.entity, [
+          'Person',
+          'text:name',
+        ]);
+        final task = EntityIdentity.structural(WorldNodeKind.entity, [
+          'Task',
+          'text:title',
+        ]);
+        expect(person, isNot(task));
+      },
+    );
   });
 
   group('EntityResolver', () {
     const resolver = EntityResolver();
 
     test('prefers an already-stable id when provided', () {
-      final identity = resolver.resolve(WorldNodeKind.capability, stableId: 'knowledge');
-      expect(identity, EntityIdentity.stable(WorldNodeKind.capability, 'knowledge'));
+      final identity = resolver.resolve(
+        WorldNodeKind.capability,
+        stableId: 'knowledge',
+      );
+      expect(
+        identity,
+        EntityIdentity.stable(WorldNodeKind.capability, 'knowledge'),
+      );
     });
 
     test('falls back to a structural fingerprint when no stable id exists', () {
-      final identity = resolver.resolve(WorldNodeKind.entity, structuralSignature: ['Task', 'text:title']);
-      expect(identity, EntityIdentity.structural(WorldNodeKind.entity, ['Task', 'text:title']));
+      final identity = resolver.resolve(
+        WorldNodeKind.entity,
+        structuralSignature: ['Task', 'text:title'],
+      );
+      expect(
+        identity,
+        EntityIdentity.structural(WorldNodeKind.entity, ['Task', 'text:title']),
+      );
     });
   });
 
@@ -59,10 +91,21 @@ void main() {
     test('is deterministic and distinguishes relationship kind', () {
       final a = EntityIdentity.stable(WorldNodeKind.experience, 'exp-a');
       final b = EntityIdentity.stable(WorldNodeKind.entity, 'task');
-      final containsId = RelationshipIdentity.of(a, b, RelationshipKind.contains);
-      final referencesId = RelationshipIdentity.of(a, b, RelationshipKind.references);
+      final containsId = RelationshipIdentity.of(
+        a,
+        b,
+        RelationshipKind.contains,
+      );
+      final referencesId = RelationshipIdentity.of(
+        a,
+        b,
+        RelationshipKind.references,
+      );
       expect(containsId, isNot(referencesId));
-      expect(RelationshipIdentity.of(a, b, RelationshipKind.contains), containsId);
+      expect(
+        RelationshipIdentity.of(a, b, RelationshipKind.contains),
+        containsId,
+      );
     });
   });
 }

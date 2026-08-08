@@ -109,7 +109,15 @@ class RepositoryTransactionCoordinator {
 /// framework's behaviour does not branch on it, because a commit is a commit.
 /// It exists so a failed write can be attributed without a caller having to
 /// thread a log message through.
-enum CommitOrigin { creation, modification, evolution, protection, installation, repair, removal }
+enum CommitOrigin {
+  creation,
+  modification,
+  evolution,
+  protection,
+  installation,
+  repair,
+  removal,
+}
 
 enum CommitFailure {
   /// The caller asked to write something that is not there.
@@ -159,29 +167,27 @@ class CommitResult {
     ExperiencePackage? previousPackage,
     ExperienceMetadataRecord? previousMetadata,
     bool replacedExisting = false,
-  }) =>
-      CommitResult._(
-        succeeded: true,
-        origin: origin,
-        experienceId: experienceId,
-        previousPackage: previousPackage,
-        previousMetadata: previousMetadata,
-        replacedExisting: replacedExisting,
-      );
+  }) => CommitResult._(
+    succeeded: true,
+    origin: origin,
+    experienceId: experienceId,
+    previousPackage: previousPackage,
+    previousMetadata: previousMetadata,
+    replacedExisting: replacedExisting,
+  );
 
   factory CommitResult.failed({
     required CommitOrigin origin,
     required String experienceId,
     required CommitFailure failure,
     String? error,
-  }) =>
-      CommitResult._(
-        succeeded: false,
-        origin: origin,
-        experienceId: experienceId,
-        failure: failure,
-        error: error,
-      );
+  }) => CommitResult._(
+    succeeded: false,
+    origin: origin,
+    experienceId: experienceId,
+    failure: failure,
+    error: error,
+  );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -198,16 +204,15 @@ class ExperienceCommitFramework {
   final RepositoryTransactionCoordinator transactions;
 
   ExperienceCommitFramework({required this.repository})
-      : transactions = RepositoryTransactionCoordinator(repository);
+    : transactions = RepositoryTransactionCoordinator(repository);
 
   /// Reads the current state a commit would replace.
   ///
   /// Exposed because callers that may roll back later must hold the prior
   /// state themselves — the repository keeps no version history, so "the
   /// version before this one" cannot be looked up after the fact.
-  Future<({ExperiencePackage? package, ExperienceMetadataRecord? metadata})> currentState(
-    String experienceId,
-  ) async {
+  Future<({ExperiencePackage? package, ExperienceMetadataRecord? metadata})>
+  currentState(String experienceId) async {
     return (
       package: await repository.getPackage(experienceId),
       metadata: await repository.getMetadata(experienceId),
@@ -243,7 +248,9 @@ class ExperienceCommitFramework {
     try {
       await transactions.run((txn) async {
         if (package != null) await repository.savePackage(package, using: txn);
-        if (metadata != null) await repository.saveMetadata(metadata, using: txn);
+        if (metadata != null) {
+          await repository.saveMetadata(metadata, using: txn);
+        }
       });
     } catch (e) {
       // SQLite rolled the transaction back. Nothing partial survived, so there
@@ -285,7 +292,11 @@ class ExperienceCommitFramework {
     final prior = await currentState(experienceId);
     try {
       await transactions.run((txn) async {
-        await repository.saveProtectedEnvelope(experienceId, serializedEnvelope, using: txn);
+        await repository.saveProtectedEnvelope(
+          experienceId,
+          serializedEnvelope,
+          using: txn,
+        );
         await repository.updateProtectionState(experienceId, true, using: txn);
         await repository.deletePackage(experienceId, using: txn);
       });
@@ -316,12 +327,11 @@ class ExperienceCommitFramework {
   Future<CommitResult> commitUnprotection({
     required String experienceId,
     required ExperiencePackage package,
-  }) =>
-      commit(
-        experienceId: experienceId,
-        origin: CommitOrigin.protection,
-        package: package,
-      );
+  }) => commit(
+    experienceId: experienceId,
+    origin: CommitOrigin.protection,
+    package: package,
+  );
 
   /// ROLLBACK (IS-R55 Task 9) — the ONE rollback owner.
   ///
@@ -363,7 +373,10 @@ class ExperienceCommitFramework {
       );
     }
 
-    return CommitResult.success(origin: CommitOrigin.repair, experienceId: experienceId);
+    return CommitResult.success(
+      origin: CommitOrigin.repair,
+      experienceId: experienceId,
+    );
   }
 
   /// REPAIR (IS-R55 Task 8) — the ONE repair owner.
@@ -408,13 +421,17 @@ class ExperienceCommitFramework {
       }
       return const RepairResult._(
         outcome: RepairOutcome.unrepairable,
-        message: 'metadata exists but the package data is gone and cannot be '
+        message:
+            'metadata exists but the package data is gone and cannot be '
             'reconstructed — reinstall it',
       );
     }
 
     if (metadata != null) {
-      return const RepairResult._(outcome: RepairOutcome.healthy, message: 'nothing to repair');
+      return const RepairResult._(
+        outcome: RepairOutcome.healthy,
+        message: 'nothing to repair',
+      );
     }
 
     // Package without metadata — rebuild metadata from the package's own
@@ -450,7 +467,8 @@ class ExperienceCommitFramework {
 
     return const RepairResult._(
       outcome: RepairOutcome.repaired,
-      message: 'rebuilt missing metadata from the installed package; '
+      message:
+          'rebuilt missing metadata from the installed package; '
           'provenance could not be recovered and is recorded as unknown',
     );
   }
@@ -462,7 +480,9 @@ class ExperienceCommitFramework {
   /// asks for a removal and this performs it.
   Future<CommitResult> remove(String experienceId) async {
     try {
-      await transactions.run((txn) => repository.delete(experienceId, using: txn));
+      await transactions.run(
+        (txn) => repository.delete(experienceId, using: txn),
+      );
     } catch (e) {
       return CommitResult.failed(
         origin: CommitOrigin.removal,
@@ -471,7 +491,10 @@ class ExperienceCommitFramework {
         error: e.toString(),
       );
     }
-    return CommitResult.success(origin: CommitOrigin.removal, experienceId: experienceId);
+    return CommitResult.success(
+      origin: CommitOrigin.removal,
+      experienceId: experienceId,
+    );
   }
 }
 
@@ -483,5 +506,6 @@ class RepairResult {
 
   const RepairResult._({required this.outcome, required this.message});
 
-  bool get succeeded => outcome == RepairOutcome.healthy || outcome == RepairOutcome.repaired;
+  bool get succeeded =>
+      outcome == RepairOutcome.healthy || outcome == RepairOutcome.repaired;
 }

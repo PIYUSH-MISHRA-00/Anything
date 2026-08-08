@@ -84,7 +84,12 @@ SemanticApp _apiaryApp() {
         name: 'Rotation',
         displayField: 'summary',
         fields: [
-          const SemanticField(id: 'summary', name: 'Summary', type: BlueprintFieldType.text, required: true),
+          const SemanticField(
+            id: 'summary',
+            name: 'Summary',
+            type: BlueprintFieldType.text,
+            required: true,
+          ),
           const SemanticField(
             id: 'siteId',
             name: 'Site',
@@ -97,40 +102,85 @@ SemanticApp _apiaryApp() {
       const SemanticEntity(
         id: 'site',
         name: 'Site',
-        fields: [SemanticField(id: 'name', name: 'Name', type: BlueprintFieldType.text, required: true)],
+        fields: [
+          SemanticField(
+            id: 'name',
+            name: 'Name',
+            type: BlueprintFieldType.text,
+            required: true,
+          ),
+        ],
       ),
     ],
     views: const [
-      SemanticView(id: 'rotations_list', name: 'Rotations', purpose: 'list', sourceEntityId: 'rotation', viewType: BlueprintViewType.list, isDefault: true),
-      SemanticView(id: 'rotations_form', name: 'Add Rotation', purpose: 'form', sourceEntityId: 'rotation', viewType: BlueprintViewType.form),
-      SemanticView(id: 'rotations_detail', name: 'Rotation Detail', purpose: 'detail', sourceEntityId: 'rotation', viewType: BlueprintViewType.detail),
+      SemanticView(
+        id: 'rotations_list',
+        name: 'Rotations',
+        purpose: 'list',
+        sourceEntityId: 'rotation',
+        viewType: BlueprintViewType.list,
+        isDefault: true,
+      ),
+      SemanticView(
+        id: 'rotations_form',
+        name: 'Add Rotation',
+        purpose: 'form',
+        sourceEntityId: 'rotation',
+        viewType: BlueprintViewType.form,
+      ),
+      SemanticView(
+        id: 'rotations_detail',
+        name: 'Rotation Detail',
+        purpose: 'detail',
+        sourceEntityId: 'rotation',
+        viewType: BlueprintViewType.detail,
+      ),
     ],
-    actions: const [SemanticAction(id: 'add_rotation', name: 'Add Rotation', targetEntityId: 'rotation')],
+    actions: const [
+      SemanticAction(
+        id: 'add_rotation',
+        name: 'Add Rotation',
+        targetEntityId: 'rotation',
+      ),
+    ],
     requiredCapabilities: const ['knowledge'],
   );
 }
 
 void main() {
-  test('a never-before-seen domain reaches a genuinely multi-candidate, structurally-selected decision', () async {
-    final kernel = AnythingKernel(
-      providerRegistry: _FakeProviderRegistry(),
-      capabilityRegistry: _registryWithStorage(),
-      reasoner: _FixedReasoner(_apiaryApp()),
-    );
+  test(
+    'a never-before-seen domain reaches a genuinely multi-candidate, structurally-selected decision',
+    () async {
+      final kernel = AnythingKernel(
+        providerRegistry: _FakeProviderRegistry(),
+        capabilityRegistry: _registryWithStorage(),
+        reasoner: _FixedReasoner(_apiaryApp()),
+      );
 
-    final outcome = await kernel.processIntent(Intent.create(expression: 'track my apiary hive rotations'));
+      final outcome = await kernel.processIntent(
+        Intent.create(expression: 'track my apiary hive rotations'),
+      );
 
-    expect(outcome, isA<ExecutionPlanReady>());
-    final ready = outcome as ExecutionPlanReady;
-    final decision = ready.solutionDecision!;
+      expect(outcome, isA<ExecutionPlanReady>());
+      final ready = outcome as ExecutionPlanReady;
+      final decision = ready.solutionDecision!;
 
-    // http/ai/knowledge capability -> cacheThenOnline baseline -> Offline
-    // First applies; 3 views -> Flat Navigation applies. Balanced + Minimal
-    // always apply. Four real, structurally distinct candidates.
-    final labels = [decision.selected, ...decision.rejected.map((r) => r.candidate)].map((c) => c.label).toSet();
-    expect(labels, {'Balanced', 'Minimal', 'Flat Navigation', 'Offline First'});
+      // http/ai/knowledge capability -> cacheThenOnline baseline -> Offline
+      // First applies; 3 views -> Flat Navigation applies. Balanced + Minimal
+      // always apply. Four real, structurally distinct candidates.
+      final labels = [
+        decision.selected,
+        ...decision.rejected.map((r) => r.candidate),
+      ].map((c) => c.label).toSet();
+      expect(labels, {
+        'Balanced',
+        'Minimal',
+        'Flat Navigation',
+        'Offline First',
+      });
 
-    expect(decision.selected.tradeoffs, hasLength(15));
-    expect(decision.rationale, isNotEmpty);
-  });
+      expect(decision.selected.tradeoffs, hasLength(15));
+      expect(decision.rationale, isNotEmpty);
+    },
+  );
 }

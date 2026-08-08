@@ -7,14 +7,26 @@ library;
 import 'evolution_candidate.dart';
 import 'evolution_types.dart';
 
-enum EvolutionGraphNodeKind { currentState, opportunity, candidate, review, approval, execution, verification }
+enum EvolutionGraphNodeKind {
+  currentState,
+  opportunity,
+  candidate,
+  review,
+  approval,
+  execution,
+  verification,
+}
 
 class EvolutionGraphNode {
   final String id;
   final EvolutionGraphNodeKind kind;
   final String label;
 
-  const EvolutionGraphNode({required this.id, required this.kind, required this.label});
+  const EvolutionGraphNode({
+    required this.id,
+    required this.kind,
+    required this.label,
+  });
 }
 
 class EvolutionGraph {
@@ -23,8 +35,10 @@ class EvolutionGraph {
 
   const EvolutionGraph({this.nodes = const [], this.edges = const []});
 
-  List<EvolutionDependency> edgesFrom(String id) => edges.where((e) => e.fromId == id).toList();
-  List<EvolutionDependency> edgesTo(String id) => edges.where((e) => e.toId == id).toList();
+  List<EvolutionDependency> edgesFrom(String id) =>
+      edges.where((e) => e.fromId == id).toList();
+  List<EvolutionDependency> edgesTo(String id) =>
+      edges.where((e) => e.toId == id).toList();
 }
 
 class EvolutionGraphBuilder {
@@ -40,7 +54,11 @@ class EvolutionGraphBuilder {
   /// related.
   EvolutionGraph build(List<EvolutionCandidate> candidates) {
     final nodes = <EvolutionGraphNode>[
-      const EvolutionGraphNode(id: 'state:current', kind: EvolutionGraphNodeKind.currentState, label: 'Current State'),
+      const EvolutionGraphNode(
+        id: 'state:current',
+        kind: EvolutionGraphNodeKind.currentState,
+        label: 'Current State',
+      ),
     ];
     final edges = <EvolutionDependency>[];
 
@@ -52,7 +70,13 @@ class EvolutionGraphBuilder {
           label: candidate.opportunity.description,
         ),
       );
-      nodes.add(EvolutionGraphNode(id: candidate.id, kind: EvolutionGraphNodeKind.candidate, label: candidate.id));
+      nodes.add(
+        EvolutionGraphNode(
+          id: candidate.id,
+          kind: EvolutionGraphNodeKind.candidate,
+          label: candidate.id,
+        ),
+      );
 
       edges.add(
         EvolutionDependency(
@@ -71,14 +95,23 @@ class EvolutionGraphBuilder {
     }
 
     final syncCandidates = candidates.where(
-      (c) => c.opportunity.category == EvolutionOpportunityCategory.missingSynchronization,
+      (c) =>
+          c.opportunity.category ==
+          EvolutionOpportunityCategory.missingSynchronization,
     );
     final offlineCandidates = candidates.where(
-      (c) => c.opportunity.category == EvolutionOpportunityCategory.missingOffline,
+      (c) =>
+          c.opportunity.category == EvolutionOpportunityCategory.missingOffline,
     );
     for (final sync in syncCandidates) {
       for (final offline in offlineCandidates) {
-        edges.add(EvolutionDependency(fromId: sync.id, toId: offline.id, kind: EvolutionDependencyKind.requires));
+        edges.add(
+          EvolutionDependency(
+            fromId: sync.id,
+            toId: offline.id,
+            kind: EvolutionDependencyKind.requires,
+          ),
+        );
       }
     }
 

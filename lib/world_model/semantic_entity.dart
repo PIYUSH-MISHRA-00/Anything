@@ -12,7 +12,11 @@ class SemanticEntity {
   final String name;
   final List<String> fieldTypeNames;
 
-  const SemanticEntity({required this.identity, required this.name, this.fieldTypeNames = const []});
+  const SemanticEntity({
+    required this.identity,
+    required this.name,
+    this.fieldTypeNames = const [],
+  });
 }
 
 class SemanticRelationship {
@@ -20,5 +24,9 @@ class SemanticRelationship {
   final EntityIdentity toId;
   final RelationshipKind kind;
 
-  const SemanticRelationship({required this.fromId, required this.toId, required this.kind});
+  const SemanticRelationship({
+    required this.fromId,
+    required this.toId,
+    required this.kind,
+  });
 }

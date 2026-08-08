@@ -22,7 +22,11 @@ class UsageEdge {
   final String toId;
   final int coOccurrenceCount;
 
-  const UsageEdge({required this.fromId, required this.toId, required this.coOccurrenceCount});
+  const UsageEdge({
+    required this.fromId,
+    required this.toId,
+    required this.coOccurrenceCount,
+  });
 }
 
 class UsageGraph {
@@ -33,7 +37,8 @@ class UsageGraph {
 
   UsageNode? nodeById(String id) => nodes.where((n) => n.id == id).firstOrNull;
 
-  List<UsageEdge> edgesFrom(String id) => edges.where((e) => e.fromId == id).toList();
+  List<UsageEdge> edgesFrom(String id) =>
+      edges.where((e) => e.fromId == id).toList();
 
   /// Aggregates usage counts and screen-to-screen co-occurrence across
   /// every record in memory, grouped by experience so one session's
@@ -62,7 +67,11 @@ class UsageGraph {
     final coOccurrence = <String, int>{};
     for (final sessionRecords in byExperience.values) {
       final screenSequence = sessionRecords
-          .where((r) => r.category == ObservationCategory.navigation && r.screenId != null)
+          .where(
+            (r) =>
+                r.category == ObservationCategory.navigation &&
+                r.screenId != null,
+          )
           .map((r) => r.screenId!)
           .toList();
       for (var i = 1; i < screenSequence.length; i++) {
@@ -75,11 +84,20 @@ class UsageGraph {
     }
 
     final nodes = usageCounts.entries
-        .map((e) => UsageNode(node: RilNode(id: e.key, kind: kinds[e.key]!, label: e.key), usageCount: e.value))
+        .map(
+          (e) => UsageNode(
+            node: RilNode(id: e.key, kind: kinds[e.key]!, label: e.key),
+            usageCount: e.value,
+          ),
+        )
         .toList();
     final edges = coOccurrence.entries.map((e) {
       final parts = e.key.split('->');
-      return UsageEdge(fromId: parts[0], toId: parts[1], coOccurrenceCount: e.value);
+      return UsageEdge(
+        fromId: parts[0],
+        toId: parts[1],
+        coOccurrenceCount: e.value,
+      );
     }).toList();
 
     return UsageGraph(nodes: nodes, edges: edges);

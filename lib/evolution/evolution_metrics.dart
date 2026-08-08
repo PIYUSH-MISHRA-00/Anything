@@ -30,8 +30,12 @@ class EvolutionMetrics {
   });
 
   factory EvolutionMetrics.from(EvolutionResult result) {
-    final allOpportunities = result.cycle.iterations.expand((i) => i.opportunities).toList();
-    final allDecisions = result.cycle.iterations.expand((i) => i.decisions).toList();
+    final allOpportunities = result.cycle.iterations
+        .expand((i) => i.opportunities)
+        .toList();
+    final allDecisions = result.cycle.iterations
+        .expand((i) => i.decisions)
+        .toList();
     final byCategory = <EvolutionOpportunityCategory, int>{};
     for (final o in allOpportunities) {
       byCategory[o.category] = (byCategory[o.category] ?? 0) + 1;
@@ -39,9 +43,15 @@ class EvolutionMetrics {
 
     return EvolutionMetrics(
       totalOpportunitiesFound: allOpportunities.length,
-      totalCandidatesEstimated: result.cycle.iterations.expand((i) => i.candidates).length,
-      totalProposalsAccepted: allDecisions.where((d) => d.kind == EvolutionDecisionKind.accepted).length,
-      totalProposalsRejected: allDecisions.where((d) => d.kind == EvolutionDecisionKind.rejected).length,
+      totalCandidatesEstimated: result.cycle.iterations
+          .expand((i) => i.candidates)
+          .length,
+      totalProposalsAccepted: allDecisions
+          .where((d) => d.kind == EvolutionDecisionKind.accepted)
+          .length,
+      totalProposalsRejected: allDecisions
+          .where((d) => d.kind == EvolutionDecisionKind.rejected)
+          .length,
       iterationsRun: result.cycle.iterations.length,
       opportunitiesByCategory: byCategory.entries
           .map((e) => EvolutionCategoryCount(category: e.key, count: e.value))

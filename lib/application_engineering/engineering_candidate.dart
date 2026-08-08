@@ -52,8 +52,10 @@ class EngineeringCandidate {
     required this.overallConfidence,
   });
 
-  List<EventGraph> get eventGraphs => behaviors.map((b) => b.eventGraph).toList();
-  List<StateMachineDefinition> get stateMachines => behaviors.map((b) => b.stateMachine).toList();
+  List<EventGraph> get eventGraphs =>
+      behaviors.map((b) => b.eventGraph).toList();
+  List<StateMachineDefinition> get stateMachines =>
+      behaviors.map((b) => b.stateMachine).toList();
 
   List<EngineeringDecision> get allDecisions => [
     ...behaviors.map((b) => b.decision),

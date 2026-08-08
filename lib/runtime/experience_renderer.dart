@@ -1373,7 +1373,13 @@ class ExperienceRenderer {
             }
           : null,
     );
-    return label == null ? switchWidget : Semantics(label: label, toggled: currentValue, child: ExcludeSemantics(child: switchWidget));
+    return label == null
+        ? switchWidget
+        : Semantics(
+            label: label,
+            toggled: currentValue,
+            child: ExcludeSemantics(child: switchWidget),
+          );
   }
 
   Widget _renderIcon(Map<String, dynamic> properties) {

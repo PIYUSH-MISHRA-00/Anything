@@ -37,7 +37,12 @@ enum ObservationCategory {
   featureUsage,
 }
 
-enum PatternKind { sequentialWorkflow, frequentFeaturePair, frequentCapability, navigationLoop }
+enum PatternKind {
+  sequentialWorkflow,
+  frequentFeaturePair,
+  frequentCapability,
+  navigationLoop,
+}
 
 enum RecommendationKind {
   newFeature,
@@ -55,10 +60,22 @@ enum RecommendationDecisionKind { accepted, rejected, deferred }
 
 enum ScheduleFrequency { once, daily, weekly, monthly, conditional }
 
-enum AutomationConstraintKind { capabilityAvailability, networkAvailability, batteryNotLow }
+enum AutomationConstraintKind {
+  capabilityAvailability,
+  networkAvailability,
+  batteryNotLow,
+}
 
-enum AutomationStepEligibility { eligible, blockedMissingCapability, blockedConstraint }
+enum AutomationStepEligibility {
+  eligible,
+  blockedMissingCapability,
+  blockedConstraint,
+}
 
-enum ExperienceRelationshipKind { sharesCapability, sharesDataShape, complementaryWorkflow }
+enum ExperienceRelationshipKind {
+  sharesCapability,
+  sharesDataShape,
+  complementaryWorkflow,
+}
 
 enum PredictionKind { nextAction, nextExperience, automationOpportunity }

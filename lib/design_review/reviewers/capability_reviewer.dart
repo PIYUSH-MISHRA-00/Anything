@@ -18,7 +18,9 @@ class CapabilityReviewer {
 
     // Orphaned declaration: required by the blueprint but never resolved
     // into an architecture-level CapabilityDecision.
-    final decidedIds = architecture.capabilities.map((c) => c.capabilityId).toSet();
+    final decidedIds = architecture.capabilities
+        .map((c) => c.capabilityId)
+        .toSet();
     for (final capabilityId in context.blueprint.requiredCapabilities) {
       if (!decidedIds.contains(capabilityId)) {
         issues.add(
@@ -26,9 +28,16 @@ class CapabilityReviewer {
             id: 'capability:orphanDeclaration:$capabilityId',
             category: ReviewCategory.capability,
             severity: ReviewSeverity.critical,
-            reason: 'Blueprint requires capability "$capabilityId" but no architecture decision resolved it',
-            evidence: ReviewEvidence(affectedGraph: 'AppBlueprint.requiredCapabilities', affectedNodeId: capabilityId, affectedCapabilityId: capabilityId),
-            recommendation: const ReviewRecommendation(description: 'Re-run capability resolution for this id'),
+            reason:
+                'Blueprint requires capability "$capabilityId" but no architecture decision resolved it',
+            evidence: ReviewEvidence(
+              affectedGraph: 'AppBlueprint.requiredCapabilities',
+              affectedNodeId: capabilityId,
+              affectedCapabilityId: capabilityId,
+            ),
+            recommendation: const ReviewRecommendation(
+              description: 'Re-run capability resolution for this id',
+            ),
             confidence: Confidence.full,
           ),
         );
@@ -39,23 +48,32 @@ class CapabilityReviewer {
     // capability with no corresponding PermissionDecision — a real safety
     // gap, since the capability would be invoked without a declared
     // platform permission.
-    final permittedCapabilityIds = architecture.permissions.map((p) => p.requiredByCapabilityId).toSet();
+    final permittedCapabilityIds = architecture.permissions
+        .map((p) => p.requiredByCapabilityId)
+        .toSet();
     for (final capability in architecture.capabilities) {
       if (!capability.resolved) continue;
-      if (!FeatureDiscoveryEngine.permissionRequiringCapabilities.contains(capability.capabilityId)) continue;
+      if (!FeatureDiscoveryEngine.permissionRequiringCapabilities.contains(
+        capability.capabilityId,
+      )) {
+        continue;
+      }
       if (!permittedCapabilityIds.contains(capability.capabilityId)) {
         issues.add(
           ReviewIssue(
             id: 'capability:missingPermission:${capability.capabilityId}',
             category: ReviewCategory.capability,
             severity: ReviewSeverity.critical,
-            reason: 'Capability "${capability.capabilityId}" requires a platform permission but none was declared',
+            reason:
+                'Capability "${capability.capabilityId}" requires a platform permission but none was declared',
             evidence: ReviewEvidence(
               affectedGraph: 'ArchitectureCandidate.capabilities',
               affectedNodeId: capability.capabilityId,
               affectedCapabilityId: capability.capabilityId,
             ),
-            recommendation: const ReviewRecommendation(description: 'Add the missing PermissionDecision'),
+            recommendation: const ReviewRecommendation(
+              description: 'Add the missing PermissionDecision',
+            ),
             confidence: Confidence.full,
           ),
         );
@@ -70,14 +88,21 @@ class CapabilityReviewer {
             id: 'capability:unresolved:${capability.capabilityId}',
             category: ReviewCategory.capability,
             severity: ReviewSeverity.info,
-            reason: 'Capability "${capability.capabilityId}" is requested but not implemented in this codebase',
+            reason:
+                'Capability "${capability.capabilityId}" is requested but not implemented in this codebase',
             evidence: ReviewEvidence(
               affectedGraph: 'ArchitectureCandidate.capabilities',
               affectedNodeId: capability.capabilityId,
               affectedCapabilityId: capability.capabilityId,
             ),
-            recommendation: const ReviewRecommendation(description: 'Remove the capability or wait for it to be implemented'),
-            confidence: const Confidence(score: 0.0, reason: 'No implementation exists for this capability.'),
+            recommendation: const ReviewRecommendation(
+              description:
+                  'Remove the capability or wait for it to be implemented',
+            ),
+            confidence: const Confidence(
+              score: 0.0,
+              reason: 'No implementation exists for this capability.',
+            ),
           ),
         );
       }

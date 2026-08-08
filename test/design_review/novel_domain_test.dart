@@ -72,7 +72,12 @@ SemanticApp _fuelLogApp() {
         name: 'FuelReading',
         displayField: 'notes',
         fields: [
-          const SemanticField(id: 'notes', name: 'Notes', type: BlueprintFieldType.text, required: true),
+          const SemanticField(
+            id: 'notes',
+            name: 'Notes',
+            type: BlueprintFieldType.text,
+            required: true,
+          ),
           const SemanticField(
             id: 'generatorId',
             name: 'Generator',
@@ -85,34 +90,71 @@ SemanticApp _fuelLogApp() {
       const SemanticEntity(
         id: 'generator',
         name: 'Generator',
-        fields: [SemanticField(id: 'label', name: 'Label', type: BlueprintFieldType.text, required: true)],
+        fields: [
+          SemanticField(
+            id: 'label',
+            name: 'Label',
+            type: BlueprintFieldType.text,
+            required: true,
+          ),
+        ],
       ),
     ],
     views: const [
-      SemanticView(id: 'readings_list', name: 'Readings', purpose: 'list', sourceEntityId: 'reading', viewType: BlueprintViewType.list, isDefault: true),
-      SemanticView(id: 'readings_form', name: 'Add Reading', purpose: 'form', sourceEntityId: 'reading', viewType: BlueprintViewType.form),
-      SemanticView(id: 'readings_detail', name: 'Reading Detail', purpose: 'detail', sourceEntityId: 'reading', viewType: BlueprintViewType.detail),
+      SemanticView(
+        id: 'readings_list',
+        name: 'Readings',
+        purpose: 'list',
+        sourceEntityId: 'reading',
+        viewType: BlueprintViewType.list,
+        isDefault: true,
+      ),
+      SemanticView(
+        id: 'readings_form',
+        name: 'Add Reading',
+        purpose: 'form',
+        sourceEntityId: 'reading',
+        viewType: BlueprintViewType.form,
+      ),
+      SemanticView(
+        id: 'readings_detail',
+        name: 'Reading Detail',
+        purpose: 'detail',
+        sourceEntityId: 'reading',
+        viewType: BlueprintViewType.detail,
+      ),
     ],
-    actions: const [SemanticAction(id: 'add_reading', name: 'Add Reading', targetEntityId: 'reading')],
+    actions: const [
+      SemanticAction(
+        id: 'add_reading',
+        name: 'Add Reading',
+        targetEntityId: 'reading',
+      ),
+    ],
   );
 }
 
 void main() {
-  test('a never-before-seen domain reaches a real, approved Design Review session', () async {
-    final kernel = AnythingKernel(
-      providerRegistry: _FakeProviderRegistry(),
-      capabilityRegistry: _registryWithStorage(),
-      reasoner: _FixedReasoner(_fuelLogApp()),
-    );
+  test(
+    'a never-before-seen domain reaches a real, approved Design Review session',
+    () async {
+      final kernel = AnythingKernel(
+        providerRegistry: _FakeProviderRegistry(),
+        capabilityRegistry: _registryWithStorage(),
+        reasoner: _FixedReasoner(_fuelLogApp()),
+      );
 
-    final outcome = await kernel.processIntent(Intent.create(expression: 'track lighthouse generator fuel readings'));
+      final outcome = await kernel.processIntent(
+        Intent.create(expression: 'track lighthouse generator fuel readings'),
+      );
 
-    expect(outcome, isA<ExecutionPlanReady>());
-    final ready = outcome as ExecutionPlanReady;
-    final session = ready.reviewSession!;
+      expect(outcome, isA<ExecutionPlanReady>());
+      final ready = outcome as ExecutionPlanReady;
+      final session = ready.reviewSession!;
 
-    expect(session.result.outcome.name, 'approved');
-    expect(session.decisions, isNotEmpty);
-    expect(session.fingerprint, isNotEmpty);
-  });
+      expect(session.result.outcome.name, 'approved');
+      expect(session.decisions, isNotEmpty);
+      expect(session.fingerprint, isNotEmpty);
+    },
+  );
 }

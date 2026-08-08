@@ -15,13 +15,20 @@ class IndexDecision {
   final String entityId;
   final String fieldId;
   final EngineeringDecision decision;
-  const IndexDecision({required this.entityId, required this.fieldId, required this.decision});
+  const IndexDecision({
+    required this.entityId,
+    required this.fieldId,
+    required this.decision,
+  });
 }
 
 class AggregationDecision {
   final String derivedValueId;
   final EngineeringDecision decision;
-  const AggregationDecision({required this.derivedValueId, required this.decision});
+  const AggregationDecision({
+    required this.derivedValueId,
+    required this.decision,
+  });
 }
 
 class DataEngineeringResult {
@@ -45,7 +52,8 @@ class DataEngineering {
       if (featureGraph == null) return false;
       final persistenceId = 'feature:persistence:$entityId';
       return featureGraph.edgesTo(persistenceId).any((e) {
-        return featureGraph.nodeById(e.fromFeatureId)?.category == FeatureCategory.indexing;
+        return featureGraph.nodeById(e.fromFeatureId)?.category ==
+            FeatureCategory.indexing;
       });
     }
 
@@ -56,7 +64,9 @@ class DataEngineering {
       // actually perform (lookup-by-display-value, join-by-reference).
       final candidates = <String>{
         if (entity.displayField.isNotEmpty) entity.displayField,
-        ...entity.fields.where((f) => f.referenceEntityId != null).map((f) => f.id),
+        ...entity.fields
+            .where((f) => f.referenceEntityId != null)
+            .map((f) => f.id),
       };
       final corroborated = corroboratedByFeatureDiscovery(entity.id);
       for (final fieldId in candidates) {
@@ -97,7 +107,8 @@ class DataEngineering {
           id: 'aggregation:${dv.id}',
           category: EngineeringDecisionCategory.data,
           subjectId: dv.id,
-          decision: '${dv.name} computed via ${dv.operation.name} over ${dv.sourceEntityId}',
+          decision:
+              '${dv.name} computed via ${dv.operation.name} over ${dv.sourceEntityId}',
           rationale:
               'Recomputed on demand from the current data set — matches '
               'BehaviorInterpreter\'s existing aggregate calculation node '

@@ -10,7 +10,8 @@ library;
 
 import '../knowledge/knowledge_resource.dart' show LicenseMetadata;
 
-export '../knowledge/knowledge_resource.dart' show LicenseMetadata, LicensePolicy;
+export '../knowledge/knowledge_resource.dart'
+    show LicenseMetadata, LicensePolicy;
 
 class SoftwareProvenance {
   final String sourceUrl;

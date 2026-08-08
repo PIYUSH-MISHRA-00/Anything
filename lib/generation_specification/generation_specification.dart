@@ -43,7 +43,10 @@ class ArtifactMapping {
   final PathTemplate pathTemplate;
   final String artifactKind;
 
-  const ArtifactMapping({required this.pathTemplate, required this.artifactKind});
+  const ArtifactMapping({
+    required this.pathTemplate,
+    required this.artifactKind,
+  });
 }
 
 /// One real, typed generation rule: nodes of [nodeKind] each produce one
@@ -67,7 +70,10 @@ class GenerationSpecification {
   final List<GenerationRule> rules;
   final PathTemplate manifestPathTemplate;
 
-  const GenerationSpecification({this.rules = const [], required this.manifestPathTemplate});
+  const GenerationSpecification({
+    this.rules = const [],
+    required this.manifestPathTemplate,
+  });
 
   /// The real, default specification `SummaryManifestGenerator` (R10)
   /// used when the specification concept didn't exist yet — reproduces
@@ -76,15 +82,19 @@ class GenerationSpecification {
   /// paths is proven, by a dedicated regression-equivalence test, to
   /// change WHERE the naming decision lives without changing WHAT it
   /// produces.
-  static const GenerationSpecification defaultReference = GenerationSpecification(
-    rules: [
-      GenerationRule(
-        nodeKind: BuildNodeKind.entity,
-        mapping: ArtifactMapping(pathTemplate: PathTemplate('summary/{id}.txt'), artifactKind: 'file'),
-      ),
-    ],
-    manifestPathTemplate: PathTemplate('summary/manifest.txt'),
-  );
+  static const GenerationSpecification defaultReference =
+      GenerationSpecification(
+        rules: [
+          GenerationRule(
+            nodeKind: BuildNodeKind.entity,
+            mapping: ArtifactMapping(
+              pathTemplate: PathTemplate('summary/{id}.txt'),
+              artifactKind: 'file',
+            ),
+          ),
+        ],
+        manifestPathTemplate: PathTemplate('summary/manifest.txt'),
+      );
 
   GenerationRule? ruleFor(BuildNodeKind kind) {
     for (final rule in rules) {

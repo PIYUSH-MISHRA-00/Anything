@@ -12,11 +12,20 @@ class EngineeringConfidence {
   Confidence analyze(EngineeringCandidate candidate) {
     final decisions = candidate.allDecisions;
     if (decisions.isEmpty) {
-      return const Confidence(score: 0.0, reason: 'No decisions were planned.', risk: RiskLevel.high);
+      return const Confidence(
+        score: 0.0,
+        reason: 'No decisions were planned.',
+        risk: RiskLevel.high,
+      );
     }
 
-    final meanScore = decisions.map((d) => d.confidence.score).reduce((a, b) => a + b) / decisions.length;
-    final missing = decisions.expand((d) => d.confidence.missingKnowledge).toSet().toList();
+    final meanScore =
+        decisions.map((d) => d.confidence.score).reduce((a, b) => a + b) /
+        decisions.length;
+    final missing = decisions
+        .expand((d) => d.confidence.missingKnowledge)
+        .toSet()
+        .toList();
     final worstRisk = decisions
         .map((d) => d.confidence.risk)
         .fold(RiskLevel.none, (worst, r) => r.index > worst.index ? r : worst);
@@ -24,7 +33,8 @@ class EngineeringConfidence {
 
     return Confidence(
       score: meanScore,
-      reason: 'Mean of ${decisions.length} engineering decision(s); $lowCount below 0.5.',
+      reason:
+          'Mean of ${decisions.length} engineering decision(s); $lowCount below 0.5.',
       missingKnowledge: missing,
       risk: worstRisk,
     );

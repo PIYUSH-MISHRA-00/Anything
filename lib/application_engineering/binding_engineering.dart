@@ -12,7 +12,9 @@ import 'engineering_types.dart';
 class BindingEngineering {
   const BindingEngineering();
 
-  ({BindingGraph graph, EngineeringDecision decision}) plan(ArchitectureCandidate candidate) {
+  ({BindingGraph graph, EngineeringDecision decision}) plan(
+    ArchitectureCandidate candidate,
+  ) {
     final edges = <BindingEdge>[];
 
     for (final field in candidate.fields) {

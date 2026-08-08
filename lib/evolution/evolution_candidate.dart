@@ -37,8 +37,13 @@ class EvolutionCandidate {
   /// derived from the same typed benefit/risk this candidate already
   /// carries.
   EvolutionPriority get priority {
-    if (benefit.overall >= 0.7 && risk.highest.index <= RiskLevel.low.index) return EvolutionPriority.critical;
-    if (benefit.overall >= 0.5 && risk.highest.index <= RiskLevel.medium.index) return EvolutionPriority.high;
+    if (benefit.overall >= 0.7 && risk.highest.index <= RiskLevel.low.index) {
+      return EvolutionPriority.critical;
+    }
+    if (benefit.overall >= 0.5 &&
+        risk.highest.index <= RiskLevel.medium.index) {
+      return EvolutionPriority.high;
+    }
     if (benefit.overall >= 0.3) return EvolutionPriority.medium;
     if (benefit.overall > 0) return EvolutionPriority.low;
     return EvolutionPriority.speculative;

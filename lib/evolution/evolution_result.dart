@@ -24,7 +24,10 @@ class EvolutionIteration {
   });
 
   List<EvolutionCandidate> get acceptedCandidates {
-    final acceptedIds = decisions.where((d) => d.kind == EvolutionDecisionKind.accepted).map((d) => d.subjectId).toSet();
+    final acceptedIds = decisions
+        .where((d) => d.kind == EvolutionDecisionKind.accepted)
+        .map((d) => d.subjectId)
+        .toSet();
     return candidates.where((c) => acceptedIds.contains(c.id)).toList();
   }
 }
@@ -46,5 +49,10 @@ class EvolutionResult {
   final EvolutionPrediction prediction;
   final EvolutionGraph graph;
 
-  const EvolutionResult({required this.cycle, required this.roadmap, required this.prediction, required this.graph});
+  const EvolutionResult({
+    required this.cycle,
+    required this.roadmap,
+    required this.prediction,
+    required this.graph,
+  });
 }

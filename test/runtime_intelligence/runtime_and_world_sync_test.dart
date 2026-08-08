@@ -15,29 +15,59 @@ import 'package:anything/world_model/world_model_coordinator.dart';
 import 'package:anything/world_model/world_types.dart';
 
 void main() {
-  test('runAndSyncToWorldModel syncs a real UsageGraph and learned patterns into the World Graph in one call', () {
-    final coordinator = RuntimeIntelligenceCoordinator();
-    DateTime t(int i) => DateTime(2026, 1, 1).add(Duration(seconds: i));
-    for (final exp in ['e1', 'e2']) {
-      coordinator.observationMemory.record(
-        ObservationRecord(id: '$exp-0', category: ObservationCategory.navigation, experienceId: exp, screenId: 'a', timestamp: t(0)),
+  test(
+    'runAndSyncToWorldModel syncs a real UsageGraph and learned patterns into the World Graph in one call',
+    () {
+      final coordinator = RuntimeIntelligenceCoordinator();
+      DateTime t(int i) => DateTime(2026, 1, 1).add(Duration(seconds: i));
+      for (final exp in ['e1', 'e2']) {
+        coordinator.observationMemory.record(
+          ObservationRecord(
+            id: '$exp-0',
+            category: ObservationCategory.navigation,
+            experienceId: exp,
+            screenId: 'a',
+            timestamp: t(0),
+          ),
+        );
+        coordinator.observationMemory.record(
+          ObservationRecord(
+            id: '$exp-1',
+            category: ObservationCategory.navigation,
+            experienceId: exp,
+            screenId: 'b',
+            timestamp: t(1),
+          ),
+        );
+      }
+
+      final registry = CapabilityRegistry();
+      registry.register(
+        const CapabilityDescriptor(
+          id: 'clock',
+          version: '1.0.0',
+          name: 'clock',
+          description: 'clock',
+          category: CapabilityCategory.storage,
+          inputContract: 'x',
+          outputContract: 'y',
+        ),
       );
-      coordinator.observationMemory.record(
-        ObservationRecord(id: '$exp-1', category: ObservationCategory.navigation, experienceId: exp, screenId: 'b', timestamp: t(1)),
+
+      final worldModel = WorldModelCoordinator();
+      expect(worldModel.model.graph.nodes, isEmpty);
+
+      coordinator.runAndSyncToWorldModel(
+        worldModel,
+        capabilityRegistry: registry,
+        minOccurrences: 2,
       );
-    }
 
-    final registry = CapabilityRegistry();
-    registry.register(
-      const CapabilityDescriptor(id: 'clock', version: '1.0.0', name: 'clock', description: 'clock', category: CapabilityCategory.storage, inputContract: 'x', outputContract: 'y'),
-    );
-
-    final worldModel = WorldModelCoordinator();
-    expect(worldModel.model.graph.nodes, isEmpty);
-
-    coordinator.runAndSyncToWorldModel(worldModel, capabilityRegistry: registry, minOccurrences: 2);
-
-    expect(worldModel.model.graph.nodes, isNotEmpty);
-    expect(worldModel.model.graph.nodesOfKind(WorldNodeKind.workflow), isNotEmpty);
-  });
+      expect(worldModel.model.graph.nodes, isNotEmpty);
+      expect(
+        worldModel.model.graph.nodesOfKind(WorldNodeKind.workflow),
+        isNotEmpty,
+      );
+    },
+  );
 }

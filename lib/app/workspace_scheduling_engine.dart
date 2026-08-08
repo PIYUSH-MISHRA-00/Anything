@@ -59,10 +59,12 @@ class WorkspaceSchedulingEngine {
   });
 
   /// Determine foreground experience — pure read, never mutates anything.
-  SessionRuntimeStatus? foregroundExperience() => workspaceRuntime.captureRuntimeState().activeSession;
+  SessionRuntimeStatus? foregroundExperience() =>
+      workspaceRuntime.captureRuntimeState().activeSession;
 
   /// Determine background experiences — pure read, never mutates anything.
-  List<SessionRuntimeStatus> backgroundExperiences() => workspaceRuntime.captureRuntimeState().backgroundSessions;
+  List<SessionRuntimeStatus> backgroundExperiences() =>
+      workspaceRuntime.captureRuntimeState().backgroundSessions;
 
   /// Coordinate `WorkspaceRuntimeSupervisor` — makes real, registered
   /// runtimes match the workspace's CURRENT real active/background state:
@@ -79,7 +81,10 @@ class WorkspaceSchedulingEngine {
     }
     await supervisor.applyInactiveRuntimePolicy(snapshot, policyEngine);
     if (eventPublisher != null && active != null) {
-      eventPublisher!.publishWorkspaceUpdated('scheduler_active_transition', active.sessionId);
+      eventPublisher!.publishWorkspaceUpdated(
+        'scheduler_active_transition',
+        active.sessionId,
+      );
     }
   }
 
@@ -91,7 +96,9 @@ class WorkspaceSchedulingEngine {
   Future<void> scheduleForeground(String sessionId) async {
     final ws = workspace;
     if (ws == null) {
-      throw StateError('WorkspaceSchedulingEngine.scheduleForeground() requires a workspace — construct with workspace: ... to use it.');
+      throw StateError(
+        'WorkspaceSchedulingEngine.scheduleForeground() requires a workspace — construct with workspace: ... to use it.',
+      );
     }
     await ws.switchActiveExperience(sessionId);
     await scheduleActiveTransition();

@@ -46,5 +46,6 @@ class ApiSpecificationModel {
 
   bool get isEmpty => endpoints.isEmpty;
 
-  List<ApiEndpoint> endpointsForEntity(String entityId) => endpoints.where((e) => e.entityId == entityId).toList();
+  List<ApiEndpoint> endpointsForEntity(String entityId) =>
+      endpoints.where((e) => e.entityId == entityId).toList();
 }

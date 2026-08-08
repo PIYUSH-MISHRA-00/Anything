@@ -14,7 +14,12 @@ class PackageMetadata {
   final String description;
   final SoftwareProvenance provenance;
 
-  const PackageMetadata({required this.name, required this.version, required this.description, required this.provenance});
+  const PackageMetadata({
+    required this.name,
+    required this.version,
+    required this.description,
+    required this.provenance,
+  });
 }
 
 class PackageDependency {

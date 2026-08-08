@@ -17,7 +17,12 @@ FeatureNode _node({
   double confidenceScore = 0.9,
 }) {
   return FeatureNode(
-    candidate: FeatureCandidate(id: id, name: name, category: FeatureCategory.data, rationale: 'r'),
+    candidate: FeatureCandidate(
+      id: id,
+      name: name,
+      category: FeatureCategory.data,
+      rationale: 'r',
+    ),
     priority: priority,
     complexity: const FeatureComplexity(),
     decision: FeatureDecision(
@@ -34,7 +39,10 @@ FeatureNode _node({
 
 void main() {
   test('a clean graph is approved with zero iterations', () {
-    final graph = FeatureGraph(nodes: [_node(id: 'a', name: 'A')], overallConfidence: const Confidence(score: 0.9, reason: 'r'));
+    final graph = FeatureGraph(
+      nodes: [_node(id: 'a', name: 'A')],
+      overallConfidence: const Confidence(score: 0.9, reason: 'r'),
+    );
     final plan = const FeatureRefinement().refine(graph);
     expect(plan.outcome, FeatureRefinementOutcome.approved);
     expect(plan.reviewHistory, hasLength(1));
@@ -43,7 +51,13 @@ void main() {
   test('fixes a dangling edge and reaches approved', () {
     final graph = FeatureGraph(
       nodes: [_node(id: 'a', name: 'A')],
-      edges: const [FeatureEdge(fromFeatureId: 'a', toFeatureId: 'ghost', kind: FeatureRelationKind.requires)],
+      edges: const [
+        FeatureEdge(
+          fromFeatureId: 'a',
+          toFeatureId: 'ghost',
+          kind: FeatureRelationKind.requires,
+        ),
+      ],
       overallConfidence: const Confidence(score: 0.9, reason: 'r'),
     );
     final plan = const FeatureRefinement().refine(graph);
@@ -53,7 +67,10 @@ void main() {
 
   test('fixes a duplicate feature and reaches approved', () {
     final graph = FeatureGraph(
-      nodes: [_node(id: 'a', name: 'Search'), _node(id: 'b', name: 'Search')],
+      nodes: [
+        _node(id: 'a', name: 'Search'),
+        _node(id: 'b', name: 'Search'),
+      ],
       overallConfidence: const Confidence(score: 0.9, reason: 'r'),
     );
     final plan = const FeatureRefinement().refine(graph);
@@ -61,15 +78,25 @@ void main() {
     expect(plan.finalGraph.nodes, hasLength(1));
   });
 
-  test('terminates at the iteration budget when a critical issue has no fix', () {
-    final graph = FeatureGraph(
-      nodes: [_node(id: 'a', name: 'A', priority: FeaturePriority.mandatory, confidenceScore: 0.0)],
-      overallConfidence: const Confidence(score: 0.9, reason: 'r'),
-    );
-    final plan = const FeatureRefinement().refine(graph);
-    // "impossible" issues have no autoFixable path — the loop must break
-    // immediately (iteration stays 0) rather than spin to the budget.
-    expect(plan.outcome, isNot(FeatureRefinementOutcome.approved));
-    expect(plan.reviewHistory, hasLength(1));
-  });
+  test(
+    'terminates at the iteration budget when a critical issue has no fix',
+    () {
+      final graph = FeatureGraph(
+        nodes: [
+          _node(
+            id: 'a',
+            name: 'A',
+            priority: FeaturePriority.mandatory,
+            confidenceScore: 0.0,
+          ),
+        ],
+        overallConfidence: const Confidence(score: 0.9, reason: 'r'),
+      );
+      final plan = const FeatureRefinement().refine(graph);
+      // "impossible" issues have no autoFixable path — the loop must break
+      // immediately (iteration stays 0) rather than spin to the budget.
+      expect(plan.outcome, isNot(FeatureRefinementOutcome.approved));
+      expect(plan.reviewHistory, hasLength(1));
+    },
+  );
 }

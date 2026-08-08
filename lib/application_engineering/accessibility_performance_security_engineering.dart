@@ -28,22 +28,28 @@ class AccessibilityEngineering {
   const AccessibilityEngineering();
 
   static const Map<AccessibilityAspect, String> _findings = {
-    AccessibilityAspect.semantics: 'Inherited from Flutter Material widgets\' built-in semantics '
+    AccessibilityAspect.semantics:
+        'Inherited from Flutter Material widgets\' built-in semantics '
         '(TextFormField/ElevatedButton/ListTile/etc. all expose default '
         'Semantics nodes); Anything does not add custom Semantics labels '
         'on top of that today.',
-    AccessibilityAspect.keyboardNavigation: 'Inherited from Flutter\'s default FocusTraversalPolicy — '
+    AccessibilityAspect.keyboardNavigation:
+        'Inherited from Flutter\'s default FocusTraversalPolicy — '
         'no custom traversal order is declared by generated screens.',
-    AccessibilityAspect.focusOrder: 'Follows widget-tree declaration order (Flutter default); '
+    AccessibilityAspect.focusOrder:
+        'Follows widget-tree declaration order (Flutter default); '
         'not independently curated per generated screen.',
-    AccessibilityAspect.screenReaderMetadata: 'Field names/labels are used as widget labels, which '
+    AccessibilityAspect.screenReaderMetadata:
+        'Field names/labels are used as widget labels, which '
         'TalkBack/VoiceOver read via the default Material Semantics — '
         'no explicit "excludeSemantics"/custom announcement logic exists.',
-    AccessibilityAspect.contrast: 'Material 3 ColorScheme (lib/design_system/theme/anything_theme.dart) '
+    AccessibilityAspect.contrast:
+        'Material 3 ColorScheme (lib/design_system/theme/anything_theme.dart) '
         'is used for generated screens\' chrome, which is contrast-compliant '
         'by Material 3 specification; not independently re-verified per '
         'generated color combination.',
-    AccessibilityAspect.touchTargetSize: 'Material widgets (ElevatedButton, IconButton, ListTile) meet the '
+    AccessibilityAspect.touchTargetSize:
+        'Material widgets (ElevatedButton, IconButton, ListTile) meet the '
         'Material spec\'s 48x48dp minimum by default; Anything does not '
         'independently validate custom touch target sizes because it does '
         'not introduce any non-Material custom-sized tap targets.',
@@ -59,7 +65,8 @@ class AccessibilityEngineering {
         rationale: entry.value,
         confidence: const Confidence(
           score: 0.6,
-          reason: 'Real inherited behavior from the framework, not independently audited against WCAG per screen.',
+          reason:
+              'Real inherited behavior from the framework, not independently audited against WCAG per screen.',
           risk: RiskLevel.low,
         ),
       );
@@ -68,7 +75,14 @@ class AccessibilityEngineering {
   }
 }
 
-enum PerformanceAspect { lazyLoading, virtualization, incrementalRendering, caching, memory, database }
+enum PerformanceAspect {
+  lazyLoading,
+  virtualization,
+  incrementalRendering,
+  caching,
+  memory,
+  database,
+}
 
 class PerformanceEngineeringResult {
   final List<EngineeringDecision> decisions;
@@ -78,15 +92,18 @@ class PerformanceEngineeringResult {
 class PerformanceEngineering {
   const PerformanceEngineering();
 
-  static const Map<PerformanceAspect, ({bool real, String rationale})> _findings = {
+  static const Map<PerformanceAspect, ({bool real, String rationale})>
+  _findings = {
     PerformanceAspect.lazyLoading: (
       real: true,
-      rationale: 'DataQuery supports limit/offset pagination (real, tested); '
+      rationale:
+          'DataQuery supports limit/offset pagination (real, tested); '
           'ExperienceQueryController exposes setLimit/setOffset.',
     ),
     PerformanceAspect.virtualization: (
       real: false,
-      rationale: 'Generated lists render via Column + List.generate '
+      rationale:
+          'Generated lists render via Column + List.generate '
           '(lib/runtime/experience_renderer.dart _buildEntityListView), not '
           'ListView.builder — every fetched record\'s widget is built '
           'immediately, not lazily as it scrolls into view. Bounded, not '
@@ -95,24 +112,28 @@ class PerformanceEngineering {
     ),
     PerformanceAspect.incrementalRendering: (
       real: true,
-      rationale: 'Inherited from Flutter\'s own widget diffing/rebuild model — '
+      rationale:
+          'Inherited from Flutter\'s own widget diffing/rebuild model — '
           'not something Anything implements itself, but genuinely present.',
     ),
     PerformanceAspect.caching: (
       real: true,
-      rationale: 'KnowledgeCache (Vision V1) and query-result state both cache '
+      rationale:
+          'KnowledgeCache (Vision V1) and query-result state both cache '
           'real data; capability invocation budgets bound repeated work '
           '(CapabilityPlatform, M2).',
     ),
     PerformanceAspect.memory: (
       real: true,
-      rationale: 'Bounded by RuntimeSecurityLimits across the board (query rows, '
+      rationale:
+          'Bounded by RuntimeSecurityLimits across the board (query rows, '
           'package size, component counts, knowledge bytes) — see '
           'docs/security/RUNTIME_LIMITS.md.',
     ),
     PerformanceAspect.database: (
       real: true,
-      rationale: 'SQLite via sqflite, parameterized queries, one generic table '
+      rationale:
+          'SQLite via sqflite, parameterized queries, one generic table '
           '(ExperienceDatabase) — real, certified by M1.',
     ),
   };
@@ -124,11 +145,15 @@ class PerformanceEngineering {
         id: 'performance:${entry.key.name}',
         category: EngineeringDecisionCategory.performance,
         subjectId: entry.key.name,
-        decision: meta.real ? '${entry.key.name} is real today' : '${entry.key.name} is not implemented today',
+        decision: meta.real
+            ? '${entry.key.name} is real today'
+            : '${entry.key.name} is not implemented today',
         rationale: meta.rationale,
         confidence: Confidence(
           score: meta.real ? 0.9 : 0.0,
-          reason: meta.real ? 'Verified against real source.' : 'No implementation exists to plan against.',
+          reason: meta.real
+              ? 'Verified against real source.'
+              : 'No implementation exists to plan against.',
           risk: meta.real ? RiskLevel.none : RiskLevel.low,
         ),
       );
@@ -137,7 +162,14 @@ class PerformanceEngineering {
   }
 }
 
-enum SecurityAspect { credentialFlow, sensitiveDataClassification, encryption, kaalka, permissionStrategy, capabilityRestrictions }
+enum SecurityAspect {
+  credentialFlow,
+  sensitiveDataClassification,
+  encryption,
+  kaalka,
+  permissionStrategy,
+  capabilityRestrictions,
+}
 
 class SecurityEngineeringResult {
   final List<EngineeringDecision> decisions;
@@ -148,22 +180,28 @@ class SecurityEngineering {
   const SecurityEngineering();
 
   static const Map<SecurityAspect, String> _findings = {
-    SecurityAspect.credentialFlow: 'No capability currently resolves credentials from CredentialVault '
+    SecurityAspect.credentialFlow:
+        'No capability currently resolves credentials from CredentialVault '
         '(FlutterSecureStorage-backed, correctly implemented, but unused — '
         'see docs/security/TRUST_BOUNDARIES.md). No credential flow exists '
         'to secure today; this is recorded, not fabricated as wired up.',
-    SecurityAspect.sensitiveDataClassification: 'No automatic field-level sensitivity classification exists; all '
+    SecurityAspect.sensitiveDataClassification:
+        'No automatic field-level sensitivity classification exists; all '
         'entity data is treated uniformly by the storage layer (SQLite, '
         'unencrypted at the field level).',
-    SecurityAspect.encryption: 'Kaalka time-based encryption is available for whole-package '
+    SecurityAspect.encryption:
+        'Kaalka time-based encryption is available for whole-package '
         'protection (opt-in "Protect" flow, verified real in Stage 9.4) — '
         'not automatic per-field encryption.',
-    SecurityAspect.kaalka: 'package:kaalka remains the sole, canonical protection mechanism '
+    SecurityAspect.kaalka:
+        'package:kaalka remains the sole, canonical protection mechanism '
         '(via KaalkaProtectionProvider); not duplicated here or anywhere '
         'in this milestone.',
-    SecurityAspect.permissionStrategy: 'A capability declaration in a package is a request, never authority '
+    SecurityAspect.permissionStrategy:
+        'A capability declaration in a package is a request, never authority '
         '— CapabilityPlatform decides at runtime (see M2 §58).',
-    SecurityAspect.capabilityRestrictions: 'Every capability invocation is declaration-checked and budgeted '
+    SecurityAspect.capabilityRestrictions:
+        'Every capability invocation is declaration-checked and budgeted '
         '(CapabilityPlatform, 100/session) — real and tested, though the '
         'platform itself is not yet wired into the live BehaviorInterpreter '
         'dispatch path (see docs/security/TRUST_BOUNDARIES.md master finding).',

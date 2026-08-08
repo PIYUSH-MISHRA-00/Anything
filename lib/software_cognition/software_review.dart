@@ -21,7 +21,11 @@ class SoftwareReviewIssue {
   final String reason;
   final SoftwareEvidence evidence;
 
-  const SoftwareReviewIssue({required this.severity, required this.reason, required this.evidence});
+  const SoftwareReviewIssue({
+    required this.severity,
+    required this.reason,
+    required this.evidence,
+  });
 }
 
 class SoftwareReview {
@@ -35,41 +39,64 @@ class SoftwareReview {
 
   List<SoftwareReviewIssue> reviewRepository(RepositoryModel model) {
     final issues = <SoftwareReviewIssue>[];
-    final evidence = SoftwareEvidence(sourceUrl: model.metadata.provenance.sourceUrl, sourceArtifact: model.metadata.name);
+    final evidence = SoftwareEvidence(
+      sourceUrl: model.metadata.provenance.sourceUrl,
+      sourceArtifact: model.metadata.name,
+    );
 
     if (model.confidence.score < _lowConfidenceThreshold) {
       issues.add(
         SoftwareReviewIssue(
           severity: ReviewSeverity.warning,
-          reason: 'Repository understanding has low confidence (${model.confidence.score.toStringAsFixed(2)}): ${model.confidence.reason}',
+          reason:
+              'Repository understanding has low confidence (${model.confidence.score.toStringAsFixed(2)}): ${model.confidence.reason}',
           evidence: evidence,
         ),
       );
     }
     if (model.metadata.provenance.sourceUrl.isEmpty) {
-      issues.add(SoftwareReviewIssue(severity: ReviewSeverity.critical, reason: 'Repository has no recorded source URL — provenance is not traceable.', evidence: evidence));
+      issues.add(
+        SoftwareReviewIssue(
+          severity: ReviewSeverity.critical,
+          reason:
+              'Repository has no recorded source URL — provenance is not traceable.',
+          evidence: evidence,
+        ),
+      );
     }
     return issues;
   }
 
   List<SoftwareReviewIssue> reviewPackage(PackageModel model) {
     final issues = <SoftwareReviewIssue>[];
-    final evidence = SoftwareEvidence(sourceUrl: model.metadata.provenance.sourceUrl, sourceArtifact: model.metadata.name);
+    final evidence = SoftwareEvidence(
+      sourceUrl: model.metadata.provenance.sourceUrl,
+      sourceArtifact: model.metadata.name,
+    );
 
     if (model.confidence.score < _lowConfidenceThreshold) {
       issues.add(
         SoftwareReviewIssue(
           severity: ReviewSeverity.warning,
-          reason: 'Package understanding has low confidence (${model.confidence.score.toStringAsFixed(2)}): ${model.confidence.reason}',
+          reason:
+              'Package understanding has low confidence (${model.confidence.score.toStringAsFixed(2)}): ${model.confidence.reason}',
           evidence: evidence,
         ),
       );
     }
     if (model.metadata.provenance.sourceUrl.isEmpty) {
-      issues.add(SoftwareReviewIssue(severity: ReviewSeverity.critical, reason: 'Package has no recorded source URL — provenance is not traceable.', evidence: evidence));
+      issues.add(
+        SoftwareReviewIssue(
+          severity: ReviewSeverity.critical,
+          reason:
+              'Package has no recorded source URL — provenance is not traceable.',
+          evidence: evidence,
+        ),
+      );
     }
     return issues;
   }
 
-  bool hasCriticalIssues(List<SoftwareReviewIssue> issues) => issues.any((i) => i.severity == ReviewSeverity.critical);
+  bool hasCriticalIssues(List<SoftwareReviewIssue> issues) =>
+      issues.any((i) => i.severity == ReviewSeverity.critical);
 }

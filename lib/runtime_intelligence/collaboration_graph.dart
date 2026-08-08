@@ -16,17 +16,27 @@ class CollaborationGraph {
 
   const CollaborationGraph({this.nodes = const [], this.edges = const []});
 
-  factory CollaborationGraph.fromRelationshipGraph(ExperienceRelationshipGraph graph, {int minIndependentSignals = 2}) {
+  factory CollaborationGraph.fromRelationshipGraph(
+    ExperienceRelationshipGraph graph, {
+    int minIndependentSignals = 2,
+  }) {
     final pairCounts = <String, int>{};
     for (final edge in graph.edges) {
       final key = '${edge.fromId}|${edge.toId}';
       pairCounts[key] = (pairCounts[key] ?? 0) + 1;
     }
 
-    final strongPairs = pairCounts.entries.where((e) => e.value >= minIndependentSignals).map((e) => e.key).toSet();
+    final strongPairs = pairCounts.entries
+        .where((e) => e.value >= minIndependentSignals)
+        .map((e) => e.key)
+        .toSet();
 
-    final edges = graph.edges.where((e) => strongPairs.contains('${e.fromId}|${e.toId}')).toList();
-    final involvedIds = {for (final e in edges) ...[e.fromId, e.toId]};
+    final edges = graph.edges
+        .where((e) => strongPairs.contains('${e.fromId}|${e.toId}'))
+        .toList();
+    final involvedIds = {
+      for (final e in edges) ...[e.fromId, e.toId],
+    };
     final nodes = graph.nodes.where((n) => involvedIds.contains(n.id)).toList();
 
     return CollaborationGraph(nodes: nodes, edges: edges);

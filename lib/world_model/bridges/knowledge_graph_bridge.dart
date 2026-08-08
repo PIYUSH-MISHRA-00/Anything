@@ -48,24 +48,39 @@ import '../world_types.dart';
 class KnowledgeGraphBridge {
   final EntityResolver _resolver;
 
-  const KnowledgeGraphBridge({EntityResolver resolver = const EntityResolver()}) : _resolver = resolver;
+  const KnowledgeGraphBridge({EntityResolver resolver = const EntityResolver()})
+    : _resolver = resolver;
 
   GraphUpdate bridge(KnowledgeGraph knowledgeGraph) {
     final identities = <String, EntityIdentity>{};
     final nodes = knowledgeGraph.nodes.map((resource) {
-      final identity = _resolver.resolve(WorldNodeKind.knowledge, stableId: resource.sourceUri);
+      final identity = _resolver.resolve(
+        WorldNodeKind.knowledge,
+        stableId: resource.sourceUri,
+      );
       identities[resource.resourceId] = identity;
-      return WorldNode(identity: identity, kind: WorldNodeKind.knowledge, label: resource.title);
+      return WorldNode(
+        identity: identity,
+        kind: WorldNodeKind.knowledge,
+        label: resource.title,
+      );
     }).toList();
 
     final edges = knowledgeGraph.links
-        .where((link) => identities.containsKey(link.fromResourceId) && identities.containsKey(link.toResourceId))
+        .where(
+          (link) =>
+              identities.containsKey(link.fromResourceId) &&
+              identities.containsKey(link.toResourceId),
+        )
         .map(
           (link) => WorldEdge(
             fromId: identities[link.fromResourceId]!,
             toId: identities[link.toResourceId]!,
             kind: RelationshipKind.relatesTo,
-            evidence: GraphEvidence(sourceGraph: 'KnowledgeGraph', sourceNodeId: '${link.fromResourceId}->${link.toResourceId}'),
+            evidence: GraphEvidence(
+              sourceGraph: 'KnowledgeGraph',
+              sourceNodeId: '${link.fromResourceId}->${link.toResourceId}',
+            ),
           ),
         )
         .toList();

@@ -76,7 +76,12 @@ SemanticApp _lighthouseApp() {
         name: 'MaintenanceVisit',
         displayField: 'summary',
         fields: [
-          const SemanticField(id: 'summary', name: 'Summary', type: BlueprintFieldType.text, required: true),
+          const SemanticField(
+            id: 'summary',
+            name: 'Summary',
+            type: BlueprintFieldType.text,
+            required: true,
+          ),
           const SemanticField(
             id: 'lighthouseId',
             name: 'Lighthouse',
@@ -89,7 +94,14 @@ SemanticApp _lighthouseApp() {
       const SemanticEntity(
         id: 'lighthouse',
         name: 'Lighthouse',
-        fields: [SemanticField(id: 'name', name: 'Name', type: BlueprintFieldType.text, required: true)],
+        fields: [
+          SemanticField(
+            id: 'name',
+            name: 'Name',
+            type: BlueprintFieldType.text,
+            required: true,
+          ),
+        ],
       ),
     ],
     views: const [
@@ -103,32 +115,46 @@ SemanticApp _lighthouseApp() {
       ),
     ],
     actions: const [
-      SemanticAction(id: 'log_visit', name: 'Log Visit', targetEntityId: 'visit'),
-      SemanticAction(id: 'remove_visit', name: 'Remove Visit', targetEntityId: 'visit', actionType: BlueprintActionType.delete),
+      SemanticAction(
+        id: 'log_visit',
+        name: 'Log Visit',
+        targetEntityId: 'visit',
+      ),
+      SemanticAction(
+        id: 'remove_visit',
+        name: 'Remove Visit',
+        targetEntityId: 'visit',
+        actionType: BlueprintActionType.delete,
+      ),
     ],
   );
 }
 
 void main() {
-  test('a never-before-seen domain reaches an approved FeaturePlan built from structure alone', () async {
-    final kernel = AnythingKernel(
-      providerRegistry: _FakeProviderRegistry(),
-      capabilityRegistry: _registryWithStorage(),
-      reasoner: _FixedReasoner(_lighthouseApp()),
-    );
+  test(
+    'a never-before-seen domain reaches an approved FeaturePlan built from structure alone',
+    () async {
+      final kernel = AnythingKernel(
+        providerRegistry: _FakeProviderRegistry(),
+        capabilityRegistry: _registryWithStorage(),
+        reasoner: _FixedReasoner(_lighthouseApp()),
+      );
 
-    final outcome = await kernel.processIntent(Intent.create(expression: 'log lighthouse maintenance visits'));
+      final outcome = await kernel.processIntent(
+        Intent.create(expression: 'log lighthouse maintenance visits'),
+      );
 
-    expect(outcome, isA<ExecutionPlanReady>());
-    final ready = outcome as ExecutionPlanReady;
-    expect(ready.featurePlan, isNotNull);
-    expect(ready.featurePlan!.outcome, FeatureRefinementOutcome.approved);
+      expect(outcome, isA<ExecutionPlanReady>());
+      final ready = outcome as ExecutionPlanReady;
+      expect(ready.featurePlan, isNotNull);
+      expect(ready.featurePlan!.outcome, FeatureRefinementOutcome.approved);
 
-    final graph = ready.featurePlan!.finalGraph;
-    // Relational feature discovered from the reference field, search+index
-    // from the list view, persistence from both entities — all structural.
-    expect(graph.nodesOfCategory(FeatureCategory.relational), hasLength(1));
-    expect(graph.nodesOfCategory(FeatureCategory.search), hasLength(1));
-    expect(graph.nodesOfCategory(FeatureCategory.persistence), hasLength(2));
-  });
+      final graph = ready.featurePlan!.finalGraph;
+      // Relational feature discovered from the reference field, search+index
+      // from the list view, persistence from both entities — all structural.
+      expect(graph.nodesOfCategory(FeatureCategory.relational), hasLength(1));
+      expect(graph.nodesOfCategory(FeatureCategory.search), hasLength(1));
+      expect(graph.nodesOfCategory(FeatureCategory.persistence), hasLength(2));
+    },
+  );
 }

@@ -11,9 +11,12 @@ import '../backend_engineering/api_specification.dart';
 import '../backend_engineering/backend_engineering_plan.dart';
 import '../backend_engineering/database_schema.dart';
 import '../capabilities/registry/capability_descriptor.dart';
-import '../software_cognition/software_reasoner.dart' show SoftwareRecommendation;
-import '../synthesis/app_blueprint.dart' show DerivedOperation, BlueprintViewType;
-import '../synthesis/application_reasoner.dart' show SemanticEntity, SemanticDerivedValue, SemanticView;
+import '../software_cognition/software_reasoner.dart'
+    show SoftwareRecommendation;
+import '../synthesis/app_blueprint.dart'
+    show DerivedOperation, BlueprintViewType;
+import '../synthesis/application_reasoner.dart'
+    show SemanticEntity, SemanticDerivedValue, SemanticView;
 import 'canonical_implementation_model.dart';
 
 class CanonicalImplementationContext {
@@ -81,29 +84,35 @@ ImplementationViewKind? _mapViewKind(BlueprintViewType type) => switch (type) {
   BlueprintViewType.settings => ImplementationViewKind.settings,
   BlueprintViewType.empty => ImplementationViewKind.empty,
   BlueprintViewType.summary => ImplementationViewKind.summary,
-  BlueprintViewType.list || BlueprintViewType.detail || BlueprintViewType.form => null,
+  BlueprintViewType.list ||
+  BlueprintViewType.detail ||
+  BlueprintViewType.form => null,
 };
 
-ImplementationDerivedOperation _mapDerivedOperation(DerivedOperation op) => switch (op) {
-  DerivedOperation.count => ImplementationDerivedOperation.count,
-  DerivedOperation.sum => ImplementationDerivedOperation.sum,
-  DerivedOperation.average => ImplementationDerivedOperation.average,
-  DerivedOperation.minimum => ImplementationDerivedOperation.minimum,
-  DerivedOperation.maximum => ImplementationDerivedOperation.maximum,
-  DerivedOperation.consecutiveDateCount => ImplementationDerivedOperation.consecutiveDateCount,
-  DerivedOperation.percentage => ImplementationDerivedOperation.percentage,
-  DerivedOperation.daysRemaining => ImplementationDerivedOperation.daysRemaining,
-  DerivedOperation.difference => ImplementationDerivedOperation.difference,
-};
+ImplementationDerivedOperation _mapDerivedOperation(DerivedOperation op) =>
+    switch (op) {
+      DerivedOperation.count => ImplementationDerivedOperation.count,
+      DerivedOperation.sum => ImplementationDerivedOperation.sum,
+      DerivedOperation.average => ImplementationDerivedOperation.average,
+      DerivedOperation.minimum => ImplementationDerivedOperation.minimum,
+      DerivedOperation.maximum => ImplementationDerivedOperation.maximum,
+      DerivedOperation.consecutiveDateCount =>
+        ImplementationDerivedOperation.consecutiveDateCount,
+      DerivedOperation.percentage => ImplementationDerivedOperation.percentage,
+      DerivedOperation.daysRemaining =>
+        ImplementationDerivedOperation.daysRemaining,
+      DerivedOperation.difference => ImplementationDerivedOperation.difference,
+    };
 
-ImplementationDataType _mapColumnType(DatabaseColumnType type) => switch (type) {
-  DatabaseColumnType.text => ImplementationDataType.text,
-  DatabaseColumnType.integer => ImplementationDataType.integer,
-  DatabaseColumnType.decimal => ImplementationDataType.decimal,
-  DatabaseColumnType.boolean => ImplementationDataType.boolean,
-  DatabaseColumnType.dateTime => ImplementationDataType.dateTime,
-  DatabaseColumnType.reference => ImplementationDataType.reference,
-};
+ImplementationDataType _mapColumnType(DatabaseColumnType type) =>
+    switch (type) {
+      DatabaseColumnType.text => ImplementationDataType.text,
+      DatabaseColumnType.integer => ImplementationDataType.integer,
+      DatabaseColumnType.decimal => ImplementationDataType.decimal,
+      DatabaseColumnType.boolean => ImplementationDataType.boolean,
+      DatabaseColumnType.dateTime => ImplementationDataType.dateTime,
+      DatabaseColumnType.reference => ImplementationDataType.reference,
+    };
 
 ImplementationOperationKind _mapApiOperation(ApiOperation op) => switch (op) {
   ApiOperation.list => ImplementationOperationKind.list,
@@ -137,7 +146,8 @@ class CanonicalImplementationPlanner {
       stateContainers: _planStateContainers(context),
       navigation: _planNavigation(context),
       capabilityAdapters: [
-        for (final c in context.resolvedCapabilities) CapabilityAdapterSpec(capabilityId: c.id, category: c.category.name),
+        for (final c in context.resolvedCapabilities)
+          CapabilityAdapterSpec(capabilityId: c.id, category: c.category.name),
       ],
       authentication: AuthenticationAdapterSpec(
         requiresCredentials: context.backend.authentication.requiresCredentials,
@@ -145,9 +155,15 @@ class CanonicalImplementationPlanner {
       ),
       storageAdapters: [
         for (final r in context.backend.storage.requirements)
-          StorageAdapterSpec(entityId: r.entityId, isFileStorage: r.kind.name == 'file'),
+          StorageAdapterSpec(
+            entityId: r.entityId,
+            isFileStorage: r.kind.name == 'file',
+          ),
       ],
-      backgroundWorker: BackgroundWorkerSpec(requiresBackgroundSync: context.backend.backgroundJobs.requiresBackgroundSync),
+      backgroundWorker: BackgroundWorkerSpec(
+        requiresBackgroundSync:
+            context.backend.backgroundJobs.requiresBackgroundSync,
+      ),
       corroboratedPatterns: _planCorroboratedPatterns(context),
       derivedValues: _planDerivedValues(context),
       views: _planViews(context),
@@ -157,15 +173,24 @@ class CanonicalImplementationPlanner {
   /// Deterministic pass-through — never invents Layout Intent/
   /// Presentation Semantics/Grouping metadata beyond what `SemanticView`
   /// already names (Implementation Milestone R21).
-  List<ImplementationView> _planViews(CanonicalImplementationContext context) => [
-    for (final v in context.semanticViews)
-      if (_mapViewKind(v.viewType) case final kind?)
-        ImplementationView(id: v.id, name: v.name, kind: kind, sourceEntityId: v.sourceEntityId),
-  ];
+  List<ImplementationView> _planViews(CanonicalImplementationContext context) =>
+      [
+        for (final v in context.semanticViews)
+          if (_mapViewKind(v.viewType) case final kind?)
+            ImplementationView(
+              id: v.id,
+              name: v.name,
+              kind: kind,
+              sourceEntityId: v.sourceEntityId,
+            ),
+      ];
 
-  List<ImplementationEntity> _planEntities(CanonicalImplementationContext context) {
+  List<ImplementationEntity> _planEntities(
+    CanonicalImplementationContext context,
+  ) {
     final semanticFieldsByEntity = {
-      for (final e in context.semanticEntities) e.id: {for (final f in e.fields) f.id: f},
+      for (final e in context.semanticEntities)
+        e.id: {for (final f in e.fields) f.id: f},
     };
     // Real, existing entity ids only (Implementation Milestone R20) — a
     // `SemanticField.referenceEntityId` naming an entity that was never
@@ -175,7 +200,9 @@ class CanonicalImplementationPlanner {
     // a real test finding (a field referencing an undeclared entity had
     // `referenceEntityId: null` on the legacy side but leaked through
     // un-checked on a first version of this enrichment).
-    final realEntityIds = context.backend.database.tables.map((t) => t.id).toSet();
+    final realEntityIds = context.backend.database.tables
+        .map((t) => t.id)
+        .toSet();
     return [
       for (final table in context.backend.database.tables)
         ImplementationEntity(
@@ -188,8 +215,11 @@ class CanonicalImplementationPlanner {
                 // BackendEngineeringPlanner._planDatabase) — recover the
                 // plain fieldId to match against SemanticField.id.
                 final prefix = '${table.id}.';
-                final fieldId = col.id.startsWith(prefix) ? col.id.substring(prefix.length) : col.id;
-                final semanticField = semanticFieldsByEntity[table.id]?[fieldId];
+                final fieldId = col.id.startsWith(prefix)
+                    ? col.id.substring(prefix.length)
+                    : col.id;
+                final semanticField =
+                    semanticFieldsByEntity[table.id]?[fieldId];
                 final referenceEntityId = semanticField?.referenceEntityId;
                 return ImplementationField(
                   id: col.id,
@@ -197,9 +227,15 @@ class CanonicalImplementationPlanner {
                   type: _mapColumnType(col.type),
                   required: col.required,
                   defaultValue: semanticField?.defaultValue,
-                  referenceEntityId: (referenceEntityId != null && realEntityIds.contains(referenceEntityId)) ? referenceEntityId : null,
+                  referenceEntityId:
+                      (referenceEntityId != null &&
+                          realEntityIds.contains(referenceEntityId))
+                      ? referenceEntityId
+                      : null,
                   allowedValues: semanticField?.allowedValues ?? const [],
-                  hint: (semanticField?.description.isNotEmpty ?? false) ? semanticField!.description : null,
+                  hint: (semanticField?.description.isNotEmpty ?? false)
+                      ? semanticField!.description
+                      : null,
                 );
               }(),
           ],
@@ -209,7 +245,9 @@ class CanonicalImplementationPlanner {
 
   /// Deterministic pass-through — never invents calculation semantics
   /// beyond what `SemanticDerivedValue` already names.
-  List<ImplementationDerivedValue> _planDerivedValues(CanonicalImplementationContext context) => [
+  List<ImplementationDerivedValue> _planDerivedValues(
+    CanonicalImplementationContext context,
+  ) => [
     for (final dv in context.derivedValues)
       ImplementationDerivedValue(
         id: dv.id,
@@ -221,7 +259,9 @@ class CanonicalImplementationPlanner {
       ),
   ];
 
-  List<ImplementationRepository> _planRepositories(CanonicalImplementationContext context) => [
+  List<ImplementationRepository> _planRepositories(
+    CanonicalImplementationContext context,
+  ) => [
     for (final table in context.backend.database.tables)
       ImplementationRepository(
         id: '${table.id}.repository',
@@ -234,7 +274,9 @@ class CanonicalImplementationPlanner {
       ),
   ];
 
-  List<ImplementationController> _planControllers(CanonicalImplementationContext context) {
+  List<ImplementationController> _planControllers(
+    CanonicalImplementationContext context,
+  ) {
     final byEntity = <String, List<ApiEndpoint>>{};
     for (final endpoint in context.backend.api.endpoints) {
       byEntity.putIfAbsent(endpoint.entityId, () => []).add(endpoint);
@@ -263,24 +305,38 @@ class CanonicalImplementationPlanner {
         entityId: table.id,
         fields: [
           for (final col in table.columns)
-            ImplementationField(id: col.id, name: col.name, type: _mapColumnType(col.type), required: col.required),
+            ImplementationField(
+              id: col.id,
+              name: col.name,
+              type: _mapColumnType(col.type),
+              required: col.required,
+            ),
         ],
       ),
   ];
 
-  List<ImplementationValidator> _planValidators(CanonicalImplementationContext context) => [
+  List<ImplementationValidator> _planValidators(
+    CanonicalImplementationContext context,
+  ) => [
     for (final table in context.backend.database.tables)
       ImplementationValidator(
         id: '${table.id}.validator',
         entityId: table.id,
         rules: [
           for (final col in table.columns)
-            ImplementationValidationRule(fieldId: col.id, required: col.required, type: _mapColumnType(col.type)),
+            ImplementationValidationRule(
+              fieldId: col.id,
+              required: col.required,
+              type: _mapColumnType(col.type),
+            ),
         ],
       ),
   ];
 
-  List<ImplementationService> _planServices(List<ImplementationRepository> repositories, List<ImplementationController> controllers) {
+  List<ImplementationService> _planServices(
+    List<ImplementationRepository> repositories,
+    List<ImplementationController> controllers,
+  ) {
     final controllerByEntity = {for (final c in controllers) c.entityId: c};
     return [
       for (final repo in repositories)
@@ -294,20 +350,36 @@ class CanonicalImplementationPlanner {
     ];
   }
 
-  List<ImplementationDependency> _planDependencies(CanonicalImplementationContext context) {
+  List<ImplementationDependency> _planDependencies(
+    CanonicalImplementationContext context,
+  ) {
     final deps = <ImplementationDependency>[];
     for (final table in context.backend.database.tables) {
       for (final fk in table.foreignKeys) {
-        deps.add(ImplementationDependency(fromId: table.id, toId: fk.referencesTableId, kind: DependencyKind.entityReference));
+        deps.add(
+          ImplementationDependency(
+            fromId: table.id,
+            toId: fk.referencesTableId,
+            kind: DependencyKind.entityReference,
+          ),
+        );
       }
     }
     for (final c in context.resolvedCapabilities) {
-      deps.add(ImplementationDependency(fromId: 'app', toId: c.id, kind: DependencyKind.capability));
+      deps.add(
+        ImplementationDependency(
+          fromId: 'app',
+          toId: c.id,
+          kind: DependencyKind.capability,
+        ),
+      );
     }
     return deps;
   }
 
-  List<StateContainerSpec> _planStateContainers(CanonicalImplementationContext context) => [
+  List<StateContainerSpec> _planStateContainers(
+    CanonicalImplementationContext context,
+  ) => [
     for (final behavior in context.engineering.behaviors)
       StateContainerSpec(
         entityId: behavior.stateMachine.entityId,
@@ -319,10 +391,17 @@ class CanonicalImplementationPlanner {
       ),
   ];
 
-  NavigationHandlerSpec _planNavigation(CanonicalImplementationContext context) => NavigationHandlerSpec(
+  NavigationHandlerSpec _planNavigation(
+    CanonicalImplementationContext context,
+  ) => NavigationHandlerSpec(
     routes: [
       for (final edge in context.engineering.navigation.modalEdges)
-        NavigationRouteSpec(fromRouteId: edge.fromScreenId, toRouteId: edge.toScreenId, triggerId: edge.trigger, isOverlay: edge.isModal),
+        NavigationRouteSpec(
+          fromRouteId: edge.fromScreenId,
+          toRouteId: edge.toScreenId,
+          triggerId: edge.trigger,
+          isOverlay: edge.isModal,
+        ),
     ],
     deepLinkableRouteIds: context.engineering.navigation.deepLinkableScreenIds,
   );
@@ -331,11 +410,15 @@ class CanonicalImplementationPlanner {
   /// fuzzy-matches recommendation names against this model's own
   /// entities/capabilities (Implementation Milestone R14; see the
   /// `corroboratingRecommendations` doc comment above for why).
-  List<CorroboratedPattern> _planCorroboratedPatterns(CanonicalImplementationContext context) => [
+  List<CorroboratedPattern> _planCorroboratedPatterns(
+    CanonicalImplementationContext context,
+  ) => [
     for (final r in context.corroboratingRecommendations)
       if (r.accepted)
         CorroboratedPattern(
-          name: r.tracedTo.isNotEmpty ? r.tracedTo.first.sourceArtifact : r.description,
+          name: r.tracedTo.isNotEmpty
+              ? r.tracedTo.first.sourceArtifact
+              : r.description,
           description: r.description,
           confidenceScore: r.confidence.score,
           supportingSourceCount: r.tracedTo.length,

@@ -30,13 +30,22 @@ class WorldReasoner {
        _context = context,
        _query = query;
 
-  ImpactReport whatDependsOn(WorldGraph graph, EntityIdentity subject) => _impact.analyze(graph, subject);
+  ImpactReport whatDependsOn(WorldGraph graph, EntityIdentity subject) =>
+      _impact.analyze(graph, subject);
 
-  DependencyReport whatDoesThisDependOn(WorldGraph graph, EntityIdentity subject) => _dependency.analyze(graph, subject);
+  DependencyReport whatDoesThisDependOn(
+    WorldGraph graph,
+    EntityIdentity subject,
+  ) => _dependency.analyze(graph, subject);
 
-  GraphView? showEverythingRelatedTo(WorldGraph graph, WorldContext context) => _context.relevantView(graph, context);
+  GraphView? showEverythingRelatedTo(WorldGraph graph, WorldContext context) =>
+      _context.relevantView(graph, context);
 
-  List<WorldNode> answer(WorldGraph graph, String expression, EntityIdentity startId) {
+  List<WorldNode> answer(
+    WorldGraph graph,
+    String expression,
+    EntityIdentity startId,
+  ) {
     final query = _query.parseIntent(expression, startId);
     if (query == null) return const [];
     return _query.query(graph, query);

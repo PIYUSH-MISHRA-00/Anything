@@ -49,10 +49,17 @@ class EngineeringRefinement {
               ? EngineeringRefinementOutcome.budgetExhausted
               : EngineeringRefinementOutcome.refinementRequired);
 
-    return EngineeringPlan(finalCandidate: candidate, reviewHistory: history, outcome: outcome);
+    return EngineeringPlan(
+      finalCandidate: candidate,
+      reviewHistory: history,
+      outcome: outcome,
+    );
   }
 
-  EngineeringCandidate _applyFixes(EngineeringCandidate candidate, List<dynamic> fixes) {
+  EngineeringCandidate _applyFixes(
+    EngineeringCandidate candidate,
+    List<dynamic> fixes,
+  ) {
     var bindingEdges = candidate.bindingGraph.edges;
     var behaviors = candidate.behaviors;
 

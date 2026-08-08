@@ -16,8 +16,14 @@ void main() {
     });
 
     test('structural identity is order-independent', () {
-      final a = SoftwareIdentity.structural(SoftwareNodeKind.entity, ['name', 'text']);
-      final b = SoftwareIdentity.structural(SoftwareNodeKind.entity, ['text', 'name']);
+      final a = SoftwareIdentity.structural(SoftwareNodeKind.entity, [
+        'name',
+        'text',
+      ]);
+      final b = SoftwareIdentity.structural(SoftwareNodeKind.entity, [
+        'text',
+        'name',
+      ]);
       expect(a, equals(b));
     });
 
@@ -49,7 +55,10 @@ void main() {
     });
 
     test('two empty fingerprints are fully similar (both empty)', () {
-      expect(SoftwareFingerprint([]).similarityTo(SoftwareFingerprint([])), 1.0);
+      expect(
+        SoftwareFingerprint([]).similarityTo(SoftwareFingerprint([])),
+        1.0,
+      );
     });
   });
 }

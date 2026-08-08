@@ -46,7 +46,8 @@ class EngineeringPlanner {
     ValidationEngineering validation = const ValidationEngineering(),
     PersistenceEngineering persistence = const PersistenceEngineering(),
     OfflineEngineering offline = const OfflineEngineering(),
-    SynchronizationEngineering synchronization = const SynchronizationEngineering(),
+    SynchronizationEngineering synchronization =
+        const SynchronizationEngineering(),
     LifecycleEngineering lifecycle = const LifecycleEngineering(),
     PerformanceEngineering performance = const PerformanceEngineering(),
     AccessibilityEngineering accessibility = const AccessibilityEngineering(),
@@ -78,8 +79,14 @@ class EngineeringPlanner {
       eventGraphs: behaviors.map((b) => b.eventGraph).toList(),
       stateMachines: behaviors.map((b) => b.stateMachine).toList(),
     );
-    final persistence = _persistence.plan(context.architecture, data.migrationDecision);
-    final offline = _offline.plan(context.architecture, featureGraph: context.featureGraph);
+    final persistence = _persistence.plan(
+      context.architecture,
+      data.migrationDecision,
+    );
+    final offline = _offline.plan(
+      context.architecture,
+      featureGraph: context.featureGraph,
+    );
     final synchronization = _synchronization.plan(context.architecture);
     final lifecycle = _lifecycle.plan();
     final performance = _performance.plan();
@@ -102,9 +109,14 @@ class EngineeringPlanner {
       performance: performance,
       accessibility: accessibility,
       security: security,
-      overallConfidence: const Confidence(score: 0.0, reason: 'not yet analyzed'),
+      overallConfidence: const Confidence(
+        score: 0.0,
+        reason: 'not yet analyzed',
+      ),
     );
 
-    return candidate.copyWith(overallConfidence: _confidenceAnalyzer.analyze(candidate));
+    return candidate.copyWith(
+      overallConfidence: _confidenceAnalyzer.analyze(candidate),
+    );
   }
 }

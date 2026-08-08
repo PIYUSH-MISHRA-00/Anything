@@ -9,7 +9,18 @@ enum LogSeverity { debug, info, warning, error }
 
 /// Every category this milestone's Diagnostics section names — "Everything
 /// categorized," never an uncategorized log line.
-enum LogCategory { kernel, runtime, knowledge, worldModel, evolution, reviewEngine, storage, security, ui, automation }
+enum LogCategory {
+  kernel,
+  runtime,
+  knowledge,
+  worldModel,
+  evolution,
+  reviewEngine,
+  storage,
+  security,
+  ui,
+  automation,
+}
 
 /// One structured log line. [message] must never contain raw exception
 /// text, stack traces, or personal content — callers are responsible for
@@ -21,8 +32,14 @@ class LogEntry {
   final String message;
   final DateTime timestamp;
 
-  LogEntry({required this.severity, required this.category, required this.message, DateTime? timestamp}) : timestamp = timestamp ?? DateTime.now();
+  LogEntry({
+    required this.severity,
+    required this.category,
+    required this.message,
+    DateTime? timestamp,
+  }) : timestamp = timestamp ?? DateTime.now();
 
   @override
-  String toString() => '[${timestamp.toIso8601String()}] ${severity.name.toUpperCase()} (${category.name}) $message';
+  String toString() =>
+      '[${timestamp.toIso8601String()}] ${severity.name.toUpperCase()} (${category.name}) $message';
 }

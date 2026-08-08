@@ -14,7 +14,11 @@ class TraversalStep {
   final int depth;
   final WorldEdge? viaEdge;
 
-  const TraversalStep({required this.nodeId, required this.depth, this.viaEdge});
+  const TraversalStep({
+    required this.nodeId,
+    required this.depth,
+    this.viaEdge,
+  });
 }
 
 class GraphTraversal {
@@ -27,7 +31,13 @@ class GraphTraversal {
     EntityIdentity start, {
     int maxDepth = 5,
     Set<RelationshipKind>? relationKinds,
-  }) => _traverse(GraphIndex.build(graph), start, maxDepth, relationKinds, forward: true);
+  }) => _traverse(
+    GraphIndex.build(graph),
+    start,
+    maxDepth,
+    relationKinds,
+    forward: true,
+  );
 
   /// Reverse traversal (follows incoming edges) — "what depends on /
   /// references / contains this."
@@ -36,7 +46,13 @@ class GraphTraversal {
     EntityIdentity start, {
     int maxDepth = 5,
     Set<RelationshipKind>? relationKinds,
-  }) => _traverse(GraphIndex.build(graph), start, maxDepth, relationKinds, forward: false);
+  }) => _traverse(
+    GraphIndex.build(graph),
+    start,
+    maxDepth,
+    relationKinds,
+    forward: false,
+  );
 
   List<TraversalStep> _traverse(
     GraphIndex index,
@@ -52,12 +68,20 @@ class GraphTraversal {
     while (frontier.isNotEmpty && frontier.first.depth < maxDepth) {
       final next = <TraversalStep>[];
       for (final step in frontier) {
-        final edges = forward ? index.outgoingFrom(step.nodeId) : index.incomingTo(step.nodeId);
+        final edges = forward
+            ? index.outgoingFrom(step.nodeId)
+            : index.incomingTo(step.nodeId);
         for (final edge in edges) {
-          if (relationKinds != null && !relationKinds.contains(edge.kind)) continue;
+          if (relationKinds != null && !relationKinds.contains(edge.kind)) {
+            continue;
+          }
           final neighbor = forward ? edge.toId : edge.fromId;
           if (!visited.add(neighbor)) continue;
-          final entry = TraversalStep(nodeId: neighbor, depth: step.depth + 1, viaEdge: edge);
+          final entry = TraversalStep(
+            nodeId: neighbor,
+            depth: step.depth + 1,
+            viaEdge: edge,
+          );
           results.add(entry);
           next.add(entry);
         }

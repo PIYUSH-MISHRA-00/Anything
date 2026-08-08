@@ -81,7 +81,8 @@ class ExperienceActivationManager {
   /// "Track active experience routes" / "Resolve existing routes" — real,
   /// on-demand lookup; `null` when no route is currently tracked for
   /// [sessionId] (never tracked, or already popped).
-  Route<dynamic>? existingRouteFor(String sessionId) => _activeRoutes[sessionId];
+  Route<dynamic>? existingRouteFor(String sessionId) =>
+      _activeRoutes[sessionId];
 
   /// The ONE real activation entry point every `HomeScreen` navigation call
   /// site goes through — new opens AND the Switcher's "select a background
@@ -106,7 +107,10 @@ class ExperienceActivationManager {
     final existing = _activeRoutes[sessionId];
     if (existing != null) {
       navigator.popUntil((route) => route == existing);
-      eventPublisher?.publishWorkspaceUpdated('activation_existing_route', sessionId);
+      eventPublisher?.publishWorkspaceUpdated(
+        'activation_existing_route',
+        sessionId,
+      );
       return null;
     }
 

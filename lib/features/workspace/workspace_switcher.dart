@@ -72,8 +72,7 @@ class WorkspaceSwitcherSheet extends StatefulWidget {
   });
 
   @override
-  State<WorkspaceSwitcherSheet> createState() =>
-      _WorkspaceSwitcherSheetState();
+  State<WorkspaceSwitcherSheet> createState() => _WorkspaceSwitcherSheetState();
 }
 
 class _WorkspaceSwitcherSheetState extends State<WorkspaceSwitcherSheet> {
@@ -92,8 +91,14 @@ class _WorkspaceSwitcherSheetState extends State<WorkspaceSwitcherSheet> {
   /// is unavailable — a real, honest edge case (e.g. the session is tracked
   /// by the workspace but was never registered with the supervisor), never
   /// a fabricated navigation.
-  Future<void> _selectForeground(String sessionId, String? name, SessionRuntimeStatus session) async {
-    final controller = widget.entryPipeline.runtimeSupervisor?.lookup(sessionId);
+  Future<void> _selectForeground(
+    String sessionId,
+    String? name,
+    SessionRuntimeStatus session,
+  ) async {
+    final controller = widget.entryPipeline.runtimeSupervisor?.lookup(
+      sessionId,
+    );
     final package = session.runtimeState?.package;
 
     if (controller == null || package == null) {
@@ -101,7 +106,11 @@ class _WorkspaceSwitcherSheetState extends State<WorkspaceSwitcherSheet> {
       if (!mounted) return;
       Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Switched to ${name ?? 'app'}. Reopen it from Recent to view.')),
+        SnackBar(
+          content: Text(
+            'Switched to ${name ?? 'app'}. Reopen it from Recent to view.',
+          ),
+        ),
       );
       return;
     }
@@ -125,8 +134,10 @@ class _WorkspaceSwitcherSheetState extends State<WorkspaceSwitcherSheet> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final SessionRuntimeStatus? active = widget.scheduler.foregroundExperience();
-    final List<SessionRuntimeStatus> background = widget.scheduler.backgroundExperiences();
+    final SessionRuntimeStatus? active = widget.scheduler
+        .foregroundExperience();
+    final List<SessionRuntimeStatus> background = widget.scheduler
+        .backgroundExperiences();
 
     // Bounded-height + scrollable, matching ExperienceHostScreen's own
     // established "Evolution history" bottom-sheet pattern exactly — an
@@ -163,16 +174,24 @@ class _WorkspaceSwitcherSheetState extends State<WorkspaceSwitcherSheet> {
                       if (active != null)
                         ListTile(
                           leading: const Icon(Icons.auto_awesome),
-                          title: Text(active.experienceName ?? active.sessionId),
+                          title: Text(
+                            active.experienceName ?? active.sessionId,
+                          ),
                           subtitle: const Text('Active'),
                           trailing: const Chip(label: Text('Foreground')),
                         ),
                       for (final session in background)
                         ListTile(
                           leading: const Icon(Icons.auto_awesome_outlined),
-                          title: Text(session.experienceName ?? session.sessionId),
+                          title: Text(
+                            session.experienceName ?? session.sessionId,
+                          ),
                           subtitle: const Text('Background'),
-                          onTap: () => _selectForeground(session.sessionId, session.experienceName, session),
+                          onTap: () => _selectForeground(
+                            session.sessionId,
+                            session.experienceName,
+                            session,
+                          ),
                         ),
                     ],
                   ),

@@ -67,16 +67,20 @@ class RuntimeExperienceGenerator implements Generator {
   /// exact case `GenerationSpecification.manifestPathTemplate`'s own doc
   /// comment describes ("not itself derived from one BuildGraphNode... a
   /// real, generator-produced aggregate over the whole graph").
-  static const GenerationSpecification defaultSpecification = GenerationSpecification(
-    manifestPathTemplate: PathTemplate('experience/{id}.json'),
-  );
+  static const GenerationSpecification defaultSpecification =
+      GenerationSpecification(
+        manifestPathTemplate: PathTemplate('experience/{id}.json'),
+      );
 
   @override
   GeneratorMetadata get metadata => const GeneratorMetadata(
     id: 'reference.runtime-experience',
     name: 'Runtime Experience Generator',
     version: GeneratorVersion(major: 1, minor: 0, patch: 0),
-    capabilities: [GeneratorCapability.manifests, GeneratorCapability.configuration],
+    capabilities: [
+      GeneratorCapability.manifests,
+      GeneratorCapability.configuration,
+    ],
   );
 
   @override
@@ -89,21 +93,36 @@ class RuntimeExperienceGenerator implements Generator {
         const GenerationDiagnostic(
           severity: DiagnosticSeverity.info,
           category: DiagnosticCategory.general,
-          message: 'No entities in the supplied CanonicalImplementationModel — no Experience to generate.',
+          message:
+              'No entities in the supplied CanonicalImplementationModel — no Experience to generate.',
         ),
       );
       return GenerationResult(diagnostics: diagnostics);
     }
 
     final entitiesWithListScreen = <String>{};
-    final interface = _buildInterface(model, entitiesWithListScreen, diagnostics);
+    final interface = _buildInterface(
+      model,
+      entitiesWithListScreen,
+      diagnostics,
+    );
     final behavior = _buildBehavior(model);
-    final state = _buildState(entitiesWithListScreen.isNotEmpty, model.derivedValues);
+    final state = _buildState(
+      entitiesWithListScreen.isNotEmpty,
+      model.derivedValues,
+    );
     final data = _buildData(model);
 
     _reportUnrepresentedConcepts(model, diagnostics);
 
-    final package = _assemblePackage(model, context.target, interface, behavior, state, data);
+    final package = _assemblePackage(
+      model,
+      context.target,
+      interface,
+      behavior,
+      state,
+      data,
+    );
 
     final validation = ExperiencePackageValidator.validate(package);
     for (final error in validation.errors) {
@@ -117,19 +136,28 @@ class RuntimeExperienceGenerator implements Generator {
     }
     for (final warning in validation.warnings) {
       diagnostics.add(
-        GenerationDiagnostic(severity: DiagnosticSeverity.warning, category: DiagnosticCategory.general, message: warning),
+        GenerationDiagnostic(
+          severity: DiagnosticSeverity.warning,
+          category: DiagnosticCategory.general,
+          message: warning,
+        ),
       );
     }
 
     final artifact = Artifact(
       id: 'experience-package',
-      path: specification.manifestPathTemplate.resolve(id: context.target.id, label: context.target.name),
+      path: specification.manifestPathTemplate.resolve(
+        id: context.target.id,
+        label: context.target.name,
+      ),
       kind: ArtifactKind.manifest,
       content: jsonEncode(package.toJson()),
     );
 
     return GenerationResult(
-      artifactGroups: [ArtifactGroup(id: 'experience', artifacts: [artifact])],
+      artifactGroups: [
+        ArtifactGroup(id: 'experience', artifacts: [artifact]),
+      ],
       diagnostics: diagnostics,
     );
   }
@@ -144,25 +172,34 @@ class RuntimeExperienceGenerator implements Generator {
     final screens = <InterfaceScreen>[];
 
     for (final entity in model.entities) {
-      final controller = model.controllers.where((c) => c.entityId == entity.id).firstOrNull;
-      final kinds = controller?.operations.map((o) => o.kind).toSet() ?? <ImplementationOperationKind>{};
+      final controller = model.controllers
+          .where((c) => c.entityId == entity.id)
+          .firstOrNull;
+      final kinds =
+          controller?.operations.map((o) => o.kind).toSet() ??
+          <ImplementationOperationKind>{};
 
       if (kinds.isEmpty) {
         diagnostics.add(
           GenerationDiagnostic(
             severity: DiagnosticSeverity.info,
             category: DiagnosticCategory.skippedFeature,
-            message: 'Entity ${entity.id} has no controller operations — no interface screens generated.',
+            message:
+                'Entity ${entity.id} has no controller operations — no interface screens generated.',
             relatedId: entity.id,
           ),
         );
         continue;
       }
 
-      final hasList = kinds.contains(ImplementationOperationKind.list) || kinds.contains(ImplementationOperationKind.search);
+      final hasList =
+          kinds.contains(ImplementationOperationKind.list) ||
+          kinds.contains(ImplementationOperationKind.search);
       final hasCreate = kinds.contains(ImplementationOperationKind.create);
       final hasUpdate = kinds.contains(ImplementationOperationKind.update);
-      final hasDetail = kinds.contains(ImplementationOperationKind.get) || kinds.contains(ImplementationOperationKind.delete);
+      final hasDetail =
+          kinds.contains(ImplementationOperationKind.get) ||
+          kinds.contains(ImplementationOperationKind.delete);
 
       if (hasList) {
         final listNodes = <InterfaceNode>[];
@@ -171,7 +208,10 @@ class RuntimeExperienceGenerator implements Generator {
             InterfaceNode(
               type: 'searchField',
               id: '${entity.id}_search',
-              properties: {'hint': 'Search ${entity.name}...', 'entityId': entity.id},
+              properties: {
+                'hint': 'Search ${entity.name}...',
+                'entityId': entity.id,
+              },
             ),
           );
         }
@@ -182,7 +222,8 @@ class RuntimeExperienceGenerator implements Generator {
             properties: {
               'entityId': entity.id,
               'titleField': _displayField(entity),
-              if (_secondaryField(entity) != null) 'subtitleField': _secondaryField(entity),
+              if (_secondaryField(entity) != null)
+                'subtitleField': _secondaryField(entity),
             },
           ),
         );
@@ -196,7 +237,14 @@ class RuntimeExperienceGenerator implements Generator {
             ),
           );
         }
-        screens.add(InterfaceScreen(id: '${entity.id}_list', title: entity.name, appBarTitle: entity.name, children: listNodes));
+        screens.add(
+          InterfaceScreen(
+            id: '${entity.id}_list',
+            title: entity.name,
+            appBarTitle: entity.name,
+            children: listNodes,
+          ),
+        );
         entitiesWithListScreen.add(entity.id);
       }
 
@@ -210,7 +258,11 @@ class RuntimeExperienceGenerator implements Generator {
               InterfaceNode(
                 type: 'entityForm',
                 id: '${entity.id}_form_node',
-                properties: {'entityId': entity.id, 'mode': 'create', 'fields': _fieldDefs(entity)},
+                properties: {
+                  'entityId': entity.id,
+                  'mode': 'create',
+                  'fields': _fieldDefs(entity),
+                },
               ),
             ],
           ),
@@ -227,7 +279,11 @@ class RuntimeExperienceGenerator implements Generator {
               InterfaceNode(
                 type: 'entityForm',
                 id: '${entity.id}_edit_node',
-                properties: {'entityId': entity.id, 'mode': 'edit', 'fields': _fieldDefs(entity)},
+                properties: {
+                  'entityId': entity.id,
+                  'mode': 'edit',
+                  'fields': _fieldDefs(entity),
+                },
               ),
             ],
           ),
@@ -244,7 +300,10 @@ class RuntimeExperienceGenerator implements Generator {
               InterfaceNode(
                 type: 'entityDetail',
                 id: '${entity.id}_detail_node',
-                properties: {'entityId': entity.id, 'titleField': _displayField(entity)},
+                properties: {
+                  'entityId': entity.id,
+                  'titleField': _displayField(entity),
+                },
               ),
             ],
           ),
@@ -255,14 +314,30 @@ class RuntimeExperienceGenerator implements Generator {
     // Non-CRUD experience views (Implementation Milestone R21) — additive:
     // entity-driven CRUD screens above are completely unaffected.
     for (final view in model.views) {
-      final entity = view.sourceEntityId != null ? model.entities.where((e) => e.id == view.sourceEntityId).firstOrNull : null;
+      final entity = view.sourceEntityId != null
+          ? model.entities.where((e) => e.id == view.sourceEntityId).firstOrNull
+          : null;
       final nodes = view.kind == ImplementationViewKind.dashboard
           ? _dashboardViewNodes(model, view, entity)
           : _genericFallbackViewNodes(view, entity);
       if (nodes.isNotEmpty) {
-        nodes.insert(0, InterfaceNode(type: 'heading', id: '${view.id}_title', properties: {'content': view.name, 'level': 2}));
+        nodes.insert(
+          0,
+          InterfaceNode(
+            type: 'heading',
+            id: '${view.id}_title',
+            properties: {'content': view.name, 'level': 2},
+          ),
+        );
       }
-      screens.add(InterfaceScreen(id: view.id, title: view.name, appBarTitle: view.name, children: nodes));
+      screens.add(
+        InterfaceScreen(
+          id: view.id,
+          title: view.name,
+          appBarTitle: view.name,
+          children: nodes,
+        ),
+      );
     }
 
     if (screens.isEmpty) {
@@ -270,7 +345,13 @@ class RuntimeExperienceGenerator implements Generator {
         const InterfaceScreen(
           id: 'main',
           title: 'Experience',
-          children: [InterfaceNode(type: 'text', id: 'empty_text', properties: {'content': 'No entities defined'})],
+          children: [
+            InterfaceNode(
+              type: 'text',
+              id: 'empty_text',
+              properties: {'content': 'No entities defined'},
+            ),
+          ],
         ),
       );
     }
@@ -280,11 +361,27 @@ class RuntimeExperienceGenerator implements Generator {
     // legacy's own "every non-form view becomes a bottom-nav destination"
     // shape, `CreationEngine._buildInterfaceFromBlueprint` line ~761).
     final navItems = <NavigationItem>[
-      for (final entity in model.entities.where((e) => entitiesWithListScreen.contains(e.id)))
-        NavigationItem(label: entity.name, icon: 'list', screenId: '${entity.id}_list'),
-      for (final view in model.views) NavigationItem(label: view.name, icon: _viewKindIcon(view.kind), screenId: view.id),
+      for (final entity in model.entities.where(
+        (e) => entitiesWithListScreen.contains(e.id),
+      ))
+        NavigationItem(
+          label: entity.name,
+          icon: 'list',
+          screenId: '${entity.id}_list',
+        ),
+      for (final view in model.views)
+        NavigationItem(
+          label: view.name,
+          icon: _viewKindIcon(view.kind),
+          screenId: view.id,
+        ),
     ];
-    final navigation = navItems.length > 1 ? NavigationDefinition(type: 'bottomNavigation', items: navItems.take(5).toList()) : null;
+    final navigation = navItems.length > 1
+        ? NavigationDefinition(
+            type: 'bottomNavigation',
+            items: navItems.take(5).toList(),
+          )
+        : null;
 
     return InterfaceDefinition(screens: screens, navigation: navigation);
   }
@@ -295,22 +392,47 @@ class RuntimeExperienceGenerator implements Generator {
   /// and an Add button reusing this generator's own established
   /// `create_<entityId>` action-id convention (already used by the CRUD
   /// list screen's Add button above — not a new convention).
-  List<InterfaceNode> _dashboardViewNodes(CanonicalImplementationModel model, ImplementationView view, ImplementationEntity? entity) {
+  List<InterfaceNode> _dashboardViewNodes(
+    CanonicalImplementationModel model,
+    ImplementationView view,
+    ImplementationEntity? entity,
+  ) {
     if (entity == null) return [];
     final metrics = <Map<String, dynamic>>[
-      {'label': 'Total ${entity.name}', 'operation': 'count', 'entityId': entity.id},
+      {
+        'label': 'Total ${entity.name}',
+        'operation': 'count',
+        'entityId': entity.id,
+      },
     ];
     for (final field in entity.fields) {
-      if (field.type == ImplementationDataType.integer || field.type == ImplementationDataType.decimal) {
-        metrics.add({'label': '${field.name} (Sum)', 'operation': 'sum', 'entityId': entity.id, 'fieldId': field.id});
-        metrics.add({'label': '${field.name} (Avg)', 'operation': 'average', 'entityId': entity.id, 'fieldId': field.id});
+      if (field.type == ImplementationDataType.integer ||
+          field.type == ImplementationDataType.decimal) {
+        metrics.add({
+          'label': '${field.name} (Sum)',
+          'operation': 'sum',
+          'entityId': entity.id,
+          'fieldId': field.id,
+        });
+        metrics.add({
+          'label': '${field.name} (Avg)',
+          'operation': 'average',
+          'entityId': entity.id,
+          'fieldId': field.id,
+        });
       }
     }
     final nodes = <InterfaceNode>[
-      InterfaceNode(type: 'dashboardMetrics', id: '${view.id}_dashboard', properties: {'title': view.name, 'metrics': metrics}),
+      InterfaceNode(
+        type: 'dashboardMetrics',
+        id: '${view.id}_dashboard',
+        properties: {'title': view.name, 'metrics': metrics},
+      ),
     ];
     final hasCreate = model.controllers.any(
-      (c) => c.entityId == entity.id && c.operations.any((o) => o.kind == ImplementationOperationKind.create),
+      (c) =>
+          c.entityId == entity.id &&
+          c.operations.any((o) => o.kind == ImplementationOperationKind.create),
     );
     if (hasCreate) {
       nodes.add(
@@ -331,21 +453,33 @@ class RuntimeExperienceGenerator implements Generator {
   /// branch, never four distinct behaviors), so this generator does too:
   /// a `referenceSelector` per reference field, an `input`/`switch` per
   /// other field.
-  List<InterfaceNode> _genericFallbackViewNodes(ImplementationView view, ImplementationEntity? entity) {
+  List<InterfaceNode> _genericFallbackViewNodes(
+    ImplementationView view,
+    ImplementationEntity? entity,
+  ) {
     if (entity == null) return [];
     return [
       for (final field in entity.fields)
-        if (field.type == ImplementationDataType.reference && field.referenceEntityId != null)
+        if (field.type == ImplementationDataType.reference &&
+            field.referenceEntityId != null)
           InterfaceNode(
             type: 'referenceSelector',
             id: '${view.id}_${field.id}_ref',
-            properties: {'entityId': field.referenceEntityId, 'label': 'Select ${field.name}'},
+            properties: {
+              'entityId': field.referenceEntityId,
+              'label': 'Select ${field.name}',
+            },
           )
         else
           InterfaceNode(
-            type: field.type == ImplementationDataType.boolean ? 'switch' : 'input',
+            type: field.type == ImplementationDataType.boolean
+                ? 'switch'
+                : 'input',
             id: '${view.id}_${field.id}',
-            properties: {'label': field.name, 'hint': 'Enter ${field.name.toLowerCase()}'},
+            properties: {
+              'label': field.name,
+              'hint': 'Enter ${field.name.toLowerCase()}',
+            },
             stateBinding: '${entity.id}_${field.id}_input',
           ),
     ];
@@ -363,7 +497,9 @@ class RuntimeExperienceGenerator implements Generator {
 
   String _displayField(ImplementationEntity entity) {
     for (final field in entity.fields) {
-      if (field.id == 'name' || field.id == 'title' || field.id == 'label') return field.id;
+      if (field.id == 'name' || field.id == 'title' || field.id == 'label') {
+        return field.id;
+      }
     }
     return entity.fields.isNotEmpty ? entity.fields.first.id : 'id';
   }
@@ -387,8 +523,10 @@ class RuntimeExperienceGenerator implements Generator {
         // included when present, mirroring CreationEngine's own
         // conditional (never a fabricated empty value).
         if (field.defaultValue != null) 'defaultValue': field.defaultValue,
-        if (field.referenceEntityId != null) 'referenceEntityId': field.referenceEntityId,
-        if (field.allowedValues.isNotEmpty) 'allowedValues': field.allowedValues,
+        if (field.referenceEntityId != null)
+          'referenceEntityId': field.referenceEntityId,
+        if (field.allowedValues.isNotEmpty)
+          'allowedValues': field.allowedValues,
         if (field.hint != null) 'hint': field.hint,
       },
   ];
@@ -423,10 +561,20 @@ class RuntimeExperienceGenerator implements Generator {
         }
 
         final eventNodeId = '${eventId}_event';
-        nodes.add(BehaviorNode(id: eventNodeId, type: 'event', config: {'eventId': eventId}));
+        nodes.add(
+          BehaviorNode(
+            id: eventNodeId,
+            type: 'event',
+            config: {'eventId': eventId},
+          ),
+        );
         final mutateNodeId = '${eventId}_data';
         nodes.add(
-          BehaviorNode(id: mutateNodeId, type: 'dataMutation', config: {'operation': mutationOp, 'entity': controller.entityId}),
+          BehaviorNode(
+            id: mutateNodeId,
+            type: 'dataMutation',
+            config: {'operation': mutationOp, 'entity': controller.entityId},
+          ),
         );
         edges.add(BehaviorEdge(from: eventNodeId, to: mutateNodeId));
       }
@@ -440,7 +588,15 @@ class RuntimeExperienceGenerator implements Generator {
       final queryNodeId = 'derived_${dv.id}_query';
       final queryStateId = '${dv.id}_raw_data';
       nodes.add(
-        BehaviorNode(id: queryNodeId, type: 'dataQuery', config: {'entity': dv.sourceEntityId, 'operation': 'query', 'resultStateId': queryStateId}),
+        BehaviorNode(
+          id: queryNodeId,
+          type: 'dataQuery',
+          config: {
+            'entity': dv.sourceEntityId,
+            'operation': 'query',
+            'resultStateId': queryStateId,
+          },
+        ),
       );
 
       final calcNodeId = 'derived_${dv.id}_calc';
@@ -448,7 +604,12 @@ class RuntimeExperienceGenerator implements Generator {
         BehaviorNode(
           id: calcNodeId,
           type: 'calculation',
-          config: {'operation': dv.operation.name, 'sourceStateId': queryStateId, 'fieldId': dv.fieldId ?? '', 'targetStateId': dv.id},
+          config: {
+            'operation': dv.operation.name,
+            'sourceStateId': queryStateId,
+            'fieldId': dv.fieldId ?? '',
+            'targetStateId': dv.id,
+          },
         ),
       );
       edges.add(BehaviorEdge(from: queryNodeId, to: calcNodeId));
@@ -459,15 +620,34 @@ class RuntimeExperienceGenerator implements Generator {
 
   // ── State ────────────────────────────────────────────────────────────
 
-  StateSchema _buildState(bool hasAnyListScreen, List<ImplementationDerivedValue> derivedValues) => StateSchema(
+  StateSchema _buildState(
+    bool hasAnyListScreen,
+    List<ImplementationDerivedValue> derivedValues,
+  ) => StateSchema(
     variables: [
-      if (hasAnyListScreen) const StateVariable(id: 'searchTerm', type: 'string', defaultValue: '', persistence: 'session'),
+      if (hasAnyListScreen)
+        const StateVariable(
+          id: 'searchTerm',
+          type: 'string',
+          defaultValue: '',
+          persistence: 'session',
+        ),
       // Derived-value state variables (Implementation Milestone R20) —
       // same id/type/defaultValue shape as
       // CreationEngine._buildStateFromBlueprint.
       for (final dv in derivedValues) ...[
-        StateVariable(id: dv.id, type: 'string', defaultValue: '0', persistence: 'session'),
-        StateVariable(id: '${dv.id}_raw_data', type: 'list', defaultValue: const <dynamic>[], persistence: 'session'),
+        StateVariable(
+          id: dv.id,
+          type: 'string',
+          defaultValue: '0',
+          persistence: 'session',
+        ),
+        StateVariable(
+          id: '${dv.id}_raw_data',
+          type: 'list',
+          defaultValue: const <dynamic>[],
+          persistence: 'session',
+        ),
       ],
     ],
   );
@@ -503,13 +683,19 @@ class RuntimeExperienceGenerator implements Generator {
 
   // ── Honest diagnostics for concepts ExperiencePackage cannot represent ──
 
-  void _reportUnrepresentedConcepts(CanonicalImplementationModel model, List<GenerationDiagnostic> diagnostics) {
-    if (model.dtos.isNotEmpty || model.validators.isNotEmpty || model.services.isNotEmpty) {
+  void _reportUnrepresentedConcepts(
+    CanonicalImplementationModel model,
+    List<GenerationDiagnostic> diagnostics,
+  ) {
+    if (model.dtos.isNotEmpty ||
+        model.validators.isNotEmpty ||
+        model.services.isNotEmpty) {
       diagnostics.add(
         const GenerationDiagnostic(
           severity: DiagnosticSeverity.info,
           category: DiagnosticCategory.skippedFeature,
-          message: 'DTO/Validator/Service groupings are not represented in the generated ExperiencePackage — the runtime '
+          message:
+              'DTO/Validator/Service groupings are not represented in the generated ExperiencePackage — the runtime '
               'enforces field requiredness directly from entity/form field definitions, with no separate layer in this format.',
         ),
       );
@@ -519,7 +705,8 @@ class RuntimeExperienceGenerator implements Generator {
         const GenerationDiagnostic(
           severity: DiagnosticSeverity.info,
           category: DiagnosticCategory.skippedFeature,
-          message: 'StateContainer transitions are not represented — ExperiencePackage.state models simple session/'
+          message:
+              'StateContainer transitions are not represented — ExperiencePackage.state models simple session/'
               'persistent variables, not a generic state-machine concept.',
         ),
       );
@@ -529,7 +716,8 @@ class RuntimeExperienceGenerator implements Generator {
         const GenerationDiagnostic(
           severity: DiagnosticSeverity.info,
           category: DiagnosticCategory.skippedFeature,
-          message: 'NavigationHandlerSpec routes are not represented — the generated NavigationDefinition is derived '
+          message:
+              'NavigationHandlerSpec routes are not represented — the generated NavigationDefinition is derived '
               'directly from entity list screens, not from modal/deep-link route specs.',
         ),
       );
@@ -539,7 +727,8 @@ class RuntimeExperienceGenerator implements Generator {
         const GenerationDiagnostic(
           severity: DiagnosticSeverity.info,
           category: DiagnosticCategory.skippedFeature,
-          message: 'AuthenticationAdapter requirement noted but not modeled — no authentication UI concept exists in '
+          message:
+              'AuthenticationAdapter requirement noted but not modeled — no authentication UI concept exists in '
               'ExperiencePackage.',
         ),
       );
@@ -549,7 +738,8 @@ class RuntimeExperienceGenerator implements Generator {
         const GenerationDiagnostic(
           severity: DiagnosticSeverity.info,
           category: DiagnosticCategory.skippedFeature,
-          message: 'BackgroundWorker requirement noted but not modeled — no background-job concept exists in '
+          message:
+              'BackgroundWorker requirement noted but not modeled — no background-job concept exists in '
               'ExperiencePackage.',
         ),
       );
@@ -572,9 +762,13 @@ class RuntimeExperienceGenerator implements Generator {
       description: 'Generated Experience for ${target.name}',
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
-      requiredCapabilities: [for (final c in model.capabilityAdapters) c.capabilityId],
+      requiredCapabilities: [
+        for (final c in model.capabilityAdapters) c.capabilityId,
+      ],
       networkMode: NetworkMode.none,
-      storageMode: model.entities.isNotEmpty ? StorageMode.localDatabase : StorageMode.none,
+      storageMode: model.entities.isNotEmpty
+          ? StorageMode.localDatabase
+          : StorageMode.none,
       category: 'generated',
     );
 
@@ -595,7 +789,8 @@ class RuntimeExperienceGenerator implements Generator {
       state: state,
       data: data,
       capabilityDeclarations: [
-        for (final c in model.capabilityAdapters) CapabilityDeclaration(capabilityId: c.capabilityId),
+        for (final c in model.capabilityAdapters)
+          CapabilityDeclaration(capabilityId: c.capabilityId),
       ],
       provenance: provenance,
       integrity: PackageIntegrity(contentHash: '', computedAt: DateTime.now()),
@@ -615,7 +810,10 @@ class RuntimeExperienceGenerator implements Generator {
       permissionDeclarations: draft.permissionDeclarations,
       protection: draft.protection,
       provenance: draft.provenance,
-      integrity: PackageIntegrity(contentHash: hash, computedAt: DateTime.now()),
+      integrity: PackageIntegrity(
+        contentHash: hash,
+        computedAt: DateTime.now(),
+      ),
     );
   }
 }

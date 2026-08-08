@@ -7,7 +7,8 @@
 library;
 
 import '../application_engineering/engineering_plan.dart';
-import '../software_architect/architecture_types.dart' show OfflineCapability, SyncStrategy;
+import '../software_architect/architecture_types.dart'
+    show OfflineCapability, SyncStrategy;
 
 /// How screens link to each other. `hierarchical` (list -> detail/form,
 /// the real edge shape NavigationPlanner already infers) is the default;
@@ -89,5 +90,8 @@ class OfflineVariation {
 class SynchronizationVariation {
   final SyncStrategy strategy;
   final String rationale;
-  const SynchronizationVariation({required this.strategy, required this.rationale});
+  const SynchronizationVariation({
+    required this.strategy,
+    required this.rationale,
+  });
 }

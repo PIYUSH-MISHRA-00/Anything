@@ -12,10 +12,15 @@ import 'evolution_types.dart';
 class EvolutionApprover {
   const EvolutionApprover();
 
-  List<EvolutionProposal> approveForRoadmap(List<EvolutionCandidate> candidates, List<EvolutionDecision> decisions) {
+  List<EvolutionProposal> approveForRoadmap(
+    List<EvolutionCandidate> candidates,
+    List<EvolutionDecision> decisions,
+  ) {
     final decisionsById = {for (final d in decisions) d.subjectId: d};
     return candidates
-        .where((c) => decisionsById[c.id]?.kind == EvolutionDecisionKind.accepted)
+        .where(
+          (c) => decisionsById[c.id]?.kind == EvolutionDecisionKind.accepted,
+        )
         .map(
           (c) => EvolutionProposal(
             candidate: c,

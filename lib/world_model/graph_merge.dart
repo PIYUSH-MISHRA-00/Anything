@@ -25,7 +25,9 @@ class GraphMerge {
   const GraphMerge();
 
   GraphMergeResult merge(WorldGraph base, WorldGraph incoming) {
-    final byIdentity = <EntityIdentity, WorldNode>{for (final n in base.nodes) n.identity: n};
+    final byIdentity = <EntityIdentity, WorldNode>{
+      for (final n in base.nodes) n.identity: n,
+    };
     final conflicts = <GraphConflict>[];
 
     for (final node in incoming.nodes) {
@@ -36,7 +38,8 @@ class GraphMerge {
         conflicts.add(
           GraphConflict(
             identity: node.identity,
-            description: 'Identity "${node.identity}" already exists as ${existing.kind.name}/"${existing.label}", '
+            description:
+                'Identity "${node.identity}" already exists as ${existing.kind.name}/"${existing.label}", '
                 'but incoming data claims ${node.kind.name}/"${node.label}".',
           ),
         );
@@ -52,6 +55,9 @@ class GraphMerge {
       if (mergedEdgeKeys.add(key)) mergedEdges.add(edge);
     }
 
-    return GraphMergeResult(graph: WorldGraph(nodes: byIdentity.values.toList(), edges: mergedEdges), conflicts: conflicts);
+    return GraphMergeResult(
+      graph: WorldGraph(nodes: byIdentity.values.toList(), edges: mergedEdges),
+      conflicts: conflicts,
+    );
   }
 }

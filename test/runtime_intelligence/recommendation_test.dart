@@ -47,89 +47,119 @@ void main() {
     return UsageGraph.fromRecords(records);
   }
 
-  test('every recommendation is derived from a real, present pattern and is accepted on first review', () {
-    final memory = LearningMemory();
-    final learned = learningEngine.learn(buildGraph(), memory, minOccurrences: 2);
-    final recommendations = recommendationEngine.recommend(learned);
+  test(
+    'every recommendation is derived from a real, present pattern and is accepted on first review',
+    () {
+      final memory = LearningMemory();
+      final learned = learningEngine.learn(
+        buildGraph(),
+        memory,
+        minOccurrences: 2,
+      );
+      final recommendations = recommendationEngine.recommend(learned);
 
-    expect(recommendations, isNotEmpty);
-    for (final recommendation in recommendations) {
-      final decision = review.review(recommendation, memory);
-      expect(decision.kind, RecommendationDecisionKind.accepted);
-    }
-  });
+      expect(recommendations, isNotEmpty);
+      for (final recommendation in recommendations) {
+        final decision = review.review(recommendation, memory);
+        expect(decision.kind, RecommendationDecisionKind.accepted);
+      }
+    },
+  );
 
-  test('a recommendation whose pattern is missing from LearningMemory is rejected', () {
-    final memory = LearningMemory(); // empty — never learned anything
-    final learned = learningEngine.learn(buildGraph(), LearningMemory(), minOccurrences: 2);
-    final recommendations = recommendationEngine.recommend(learned);
+  test(
+    'a recommendation whose pattern is missing from LearningMemory is rejected',
+    () {
+      final memory = LearningMemory(); // empty — never learned anything
+      final learned = learningEngine.learn(
+        buildGraph(),
+        LearningMemory(),
+        minOccurrences: 2,
+      );
+      final recommendations = recommendationEngine.recommend(learned);
 
-    for (final recommendation in recommendations) {
-      final decision = review.review(recommendation, memory);
-      expect(decision.kind, RecommendationDecisionKind.rejected);
-    }
-  });
+      for (final recommendation in recommendations) {
+        final decision = review.review(recommendation, memory);
+        expect(decision.kind, RecommendationDecisionKind.rejected);
+      }
+    },
+  );
 
-  test('Evolution Integration: a recommendation already proposed by Evolution is never duplicated', () {
-    final memory = LearningMemory();
-    final learned = learningEngine.learn(buildGraph(), memory, minOccurrences: 2);
-    final withoutRoadmap = recommendationEngine.recommend(learned);
-    expect(withoutRoadmap, isNotEmpty);
+  test(
+    'Evolution Integration: a recommendation already proposed by Evolution is never duplicated',
+    () {
+      final memory = LearningMemory();
+      final learned = learningEngine.learn(
+        buildGraph(),
+        memory,
+        minOccurrences: 2,
+      );
+      final withoutRoadmap = recommendationEngine.recommend(learned);
+      expect(withoutRoadmap, isNotEmpty);
 
-    final duplicateDescription = withoutRoadmap.first.description;
-    final fakeRoadmap = EvolutionRoadmap(
-      fingerprint: 'fp',
-      generatedAt: DateTime.now(),
-      milestones: [
-        EvolutionMilestone(
-          phase: EvolutionPhase.immediate,
-          proposals: [
-            EvolutionProposal(
-              candidate: EvolutionCandidate(
-                id: 'candidate:x',
-                opportunity: EvolutionOpportunity(
-                  id: 'evolution:missingWorkflow:x',
-                  category: EvolutionOpportunityCategory.missingWorkflow,
-                  description: duplicateDescription,
-                  reason: const EvolutionReason(
-                    summary: 's',
-                    evidence: EvolutionEvidence(affectedGraph: 'g', affectedNodeId: 'n'),
-                    confidence: Confidence.full,
+      final duplicateDescription = withoutRoadmap.first.description;
+      final fakeRoadmap = EvolutionRoadmap(
+        fingerprint: 'fp',
+        generatedAt: DateTime.now(),
+        milestones: [
+          EvolutionMilestone(
+            phase: EvolutionPhase.immediate,
+            proposals: [
+              EvolutionProposal(
+                candidate: EvolutionCandidate(
+                  id: 'candidate:x',
+                  opportunity: EvolutionOpportunity(
+                    id: 'evolution:missingWorkflow:x',
+                    category: EvolutionOpportunityCategory.missingWorkflow,
+                    description: duplicateDescription,
+                    reason: const EvolutionReason(
+                      summary: 's',
+                      evidence: EvolutionEvidence(
+                        affectedGraph: 'g',
+                        affectedNodeId: 'n',
+                      ),
+                      confidence: Confidence.full,
+                    ),
+                  ),
+                  cost: const EvolutionCost(),
+                  risk: const EvolutionRisk(),
+                  benefit: const EvolutionBenefit(
+                    engineeringValue: Confidence.full,
+                    userValue: Confidence.full,
+                    maintenanceValue: Confidence.full,
+                    performanceValue: Confidence.full,
+                    securityValue: Confidence.full,
+                    accessibilityValue: Confidence.full,
+                    offlineValue: Confidence.full,
+                    futureValue: Confidence.full,
                   ),
                 ),
-                cost: const EvolutionCost(),
-                risk: const EvolutionRisk(),
-                benefit: const EvolutionBenefit(
-                  engineeringValue: Confidence.full,
-                  userValue: Confidence.full,
-                  maintenanceValue: Confidence.full,
-                  performanceValue: Confidence.full,
-                  securityValue: Confidence.full,
-                  accessibilityValue: Confidence.full,
-                  offlineValue: Confidence.full,
-                  futureValue: Confidence.full,
+                phase: EvolutionPhase.immediate,
+                reviewDecision: const EvolutionDecision(
+                  subjectId: 'x',
+                  kind: EvolutionDecisionKind.accepted,
+                  rationale: 'r',
+                  confidence: Confidence.full,
                 ),
               ),
-              phase: EvolutionPhase.immediate,
-              reviewDecision: const EvolutionDecision(
-                subjectId: 'x',
-                kind: EvolutionDecisionKind.accepted,
-                rationale: 'r',
-                confidence: Confidence.full,
-              ),
-            ),
-          ],
-        ),
-        const EvolutionMilestone(phase: EvolutionPhase.current),
-        const EvolutionMilestone(phase: EvolutionPhase.next),
-        const EvolutionMilestone(phase: EvolutionPhase.later),
-        const EvolutionMilestone(phase: EvolutionPhase.future),
-        const EvolutionMilestone(phase: EvolutionPhase.experimental),
-      ],
-    );
+            ],
+          ),
+          const EvolutionMilestone(phase: EvolutionPhase.current),
+          const EvolutionMilestone(phase: EvolutionPhase.next),
+          const EvolutionMilestone(phase: EvolutionPhase.later),
+          const EvolutionMilestone(phase: EvolutionPhase.future),
+          const EvolutionMilestone(phase: EvolutionPhase.experimental),
+        ],
+      );
 
-    final withRoadmap = recommendationEngine.recommend(learned, evolutionRoadmap: fakeRoadmap);
-    expect(withRoadmap.any((r) => r.description == duplicateDescription), isFalse);
-    expect(withRoadmap.length, withoutRoadmap.length - 1);
-  });
+      final withRoadmap = recommendationEngine.recommend(
+        learned,
+        evolutionRoadmap: fakeRoadmap,
+      );
+      expect(
+        withRoadmap.any((r) => r.description == duplicateDescription),
+        isFalse,
+      );
+      expect(withRoadmap.length, withoutRoadmap.length - 1);
+    },
+  );
 }

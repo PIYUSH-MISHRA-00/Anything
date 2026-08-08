@@ -43,7 +43,9 @@ import '../world_types.dart';
 class RequirementGraphBridge {
   final EntityResolver _resolver;
 
-  const RequirementGraphBridge({EntityResolver resolver = const EntityResolver()}) : _resolver = resolver;
+  const RequirementGraphBridge({
+    EntityResolver resolver = const EntityResolver(),
+  }) : _resolver = resolver;
 
   GraphUpdate bridge(RequirementGraph graph) {
     final nodes = <WorldNode>[];
@@ -51,26 +53,61 @@ class RequirementGraphBridge {
 
     for (final node in graph.nodesOfType(RequirementNodeType.capability)) {
       final capabilityId = node.label;
-      nodes.add(WorldNode(identity: _resolver.resolve(WorldNodeKind.capability, stableId: capabilityId), kind: WorldNodeKind.capability, label: capabilityId));
+      nodes.add(
+        WorldNode(
+          identity: _resolver.resolve(
+            WorldNodeKind.capability,
+            stableId: capabilityId,
+          ),
+          kind: WorldNodeKind.capability,
+          label: capabilityId,
+        ),
+      );
     }
 
-    for (final node in [...graph.nodesOfType(RequirementNodeType.view), ...graph.nodesOfType(RequirementNodeType.action)]) {
+    for (final node in [
+      ...graph.nodesOfType(RequirementNodeType.view),
+      ...graph.nodesOfType(RequirementNodeType.action),
+    ]) {
       for (final relation in graph.relationsFrom(node.id)) {
         if (relation.type != RequirementRelationType.references) continue;
         final target = graph.nodeById(relation.toId);
-        if (target == null || target.type != RequirementNodeType.entity) continue;
+        if (target == null || target.type != RequirementNodeType.entity) {
+          continue;
+        }
         final entityId = target.id.substring('entity:'.length);
 
-        final sourceIdentity = _resolver.resolve(WorldNodeKind.softwareComponent, stableId: node.id);
-        final entityIdentity = _resolver.resolve(WorldNodeKind.entity, stableId: entityId);
-        nodes.add(WorldNode(identity: sourceIdentity, kind: WorldNodeKind.softwareComponent, label: node.label));
-        nodes.add(WorldNode(identity: entityIdentity, kind: WorldNodeKind.entity, label: target.label));
+        final sourceIdentity = _resolver.resolve(
+          WorldNodeKind.softwareComponent,
+          stableId: node.id,
+        );
+        final entityIdentity = _resolver.resolve(
+          WorldNodeKind.entity,
+          stableId: entityId,
+        );
+        nodes.add(
+          WorldNode(
+            identity: sourceIdentity,
+            kind: WorldNodeKind.softwareComponent,
+            label: node.label,
+          ),
+        );
+        nodes.add(
+          WorldNode(
+            identity: entityIdentity,
+            kind: WorldNodeKind.entity,
+            label: target.label,
+          ),
+        );
         edges.add(
           WorldEdge(
             fromId: sourceIdentity,
             toId: entityIdentity,
             kind: RelationshipKind.references,
-            evidence: GraphEvidence(sourceGraph: 'RequirementGraph', sourceNodeId: node.id),
+            evidence: GraphEvidence(
+              sourceGraph: 'RequirementGraph',
+              sourceNodeId: node.id,
+            ),
           ),
         );
       }

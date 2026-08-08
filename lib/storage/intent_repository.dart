@@ -149,7 +149,10 @@ class IntentRepository {
   static List<IntentRecord> _decode(String? raw) {
     if (raw == null || raw.isEmpty) return [];
     final List<dynamic> jsonList = jsonDecode(raw);
-    return [for (final j in jsonList) IntentRecord.fromJson(j as Map<String, dynamic>)];
+    return [
+      for (final j in jsonList)
+        IntentRecord.fromJson(j as Map<String, dynamic>),
+    ];
   }
 
   static String _encode(List<IntentRecord> records) =>
@@ -161,12 +164,16 @@ class IntentRepository {
     final evaluation = retention.evaluate(
       domain: LifecycleDomain.intents,
       candidates: [
-        for (final r in records) LifecycleCandidate(id: r.id, timestamp: r.createdAt),
+        for (final r in records)
+          LifecycleCandidate(id: r.id, timestamp: r.createdAt),
       ],
     );
     if (!evaluation.reclaimsAnything) return records;
     final reclaimed = evaluation.reclaimedIds.toSet();
-    return [for (final r in records) if (!reclaimed.contains(r.id)) r];
+    return [
+      for (final r in records)
+        if (!reclaimed.contains(r.id)) r,
+    ];
   }
 
   /// Update the status of an intent record.

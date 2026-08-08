@@ -11,7 +11,11 @@ class SoftwareNode {
   final SoftwareNodeKind kind;
   final String label;
 
-  const SoftwareNode({required this.identity, required this.kind, required this.label});
+  const SoftwareNode({
+    required this.identity,
+    required this.kind,
+    required this.label,
+  });
 
   String get id => identity.value;
 }
@@ -22,5 +26,10 @@ class SoftwareEdge {
   final SoftwareRelationshipKind kind;
   final SoftwareEvidence evidence;
 
-  const SoftwareEdge({required this.fromId, required this.toId, required this.kind, required this.evidence});
+  const SoftwareEdge({
+    required this.fromId,
+    required this.toId,
+    required this.kind,
+    required this.evidence,
+  });
 }
