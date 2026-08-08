@@ -138,6 +138,35 @@ invariants.
 
 ---
 
+---
+
+## 10. G-40 SEVERITY ESCALATION — measured during R59's own deliverable build
+
+While generating validation evidence I ran `flutter analyze`, the analyze gate,
+the certification suite and the full suite in rapid succession, with a `dart`
+process still alive from the previous command.
+
+Result: **2,041 passed, 27 FAILED** — 79 `database is locked` occurrences and
+59 `SqfliteFfiException`s.
+
+A clean re-run with no concurrent process: **2,068 passed, 0 failed.**
+
+**This is not a code regression.** It is G-40 under contention, and it is far
+worse than the ~2–3 failures per 11 runs measured in isolation. The mechanism is
+unchanged — every test building `AppComposition.production()` opens the same
+default `anything_experiences.db` — but the failure rate is a function of
+concurrent database access, not a fixed probability.
+
+**Consequence for CI, stated plainly.** IS-R58 made CI run the suite. CI steps
+are sequential, so this exact contention should not occur there — but the
+`flutter test --coverage` step runs the same suite a second time after the
+certification and milestone-suite steps, and any overlap or shared runner load
+makes red builds likely.
+
+**This raises G-40 from MEDIUM to the highest-priority remaining item**, ahead
+of the parallel-application decision: a gate that is intermittently red trains
+everyone to ignore it, which would undo IS-R58 entirely.
+
 ## 9. RECOMMENDATION FOR IS-R60
 
 ### Resolve the parallel v1 application (G-50)
@@ -161,8 +190,12 @@ The question is whether it is **intended**:
 product intent question, and R59 states plainly that it cannot be established
 from the repository which of the two is correct.
 
-**Also worth doing first, cheaply:** G-40. It recurred twice in R59 and it is
-the one thing that will make CI red now that CI actually runs the suite.
+**DO G-40 FIRST.** Section 10 measured it at 27 failures under contention, not
+2–3. It is now the highest-priority item in the repository: CI runs the suite as
+of R58, and an intermittently red gate trains everyone to ignore it — which
+would undo IS-R58 entirely. The fix is known and small: an injectable database
+name on `AppComposition.production()`, or per-test databases in widget suites,
+exactly as every R53–R57 suite already does.
 
 **Explicitly rejected for R60:** deleting the two pinned DEAD files without
 type-aware analysis; consolidating the pinned duplicate types (public API churn,
