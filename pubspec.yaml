@@ -53,6 +53,11 @@ dependencies:
   shared_preferences: ^2.3.4
   speech_to_text: ^7.4.0
   crypto: ^3.0.3
+  # IS-P05: the About screen must show the real version. Reading it from the
+  # running package rather than hardcoding it is the only way the number cannot
+  # disagree with what Play shows -- and version drift in prose is a problem
+  # this repository has hit in four consecutive audits.
+  package_info_plus: ^8.0.0
 
 dev_dependencies:
   flutter_test:

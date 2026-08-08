@@ -127,6 +127,23 @@ class ActivityRepository {
   Future<List<ActivityEvent>> list({int limit = 50}) async =>
       _decode(await store.read(_storageKey)).take(limit).toList();
 
+  /// Remove a single event (IS-P05 finding 14).
+  ///
+  /// Additive. This repository already owned `record`, `list` and `clearAll`;
+  /// dismissing one entry belongs here too, so the storage key stays private
+  /// and this stays the only writer of it.
+  Future<void> remove(String eventId) =>
+      store.update<void>(_storageKey, (current) {
+        final retained = [
+          for (final e in _decode(current))
+            if (e.id != eventId) e,
+        ];
+        return (
+          value: jsonEncode([for (final e in retained) e.toJson()]),
+          result: null,
+        );
+      });
+
   /// Clear all activity.
   Future<void> clearAll() => store.clear(_storageKey);
 }

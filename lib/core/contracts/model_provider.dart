@@ -179,6 +179,35 @@ class ProviderConfig {
     required this.updatedAt,
   });
 
+  /// IS-P05: additive serialisation so provider configuration can be
+  /// PERSISTED. Before this, `AnythingProviderRegistry` held configs in a
+  /// plain in-memory Map, so a configured provider vanished on every app
+  /// restart -- which is a large part of why the AI provider never appeared
+  /// to stay configured.
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'providerType': providerType,
+    'displayName': displayName,
+    'endpoint': endpoint,
+    'preferredModel': preferredModel,
+    'isDefault': isDefault,
+    'isConfigured': isConfigured,
+    'createdAt': createdAt.toIso8601String(),
+    'updatedAt': updatedAt.toIso8601String(),
+  };
+
+  factory ProviderConfig.fromJson(Map<String, dynamic> json) => ProviderConfig(
+    id: json['id'] as String,
+    providerType: json['providerType'] as String,
+    displayName: json['displayName'] as String,
+    endpoint: json['endpoint'] as String?,
+    preferredModel: json['preferredModel'] as String?,
+    isDefault: json['isDefault'] == true,
+    isConfigured: json['isConfigured'] == true,
+    createdAt: DateTime.parse(json['createdAt'] as String),
+    updatedAt: DateTime.parse(json['updatedAt'] as String),
+  );
+
   ProviderConfig copyWith({
     String? id,
     String? providerType,

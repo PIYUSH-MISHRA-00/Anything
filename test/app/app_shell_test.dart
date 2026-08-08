@@ -1,8 +1,10 @@
 /// Tests for application shell and navigation.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:anything/app/app.dart';
+import 'package:anything/features/onboarding/onboarding_screen.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -11,6 +13,16 @@ void main() {
   setUpAll(() {
     sqfliteFfiInit();
     databaseFactory = databaseFactoryFfi;
+  });
+
+  // IS-P05: first launch now shows onboarding (finding 11), so `AnythingApp`
+  // no longer goes straight to the shell. These tests exercise the RETURNING
+  // user, which was always their implicit subject -- now stated explicitly
+  // rather than relying on onboarding not existing.
+  setUp(() {
+    SharedPreferences.setMockInitialValues({
+      OnboardingState.storageKey: 'true',
+    });
   });
 
   group('AnythingApp', () {

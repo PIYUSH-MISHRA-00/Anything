@@ -10,10 +10,15 @@ import 'package:anything/core/contracts/model_provider.dart';
 import 'package:anything/design_system/components/components.dart';
 import 'package:anything/design_system/tokens/spacing.dart';
 import 'package:anything/services/provider_registry.dart';
+import '../../app/app_composition.dart';
 
 /// AI Provider preferences screen.
 class ProviderPreferencesScreen extends StatefulWidget {
-  const ProviderPreferencesScreen({super.key});
+  /// Injectable for tests; production uses the composition root's single
+  /// registry so configuration is shared with the rest of the app.
+  final AnythingProviderRegistry? registry;
+
+  const ProviderPreferencesScreen({super.key, this.registry});
 
   @override
   State<ProviderPreferencesScreen> createState() =>
@@ -28,7 +33,11 @@ class _ProviderPreferencesScreenState extends State<ProviderPreferencesScreen> {
   @override
   void initState() {
     super.initState();
-    _registry = AnythingProviderRegistry();
+    // IS-P05: was `AnythingProviderRegistry()` -- a PRIVATE registry.
+    // Anything saved here went into a throwaway instance the rest of the app
+    // never saw, so configuring a provider had no effect on generation. It now
+    // uses the ONE registry from the composition root.
+    _registry = widget.registry ?? AppComposition.production().providerRegistry;
     _loadConfigs();
   }
 
@@ -236,14 +245,156 @@ class _ProviderPreferencesScreenState extends State<ProviderPreferencesScreen> {
                   ...(_configs.map((config) => _buildProviderCard(config))),
                   const SizedBox(height: 16),
                   AnythingButton(
-                    label: 'Add Provider',
+                    label: 'Add Groq',
                     icon: Icons.add,
                     onPressed: _addGroqProvider,
                   ),
                 ],
+
+                // IS-P05 finding 4. The screen offered only Groq with no
+                // explanation, which reads as an unfinished list rather than a
+                // deliberate one. These are named as NOT AVAILABLE with the
+                // real reason -- each needs an adapter implementing
+                // `ModelProvider`, and none exists yet.
+                const SizedBox(height: 32),
+                Text(
+                  'NOT AVAILABLE YET',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.8,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                ..._unavailable.map(
+                  (p) => _buildUnavailableCard(p, colorScheme),
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: colorScheme.surfaceContainerHigh,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    'Anything talks to a provider through a small adapter. '
+                    'Only Groq has one today, so it is the only key that can '
+                    'do anything. Adding another is a contained piece of work '
+                    'and contributions are welcome.',
+                    style: TextStyle(
+                      fontSize: 13,
+                      height: 1.5,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
               ],
             ),
     );
+  }
+
+  /// IS-P05 finding 4 — providers a user will look for and cannot use yet.
+  /// Each carries the real reason, so the list reads as a deliberate state
+  /// rather than an unfinished one.
+  static const List<({String name, String why})> _unavailable = [
+    (name: 'OpenAI', why: 'No adapter implemented yet'),
+    (name: 'Anthropic', why: 'No adapter implemented yet'),
+    (name: 'Google Gemini', why: 'No adapter implemented yet'),
+    (name: 'Ollama (on-device)', why: 'Needs local model support'),
+  ];
+
+  Widget _buildUnavailableCard(
+    ({String name, String why}) provider,
+    ColorScheme colorScheme,
+  ) {
+    return Semantics(
+      // Announced as disabled, so a screen-reader user is told the same thing
+      // the greying-out tells a sighted one.
+      enabled: false,
+      label: '${provider.name}, not available. ${provider.why}',
+      child: ExcludeSemantics(
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 8),
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: colorScheme.surfaceContainerHigh.withAlpha(102),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.lock_outline,
+                size: 18,
+                color: colorScheme.onSurfaceVariant.withAlpha(153),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      provider.name,
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      provider.why,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: colorScheme.onSurfaceVariant.withAlpha(179),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// IS-P05 finding 6 — removing a provider.
+  ///
+  /// Every configuration is removable: none is architecturally required, and
+  /// the app degrades honestly to `ProviderRequired` with none configured.
+  /// Deleting also removes the stored API key, so no orphaned credential is
+  /// left in the keystore.
+  Future<void> _deleteConfig(ProviderConfig config) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text('Remove ${config.displayName}?'),
+        content: const Text(
+          'The stored API key is deleted from this device as well. Apps you '
+          'have already created are not affected, but you will not be able to '
+          'create new ones until a provider is configured again.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Remove', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    await _registry.deleteConfig(config.id);
+    await _loadConfigs();
+    if (!mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('${config.displayName} removed')));
   }
 
   Widget _buildProviderCard(ProviderConfig config) {
@@ -306,6 +457,16 @@ class _ProviderPreferencesScreenState extends State<ProviderPreferencesScreen> {
               ),
             ),
           const SizedBox(width: 8),
+          // IS-P05 finding 6: a remove action, with confirmation.
+          IconButton(
+            onPressed: () => _deleteConfig(config),
+            tooltip: 'Remove ${config.displayName}',
+            icon: Icon(
+              Icons.delete_outline,
+              color: colorScheme.onSurfaceVariant,
+              size: 20,
+            ),
+          ),
           IconButton(
             onPressed: () => _showConfigureDialog(config),
             // ACCESSIBILITY (IS-P03 Phase 5). An icon-only control with no

@@ -10,12 +10,25 @@ import '../../design_system/components/components.dart';
 import '../../design_system/theme/theme_provider.dart';
 import '../../design_system/tokens/spacing.dart';
 import 'provider_preferences_screen.dart';
+import 'about_screen.dart';
+import 'developer_screen.dart';
+import 'protection_screen.dart';
+import '../onboarding/onboarding_screen.dart';
 
 /// Preferences screen.
 class PreferencesScreen extends StatelessWidget {
   final AnythingThemeNotifier themeNotifier;
 
-  const PreferencesScreen({super.key, required this.themeNotifier});
+  /// Lets the Protection screen send the user to My Apps, which is where
+  /// protection is actually applied (IS-P05 finding 7). Optional, so this
+  /// screen stays usable and testable outside the shell.
+  final VoidCallback? onOpenExperiences;
+
+  const PreferencesScreen({
+    super.key,
+    required this.themeNotifier,
+    this.onOpenExperiences,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -124,7 +137,13 @@ class PreferencesScreen extends StatelessWidget {
               leading: Icons.shield,
               title: 'Kaalka Protection',
               subtitle: 'Time-based encryption',
-              onTap: () {},
+              // IS-P05 finding 7: was `onTap: () {}`.
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) =>
+                      ProtectionScreen(onOpenExperiences: onOpenExperiences),
+                ),
+              ),
             ),
           ),
         ),
@@ -152,14 +171,37 @@ class PreferencesScreen extends StatelessWidget {
                 AnythingListTile(
                   leading: Icons.info_outline,
                   title: 'About Anything',
-                  subtitle: 'Version 2.0.0',
-                  onTap: () {},
+                  // No hardcoded version here any more: AboutScreen reads it
+                  // from the running package, so the two cannot disagree.
+                  subtitle: 'Version, licence and project links',
+                  // IS-P05 finding 9: was `onTap: () {}`.
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const AboutScreen()),
+                  ),
+                ),
+                // IS-P05 finding 12 — the walkthrough is replayable. A
+                // walkthrough you can only see once is one you have to get
+                // right on the first read.
+                AnythingListTile(
+                  leading: Icons.school_outlined,
+                  title: 'Replay walkthrough',
+                  subtitle: 'See the introduction again',
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => OnboardingScreen(
+                        onFinished: () => Navigator.of(context).pop(),
+                      ),
+                    ),
+                  ),
                 ),
                 AnythingListTile(
                   leading: Icons.code,
                   title: 'Developer Mode',
                   subtitle: 'Technical diagnostics',
-                  onTap: () {},
+                  // IS-P05 finding 10: was `onTap: () {}`.
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const DeveloperScreen()),
+                  ),
                   showDivider: false,
                 ),
               ],

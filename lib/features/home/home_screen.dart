@@ -41,6 +41,10 @@ class HomeScreen extends StatefulWidget {
   /// own single shared instance.
   final AppComposition? composition;
 
+  /// IS-P05 finding 1 — lets the "Your data" sheet route to Settings.
+  /// Optional, so every existing caller and test is unaffected.
+  final VoidCallback? onOpenSettings;
+
   /// Optional, additive workspace manager (Implementation Specification
   /// IS-R32) — `null` by default, so every existing caller/test that
   /// constructs `HomeScreen()` without one keeps identical behavior. Stored
@@ -140,6 +144,7 @@ class HomeScreen extends StatefulWidget {
   const HomeScreen({
     super.key,
     this.composition,
+    this.onOpenSettings,
     this.workspaceManager,
     this.intentRouter,
     this.workspaceRuntime,
@@ -628,6 +633,83 @@ class HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  /// IS-P05 finding 1 — what the profile affordance actually opens.
+  ///
+  /// Deliberately NOT an account screen: Anything is local-first and has no
+  /// accounts, so a sign-in surface would promise something that does not
+  /// exist. This answers the question the icon actually raises.
+  Future<void> _showDataSheet() async {
+    final experiences = await _repository.listAll();
+    if (!mounted) return;
+    final colorScheme = Theme.of(context).colorScheme;
+
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (sheetContext) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Your data',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                  color: colorScheme.onSurface,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Anything has no account and no server. Everything below is '
+                'on this device only.',
+                style: TextStyle(
+                  fontSize: 14,
+                  height: 1.4,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 20),
+              _DataRow(
+                icon: Icons.auto_awesome,
+                label: 'Apps you have created',
+                value: '${experiences.length}',
+              ),
+              _DataRow(
+                icon: Icons.vpn_key_outlined,
+                label: 'AI provider key',
+                value: 'Stored in the device keystore',
+              ),
+              _DataRow(
+                icon: Icons.cloud_off_outlined,
+                label: 'Uploaded anywhere',
+                value: 'Nothing',
+              ),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        Navigator.pop(sheetContext);
+                        widget.onOpenSettings?.call();
+                      },
+                      icon: const Icon(Icons.tune),
+                      label: const Text('Settings'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -676,17 +758,36 @@ class HomeScreenState extends State<HomeScreen> {
                         entryPipeline: _entryPipeline,
                       ),
                     ),
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
+                    // IS-P05 finding 1. THE ROOT CAUSE: this was a bare
+                    // Container with an Icon and NO onTap. It was never a
+                    // button -- it was decoration that looked like one, which
+                    // is why manual testing found it opened nothing. It was
+                    // also invisible to a screen reader.
+                    //
+                    // Anything has no accounts and never will (local-first),
+                    // so there is no profile to show. What a person actually
+                    // wants from this affordance is "what does this app know
+                    // about me, and where is it" -- so it opens a summary of
+                    // exactly that.
+                    Semantics(
+                      button: true,
+                      label: 'Your data',
+                      child: Material(
                         color: colorScheme.surfaceContainerHigh,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        Icons.person,
-                        size: 20,
-                        color: colorScheme.onSurfaceVariant,
+                        shape: const CircleBorder(),
+                        clipBehavior: Clip.antiAlias,
+                        child: InkWell(
+                          onTap: _showDataSheet,
+                          child: SizedBox(
+                            width: 44,
+                            height: 44,
+                            child: Icon(
+                              Icons.person_outline,
+                              size: 20,
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                   ],
@@ -926,6 +1027,45 @@ class HomeScreenState extends State<HomeScreen> {
             ),
           ),
           const SizedBox(width: 8),
+        ],
+      ),
+    );
+  }
+}
+
+/// One line in the "Your data" sheet (IS-P05 finding 1).
+class _DataRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+
+  const _DataRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: Row(
+        children: [
+          ExcludeSemantics(
+            child: Icon(icon, size: 20, color: colorScheme.onSurfaceVariant),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(fontSize: 14, color: colorScheme.onSurface),
+            ),
+          ),
+          Text(
+            value,
+            style: TextStyle(fontSize: 14, color: colorScheme.onSurfaceVariant),
+          ),
         ],
       ),
     );

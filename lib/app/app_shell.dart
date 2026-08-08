@@ -34,7 +34,11 @@ class _AnythingAppShellState extends State<AnythingAppShell> {
   final AppComposition _composition = AppComposition.production();
 
   late final List<Widget Function()> _screenBuilders = [
-    () => HomeScreen(key: _homeKey, composition: _composition),
+    () => HomeScreen(
+      key: _homeKey,
+      composition: _composition,
+      onOpenSettings: () => setState(() => _currentIndex = 3),
+    ),
     () => ExperiencesScreen(
       composition: _composition,
       onCreateRequested: () {
@@ -43,7 +47,12 @@ class _AnythingAppShellState extends State<AnythingAppShell> {
       },
     ),
     () => const ActivityScreen(),
-    () => PreferencesScreen(themeNotifier: widget.themeNotifier),
+    () => PreferencesScreen(
+      themeNotifier: widget.themeNotifier,
+      // IS-P05 finding 7: the Protection screen explains that protection is
+      // applied per-Experience, and sends the user to where that happens.
+      onOpenExperiences: () => setState(() => _currentIndex = 1),
+    ),
   ];
 
   @override
@@ -51,13 +60,31 @@ class _AnythingAppShellState extends State<AnythingAppShell> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
+    // EDGE-TO-EDGE (IS-P05 finding 2). Android 15 (API 35) enforces
+    // edge-to-edge for every app targeting it, so the system bars are drawn
+    // OVER the app whether or not the app is ready for it. Making the bars
+    // transparent and handling insets ourselves is the only correct response;
+    // the alternative is the floating nav pill sitting under the gesture bar,
+    // which is exactly what manual testing reported.
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: theme.brightness == Brightness.dark
-          ? SystemUiOverlayStyle.light
-          : SystemUiOverlayStyle.dark,
+      value: SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        systemNavigationBarColor: Colors.transparent,
+        systemNavigationBarDividerColor: Colors.transparent,
+        statusBarIconBrightness: theme.brightness == Brightness.dark
+            ? Brightness.light
+            : Brightness.dark,
+        systemNavigationBarIconBrightness: theme.brightness == Brightness.dark
+            ? Brightness.light
+            : Brightness.dark,
+      ),
       child: Scaffold(
         backgroundColor: colorScheme.surface,
+        // `false` at the bottom: the nav pill below owns that inset and pads
+        // itself. Letting SafeArea consume it too would double-count and leave
+        // a dead band above the pill.
         body: SafeArea(
+          bottom: false,
           child: IndexedStack(
             index: _currentIndex,
             children: _screenBuilders.map((b) => b()).toList(),
@@ -80,8 +107,23 @@ class _AnythingAppShellState extends State<AnythingAppShell> {
       _NavItem(icon: Icons.tune, label: 'Settings', index: 3),
     ];
 
+    // THE FIX for the reported overlap. The padding was a hardcoded
+    // `fromLTRB(16, 0, 16, 32)`, which assumes every device reserves exactly
+    // 32 logical pixels at the bottom. Nothing does:
+    //
+    //   gesture navigation  ~24 dp handle
+    //   3-button navigation ~48 dp bar
+    //   tablets / foldables vary again, and change on fold
+    //
+    // `viewPadding.bottom` is the value the system actually reserves, so the
+    // pill clears the bar on every one of them. The 12 dp is breathing room
+    // between the pill and the bar, and the `max` keeps a sensible gap on
+    // devices that report no inset at all (most emulators, some tablets).
+    final systemInset = MediaQuery.viewPaddingOf(context).bottom;
+    final bottomPadding = systemInset > 0 ? systemInset + 12 : 24.0;
+
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
+      padding: EdgeInsets.fromLTRB(16, 0, 16, bottomPadding),
       child: Container(
         height: 64,
         decoration: BoxDecoration(

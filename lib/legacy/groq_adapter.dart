@@ -3,6 +3,7 @@ library;
 
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:http/http.dart' as http;
 
@@ -145,13 +146,31 @@ class GroqModelProvider implements ModelProvider {
   }
 
   @override
+  /// IS-P05 finding 5 — WHY "Test Connection" APPEARED NOT TO VALIDATE.
+  ///
+  /// This method used to end in `catch (_) { return false; }`, so a rejected
+  /// key, an expired key, a rate limit, a DNS failure, a timeout and an
+  /// aeroplane-mode phone ALL produced the same bare `false`. The registry
+  /// then rendered one message -- "Invalid API key or configuration" -- which
+  /// was frequently untrue and never actionable. The validation worked; the
+  /// reporting made it useless.
+  ///
+  /// The contract still returns `bool`, so nothing above changes shape.
+  /// `false` now means exactly one thing: THE KEY WAS REJECTED. Everything
+  /// else THROWS, and `AnythingProviderRegistry.testProvider` turns the
+  /// exception into a sentence a person can act on.
   Future<bool> testConnection(String apiKey) async {
+    if (apiKey.trim().isEmpty) {
+      throw const FormatException('No API key was entered.');
+    }
+
+    final http.Response response;
     try {
-      final response = await http
+      response = await http
           .post(
             Uri.parse(_GroqConfig.chatEndpoint),
             headers: {
-              'Authorization': 'Bearer $apiKey',
+              'Authorization': 'Bearer ${apiKey.trim()}',
               'Content-Type': 'application/json',
             },
             body: jsonEncode({
@@ -162,9 +181,27 @@ class GroqModelProvider implements ModelProvider {
             }),
           )
           .timeout(const Duration(seconds: 15));
-      return response.statusCode == 200;
-    } catch (_) {
-      return false;
+    } on TimeoutException {
+      throw const SocketException(
+        'The provider did not respond within 15 seconds.',
+      );
+    }
+
+    switch (response.statusCode) {
+      case 200:
+        return true;
+      // The only case that genuinely means "this key is not accepted".
+      case 401:
+      case 403:
+        return false;
+      case 429:
+        throw const HttpException(
+          'Rate limited by the provider. Wait a moment and try again.',
+        );
+      default:
+        throw HttpException(
+          'The provider returned HTTP ${response.statusCode}.',
+        );
     }
   }
 

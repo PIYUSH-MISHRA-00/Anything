@@ -58,6 +58,53 @@ class _ActivityScreenState extends State<ActivityScreen> {
     }
   }
 
+  /// IS-P05 finding 14 — remove one entry.
+  ///
+  /// Delegates to `ActivityRepository.remove`, so the storage key stays
+  /// private to the repository that owns it.
+  Future<void> _dismissEvent(ActivityEvent event) async {
+    await _repository.remove(event.id);
+    if (!mounted) return;
+    setState(
+      () => _events = [
+        for (final e in _events)
+          if (e.id != event.id) e,
+      ],
+    );
+  }
+
+  /// IS-P05 finding 15 — destructive, therefore confirmed.
+  Future<void> _confirmClearAll() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Clear all activity?'),
+        content: Text(
+          'This removes all ${_events.length} entries from this device. '
+          'Your apps are not affected — only the history of what happened.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Clear all', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    await _repository.clearAll();
+    await _loadEvents();
+    if (!mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Activity cleared')));
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -72,14 +119,28 @@ class _ActivityScreenState extends State<ActivityScreen> {
               AnythingPadding.regular,
               0,
             ),
-            child: Text(
-              'Activity',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.w600,
-                color: colorScheme.onSurface,
-                letterSpacing: -0.01,
-              ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Activity',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w600,
+                    color: colorScheme.onSurface,
+                    letterSpacing: -0.01,
+                  ),
+                ),
+                // IS-P05 finding 15. History accumulated with no way to clear
+                // it. `ActivityRepository.clearAll()` already existed and had
+                // no caller -- this is wiring, not new machinery.
+                if (_events.isNotEmpty)
+                  TextButton.icon(
+                    onPressed: _confirmClearAll,
+                    icon: const Icon(Icons.delete_sweep_outlined, size: 18),
+                    label: const Text('Clear all'),
+                  ),
+              ],
             ),
           ),
         ),
@@ -104,18 +165,31 @@ class _ActivityScreenState extends State<ActivityScreen> {
             sliver: SliverList(
               delegate: SliverChildBuilderDelegate((context, index) {
                 final event = _events[index];
-                return ListTile(
-                  leading: Icon(
-                    _getEventIcon(event.type),
-                    color: colorScheme.primary,
-                    size: 20,
+                // IS-P05 finding 14 — dismiss a single entry by swiping.
+                // Removal is persisted by rewriting the retained set through
+                // the same repository that owns the list.
+                return Dismissible(
+                  key: ValueKey(event.id),
+                  direction: DismissDirection.endToStart,
+                  background: Container(
+                    alignment: Alignment.centerRight,
+                    padding: const EdgeInsets.only(right: 24),
+                    child: const Icon(Icons.delete_outline, color: Colors.red),
                   ),
-                  title: Text(event.message),
-                  subtitle: Text(
-                    '${_formatTime(event.timestamp)}',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: colorScheme.onSurfaceVariant,
+                  onDismissed: (_) => _dismissEvent(event),
+                  child: ListTile(
+                    leading: Icon(
+                      _getEventIcon(event.type),
+                      color: colorScheme.primary,
+                      size: 20,
+                    ),
+                    title: Text(event.message),
+                    subtitle: Text(
+                      _formatTime(event.timestamp),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ),
                 );
