@@ -68,15 +68,29 @@ library;
 
 import 'package:flutter/material.dart';
 
+import 'experience_orchestrator.dart';
 import 'workspace_event_publisher.dart';
 import 'workspace_scheduling_engine.dart';
 
 class ExperienceActivationManager {
   final WorkspaceSchedulingEngine scheduler;
   final WorkspaceEventPublisher? eventPublisher;
+
+  /// The ONE orchestrator (IS-R62). Additive and defaulted, so every existing
+  /// caller keeps its exact constructor and its exact behaviour: the default
+  /// wraps this manager's own scheduler, and a `userInitiated` request for a
+  /// non-null session resolves to a foreground schedule — the same single
+  /// `scheduleForeground()` call this made directly before R62.
+  final ExperienceOrchestrator orchestrator;
+
   final Map<String, Route<dynamic>> _activeRoutes = {};
 
-  ExperienceActivationManager({required this.scheduler, this.eventPublisher});
+  ExperienceActivationManager({
+    required this.scheduler,
+    this.eventPublisher,
+    ExperienceOrchestrator? orchestrator,
+  }) : orchestrator =
+           orchestrator ?? ExperienceOrchestrator(scheduler: scheduler);
 
   /// "Track active experience routes" / "Resolve existing routes" — real,
   /// on-demand lookup; `null` when no route is currently tracked for
@@ -102,7 +116,12 @@ class ExperienceActivationManager {
       return navigator.push(createRoute());
     }
 
-    await scheduler.scheduleForeground(sessionId);
+    await orchestrator.orchestrate(
+      ExecutionRequest(
+        trigger: ExecutionTrigger.userInitiated,
+        sessionId: sessionId,
+      ),
+    );
 
     final existing = _activeRoutes[sessionId];
     if (existing != null) {

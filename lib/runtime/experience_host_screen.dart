@@ -5,6 +5,7 @@ import 'dart:async' show unawaited;
 import 'package:flutter/material.dart';
 
 import '../app/autonomous_workspace_runtime.dart';
+import '../app/experience_orchestrator.dart';
 import '../app/experience_modification_coordinator.dart';
 import '../app/experience_workspace_manager.dart';
 import '../app/workspace_event_publisher.dart';
@@ -137,6 +138,15 @@ class ExperienceHostScreen extends StatefulWidget {
   /// A harmless no-op when omitted.
   final WorkspaceSchedulingEngine? scheduler;
 
+  /// The ONE orchestrator (IS-R62). Additive and defaulted: before R62
+  /// `_notifyScheduler()` reached `scheduler.scheduleActiveTransition()`
+  /// DIRECTLY — the second of the two bypasses the Phase 1 audit found, and
+  /// the only lifecycle-initiated execution trigger in the repository. It now
+  /// states a `lifecycle` execution request; with no contract that resolves to
+  /// the background policy, which forwards the same single
+  /// `scheduleActiveTransition()` call as before.
+  final ExperienceOrchestrator? orchestrator;
+
   /// The shared `ActivityRepository` (IS-R57).
   ///
   /// This screen built its own before R57 — one of nine sites, and one of
@@ -163,6 +173,7 @@ class ExperienceHostScreen extends StatefulWidget {
     this.runtimeController,
     this.runtimeSupervisor,
     this.scheduler,
+    this.orchestrator,
     this.activity,
   });
 
@@ -396,7 +407,14 @@ class _ExperienceHostScreenState extends State<ExperienceHostScreen>
   /// "this screen just gained focus" — never a fabricated route-regain
   /// signal (see [WorkspaceSchedulingEngine]'s own doc comment).
   void _notifyScheduler() {
-    unawaited(widget.scheduler?.scheduleActiveTransition());
+    final orchestrator =
+        widget.orchestrator ??
+        ExperienceOrchestrator(scheduler: widget.scheduler);
+    unawaited(
+      orchestrator.orchestrate(
+        const ExecutionRequest(trigger: ExecutionTrigger.lifecycle),
+      ),
+    );
   }
 
   /// Real Background Pause / Foreground Resume policy — reuses the SAME

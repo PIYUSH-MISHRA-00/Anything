@@ -34,6 +34,7 @@ import 'package:flutter/material.dart';
 
 import '../../app/autonomous_workspace_runtime.dart';
 import '../../app/experience_entry_pipeline.dart';
+import '../../app/experience_orchestrator.dart';
 import '../../app/workspace_scheduling_engine.dart';
 
 /// Opens the Workspace Experience Switcher as a modal bottom sheet — the
@@ -65,10 +66,19 @@ class WorkspaceSwitcherSheet extends StatefulWidget {
   /// real, already-running controller for a selected background session).
   final ExperienceEntryPipeline entryPipeline;
 
+  /// The ONE orchestrator (IS-R62). Additive and defaulted: before R62 the
+  /// no-live-runtime branch below reached `scheduler.scheduleForeground()`
+  /// DIRECTLY, bypassing the R45 entry pipeline entirely — one of the two
+  /// bypasses the Phase 1 audit found. It now states an execution request and
+  /// lets the orchestrator forward it, which for a `userInitiated` trigger
+  /// with a real session is the same single scheduler call as before.
+  final ExperienceOrchestrator? orchestrator;
+
   const WorkspaceSwitcherSheet({
     super.key,
     required this.scheduler,
     required this.entryPipeline,
+    this.orchestrator,
   });
 
   @override
@@ -102,7 +112,14 @@ class _WorkspaceSwitcherSheetState extends State<WorkspaceSwitcherSheet> {
     final package = session.runtimeState?.package;
 
     if (controller == null || package == null) {
-      await widget.scheduler.scheduleForeground(sessionId);
+      await (widget.orchestrator ??
+              ExperienceOrchestrator(scheduler: widget.scheduler))
+          .orchestrate(
+            ExecutionRequest(
+              trigger: ExecutionTrigger.workspaceSwitch,
+              sessionId: sessionId,
+            ),
+          );
       if (!mounted) return;
       Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
