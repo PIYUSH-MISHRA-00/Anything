@@ -13,7 +13,13 @@ export 'kernel.dart';
 // Nothing implemented it and nothing used any of its symbols; this barrel
 // re-export was its only remaining reference.
 export 'model_provider.dart';
-export 'knowledge_provider.dart';
+// `knowledge_provider.dart` was removed by IS-R58 Phase 7 — a dead abstract
+// `KnowledgeProvider` contract with ZERO direct importers whose name collided
+// with the live `lib/capabilities/builtin/knowledge_capability.dart`
+// declaration. Both real implementors — `KnowledgeAcquisitionProviderAdapter`
+// and `FakeKnowledgeProvider` — resolve the capability version. This barrel
+// re-export was its only remaining reference, exactly as it had been for
+// `runtime.dart` (IS-R47) and `repository.dart` (IS-R57). Third instance.
 export 'protection_provider.dart';
 
 // `repository.dart` was removed by IS-R57 Phase 4 — four abstract contracts

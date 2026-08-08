@@ -437,48 +437,48 @@ const Map<String, List<String>> knownDuplicateDeclarations =
 const Map<String, String> pinnedDuplicateTypes = <String, String>{
   'AnythingPadding':
       'design_system/tokens/layout.dart and spacing.dart. SAME package, SAME '
-          'concern — the strongest duplicate-consolidation candidate in this '
-          'table. Pinned rather than merged because merging is a design-system '
-          'change with no proven defect, and R58 is forbidden from refactoring '
-          'unrelated systems. Recorded as gap G-45.',
+      'concern — the strongest duplicate-consolidation candidate in this '
+      'table. Pinned rather than merged because merging is a design-system '
+      'change with no proven defect, and R58 is forbidden from refactoring '
+      'unrelated systems. Recorded as gap G-45.',
   'CreationFailed':
       'app/creation_coordinator.dart and creation/creation_engine.dart. Two '
-          'distinct result hierarchies at two layers — the coordinator reports '
-          'to the UI, the engine reports to the coordinator. Neither extends '
-          'the other and no file imports both.',
+      'distinct result hierarchies at two layers — the coordinator reports '
+      'to the UI, the engine reports to the coordinator. Neither extends '
+      'the other and no file imports both.',
   'CreationResult':
       'the base of the two CreationFailed hierarchies above; same rationale.',
   'DependencyGraph':
       'feature_discovery/dependency_types.dart expands a FEATURE CANDIDATE '
-          'into capability/permission/storage primitives during design; '
-          'software_cognition/architecture_model.dart models an analysed '
-          'package. Different inputs, outputs and lifecycle stage — the same '
-          'distinction R54 pinned for the dependency planners.',
+      'into capability/permission/storage primitives during design; '
+      'software_cognition/architecture_model.dart models an analysed '
+      'package. Different inputs, outputs and lifecycle stage — the same '
+      'distinction R54 pinned for the dependency planners.',
   'ExecutionPlan':
       'core/contracts/kernel.dart (61 importers) and '
-          'kernel/planning/execution_plan.dart (7). BOTH LIVE. Pinned rather '
-          'than merged because the contract version is imported by a third of '
-          'lib/ and unifying them is a Kernel change, not a gate change. '
-          'Recorded as gap G-44.',
+      'kernel/planning/execution_plan.dart (7). BOTH LIVE. Pinned rather '
+      'than merged because the contract version is imported by a third of '
+      'lib/ and unifying them is a Kernel change, not a gate change. '
+      'Recorded as gap G-44.',
   'ExecutionStep': 'same two files and the same rationale as ExecutionPlan.',
   'ExperienceFingerprint':
       'app/experience_provenance.dart is R52 canonical provenance — a package '
-          'digest used by distribution and creation. '
-          'runtime_intelligence/experience_relationship_graph.dart is a '
-          'behavioural fingerprint used only to infer relationships between '
-          'Experiences, and never leaves that subsystem. Renaming R52 canonical '
-          'type would be a public API change for no proven defect.',
+      'digest used by distribution and creation. '
+      'runtime_intelligence/experience_relationship_graph.dart is a '
+      'behavioural fingerprint used only to infer relationships between '
+      'Experiences, and never leaves that subsystem. Renaming R52 canonical '
+      'type would be a public API change for no proven defect.',
   'ProtectionMetadata':
       'core/contracts/experience.dart and creation/experience_package.dart. '
-          'The contract version is reachable only through the contracts barrel '
-          '(its file has three importers, all inside contracts/) and is a '
-          'SUSPECTED dead duplicate of the same family as the contracts R47 and '
-          'R57 deleted. Pinned rather than deleted because "suspected" is not '
-          '"proven" — R58 deletes only what it can prove. Recorded as G-46.',
+      'The contract version is reachable only through the contracts barrel '
+      '(its file has three importers, all inside contracts/) and is a '
+      'SUSPECTED dead duplicate of the same family as the contracts R47 and '
+      'R57 deleted. Pinned rather than deleted because "suspected" is not '
+      '"proven" — R58 deletes only what it can prove. Recorded as G-46.',
   'SemanticEntity':
       'synthesis/application_reasoner.dart is a reasoning-time entity; '
-          'world_model/semantic_entity.dart is a persisted graph node. '
-          'Different lifetimes, different subjects.',
+      'world_model/semantic_entity.dart is a persisted graph node. '
+      'Different lifetimes, different subjects.',
 
   // ── Found by I-83 on its FIRST RUN, missed by the post-R57 audit ────────
   // The audit's regex matched only `class` at line start; it did not match
@@ -486,32 +486,24 @@ const Map<String, String> pinnedDuplicateTypes = <String, String>{
   // four more collisions. Recorded here rather than quietly folded in.
   'CapabilityCategory':
       'core/contracts/capability.dart and '
-          'capabilities/registry/capability_descriptor.dart. Both live enums. '
-          'The contract version belongs to the same barrel family R47 and R57 '
-          'each deleted a member of, so it is a consolidation candidate — but '
-          '"candidate" is not "proven dead", and R58 deletes only what it '
-          'proves. Recorded as gap G-47.',
+      'capabilities/registry/capability_descriptor.dart. Both live enums. '
+      'The contract version belongs to the same barrel family R47 and R57 '
+      'each deleted a member of, so it is a consolidation candidate — but '
+      '"candidate" is not "proven dead", and R58 deletes only what it '
+      'proves. Recorded as gap G-47.',
   'NetworkMode':
       'creation/experience_package.dart declares {none, optional, required, '
-          'conditional} — an Experience package manifest mode. '
-          'software_architect/architecture_types.dart declares {none, '
-          'restrictedHttps} — an architecture-review posture. DIFFERENT VALUE '
-          'SETS, different subjects; merging them would lose meaning on both '
-          'sides.',
+      'conditional} — an Experience package manifest mode. '
+      'software_architect/architecture_types.dart declares {none, '
+      'restrictedHttps} — an architecture-review posture. DIFFERENT VALUE '
+      'SETS, different subjects; merging them would lose meaning on both '
+      'sides.',
   'OfflineCapability':
       'kernel/specification/experience_spec.dart declares {fullyOffline, '
-          'mostlyOffline, requiresNetwork, hybrid} — a specification-time '
-          'requirement. software_architect/architecture_types.dart declares '
-          '{fullyOffline, cacheThenOnline, onlineRequired} — an architectural '
-          'strategy. DIFFERENT VALUE SETS, different subjects.',
-  'KnowledgeProvider':
-      'core/contracts/knowledge_provider.dart and '
-          'capabilities/builtin/knowledge_capability.dart. PROVEN DEAD on the '
-          'contracts side: it has zero direct importers, and BOTH implementors '
-          '(KnowledgeAcquisitionProviderAdapter and FakeKnowledgeProvider) '
-          'resolve the capability version. Pinned only so this Phase 6 commit '
-          'is independently green; IS-R58 Phase 7 DELETES the contract and '
-          'removes this pin, at which point I-83 requires the pin to be gone.',
+      'mostlyOffline, requiresNetwork, hybrid} — a specification-time '
+      'requirement. software_architect/architecture_types.dart declares '
+      '{fullyOffline, cacheThenOnline, onlineRequired} — an architectural '
+      'strategy. DIFFERENT VALUE SETS, different subjects.',
 };
 
 /// Files deleted by an architectural-debt milestone that must never come
@@ -2886,7 +2878,8 @@ final x = 1;
         expect(
           RegExp(r'BASELINE_ERRORS=0').hasMatch(gate),
           isTrue,
-          reason: 'the error baseline must be zero — errors are never acceptable',
+          reason:
+              'the error baseline must be zero — errors are never acceptable',
         );
 
         // It must never reach for the escape hatches the milestone forbids.
@@ -2944,10 +2937,11 @@ final x = 1;
           if (files.length > 1) duplicates[entry.key] = files;
         }
 
-        final unpinned = duplicates.keys
-            .where((t) => !pinnedDuplicateTypes.containsKey(t))
-            .toList()
-          ..sort();
+        final unpinned =
+            duplicates.keys
+                .where((t) => !pinnedDuplicateTypes.containsKey(t))
+                .toList()
+              ..sort();
 
         expect(
           unpinned,
