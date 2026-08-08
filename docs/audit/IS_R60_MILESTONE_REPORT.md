@@ -123,6 +123,33 @@ invariants.
 
 ---
 
+## 7b. DESKTOP DELIVERABLE VERIFICATION
+
+All six archives verified by **opening every entry**, not merely listing them —
+a corrupt entry fails on `Open()` where an enumeration would not detect it.
+
+| Archive | Entries | Openable | Integrity |
+|---|---|---|---|
+| `Anything_IS-R60_lib.zip` | 477 | 477 | **OK** |
+| `Anything_IS-R60_test.zip` | 201 | 201 | **OK** |
+| `Anything_IS-R60_docs.zip` | 166 | 166 | **OK** |
+| `Anything_IS-R60_Verification.zip` | 7 | 7 | **OK** |
+| `Anything_IS-R60_Reports.zip` | 2 | 2 | **OK** |
+| `Anything_IS-R60_Deliverables.zip` | 19 | 19 | **OK** |
+
+**Content match against the repository:** `lib/` 477 = 477, `test/` 201 = 201,
+`docs/` 166 = 166 — exact.
+
+`Desktop\Anything_IS-R60_Deliverables\` holds 19 files across `ADRs/`,
+`Certification/`, `Documentation/`, `Matrices/`, `Reports/`, `Validation/`,
+plus `EXECUTIVE_SUMMARY.md`, `REMAINING_GAP_MATRIX.md` and
+`COMMIT_BY_COMMIT_SUMMARY.txt` at the root.
+
+Validation evidence included: `analyzer_output.txt`, `analyze_gate_output.txt`
+(PASS at 0/27/43), `certification_output.txt` (97), `full_test_suite_output.txt`
+(2,085), `package_validation_tests.txt` (15), `git_status.txt` (empty),
+`commit_summary.txt`.
+
 ## 8. RECOMMENDATION FOR IS-R61
 
 ### Close G-25 — wire the codec to `RealFileService`
