@@ -276,6 +276,46 @@ class RealFileService implements FileService {
     return destination.path;
   }
 
+  /// EXPORT A TEXT PAYLOAD — Implementation Specification IS-P02 Phase 9.
+  ///
+  /// Additive. [exportFile] above copies an ALREADY-ADOPTED file belonging to
+  /// an Experience; this writes a payload an Experience does not own, which is
+  /// what exporting a `.anything` package is. Both land in the same `exports/`
+  /// area and both refuse to escape the sandbox through [_resolveInside].
+  ///
+  /// This service owns file I/O (IS-R49) and nothing else: it never learns
+  /// what a package is. `ExperiencePortability` composes it with the codec.
+  Future<File?> writeExport(String name, String contents) async {
+    final destination = await _resolveInside(p.join('exports', name));
+    if (destination == null) return null;
+    Directory(p.dirname(destination.path)).createSync(recursive: true);
+    destination.writeAsStringSync(contents);
+    return destination;
+  }
+
+  /// READ A PICKED FILE AS TEXT — Implementation Specification IS-P02 Phase 9.
+  ///
+  /// Additive, and deliberately narrow. [adoptFile] copies a picked file INTO
+  /// an Experience's own area, which is the right move for an asset an
+  /// Experience will keep. An imported package is not an asset and belongs to
+  /// no Experience yet, so adoption would create a directory for an
+  /// Experience that may never be installed.
+  ///
+  /// Returns null when the pick has expired or the file has gone. Reading is
+  /// all this does: the caller decides whether the bytes mean anything.
+  Future<String?> readPickedText(String fileId) async {
+    final picked = _pendingPicks[fileId];
+    final path = picked?.path;
+    if (path == null) return null;
+    final source = File(path);
+    if (!source.existsSync()) return null;
+    try {
+      return source.readAsStringSync();
+    } on FileSystemException {
+      return null;
+    }
+  }
+
   /// TEMPORARY FILES — scratch space inside the sandbox.
   Future<File?> createTemporaryFile(String name, List<int> bytes) async {
     final target = await _resolveInside(p.join('tmp', name));

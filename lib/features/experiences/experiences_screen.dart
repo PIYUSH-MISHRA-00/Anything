@@ -6,6 +6,8 @@ import 'package:flutter/material.dart';
 import '../../app/app_composition.dart';
 import '../../app/experience_commit.dart';
 import '../../app/experience_entry_pipeline.dart';
+import '../../app/experience_portability.dart';
+import '../../capabilities/adapters/file_service_adapter.dart';
 import '../../app/experience_opening_coordinator.dart';
 import '../../core/contracts/protection_provider.dart';
 import '../../design_system/components/components.dart';
@@ -41,6 +43,11 @@ class ExperiencesScreen extends StatefulWidget {
   /// convention. See `docs/architecture/UNIFIED_EXPERIENCE_ENTRY_PIPELINE.md`.
   final ExperienceEntryPipeline? entryPipeline;
 
+  /// Experience portability (IS-P02 Phase 9) — the wire to the R60 codec and
+  /// the R54 installer, both of which had no production caller before P02.
+  /// Optional and defaulted, following this screen's established seam.
+  final ExperiencePortability? portability;
+
   const ExperiencesScreen({
     super.key,
     this.repository,
@@ -48,6 +55,7 @@ class ExperiencesScreen extends StatefulWidget {
     this.onProtectRequested,
     this.composition,
     this.entryPipeline,
+    this.portability,
   });
 
   @override
@@ -69,6 +77,7 @@ class _ExperiencesScreenState extends State<ExperiencesScreen> {
   /// Specification IS-R45) — the ONE thing every Experience-opening call
   /// site below now goes through; see [ExperiencesScreen.entryPipeline].
   late final ExperienceEntryPipeline _entryPipeline;
+  late final ExperiencePortability _portability;
   List<ExperienceMetadataRecord> _experiences = [];
   bool _isLoading = true;
 
@@ -83,6 +92,13 @@ class _ExperiencesScreenState extends State<ExperiencesScreen> {
     _activity = _composition.activityRepository;
     _entryPipeline =
         widget.entryPipeline ?? _composition.experienceEntryPipeline;
+    _portability =
+        widget.portability ??
+        ExperiencePortability(
+          repository: _repo,
+          installer: _composition.experienceInstallation,
+          files: RealFileService(),
+        );
     _loadExperiences();
   }
 
@@ -248,6 +264,60 @@ class _ExperiencesScreenState extends State<ExperiencesScreen> {
     }
   }
 
+  /// EXPORT (IS-P02 Phase 9) — the first production caller of
+  /// `ExperiencePackageWriter`, which had ZERO `lib/` importers before P02.
+  Future<void> _exportExperience(ExperienceMetadataRecord exp) async {
+    final result = await _portability.export(exp.id);
+    if (!mounted) return;
+
+    // The result already carries a sentence fit to show a person, written
+    // once in ExperiencePortability so both entry points agree.
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(result.description)));
+    if (!result.succeeded) return;
+
+    await _activity.record(
+      ActivityEvent(
+        id: 'evt-${DateTime.now().millisecondsSinceEpoch}',
+        type: 'exported',
+        experienceId: exp.id,
+        experienceName: exp.name,
+        message: 'Exported ${exp.name}',
+        timestamp: DateTime.now(),
+      ),
+    );
+  }
+
+  /// IMPORT (IS-P02 Phase 9) — closes gap G-25, open since IS-R53.
+  ///
+  /// An imported package is UNTRUSTED INPUT. This method does not validate it:
+  /// the canonical reader refuses a bad one and the installer refuses an
+  /// incompatible one, and this only reports where the sequence stopped.
+  Future<void> _importExperience() async {
+    final result = await _portability.import();
+    if (!mounted) return;
+
+    if (result.failure == PortabilityFailure.cancelled) return;
+
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(result.description)));
+    if (!result.succeeded) return;
+
+    await _activity.record(
+      ActivityEvent(
+        id: 'evt-${DateTime.now().millisecondsSinceEpoch}',
+        type: 'imported',
+        experienceId: result.manifest!.experienceId,
+        experienceName: result.manifest!.name,
+        message: 'Imported ${result.manifest!.name}',
+        timestamp: DateTime.now(),
+      ),
+    );
+    _loadExperiences();
+  }
+
   void _deleteExperience(ExperienceMetadataRecord exp) async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -308,6 +378,14 @@ class _ExperiencesScreenState extends State<ExperiencesScreen> {
                     color: colorScheme.onSurface,
                     letterSpacing: -0.01,
                   ),
+                ),
+                // IMPORT (IS-P02 Phase 9). In the header rather than the
+                // per-Experience sheet, because importing is the one action
+                // that must work when you have no Experiences at all.
+                IconButton(
+                  onPressed: _importExperience,
+                  icon: const Icon(Icons.file_download_outlined),
+                  tooltip: 'Import an app',
                 ),
               ],
             ),
@@ -427,6 +505,15 @@ class _ExperiencesScreenState extends State<ExperiencesScreen> {
               onTap: () {
                 Navigator.pop(context);
                 widget.onProtectRequested?.call(exp.id);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.ios_share),
+              title: const Text('Export'),
+              subtitle: const Text('Save as a shareable .anything file'),
+              onTap: () {
+                Navigator.pop(context);
+                _exportExperience(exp);
               },
             ),
             ListTile(

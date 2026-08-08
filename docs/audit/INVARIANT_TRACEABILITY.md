@@ -77,6 +77,7 @@ I-83 — EVERY declared type in lib/ is declared exactly once, or is a PINNED
 | **I-90** | **R61** | The execution contract DECLARES only — it never decides, schedules, executes, enforces or persists | A contract travels inside a package, and a package is untrusted input; a contract that could decide its own eligibility would be a governance engine reachable by anyone who can write a manifest |
 | **I-91** | **R62** | Exactly one Experience Orchestrator, and nothing reaches `WorkspaceSchedulingEngine` except through it | Two call sites reached the scheduler directly, bypassing the R45 entry pipeline: the workspace switcher's no-live-runtime branch and the host screen's app-lifecycle notification |
 | **I-92** | **R62** | The Orchestrator DECIDES and never executes, navigates, supervises or re-decides another owner's decision | A coordinator that can also execute stops being a coordinator and becomes a second entry pipeline — the exact defect I-02/I-16/I-17 exist to prevent |
+| **I-93** | **P02** | Every canonical framework in `lib/` has at least one non-test `lib/` importer | Four consecutive milestones (R53, R54, R60, R61) shipped correct, certified frameworks that nothing imported. Every ownership invariant passed throughout, because they certify that exactly one thing owns a concern and never whether that thing is reachable. Gap G-25 stayed open ten milestones behind this blind spot. |
 
 ## Remaining work, stated plainly
 

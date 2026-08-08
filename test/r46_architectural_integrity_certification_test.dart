@@ -3519,6 +3519,67 @@ final x = 1;
     );
 
     test(
+      'I-93 — every canonical framework in lib/ has a real production consumer (IS-P02 Phase 9)',
+      () {
+        // THE HISTORICAL DEFECT THIS PREVENTS, AND IT IS THE LARGEST ONE THIS
+        // REPOSITORY HAS HAD.
+        //
+        // Four consecutive milestones shipped correct, certified frameworks
+        // that NOTHING imported:
+        //
+        //   R53 ExperienceDistributionFramework  read only by tests
+        //   R54 ExperienceInstallationFramework  read only by tests
+        //   R60 ExperiencePackageWriter/Reader   ZERO lib/ importers
+        //   R61 ExperienceExecutionContract      every call site passed null
+        //
+        // Every existing invariant passed the whole time, because they certify
+        // OWNERSHIP -- that exactly one thing owns a concern -- and nothing
+        // asked whether that one thing was reachable. Gap G-25 stayed open for
+        // ten milestones behind that blind spot.
+        //
+        // A framework with no consumer is not architecture. It is inventory.
+        const canonicalFrameworks = {
+          'lib/creation/experience_package_codec.dart': 'R60 package codec',
+          'lib/app/experience_installation.dart': 'R54 installer',
+          'lib/app/experience_distribution.dart': 'R53 distribution',
+          'lib/app/experience_commit.dart': 'R55 commit',
+          'lib/app/experience_execution_contract.dart':
+              'R61 execution contract',
+          'lib/app/experience_orchestrator.dart': 'R62 orchestrator',
+          'lib/app/experience_portability.dart': 'P02 portability',
+          'lib/app/governance_engine.dart': 'R51 governance',
+        };
+
+        for (final entry in canonicalFrameworks.entries) {
+          final module = entry.key.split('/').last;
+          final importers = libFiles
+              .where(
+                (f) =>
+                    f.path != entry.key &&
+                    // `.raw`, not `.code`: the scanner strips string literals,
+                    // and an import URI IS a string literal. The comment at
+                    // the top of this file records that exact bug being found
+                    // once before, when both boundary tests silently reported
+                    // zero import sites.
+                    RegExp("import\\s+'[^']*$module'").hasMatch(f.raw),
+              )
+              .map((f) => f.path)
+              .toList();
+
+          expect(
+            importers,
+            isNotEmpty,
+            reason:
+                '${entry.value} (${entry.key}) is imported by NO other lib/ '
+                'file. A canonical framework with no production consumer is '
+                'unreachable inventory -- exactly the defect that kept gap '
+                'G-25 open for ten milestones. Wire it, or delete it.',
+          );
+        }
+      },
+    );
+
+    test(
       'neither the Kernel nor any UI file imports an external cognition/protection package directly',
       () {
         final offenders = libFiles
