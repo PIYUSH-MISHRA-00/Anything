@@ -1,0 +1,2806 @@
+{
+ "counts": {
+  "EXPERIMENTAL": 51,
+  "REACHABLE": 356,
+  "DORMANT": 43,
+  "DEAD": 16
+ },
+ "rows": [
+  {
+   "file": "lib/agents/agent_manager.dart",
+   "class": "EXPERIMENTAL",
+   "test_refs": 0,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/agents/analyst_agent.dart",
+   "class": "EXPERIMENTAL",
+   "test_refs": 0,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/agents/builder_agent.dart",
+   "class": "EXPERIMENTAL",
+   "test_refs": 0,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/agents/planner_agent.dart",
+   "class": "EXPERIMENTAL",
+   "test_refs": 0,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/agents/researcher_agent.dart",
+   "class": "EXPERIMENTAL",
+   "test_refs": 0,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/app/app.dart",
+   "class": "REACHABLE",
+   "test_refs": 2,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/app/app_composition.dart",
+   "class": "REACHABLE",
+   "test_refs": 9,
+   "lib_importers": 3
+  },
+  {
+   "file": "lib/app/app_shell.dart",
+   "class": "REACHABLE",
+   "test_refs": 0,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/app/autonomous_workspace_runtime.dart",
+   "class": "REACHABLE",
+   "test_refs": 9,
+   "lib_importers": 9
+  },
+  {
+   "file": "lib/app/creation_coordinator.dart",
+   "class": "REACHABLE",
+   "test_refs": 24,
+   "lib_importers": 5
+  },
+  {
+   "file": "lib/app/engineering_lifecycle_coordinator.dart",
+   "class": "REACHABLE",
+   "test_refs": 16,
+   "lib_importers": 5
+  },
+  {
+   "file": "lib/app/experience_activation_manager.dart",
+   "class": "REACHABLE",
+   "test_refs": 4,
+   "lib_importers": 3
+  },
+  {
+   "file": "lib/app/experience_commit.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 7
+  },
+  {
+   "file": "lib/app/experience_distribution.dart",
+   "class": "REACHABLE",
+   "test_refs": 2,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/app/experience_entry_pipeline.dart",
+   "class": "REACHABLE",
+   "test_refs": 3,
+   "lib_importers": 4
+  },
+  {
+   "file": "lib/app/experience_installation.dart",
+   "class": "REACHABLE",
+   "test_refs": 2,
+   "lib_importers": 2
+  },
+  {
+   "file": "lib/app/experience_modification_coordinator.dart",
+   "class": "REACHABLE",
+   "test_refs": 9,
+   "lib_importers": 3
+  },
+  {
+   "file": "lib/app/experience_opening_coordinator.dart",
+   "class": "REACHABLE",
+   "test_refs": 9,
+   "lib_importers": 4
+  },
+  {
+   "file": "lib/app/experience_provenance.dart",
+   "class": "REACHABLE",
+   "test_refs": 4,
+   "lib_importers": 6
+  },
+  {
+   "file": "lib/app/experience_workspace_manager.dart",
+   "class": "REACHABLE",
+   "test_refs": 14,
+   "lib_importers": 8
+  },
+  {
+   "file": "lib/app/governance_engine.dart",
+   "class": "REACHABLE",
+   "test_refs": 3,
+   "lib_importers": 3
+  },
+  {
+   "file": "lib/app/intent_execution_pipeline.dart",
+   "class": "REACHABLE",
+   "test_refs": 3,
+   "lib_importers": 3
+  },
+  {
+   "file": "lib/app/intent_session_manager.dart",
+   "class": "REACHABLE",
+   "test_refs": 15,
+   "lib_importers": 4
+  },
+  {
+   "file": "lib/app/retention_policy_engine.dart",
+   "class": "REACHABLE",
+   "test_refs": 2,
+   "lib_importers": 5
+  },
+  {
+   "file": "lib/app/universal_intent_router.dart",
+   "class": "REACHABLE",
+   "test_refs": 7,
+   "lib_importers": 5
+  },
+  {
+   "file": "lib/app/workspace_event_publisher.dart",
+   "class": "REACHABLE",
+   "test_refs": 9,
+   "lib_importers": 9
+  },
+  {
+   "file": "lib/app/workspace_lifecycle_policy_engine.dart",
+   "class": "REACHABLE",
+   "test_refs": 7,
+   "lib_importers": 5
+  },
+  {
+   "file": "lib/app/workspace_runtime_supervisor.dart",
+   "class": "REACHABLE",
+   "test_refs": 7,
+   "lib_importers": 5
+  },
+  {
+   "file": "lib/app/workspace_scheduling_engine.dart",
+   "class": "REACHABLE",
+   "test_refs": 5,
+   "lib_importers": 6
+  },
+  {
+   "file": "lib/application_engineering/accessibility_performance_security_engineering.dart",
+   "class": "REACHABLE",
+   "test_refs": 5,
+   "lib_importers": 4
+  },
+  {
+   "file": "lib/application_engineering/behavior_engineering.dart",
+   "class": "REACHABLE",
+   "test_refs": 4,
+   "lib_importers": 3
+  },
+  {
+   "file": "lib/application_engineering/binding_engineering.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/application_engineering/data_engineering.dart",
+   "class": "REACHABLE",
+   "test_refs": 3,
+   "lib_importers": 2
+  },
+  {
+   "file": "lib/application_engineering/engineering_candidate.dart",
+   "class": "REACHABLE",
+   "test_refs": 5,
+   "lib_importers": 9
+  },
+  {
+   "file": "lib/application_engineering/engineering_candidate_diff.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/application_engineering/engineering_confidence.dart",
+   "class": "REACHABLE",
+   "test_refs": 0,
+   "lib_importers": 2
+  },
+  {
+   "file": "lib/application_engineering/engineering_context.dart",
+   "class": "REACHABLE",
+   "test_refs": 10,
+   "lib_importers": 5
+  },
+  {
+   "file": "lib/application_engineering/engineering_memory_summary.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 3
+  },
+  {
+   "file": "lib/application_engineering/engineering_plan.dart",
+   "class": "REACHABLE",
+   "test_refs": 7,
+   "lib_importers": 11
+  },
+  {
+   "file": "lib/application_engineering/engineering_planner.dart",
+   "class": "REACHABLE",
+   "test_refs": 8,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/application_engineering/engineering_refinement.dart",
+   "class": "REACHABLE",
+   "test_refs": 2,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/application_engineering/engineering_review.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 2
+  },
+  {
+   "file": "lib/application_engineering/engineering_to_blueprint.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/application_engineering/engineering_types.dart",
+   "class": "REACHABLE",
+   "test_refs": 10,
+   "lib_importers": 19
+  },
+  {
+   "file": "lib/application_engineering/interaction_engineering.dart",
+   "class": "REACHABLE",
+   "test_refs": 2,
+   "lib_importers": 2
+  },
+  {
+   "file": "lib/application_engineering/lifecycle_engineering.dart",
+   "class": "REACHABLE",
+   "test_refs": 2,
+   "lib_importers": 2
+  },
+  {
+   "file": "lib/application_engineering/navigation_engineering.dart",
+   "class": "REACHABLE",
+   "test_refs": 2,
+   "lib_importers": 2
+  },
+  {
+   "file": "lib/application_engineering/persistence_offline_sync_engineering.dart",
+   "class": "REACHABLE",
+   "test_refs": 3,
+   "lib_importers": 4
+  },
+  {
+   "file": "lib/application_engineering/validation_engineering.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 3
+  },
+  {
+   "file": "lib/artifact_intelligence/artifact_intelligence.dart",
+   "class": "REACHABLE",
+   "test_refs": 3,
+   "lib_importers": 3
+  },
+  {
+   "file": "lib/backend_engineering/api_specification.dart",
+   "class": "REACHABLE",
+   "test_refs": 4,
+   "lib_importers": 5
+  },
+  {
+   "file": "lib/backend_engineering/authentication_model.dart",
+   "class": "REACHABLE",
+   "test_refs": 3,
+   "lib_importers": 3
+  },
+  {
+   "file": "lib/backend_engineering/backend_engineering_context.dart",
+   "class": "REACHABLE",
+   "test_refs": 12,
+   "lib_importers": 2
+  },
+  {
+   "file": "lib/backend_engineering/backend_engineering_plan.dart",
+   "class": "REACHABLE",
+   "test_refs": 8,
+   "lib_importers": 15
+  },
+  {
+   "file": "lib/backend_engineering/backend_engineering_planner.dart",
+   "class": "REACHABLE",
+   "test_refs": 12,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/backend_engineering/backend_engineering_serialization.dart",
+   "class": "REACHABLE",
+   "test_refs": 4,
+   "lib_importers": 5
+  },
+  {
+   "file": "lib/backend_engineering/background_jobs_model.dart",
+   "class": "REACHABLE",
+   "test_refs": 3,
+   "lib_importers": 3
+  },
+  {
+   "file": "lib/backend_engineering/database_schema.dart",
+   "class": "REACHABLE",
+   "test_refs": 4,
+   "lib_importers": 4
+  },
+  {
+   "file": "lib/backend_engineering/deployment_specification.dart",
+   "class": "REACHABLE",
+   "test_refs": 3,
+   "lib_importers": 3
+  },
+  {
+   "file": "lib/backend_engineering/storage_model.dart",
+   "class": "REACHABLE",
+   "test_refs": 3,
+   "lib_importers": 3
+  },
+  {
+   "file": "lib/build_graph/build_graph.dart",
+   "class": "REACHABLE",
+   "test_refs": 2,
+   "lib_importers": 3
+  },
+  {
+   "file": "lib/build_graph/build_graph_analysis.dart",
+   "class": "DORMANT",
+   "test_refs": 1,
+   "lib_importers": 0
+  },
+  {
+   "file": "lib/build_graph/universal_build_graph.dart",
+   "class": "REACHABLE",
+   "test_refs": 8,
+   "lib_importers": 4
+  },
+  {
+   "file": "lib/capabilities/adapters/file_service_adapter.dart",
+   "class": "REACHABLE",
+   "test_refs": 2,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/capabilities/adapters/http_transport_adapter.dart",
+   "class": "REACHABLE",
+   "test_refs": 0,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/capabilities/adapters/knowledge_acquisition_provider_adapter.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/capabilities/adapters/model_provider_ai_adapter.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/capabilities/adapters/notification_service_adapter.dart",
+   "class": "REACHABLE",
+   "test_refs": 3,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/capabilities/builtin/ai_capability.dart",
+   "class": "REACHABLE",
+   "test_refs": 2,
+   "lib_importers": 2
+  },
+  {
+   "file": "lib/capabilities/builtin/clock_capability.dart",
+   "class": "REACHABLE",
+   "test_refs": 5,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/capabilities/builtin/file_capability.dart",
+   "class": "REACHABLE",
+   "test_refs": 4,
+   "lib_importers": 2
+  },
+  {
+   "file": "lib/capabilities/builtin/http_capability.dart",
+   "class": "REACHABLE",
+   "test_refs": 3,
+   "lib_importers": 2
+  },
+  {
+   "file": "lib/capabilities/builtin/knowledge_capability.dart",
+   "class": "REACHABLE",
+   "test_refs": 2,
+   "lib_importers": 2
+  },
+  {
+   "file": "lib/capabilities/builtin/notification_capability.dart",
+   "class": "REACHABLE",
+   "test_refs": 4,
+   "lib_importers": 2
+  },
+  {
+   "file": "lib/capabilities/platform/capability_platform.dart",
+   "class": "REACHABLE",
+   "test_refs": 10,
+   "lib_importers": 11
+  },
+  {
+   "file": "lib/capabilities/registry/capability_descriptor.dart",
+   "class": "REACHABLE",
+   "test_refs": 58,
+   "lib_importers": 5
+  },
+  {
+   "file": "lib/capabilities/registry/capability_registry.dart",
+   "class": "REACHABLE",
+   "test_refs": 57,
+   "lib_importers": 4
+  },
+  {
+   "file": "lib/compiler_certification/certification_corpus.dart",
+   "class": "DORMANT",
+   "test_refs": 1,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/compiler_certification/certification_report.dart",
+   "class": "DORMANT",
+   "test_refs": 1,
+   "lib_importers": 2
+  },
+  {
+   "file": "lib/compiler_certification/certification_runner.dart",
+   "class": "DORMANT",
+   "test_refs": 1,
+   "lib_importers": 0
+  },
+  {
+   "file": "lib/compiler_certification/certification_snapshot.dart",
+   "class": "DORMANT",
+   "test_refs": 1,
+   "lib_importers": 0
+  },
+  {
+   "file": "lib/compiler_integration/compiler_pipeline_runner.dart",
+   "class": "REACHABLE",
+   "test_refs": 7,
+   "lib_importers": 4
+  },
+  {
+   "file": "lib/compiler_integration/equivalence_comparator.dart",
+   "class": "DORMANT",
+   "test_refs": 4,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/compiler_integration/equivalence_report.dart",
+   "class": "DORMANT",
+   "test_refs": 1,
+   "lib_importers": 2
+  },
+  {
+   "file": "lib/core/context_engine.dart",
+   "class": "EXPERIMENTAL",
+   "test_refs": 0,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/core/contracts/capability.dart",
+   "class": "EXPERIMENTAL",
+   "test_refs": 0,
+   "lib_importers": 3
+  },
+  {
+   "file": "lib/core/contracts/contracts.dart",
+   "class": "DORMANT",
+   "test_refs": 2,
+   "lib_importers": 0
+  },
+  {
+   "file": "lib/core/contracts/experience.dart",
+   "class": "EXPERIMENTAL",
+   "test_refs": 0,
+   "lib_importers": 3
+  },
+  {
+   "file": "lib/core/contracts/intent.dart",
+   "class": "REACHABLE",
+   "test_refs": 56,
+   "lib_importers": 19
+  },
+  {
+   "file": "lib/core/contracts/kernel.dart",
+   "class": "EXPERIMENTAL",
+   "test_refs": 0,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/core/contracts/model_provider.dart",
+   "class": "REACHABLE",
+   "test_refs": 55,
+   "lib_importers": 10
+  },
+  {
+   "file": "lib/core/contracts/protection_provider.dart",
+   "class": "REACHABLE",
+   "test_refs": 4,
+   "lib_importers": 7
+  },
+  {
+   "file": "lib/core/error_handler.dart",
+   "class": "EXPERIMENTAL",
+   "test_refs": 0,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/core/errors/errors.dart",
+   "class": "DORMANT",
+   "test_refs": 1,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/core/events/events.dart",
+   "class": "REACHABLE",
+   "test_refs": 11,
+   "lib_importers": 6
+  },
+  {
+   "file": "lib/core/intent_engine.dart",
+   "class": "EXPERIMENTAL",
+   "test_refs": 0,
+   "lib_importers": 2
+  },
+  {
+   "file": "lib/core/reasoning_engine.dart",
+   "class": "EXPERIMENTAL",
+   "test_refs": 0,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/core/result/result.dart",
+   "class": "DEAD",
+   "test_refs": 0,
+   "lib_importers": 0
+  },
+  {
+   "file": "lib/creation/creation_context.dart",
+   "class": "REACHABLE",
+   "test_refs": 9,
+   "lib_importers": 3
+  },
+  {
+   "file": "lib/creation/creation_engine.dart",
+   "class": "REACHABLE",
+   "test_refs": 9,
+   "lib_importers": 2
+  },
+  {
+   "file": "lib/creation/experience_package.dart",
+   "class": "REACHABLE",
+   "test_refs": 39,
+   "lib_importers": 44
+  },
+  {
+   "file": "lib/creation/experience_package_diff.dart",
+   "class": "REACHABLE",
+   "test_refs": 3,
+   "lib_importers": 4
+  },
+  {
+   "file": "lib/creation/modification/experience_modification_spec.dart",
+   "class": "REACHABLE",
+   "test_refs": 4,
+   "lib_importers": 5
+  },
+  {
+   "file": "lib/creation/modification/modification_engine.dart",
+   "class": "REACHABLE",
+   "test_refs": 4,
+   "lib_importers": 4
+  },
+  {
+   "file": "lib/creation/package_validator.dart",
+   "class": "REACHABLE",
+   "test_refs": 16,
+   "lib_importers": 10
+  },
+  {
+   "file": "lib/design_review/design_review_engine.dart",
+   "class": "REACHABLE",
+   "test_refs": 5,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/design_review/design_reviewer.dart",
+   "class": "REACHABLE",
+   "test_refs": 0,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/design_review/review_approval.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 2
+  },
+  {
+   "file": "lib/design_review/review_budget.dart",
+   "class": "REACHABLE",
+   "test_refs": 0,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/design_review/review_context.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 18
+  },
+  {
+   "file": "lib/design_review/review_history.dart",
+   "class": "REACHABLE",
+   "test_refs": 2,
+   "lib_importers": 8
+  },
+  {
+   "file": "lib/design_review/review_memory.dart",
+   "class": "REACHABLE",
+   "test_refs": 2,
+   "lib_importers": 3
+  },
+  {
+   "file": "lib/design_review/review_metrics.dart",
+   "class": "DEAD",
+   "test_refs": 0,
+   "lib_importers": 0
+  },
+  {
+   "file": "lib/design_review/review_refinement.dart",
+   "class": "REACHABLE",
+   "test_refs": 2,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/design_review/review_result.dart",
+   "class": "REACHABLE",
+   "test_refs": 2,
+   "lib_importers": 5
+  },
+  {
+   "file": "lib/design_review/review_types.dart",
+   "class": "REACHABLE",
+   "test_refs": 7,
+   "lib_importers": 24
+  },
+  {
+   "file": "lib/design_review/reviewers/accessibility_reviewer.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/design_review/reviewers/architecture_reviewer.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/design_review/reviewers/capability_reviewer.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/design_review/reviewers/consistency_reviewer.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/design_review/reviewers/dependency_reviewer.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/design_review/reviewers/engineering_reviewer.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/design_review/reviewers/migration_modification_reviewer.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/design_review/reviewers/offline_reviewer.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/design_review/reviewers/performance_reviewer.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/design_review/reviewers/runtime_reviewer.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/design_review/reviewers/security_reviewer.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/design_review/reviewers/specification_reviewer.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/design_system/components/anything_button.dart",
+   "class": "REACHABLE",
+   "test_refs": 0,
+   "lib_importers": 2
+  },
+  {
+   "file": "lib/design_system/components/anything_card.dart",
+   "class": "REACHABLE",
+   "test_refs": 0,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/design_system/components/anything_chip.dart",
+   "class": "REACHABLE",
+   "test_refs": 0,
+   "lib_importers": 2
+  },
+  {
+   "file": "lib/design_system/components/anything_empty_state.dart",
+   "class": "REACHABLE",
+   "test_refs": 0,
+   "lib_importers": 3
+  },
+  {
+   "file": "lib/design_system/components/anything_intent_field.dart",
+   "class": "REACHABLE",
+   "test_refs": 0,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/design_system/components/anything_list_tile.dart",
+   "class": "REACHABLE",
+   "test_refs": 0,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/design_system/components/anything_section_header.dart",
+   "class": "REACHABLE",
+   "test_refs": 0,
+   "lib_importers": 2
+  },
+  {
+   "file": "lib/design_system/components/anything_text_field.dart",
+   "class": "REACHABLE",
+   "test_refs": 0,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/design_system/components/birth_sequence.dart",
+   "class": "REACHABLE",
+   "test_refs": 0,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/design_system/components/components.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 3
+  },
+  {
+   "file": "lib/design_system/theme/anything_theme.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/design_system/theme/theme_provider.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 3
+  },
+  {
+   "file": "lib/design_system/tokens/colors.dart",
+   "class": "REACHABLE",
+   "test_refs": 0,
+   "lib_importers": 2
+  },
+  {
+   "file": "lib/design_system/tokens/layout.dart",
+   "class": "DEAD",
+   "test_refs": 0,
+   "lib_importers": 0
+  },
+  {
+   "file": "lib/design_system/tokens/motion.dart",
+   "class": "REACHABLE",
+   "test_refs": 0,
+   "lib_importers": 2
+  },
+  {
+   "file": "lib/design_system/tokens/radii.dart",
+   "class": "REACHABLE",
+   "test_refs": 0,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/design_system/tokens/shadows.dart",
+   "class": "REACHABLE",
+   "test_refs": 0,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/design_system/tokens/spacing.dart",
+   "class": "REACHABLE",
+   "test_refs": 0,
+   "lib_importers": 6
+  },
+  {
+   "file": "lib/design_system/tokens/typography.dart",
+   "class": "REACHABLE",
+   "test_refs": 0,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/diagnostics/error_report.dart",
+   "class": "DORMANT",
+   "test_refs": 1,
+   "lib_importers": 0
+  },
+  {
+   "file": "lib/diagnostics/health_report.dart",
+   "class": "DORMANT",
+   "test_refs": 1,
+   "lib_importers": 0
+  },
+  {
+   "file": "lib/diagnostics/log_entry.dart",
+   "class": "DORMANT",
+   "test_refs": 1,
+   "lib_importers": 2
+  },
+  {
+   "file": "lib/diagnostics/structured_logger.dart",
+   "class": "DORMANT",
+   "test_refs": 1,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/engineering_intelligence/affected_entities.dart",
+   "class": "REACHABLE",
+   "test_refs": 3,
+   "lib_importers": 3
+  },
+  {
+   "file": "lib/engineering_intelligence/engineering_intelligence.dart",
+   "class": "DORMANT",
+   "test_refs": 1,
+   "lib_importers": 0
+  },
+  {
+   "file": "lib/engineering_intelligence/incremental_compiler_synthesis.dart",
+   "class": "REACHABLE",
+   "test_refs": 2,
+   "lib_importers": 2
+  },
+  {
+   "file": "lib/evolution/engineering_memory.dart",
+   "class": "DORMANT",
+   "test_refs": 1,
+   "lib_importers": 0
+  },
+  {
+   "file": "lib/evolution/evolution_approver.dart",
+   "class": "REACHABLE",
+   "test_refs": 3,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/evolution/evolution_budget.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 2
+  },
+  {
+   "file": "lib/evolution/evolution_candidate.dart",
+   "class": "REACHABLE",
+   "test_refs": 6,
+   "lib_importers": 9
+  },
+  {
+   "file": "lib/evolution/evolution_context.dart",
+   "class": "REACHABLE",
+   "test_refs": 2,
+   "lib_importers": 7
+  },
+  {
+   "file": "lib/evolution/evolution_coordinator.dart",
+   "class": "DORMANT",
+   "test_refs": 1,
+   "lib_importers": 0
+  },
+  {
+   "file": "lib/evolution/evolution_diff_plan.dart",
+   "class": "REACHABLE",
+   "test_refs": 3,
+   "lib_importers": 3
+  },
+  {
+   "file": "lib/evolution/evolution_engine.dart",
+   "class": "REACHABLE",
+   "test_refs": 2,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/evolution/evolution_estimator.dart",
+   "class": "REACHABLE",
+   "test_refs": 5,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/evolution/evolution_executor.dart",
+   "class": "DORMANT",
+   "test_refs": 1,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/evolution/evolution_graph.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 2
+  },
+  {
+   "file": "lib/evolution/evolution_history.dart",
+   "class": "REACHABLE",
+   "test_refs": 2,
+   "lib_importers": 4
+  },
+  {
+   "file": "lib/evolution/evolution_memory.dart",
+   "class": "REACHABLE",
+   "test_refs": 2,
+   "lib_importers": 3
+  },
+  {
+   "file": "lib/evolution/evolution_metrics.dart",
+   "class": "DORMANT",
+   "test_refs": 1,
+   "lib_importers": 0
+  },
+  {
+   "file": "lib/evolution/evolution_observer.dart",
+   "class": "REACHABLE",
+   "test_refs": 5,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/evolution/evolution_opportunity.dart",
+   "class": "REACHABLE",
+   "test_refs": 8,
+   "lib_importers": 5
+  },
+  {
+   "file": "lib/evolution/evolution_planner.dart",
+   "class": "REACHABLE",
+   "test_refs": 2,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/evolution/evolution_policy.dart",
+   "class": "REACHABLE",
+   "test_refs": 2,
+   "lib_importers": 2
+  },
+  {
+   "file": "lib/evolution/evolution_prediction.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 2
+  },
+  {
+   "file": "lib/evolution/evolution_result.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 4
+  },
+  {
+   "file": "lib/evolution/evolution_reviewer.dart",
+   "class": "REACHABLE",
+   "test_refs": 3,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/evolution/evolution_roadmap.dart",
+   "class": "REACHABLE",
+   "test_refs": 3,
+   "lib_importers": 9
+  },
+  {
+   "file": "lib/evolution/evolution_types.dart",
+   "class": "REACHABLE",
+   "test_refs": 10,
+   "lib_importers": 16
+  },
+  {
+   "file": "lib/evolution/evolution_validator.dart",
+   "class": "DORMANT",
+   "test_refs": 1,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/execution_planning/execution_strategy.dart",
+   "class": "REACHABLE",
+   "test_refs": 7,
+   "lib_importers": 8
+  },
+  {
+   "file": "lib/execution_planning/solution_execution_planner.dart",
+   "class": "REACHABLE",
+   "test_refs": 6,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/experience_identity/experience_identity.dart",
+   "class": "DORMANT",
+   "test_refs": 1,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/feature_discovery/dependency_resolver.dart",
+   "class": "REACHABLE",
+   "test_refs": 9,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/feature_discovery/dependency_types.dart",
+   "class": "REACHABLE",
+   "test_refs": 3,
+   "lib_importers": 6
+  },
+  {
+   "file": "lib/feature_discovery/feature_classifier.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/feature_discovery/feature_complexity_analyzer.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/feature_discovery/feature_confidence_analyzer.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 2
+  },
+  {
+   "file": "lib/feature_discovery/feature_discovery_context.dart",
+   "class": "REACHABLE",
+   "test_refs": 12,
+   "lib_importers": 2
+  },
+  {
+   "file": "lib/feature_discovery/feature_discovery_engine.dart",
+   "class": "REACHABLE",
+   "test_refs": 12,
+   "lib_importers": 3
+  },
+  {
+   "file": "lib/feature_discovery/feature_plan.dart",
+   "class": "REACHABLE",
+   "test_refs": 3,
+   "lib_importers": 3
+  },
+  {
+   "file": "lib/feature_discovery/feature_priority_analyzer.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/feature_discovery/feature_recommendation.dart",
+   "class": "DEAD",
+   "test_refs": 0,
+   "lib_importers": 0
+  },
+  {
+   "file": "lib/feature_discovery/feature_refinement.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/feature_discovery/feature_reviewer.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 2
+  },
+  {
+   "file": "lib/feature_discovery/feature_types.dart",
+   "class": "REACHABLE",
+   "test_refs": 14,
+   "lib_importers": 28
+  },
+  {
+   "file": "lib/features/activity/activity_screen.dart",
+   "class": "REACHABLE",
+   "test_refs": 0,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/features/experiences/experiences_screen.dart",
+   "class": "REACHABLE",
+   "test_refs": 2,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/features/home/home_screen.dart",
+   "class": "REACHABLE",
+   "test_refs": 10,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/features/home/intent_composer.dart",
+   "class": "REACHABLE",
+   "test_refs": 4,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/features/preferences/preferences_screen.dart",
+   "class": "REACHABLE",
+   "test_refs": 0,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/features/preferences/provider_preferences_screen.dart",
+   "class": "REACHABLE",
+   "test_refs": 0,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/features/workspace/workspace_switcher.dart",
+   "class": "REACHABLE",
+   "test_refs": 2,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/generation_specification/generation_specification.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 2
+  },
+  {
+   "file": "lib/generation_specification/path_template.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 2
+  },
+  {
+   "file": "lib/generator_framework/artifact.dart",
+   "class": "REACHABLE",
+   "test_refs": 4,
+   "lib_importers": 7
+  },
+  {
+   "file": "lib/generator_framework/generation_pipeline.dart",
+   "class": "REACHABLE",
+   "test_refs": 5,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/generator_framework/generation_result.dart",
+   "class": "REACHABLE",
+   "test_refs": 6,
+   "lib_importers": 9
+  },
+  {
+   "file": "lib/generator_framework/generator.dart",
+   "class": "REACHABLE",
+   "test_refs": 8,
+   "lib_importers": 7
+  },
+  {
+   "file": "lib/generator_framework/reference/backend_service_generator.dart",
+   "class": "REACHABLE",
+   "test_refs": 2,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/generator_framework/reference/rest_api_generator.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/generator_framework/reference/runtime_experience_generator.dart",
+   "class": "REACHABLE",
+   "test_refs": 5,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/generator_framework/reference/summary_manifest_generator.dart",
+   "class": "DORMANT",
+   "test_refs": 2,
+   "lib_importers": 0
+  },
+  {
+   "file": "lib/implementation_model/canonical_implementation_model.dart",
+   "class": "REACHABLE",
+   "test_refs": 15,
+   "lib_importers": 16
+  },
+  {
+   "file": "lib/implementation_model/canonical_implementation_planner.dart",
+   "class": "REACHABLE",
+   "test_refs": 5,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/implementation_model/canonical_implementation_serialization.dart",
+   "class": "REACHABLE",
+   "test_refs": 4,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/kernel/anything_kernel.dart",
+   "class": "REACHABLE",
+   "test_refs": 54,
+   "lib_importers": 5
+  },
+  {
+   "file": "lib/kernel/classification/intent_category.dart",
+   "class": "REACHABLE",
+   "test_refs": 19,
+   "lib_importers": 3
+  },
+  {
+   "file": "lib/kernel/outcomes/kernel_outcome.dart",
+   "class": "REACHABLE",
+   "test_refs": 35,
+   "lib_importers": 5
+  },
+  {
+   "file": "lib/kernel/planning/execution_plan.dart",
+   "class": "REACHABLE",
+   "test_refs": 4,
+   "lib_importers": 4
+  },
+  {
+   "file": "lib/kernel/resolution/experience_resolver.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/kernel/specification/experience_spec.dart",
+   "class": "REACHABLE",
+   "test_refs": 26,
+   "lib_importers": 13
+  },
+  {
+   "file": "lib/kernel/understanding/intent_understanding.dart",
+   "class": "REACHABLE",
+   "test_refs": 20,
+   "lib_importers": 7
+  },
+  {
+   "file": "lib/kernel/understanding/model_understanding_service.dart",
+   "class": "REACHABLE",
+   "test_refs": 0,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/knowledge/autonomous_knowledge_planner.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/knowledge/knowledge_acquisition_engine.dart",
+   "class": "REACHABLE",
+   "test_refs": 15,
+   "lib_importers": 3
+  },
+  {
+   "file": "lib/knowledge/knowledge_bundle.dart",
+   "class": "REACHABLE",
+   "test_refs": 10,
+   "lib_importers": 6
+  },
+  {
+   "file": "lib/knowledge/knowledge_resource.dart",
+   "class": "REACHABLE",
+   "test_refs": 10,
+   "lib_importers": 9
+  },
+  {
+   "file": "lib/knowledge/search_provider.dart",
+   "class": "REACHABLE",
+   "test_refs": 12,
+   "lib_importers": 2
+  },
+  {
+   "file": "lib/knowledge/webweavex_adapter.dart",
+   "class": "REACHABLE",
+   "test_refs": 13,
+   "lib_importers": 2
+  },
+  {
+   "file": "lib/legacy/groq_adapter.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/legacy/kaalka_adapter.dart",
+   "class": "REACHABLE",
+   "test_refs": 4,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/main.dart",
+   "class": "REACHABLE",
+   "test_refs": 0,
+   "lib_importers": 0
+  },
+  {
+   "file": "lib/memory/memory_manager.dart",
+   "class": "EXPERIMENTAL",
+   "test_refs": 0,
+   "lib_importers": 7
+  },
+  {
+   "file": "lib/memory/sqlite_service.dart",
+   "class": "EXPERIMENTAL",
+   "test_refs": 0,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/models/auil_schema_model.dart",
+   "class": "EXPERIMENTAL",
+   "test_refs": 0,
+   "lib_importers": 3
+  },
+  {
+   "file": "lib/models/intent_model.dart",
+   "class": "DEAD",
+   "test_refs": 0,
+   "lib_importers": 0
+  },
+  {
+   "file": "lib/models/workspace_model.dart",
+   "class": "DEAD",
+   "test_refs": 0,
+   "lib_importers": 0
+  },
+  {
+   "file": "lib/runtime/anything_runtime.dart",
+   "class": "REACHABLE",
+   "test_refs": 19,
+   "lib_importers": 4
+  },
+  {
+   "file": "lib/runtime/behavior_interpreter.dart",
+   "class": "REACHABLE",
+   "test_refs": 3,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/runtime/component_registry.dart",
+   "class": "REACHABLE",
+   "test_refs": 4,
+   "lib_importers": 3
+  },
+  {
+   "file": "lib/runtime/data_query.dart",
+   "class": "REACHABLE",
+   "test_refs": 3,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/runtime/data_runtime.dart",
+   "class": "REACHABLE",
+   "test_refs": 14,
+   "lib_importers": 4
+  },
+  {
+   "file": "lib/runtime/experience_host_screen.dart",
+   "class": "REACHABLE",
+   "test_refs": 17,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/runtime/experience_renderer.dart",
+   "class": "REACHABLE",
+   "test_refs": 7,
+   "lib_importers": 2
+  },
+  {
+   "file": "lib/runtime/experience_router.dart",
+   "class": "REACHABLE",
+   "test_refs": 6,
+   "lib_importers": 5
+  },
+  {
+   "file": "lib/runtime/experience_runtime_controller.dart",
+   "class": "REACHABLE",
+   "test_refs": 8,
+   "lib_importers": 4
+  },
+  {
+   "file": "lib/runtime/experience_session.dart",
+   "class": "REACHABLE",
+   "test_refs": 11,
+   "lib_importers": 9
+  },
+  {
+   "file": "lib/runtime/form_controller.dart",
+   "class": "REACHABLE",
+   "test_refs": 4,
+   "lib_importers": 2
+  },
+  {
+   "file": "lib/runtime/golden_paths/calculator_modification.dart",
+   "class": "DEAD",
+   "test_refs": 0,
+   "lib_importers": 0
+  },
+  {
+   "file": "lib/runtime/golden_paths/calculator_package.dart",
+   "class": "DORMANT",
+   "test_refs": 17,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/runtime/golden_paths/calculator_runtime.dart",
+   "class": "DORMANT",
+   "test_refs": 1,
+   "lib_importers": 0
+  },
+  {
+   "file": "lib/runtime/golden_paths/habit_tracker_package.dart",
+   "class": "DORMANT",
+   "test_refs": 3,
+   "lib_importers": 0
+  },
+  {
+   "file": "lib/runtime/golden_paths/notes_package.dart",
+   "class": "DORMANT",
+   "test_refs": 5,
+   "lib_importers": 0
+  },
+  {
+   "file": "lib/runtime/query_controller.dart",
+   "class": "REACHABLE",
+   "test_refs": 2,
+   "lib_importers": 3
+  },
+  {
+   "file": "lib/runtime/runtime_context.dart",
+   "class": "REACHABLE",
+   "test_refs": 3,
+   "lib_importers": 2
+  },
+  {
+   "file": "lib/runtime/service_resolver.dart",
+   "class": "REACHABLE",
+   "test_refs": 4,
+   "lib_importers": 2
+  },
+  {
+   "file": "lib/runtime/state_engine.dart",
+   "class": "REACHABLE",
+   "test_refs": 10,
+   "lib_importers": 5
+  },
+  {
+   "file": "lib/runtime_intelligence/automation_executor.dart",
+   "class": "REACHABLE",
+   "test_refs": 2,
+   "lib_importers": 2
+  },
+  {
+   "file": "lib/runtime_intelligence/automation_history.dart",
+   "class": "REACHABLE",
+   "test_refs": 2,
+   "lib_importers": 3
+  },
+  {
+   "file": "lib/runtime_intelligence/automation_memory.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/runtime_intelligence/automation_plan.dart",
+   "class": "REACHABLE",
+   "test_refs": 0,
+   "lib_importers": 8
+  },
+  {
+   "file": "lib/runtime_intelligence/automation_planner.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/runtime_intelligence/automation_types.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 4
+  },
+  {
+   "file": "lib/runtime_intelligence/background_coordinator.dart",
+   "class": "DORMANT",
+   "test_refs": 2,
+   "lib_importers": 0
+  },
+  {
+   "file": "lib/runtime_intelligence/collaboration_graph.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/runtime_intelligence/experience_relationship_graph.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 2
+  },
+  {
+   "file": "lib/runtime_intelligence/interaction_graph.dart",
+   "class": "DORMANT",
+   "test_refs": 1,
+   "lib_importers": 0
+  },
+  {
+   "file": "lib/runtime_intelligence/learning_engine.dart",
+   "class": "REACHABLE",
+   "test_refs": 3,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/runtime_intelligence/learning_memory.dart",
+   "class": "REACHABLE",
+   "test_refs": 7,
+   "lib_importers": 5
+  },
+  {
+   "file": "lib/runtime_intelligence/learning_record.dart",
+   "class": "REACHABLE",
+   "test_refs": 0,
+   "lib_importers": 6
+  },
+  {
+   "file": "lib/runtime_intelligence/notification_planner.dart",
+   "class": "DORMANT",
+   "test_refs": 1,
+   "lib_importers": 0
+  },
+  {
+   "file": "lib/runtime_intelligence/observation_context.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 2
+  },
+  {
+   "file": "lib/runtime_intelligence/observation_engine.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/runtime_intelligence/observation_memory.dart",
+   "class": "REACHABLE",
+   "test_refs": 5,
+   "lib_importers": 4
+  },
+  {
+   "file": "lib/runtime_intelligence/observation_record.dart",
+   "class": "REACHABLE",
+   "test_refs": 13,
+   "lib_importers": 5
+  },
+  {
+   "file": "lib/runtime_intelligence/pattern.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 3
+  },
+  {
+   "file": "lib/runtime_intelligence/pattern_detector.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/runtime_intelligence/prediction.dart",
+   "class": "REACHABLE",
+   "test_refs": 0,
+   "lib_importers": 2
+  },
+  {
+   "file": "lib/runtime_intelligence/prediction_engine.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/runtime_intelligence/recommendation.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 4
+  },
+  {
+   "file": "lib/runtime_intelligence/recommendation_engine.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/runtime_intelligence/recommendation_review.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 2
+  },
+  {
+   "file": "lib/runtime_intelligence/reminder_planner.dart",
+   "class": "DORMANT",
+   "test_refs": 1,
+   "lib_importers": 0
+  },
+  {
+   "file": "lib/runtime_intelligence/ril_types.dart",
+   "class": "REACHABLE",
+   "test_refs": 15,
+   "lib_importers": 22
+  },
+  {
+   "file": "lib/runtime_intelligence/runtime_context.dart",
+   "class": "DEAD",
+   "test_refs": 0,
+   "lib_importers": 0
+  },
+  {
+   "file": "lib/runtime_intelligence/runtime_intelligence_coordinator.dart",
+   "class": "REACHABLE",
+   "test_refs": 3,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/runtime_intelligence/runtime_intelligence_engine.dart",
+   "class": "REACHABLE",
+   "test_refs": 3,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/runtime_intelligence/runtime_intelligence_result.dart",
+   "class": "REACHABLE",
+   "test_refs": 0,
+   "lib_importers": 2
+  },
+  {
+   "file": "lib/runtime_intelligence/session_context.dart",
+   "class": "REACHABLE",
+   "test_refs": 0,
+   "lib_importers": 2
+  },
+  {
+   "file": "lib/runtime_intelligence/usage_graph.dart",
+   "class": "REACHABLE",
+   "test_refs": 4,
+   "lib_importers": 8
+  },
+  {
+   "file": "lib/runtime_intelligence/workspace_context.dart",
+   "class": "REACHABLE",
+   "test_refs": 0,
+   "lib_importers": 2
+  },
+  {
+   "file": "lib/screens/ai_settings_screen.dart",
+   "class": "EXPERIMENTAL",
+   "test_refs": 0,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/screens/app_shell.dart",
+   "class": "EXPERIMENTAL",
+   "test_refs": 0,
+   "lib_importers": 4
+  },
+  {
+   "file": "lib/screens/groq_settings_screen.dart",
+   "class": "EXPERIMENTAL",
+   "test_refs": 0,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/screens/groq_webview_screen.dart",
+   "class": "EXPERIMENTAL",
+   "test_refs": 0,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/screens/kaalka_security_screen.dart",
+   "class": "EXPERIMENTAL",
+   "test_refs": 0,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/screens/memory_dashboard_screen.dart",
+   "class": "EXPERIMENTAL",
+   "test_refs": 0,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/screens/onboarding_screen.dart",
+   "class": "EXPERIMENTAL",
+   "test_refs": 0,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/screens/personal_context_screen.dart",
+   "class": "EXPERIMENTAL",
+   "test_refs": 0,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/screens/skills_marketplace_screen.dart",
+   "class": "EXPERIMENTAL",
+   "test_refs": 0,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/screens/splash_screen.dart",
+   "class": "DEAD",
+   "test_refs": 0,
+   "lib_importers": 0
+  },
+  {
+   "file": "lib/screens/templates_screen.dart",
+   "class": "EXPERIMENTAL",
+   "test_refs": 0,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/screens/workspace_screen.dart",
+   "class": "EXPERIMENTAL",
+   "test_refs": 0,
+   "lib_importers": 3
+  },
+  {
+   "file": "lib/screens/workspaces_screen.dart",
+   "class": "EXPERIMENTAL",
+   "test_refs": 0,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/security/credential_vault.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 3
+  },
+  {
+   "file": "lib/security/encryption_manager.dart",
+   "class": "EXPERIMENTAL",
+   "test_refs": 0,
+   "lib_importers": 2
+  },
+  {
+   "file": "lib/security/kaalka_service.dart",
+   "class": "REACHABLE",
+   "test_refs": 0,
+   "lib_importers": 2
+  },
+  {
+   "file": "lib/security/protection_service.dart",
+   "class": "REACHABLE",
+   "test_refs": 4,
+   "lib_importers": 4
+  },
+  {
+   "file": "lib/security/runtime_security_limits.dart",
+   "class": "REACHABLE",
+   "test_refs": 4,
+   "lib_importers": 8
+  },
+  {
+   "file": "lib/services/analytics_service.dart",
+   "class": "DEAD",
+   "test_refs": 0,
+   "lib_importers": 0
+  },
+  {
+   "file": "lib/services/file_context_service.dart",
+   "class": "EXPERIMENTAL",
+   "test_refs": 0,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/services/groq_service.dart",
+   "class": "EXPERIMENTAL",
+   "test_refs": 0,
+   "lib_importers": 9
+  },
+  {
+   "file": "lib/services/latency_manager.dart",
+   "class": "DEAD",
+   "test_refs": 0,
+   "lib_importers": 0
+  },
+  {
+   "file": "lib/services/provider_registry.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 2
+  },
+  {
+   "file": "lib/services/voice_service.dart",
+   "class": "REACHABLE",
+   "test_refs": 0,
+   "lib_importers": 2
+  },
+  {
+   "file": "lib/services/web_search_service.dart",
+   "class": "EXPERIMENTAL",
+   "test_refs": 0,
+   "lib_importers": 2
+  },
+  {
+   "file": "lib/software_architect/architecture_candidate.dart",
+   "class": "REACHABLE",
+   "test_refs": 17,
+   "lib_importers": 25
+  },
+  {
+   "file": "lib/software_architect/architecture_candidate_diff.dart",
+   "class": "REACHABLE",
+   "test_refs": 2,
+   "lib_importers": 3
+  },
+  {
+   "file": "lib/software_architect/architecture_candidate_serialization.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 2
+  },
+  {
+   "file": "lib/software_architect/architecture_planner.dart",
+   "class": "REACHABLE",
+   "test_refs": 17,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/software_architect/architecture_report.dart",
+   "class": "REACHABLE",
+   "test_refs": 0,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/software_architect/architecture_review.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 4
+  },
+  {
+   "file": "lib/software_architect/architecture_to_blueprint.dart",
+   "class": "REACHABLE",
+   "test_refs": 2,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/software_architect/architecture_types.dart",
+   "class": "REACHABLE",
+   "test_refs": 21,
+   "lib_importers": 30
+  },
+  {
+   "file": "lib/software_architect/capability_security_planner.dart",
+   "class": "REACHABLE",
+   "test_refs": 0,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/software_architect/confidence.dart",
+   "class": "REACHABLE",
+   "test_refs": 35,
+   "lib_importers": 53
+  },
+  {
+   "file": "lib/software_architect/confidence_analyzer.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 2
+  },
+  {
+   "file": "lib/software_architect/constraint_planner.dart",
+   "class": "REACHABLE",
+   "test_refs": 0,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/software_architect/data_planner.dart",
+   "class": "REACHABLE",
+   "test_refs": 0,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/software_architect/knowledge_graph.dart",
+   "class": "REACHABLE",
+   "test_refs": 4,
+   "lib_importers": 6
+  },
+  {
+   "file": "lib/software_architect/refinement_planner.dart",
+   "class": "REACHABLE",
+   "test_refs": 8,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/software_architect/requirement_extractor.dart",
+   "class": "REACHABLE",
+   "test_refs": 13,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/software_architect/requirement_graph.dart",
+   "class": "REACHABLE",
+   "test_refs": 8,
+   "lib_importers": 18
+  },
+  {
+   "file": "lib/software_architect/requirement_graph_diff.dart",
+   "class": "REACHABLE",
+   "test_refs": 3,
+   "lib_importers": 3
+  },
+  {
+   "file": "lib/software_architect/requirement_graph_serialization.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/software_architect/self_critic.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/software_architect/state_navigation_interaction_planner.dart",
+   "class": "REACHABLE",
+   "test_refs": 0,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/software_architect/validation_planner.dart",
+   "class": "REACHABLE",
+   "test_refs": 0,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/software_cognition/api_analyzer.dart",
+   "class": "DORMANT",
+   "test_refs": 1,
+   "lib_importers": 0
+  },
+  {
+   "file": "lib/software_cognition/api_model.dart",
+   "class": "EXPERIMENTAL",
+   "test_refs": 0,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/software_cognition/architecture_analyzer.dart",
+   "class": "DORMANT",
+   "test_refs": 3,
+   "lib_importers": 0
+  },
+  {
+   "file": "lib/software_cognition/architecture_model.dart",
+   "class": "EXPERIMENTAL",
+   "test_refs": 0,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/software_cognition/component_analyzer.dart",
+   "class": "DORMANT",
+   "test_refs": 1,
+   "lib_importers": 0
+  },
+  {
+   "file": "lib/software_cognition/component_model.dart",
+   "class": "EXPERIMENTAL",
+   "test_refs": 0,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/software_cognition/copyright_boundary.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/software_cognition/package_analyzer.dart",
+   "class": "REACHABLE",
+   "test_refs": 2,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/software_cognition/package_model.dart",
+   "class": "REACHABLE",
+   "test_refs": 3,
+   "lib_importers": 6
+  },
+  {
+   "file": "lib/software_cognition/repository_analyzer.dart",
+   "class": "REACHABLE",
+   "test_refs": 9,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/software_cognition/repository_model.dart",
+   "class": "REACHABLE",
+   "test_refs": 9,
+   "lib_importers": 7
+  },
+  {
+   "file": "lib/software_cognition/semantic_software_graph.dart",
+   "class": "REACHABLE",
+   "test_refs": 3,
+   "lib_importers": 14
+  },
+  {
+   "file": "lib/software_cognition/software_cognition_coordinator.dart",
+   "class": "REACHABLE",
+   "test_refs": 5,
+   "lib_importers": 3
+  },
+  {
+   "file": "lib/software_cognition/software_cognition_engine.dart",
+   "class": "REACHABLE",
+   "test_refs": 4,
+   "lib_importers": 3
+  },
+  {
+   "file": "lib/software_cognition/software_identity.dart",
+   "class": "REACHABLE",
+   "test_refs": 4,
+   "lib_importers": 9
+  },
+  {
+   "file": "lib/software_cognition/software_knowledge_graph.dart",
+   "class": "DEAD",
+   "test_refs": 0,
+   "lib_importers": 0
+  },
+  {
+   "file": "lib/software_cognition/software_node.dart",
+   "class": "REACHABLE",
+   "test_refs": 3,
+   "lib_importers": 6
+  },
+  {
+   "file": "lib/software_cognition/software_pattern.dart",
+   "class": "REACHABLE",
+   "test_refs": 0,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/software_cognition/software_projection_helpers.dart",
+   "class": "EXPERIMENTAL",
+   "test_refs": 0,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/software_cognition/software_provenance.dart",
+   "class": "REACHABLE",
+   "test_refs": 10,
+   "lib_importers": 4
+  },
+  {
+   "file": "lib/software_cognition/software_reasoner.dart",
+   "class": "REACHABLE",
+   "test_refs": 3,
+   "lib_importers": 4
+  },
+  {
+   "file": "lib/software_cognition/software_review.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/software_cognition/software_similarity.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/software_cognition/software_types.dart",
+   "class": "REACHABLE",
+   "test_refs": 8,
+   "lib_importers": 15
+  },
+  {
+   "file": "lib/solution_architecture/solution_architecture.dart",
+   "class": "REACHABLE",
+   "test_refs": 6,
+   "lib_importers": 6
+  },
+  {
+   "file": "lib/solution_architecture/solution_architecture_planner.dart",
+   "class": "REACHABLE",
+   "test_refs": 7,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/solution_architecture/solution_architecture_serialization.dart",
+   "class": "DORMANT",
+   "test_refs": 1,
+   "lib_importers": 0
+  },
+  {
+   "file": "lib/solution_evolution/solution_evolution.dart",
+   "class": "REACHABLE",
+   "test_refs": 2,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/solution_orchestration/execution_ordering.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/solution_orchestration/orchestration_result.dart",
+   "class": "REACHABLE",
+   "test_refs": 6,
+   "lib_importers": 3
+  },
+  {
+   "file": "lib/solution_orchestration/solution_execution_orchestrator.dart",
+   "class": "REACHABLE",
+   "test_refs": 5,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/solution_reasoning/solution_alternative.dart",
+   "class": "REACHABLE",
+   "test_refs": 0,
+   "lib_importers": 2
+  },
+  {
+   "file": "lib/solution_reasoning/solution_comparison.dart",
+   "class": "REACHABLE",
+   "test_refs": 2,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/solution_reasoning/solution_decision.dart",
+   "class": "REACHABLE",
+   "test_refs": 0,
+   "lib_importers": 4
+  },
+  {
+   "file": "lib/solution_reasoning/solution_explanation.dart",
+   "class": "REACHABLE",
+   "test_refs": 0,
+   "lib_importers": 2
+  },
+  {
+   "file": "lib/solution_reasoning/solution_exploration_context.dart",
+   "class": "REACHABLE",
+   "test_refs": 8,
+   "lib_importers": 3
+  },
+  {
+   "file": "lib/solution_reasoning/solution_explorer.dart",
+   "class": "REACHABLE",
+   "test_refs": 2,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/solution_reasoning/solution_generator.dart",
+   "class": "REACHABLE",
+   "test_refs": 6,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/solution_reasoning/solution_history.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 2
+  },
+  {
+   "file": "lib/solution_reasoning/solution_refinement.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/solution_reasoning/solution_reviewer.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 2
+  },
+  {
+   "file": "lib/solution_reasoning/solution_score.dart",
+   "class": "REACHABLE",
+   "test_refs": 4,
+   "lib_importers": 2
+  },
+  {
+   "file": "lib/solution_reasoning/solution_scorer.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/solution_reasoning/solution_selector.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/solution_reasoning/solution_tradeoff.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 5
+  },
+  {
+   "file": "lib/solution_reasoning/solution_types.dart",
+   "class": "REACHABLE",
+   "test_refs": 4,
+   "lib_importers": 11
+  },
+  {
+   "file": "lib/solution_reasoning/solution_variation_types.dart",
+   "class": "REACHABLE",
+   "test_refs": 8,
+   "lib_importers": 5
+  },
+  {
+   "file": "lib/storage/activity_repository.dart",
+   "class": "REACHABLE",
+   "test_refs": 26,
+   "lib_importers": 10
+  },
+  {
+   "file": "lib/storage/durable_collection_store.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 3
+  },
+  {
+   "file": "lib/storage/engineering_memory_repository.dart",
+   "class": "REACHABLE",
+   "test_refs": 20,
+   "lib_importers": 7
+  },
+  {
+   "file": "lib/storage/experience_database.dart",
+   "class": "REACHABLE",
+   "test_refs": 3,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/storage/intent_repository.dart",
+   "class": "REACHABLE",
+   "test_refs": 3,
+   "lib_importers": 2
+  },
+  {
+   "file": "lib/storage/knowledge_repository.dart",
+   "class": "REACHABLE",
+   "test_refs": 2,
+   "lib_importers": 2
+  },
+  {
+   "file": "lib/storage/migration.dart",
+   "class": "DORMANT",
+   "test_refs": 1,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/storage/migration_executor.dart",
+   "class": "DORMANT",
+   "test_refs": 1,
+   "lib_importers": 0
+  },
+  {
+   "file": "lib/storage/schema_storage_mapper.dart",
+   "class": "DORMANT",
+   "test_refs": 2,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/storage/sqlite_experience_repository.dart",
+   "class": "REACHABLE",
+   "test_refs": 50,
+   "lib_importers": 17
+  },
+  {
+   "file": "lib/storage/world_model_repository.dart",
+   "class": "REACHABLE",
+   "test_refs": 4,
+   "lib_importers": 3
+  },
+  {
+   "file": "lib/synthesis/app_archetype.dart",
+   "class": "REACHABLE",
+   "test_refs": 5,
+   "lib_importers": 5
+  },
+  {
+   "file": "lib/synthesis/app_blueprint.dart",
+   "class": "REACHABLE",
+   "test_refs": 80,
+   "lib_importers": 26
+  },
+  {
+   "file": "lib/synthesis/application_reasoner.dart",
+   "class": "REACHABLE",
+   "test_refs": 82,
+   "lib_importers": 21
+  },
+  {
+   "file": "lib/synthesis/blueprint_to_spec.dart",
+   "class": "REACHABLE",
+   "test_refs": 4,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/synthesis/blueprint_validator.dart",
+   "class": "REACHABLE",
+   "test_refs": 5,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/synthesis/composite_reasoner.dart",
+   "class": "REACHABLE",
+   "test_refs": 4,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/synthesis/deterministic_reasoner.dart",
+   "class": "REACHABLE",
+   "test_refs": 5,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/synthesis/generic_package_builder.dart",
+   "class": "REACHABLE",
+   "test_refs": 6,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/synthesis/model_reasoner.dart",
+   "class": "REACHABLE",
+   "test_refs": 4,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/synthesis/synthesis_patterns.dart",
+   "class": "DORMANT",
+   "test_refs": 1,
+   "lib_importers": 0
+  },
+  {
+   "file": "lib/synthesis/synthesis_planner.dart",
+   "class": "REACHABLE",
+   "test_refs": 5,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/tools/calculator_tool.dart",
+   "class": "EXPERIMENTAL",
+   "test_refs": 0,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/tools/crypto_tool.dart",
+   "class": "EXPERIMENTAL",
+   "test_refs": 0,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/tools/file_analysis_tool.dart",
+   "class": "EXPERIMENTAL",
+   "test_refs": 0,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/tools/tool_registry.dart",
+   "class": "EXPERIMENTAL",
+   "test_refs": 0,
+   "lib_importers": 5
+  },
+  {
+   "file": "lib/tools/tool_router.dart",
+   "class": "EXPERIMENTAL",
+   "test_refs": 0,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/tools/web_search_tool.dart",
+   "class": "EXPERIMENTAL",
+   "test_refs": 0,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/ui_engine/auil_parser.dart",
+   "class": "EXPERIMENTAL",
+   "test_refs": 0,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/ui_engine/component_registry.dart",
+   "class": "EXPERIMENTAL",
+   "test_refs": 0,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/ui_engine/generative_ui_renderer.dart",
+   "class": "EXPERIMENTAL",
+   "test_refs": 0,
+   "lib_importers": 2
+  },
+  {
+   "file": "lib/ui_engine/layout_engine.dart",
+   "class": "EXPERIMENTAL",
+   "test_refs": 0,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/widgets/ai_command_bar.dart",
+   "class": "EXPERIMENTAL",
+   "test_refs": 0,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/widgets/ai_loading_screen.dart",
+   "class": "EXPERIMENTAL",
+   "test_refs": 0,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/widgets/analogue_clock_picker.dart",
+   "class": "EXPERIMENTAL",
+   "test_refs": 0,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/widgets/custom_hub_logo.dart",
+   "class": "EXPERIMENTAL",
+   "test_refs": 0,
+   "lib_importers": 2
+  },
+  {
+   "file": "lib/widgets/workspace_container.dart",
+   "class": "DEAD",
+   "test_refs": 0,
+   "lib_importers": 0
+  },
+  {
+   "file": "lib/workflow/workflow_engine.dart",
+   "class": "EXPERIMENTAL",
+   "test_refs": 0,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/workflow/workflow_executor.dart",
+   "class": "DEAD",
+   "test_refs": 0,
+   "lib_importers": 0
+  },
+  {
+   "file": "lib/workflow/workflow_memory.dart",
+   "class": "EXPERIMENTAL",
+   "test_refs": 0,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/world_model/bridges/backend_graph_bridge.dart",
+   "class": "REACHABLE",
+   "test_refs": 0,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/world_model/bridges/evolution_graph_bridge.dart",
+   "class": "REACHABLE",
+   "test_refs": 2,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/world_model/bridges/experience_graph_bridge.dart",
+   "class": "REACHABLE",
+   "test_refs": 2,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/world_model/bridges/implementation_graph_bridge.dart",
+   "class": "REACHABLE",
+   "test_refs": 0,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/world_model/bridges/knowledge_graph_bridge.dart",
+   "class": "REACHABLE",
+   "test_refs": 2,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/world_model/bridges/requirement_graph_bridge.dart",
+   "class": "REACHABLE",
+   "test_refs": 0,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/world_model/bridges/review_graph_bridge.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/world_model/bridges/runtime_graph_bridge.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/world_model/bridges/software_graph_bridge.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/world_model/bridges/solution_architecture_graph_bridge.dart",
+   "class": "REACHABLE",
+   "test_refs": 0,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/world_model/context_analyzer.dart",
+   "class": "REACHABLE",
+   "test_refs": 0,
+   "lib_importers": 3
+  },
+  {
+   "file": "lib/world_model/dependency_analyzer.dart",
+   "class": "DORMANT",
+   "test_refs": 1,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/world_model/entity_identity.dart",
+   "class": "REACHABLE",
+   "test_refs": 13,
+   "lib_importers": 21
+  },
+  {
+   "file": "lib/world_model/entity_resolver.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 11
+  },
+  {
+   "file": "lib/world_model/graph_conflict.dart",
+   "class": "REACHABLE",
+   "test_refs": 0,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/world_model/graph_consistency.dart",
+   "class": "REACHABLE",
+   "test_refs": 2,
+   "lib_importers": 3
+  },
+  {
+   "file": "lib/world_model/graph_index.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/world_model/graph_merge.dart",
+   "class": "REACHABLE",
+   "test_refs": 2,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/world_model/graph_projection.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/world_model/graph_query.dart",
+   "class": "DORMANT",
+   "test_refs": 1,
+   "lib_importers": 2
+  },
+  {
+   "file": "lib/world_model/graph_resolver.dart",
+   "class": "DORMANT",
+   "test_refs": 1,
+   "lib_importers": 0
+  },
+  {
+   "file": "lib/world_model/graph_search.dart",
+   "class": "DORMANT",
+   "test_refs": 1,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/world_model/graph_traversal.dart",
+   "class": "REACHABLE",
+   "test_refs": 2,
+   "lib_importers": 4
+  },
+  {
+   "file": "lib/world_model/graph_update.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 12
+  },
+  {
+   "file": "lib/world_model/graph_view.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 2
+  },
+  {
+   "file": "lib/world_model/impact_analyzer.dart",
+   "class": "REACHABLE",
+   "test_refs": 3,
+   "lib_importers": 2
+  },
+  {
+   "file": "lib/world_model/relationship_identity.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/world_model/semantic_entity.dart",
+   "class": "DEAD",
+   "test_refs": 0,
+   "lib_importers": 0
+  },
+  {
+   "file": "lib/world_model/semantic_graph.dart",
+   "class": "DORMANT",
+   "test_refs": 1,
+   "lib_importers": 0
+  },
+  {
+   "file": "lib/world_model/semantic_query_engine.dart",
+   "class": "DORMANT",
+   "test_refs": 1,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/world_model/world_edge.dart",
+   "class": "REACHABLE",
+   "test_refs": 9,
+   "lib_importers": 21
+  },
+  {
+   "file": "lib/world_model/world_graph.dart",
+   "class": "REACHABLE",
+   "test_refs": 10,
+   "lib_importers": 21
+  },
+  {
+   "file": "lib/world_model/world_history.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 2
+  },
+  {
+   "file": "lib/world_model/world_memory.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 2
+  },
+  {
+   "file": "lib/world_model/world_model.dart",
+   "class": "REACHABLE",
+   "test_refs": 0,
+   "lib_importers": 2
+  },
+  {
+   "file": "lib/world_model/world_model_coordinator.dart",
+   "class": "REACHABLE",
+   "test_refs": 21,
+   "lib_importers": 8
+  },
+  {
+   "file": "lib/world_model/world_model_engine.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/world_model/world_node.dart",
+   "class": "REACHABLE",
+   "test_refs": 9,
+   "lib_importers": 24
+  },
+  {
+   "file": "lib/world_model/world_planner.dart",
+   "class": "REACHABLE",
+   "test_refs": 1,
+   "lib_importers": 1
+  },
+  {
+   "file": "lib/world_model/world_reasoner.dart",
+   "class": "DEAD",
+   "test_refs": 0,
+   "lib_importers": 0
+  },
+  {
+   "file": "lib/world_model/world_snapshot.dart",
+   "class": "REACHABLE",
+   "test_refs": 0,
+   "lib_importers": 5
+  },
+  {
+   "file": "lib/world_model/world_types.dart",
+   "class": "REACHABLE",
+   "test_refs": 29,
+   "lib_importers": 28
+  }
+ ]
+}
