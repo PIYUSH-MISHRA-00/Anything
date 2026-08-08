@@ -3312,6 +3312,106 @@ final x = 1;
     );
 
     test(
+      'I-89 — exactly ONE execution contract and ONE execution validator (IS-R61 Phase 8)',
+      () {
+        final types =
+            libFiles
+                .expand(
+                  (f) => RegExp(r'\bclass\s+(\w*Execution\w*)\b')
+                      .allMatches(f.code)
+                      .map((m) => m.group(1)!)
+                      .where(
+                        (n) =>
+                            n.contains('Contract') ||
+                            n.contains('Validator') ||
+                            n.contains('Requirements'),
+                      )
+                      .map((n) => '${f.path}:$n'),
+                )
+                .toList()
+              ..sort();
+        // Whole-identifier matching, deliberately: IS-R60's first attempt at
+        // the equivalent invariant anchored the suffix at the END of the class
+        // name, so a probe called `ExperiencePackageReader2` escaped it.
+        expect(
+          types,
+          [
+            'lib/app/experience_execution_contract.dart:ExecutionContractFinding',
+            'lib/app/experience_execution_contract.dart:ExecutionContractValidation',
+            'lib/app/experience_execution_contract.dart:ExecutionRequirements',
+            'lib/app/experience_execution_contract.dart:ExperienceExecutionContract',
+            'lib/app/experience_execution_contract.dart:ExperienceExecutionValidator',
+          ],
+          reason: 'a second execution contract or validator appeared: $types',
+        );
+
+        // The contract EMBEDS the canonical manifest rather than re-declaring
+        // its fields — the same clause that distinguishes embedding from
+        // duplicating in I-60.
+        final contract = libFiles.firstWhere(
+          (f) => f.path == 'lib/app/experience_execution_contract.dart',
+        );
+        expect(
+          RegExp(
+            r'final\s+ExperienceManifest\s+manifest;',
+          ).hasMatch(contract.code),
+          isTrue,
+          reason:
+              'the contract must CARRY the canonical manifest, not copy its '
+              'capability fields into a parallel declaration',
+        );
+        expect(
+          _declaringFiles(libFiles, 'ExperienceManifest'),
+          ['lib/creation/experience_package.dart'],
+          reason: 'R61 must not have introduced a second manifest',
+        );
+      },
+    );
+
+    test(
+      'I-90 — the execution contract DECLARES and never decides, schedules, executes or enforces (IS-R61 Phase 8)',
+      () {
+        // HISTORICAL DEFECT THIS PREVENTS. A contract travels inside a package,
+        // and a package is UNTRUSTED INPUT. If a contract could decide its own
+        // eligibility it would be a governance engine that anything able to
+        // write a manifest could reach — exactly backwards. Governance (R51)
+        // decides, the capability platform (R49/R51) enforces, the lifecycle
+        // engine (R39) chooses pause/resume/terminate, and the scheduler
+        // schedules.
+        final contract = libFiles.firstWhere(
+          (f) => f.path == 'lib/app/experience_execution_contract.dart',
+        );
+        for (final forbidden in [
+          // Decision authority belongs to R51.
+          'OperatingSystemGovernanceEngine', 'GovernanceDecision',
+          'GovernanceEvaluation', 'GovernanceOutcome',
+          // Trust belongs to R52.
+          'ExperienceTrustClassifier', 'ExperienceTrustLevel', 'classify(',
+          // Enforcement belongs to R49/R51.
+          'CapabilityPlatform', 'invoke(',
+          // Scheduling, lifecycle and runtime remain untouched.
+          'WorkspaceSchedulingEngine', 'WorkspaceLifecyclePolicyEngine',
+          'RuntimePolicyAction', 'WorkspaceRuntimeSupervisor',
+          'AnythingRuntime', 'ExperienceEntryPipeline',
+          // It owns no persistence and no I/O.
+          'SqliteExperienceRepository', 'ExperienceCommitFramework',
+          "dart:io", 'File(',
+          // Compatibility against this build is R54's, and this validator would
+          // be the obvious place to grow a second evaluator.
+          'ExperienceCompatibilityEvaluator',
+        ]) {
+          expect(
+            contract.code.contains(forbidden),
+            isFalse,
+            reason:
+                'the execution contract declares only; referencing $forbidden would '
+                'make it a second owner of that subsystem',
+          );
+        }
+      },
+    );
+
+    test(
       'neither the Kernel nor any UI file imports an external cognition/protection package directly',
       () {
         final offenders = libFiles
