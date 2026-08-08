@@ -617,3 +617,31 @@ failed I-78; B (double registration) failed I-79; D (registration removed)
 WOULD NOT COMPILE — it now breaks the build in three places, because consumers
 RECEIVE the instance instead of building their own. The type system became the
 stronger guard only once the ownership was real, exactly as in R55.
+
+
+## IS-R59 — Runtime Reachability (I-85, I-86)
+
+| # | Invariant | Mechanism | Status |
+|---|---|---|---|
+| I-85 | Exactly ONE entry point, ONE app widget, and NO `ProviderScope` | STATIC | CERTIFIED |
+| I-86 | Every `lib/` file has a KNOWN runtime classification | STATIC (import closure) | CERTIFIED |
+
+**THE MEASUREMENT.** Transitive import closure from `lib/main.dart`: **110 of
+466 lib files (23.6%) were unreachable**, across 29 directories, with no
+classification. Every file now carries exactly one — REACHABLE 356, DORMANT 43,
+EXPERIMENTAL 50, DEPRECATED 0, DEAD 2 — and I-86 fails on any unknown state.
+
+**I-85's THIRD CLAUSE IS THE LOAD-BEARING ONE.** Certifying that NO
+`ProviderScope` exists is what keeps ~50 disconnected files inert. Adding one
+would resolve all 17 currently-unresolvable Riverpod providers at once and put a
+parallel dependency-injection graph beside `AppComposition`. It must be a
+reviewed act, not a side effect.
+
+**DELETION REQUIRED TWO INDEPENDENT METHODS TO AGREE.** Import closure found 16
+dead files; type-name verification confirmed 14. The two it could not confirm —
+`layout.dart`, `semantic_entity.dart` — are exactly those whose type names
+collide with live declarations (36 and 167 unattributable references). Not
+deleted; pinned with the reason, because *suspected is not proven*.
+
+**R59 mutation evidence.** Probe E (a second `void main()` + `MaterialApp`)
+failed I-85. Probe F (an unreachable, unpinned file) failed I-86. Both reverted.

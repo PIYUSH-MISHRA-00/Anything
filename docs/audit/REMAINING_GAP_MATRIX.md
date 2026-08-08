@@ -1,4 +1,4 @@
-# Remaining Gap Matrix — IS-R46, updated through IS-R57
+# Remaining Gap Matrix — IS-R46, updated through IS-R59
 
 Everything the repository-wide audit surfaced that is **not** resolved. Each
 row cites real evidence; nothing here is hypothetical.
@@ -33,6 +33,23 @@ Severity: **A** = architectural integrity, **B** = correctness/UX,
 |---|---|---|
 | G-18 | Persisted knowledge had no retention policy — unbounded growth | **CLOSED.** `RetentionPolicyEngine` now owns it: 500 entries / 20 MB / 30 days. `KnowledgeCache.applyRetention()` asks the engine and tells `KnowledgeRepository` which keys to drop; the repository still owns no policy (I-47). R48 deliberately did not invent a policy because none existed to reuse — R50 created the canonical owner first, then applied it. |
 | G-22 | Retention was invented independently three times with three magic numbers (`_maxRecords=100`, `_maxEvents=200`, `maxScheduled=200`) | **CLOSED.** All three delegate to the ONE engine. Values unchanged — three tests assert 100/200/200 exactly, so ownership moved without behaviour moving. No repository or capability service may hold a retention rule any more (I-46), mutation-proven. |
+
+## CLOSED BY IS-R59
+
+| # | Sev | Gap | How it was closed |
+|---|---|---|---|
+| **G-48 (part)** | HIGH | **An entire parallel subsystem was unreachable and unclassified** | **PARTIALLY CLOSED.** The subsystem still exists and was deliberately NOT deleted (~50 mutually-referencing files meet no proof standard, and migrating to/from Riverpod is forbidden). What IS closed is the *unknown* part: every one of 451 `lib/` files now carries exactly one classification, and **I-86** fails on any file in an unknown state. **I-85** additionally certifies that no `ProviderScope` exists, so the subsystem cannot be revived silently. |
+| **NEW** | MED | **110 of 466 lib files (23.6%) were unreachable from `main()` with no classification** | **CLOSED.** Measured by transitive import closure; every file classified REACHABLE (356) / DORMANT (43) / EXPERIMENTAL (50) / DEPRECATED (0) / DEAD (2). Reproducible via `tool/reachability.py`. |
+| **NEW** | MED | **15 dead files** | **DELETED**, each proven by BOTH import closure and type-name reference, in four validated commits. One (`onboarding_screen.dart`) was a cascade exposed by an earlier deletion. |
+
+## OPENED BY IS-R59
+
+| # | Sev | Gap | Evidence | Status |
+|---|---|---|---|---|
+| G-50 | MED | **~50 EXPERIMENTAL files remain** — a coherent parallel v1 application (`app_shell`, agents, tools, memory, ui_engine, core engines, groq services) that cannot run because no `ProviderScope` exists. | `PARALLEL_ARCHITECTURE_REPORT.md` | **Open, deliberately.** They import each other, so none is individually orphaned and none meets Phase 8's proof standard. Deleting or reviving is IS-R60's subject. |
+| G-51 | LOW | **Two DEAD files could not be proven dead.** `layout.dart` and `semantic_entity.dart` are unreachable and unimported, but their type names collide with live declarations (36 and 167 unattributable references). | `DEAD_SUBSYSTEM_REPORT.md` | **Open.** Pinned in `pinnedUnreachableFiles` so I-86 keeps them visible. Needs type-aware analysis; a dependency for two files is not justified. |
+| G-52 | LOW | **43 DORMANT files are tested but unreachable from `main()`** — their tests assert behaviour no user can reach. | `tool/reachability_report.json` | **Open.** Not a defect: coverage of inert code is harmless. Recorded because "2,068 tests pass" reads as "2,068 tests of reachable behaviour", and that is not true. |
+| G-40 | MED | **Suite flakiness is NOT resolved.** R58 measured 0/22 and I reported it as not currently reproducible; it recurred twice during R59. | R59 full-suite runs | **Open, and my R58 reading was too confident.** 0/22 bounds the rate; it does not prove absence. Intermittent at a low rate. |
 
 ## CLOSED BY IS-R57
 
