@@ -395,3 +395,49 @@ and `HomeScreen`'s own `SqliteExperienceRepository` and `IntentRepository`.
 `lib/core/contracts/repository.dart` — the latter holding four contracts with
 zero implementations, one of which collided by name with the live
 `IntentRepository`.
+
+---
+
+## Execution ownership (IS-R61)
+
+`ExperienceExecutionContract` DECLARES. It decides nothing.
+
+| Verb | Owner | Milestone |
+|---|---|---|
+| DECLARES what an Experience asks for | `ExperienceExecutionContract` | **R61** |
+| VALIDATES the declaration's internal consistency | `ExperienceExecutionValidator` | **R61** |
+| DESCRIBES capabilities and identity | `ExperienceManifest` (embedded, not copied) | R53 |
+| DECIDES background eligibility | `BackgroundExecutionRule` → `OperatingSystemGovernanceEngine` | R51 |
+| ENFORCES capabilities | `CapabilityPlatform` | R49/R51 |
+| DECIDES compatibility with this build | `ExperienceCompatibilityEvaluator` | R54 |
+| DECIDES pause / resume / terminate / restore | `WorkspaceLifecyclePolicyEngine` → `RuntimePolicyAction` | R39 |
+| SCHEDULES | `WorkspaceSchedulingEngine` | R38 |
+| ACTIVATES | `ExperienceEntryPipeline` | R45 |
+| PROTECTS | `ExperienceProtectionService` | Kaalka |
+| SERIALISES | `ExperiencePackageWriter` / `Reader` | R60 |
+
+### Why declarative-only is a safety property, not a limitation
+
+A contract travels inside a package, and **a package is untrusted input**. A
+contract that could decide its own eligibility would be a governance engine
+reachable by anything able to write a manifest — authority flowing from the
+artefact instead of from the platform.
+
+So declaring `background` does not grant background, declaring a capability
+does not grant it, and declaring `requiresProtection` does not enable
+protection. **Certified by I-90**, which fails if the contract source so much
+as *names* any of fourteen decision-owning symbols.
+
+### One manifest, still
+
+`ExperienceExecutionContract` EMBEDS `ExperienceManifest` and exposes
+`experienceId`, `requiredCapabilities` and `optionalCapabilities` as getters
+reading *through* it — the same relationship the R53 envelope has with it. No
+capability field is re-declared. **Certified by I-89.**
+
+### The single genuinely new concept
+
+Execution **mode**. The Phase 1 audit found no execution-mode concept anywhere
+in `lib/`; `ExperienceRuntimeType` describes RENDERING (`auil`/`flutter`/`web`/
+`hybrid`) and lives in the unreachable v1 contracts set IS-R59 classified
+EXPERIMENTAL. Everything else R61's specification listed already had an owner.

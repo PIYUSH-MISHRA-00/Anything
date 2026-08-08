@@ -672,3 +672,53 @@ a brand-new invariant rather than confirming it (R48, R56, R60).
 
 **R60 mutation evidence.** Probe A (a second reader) failed I-87 after the fix.
 Probe B (a `classify()` on the reader) failed I-88.
+
+---
+
+## I-89 / I-90 — the execution contract (IS-R61)
+
+| ID | Invariant | Historical defect it prevents |
+|---|---|---|
+| **I-89** | Exactly one execution contract and one execution validator; the contract EMBEDS the canonical manifest and `ExperienceManifest` is still declared once | A second execution contract would re-declare the capabilities `ExperienceManifest` has owned since R53 (I-60), producing the parallel ownership R61's ABSOLUTE RULES forbid |
+| **I-90** | The execution contract DECLARES only — it never decides, schedules, executes, enforces, computes trust, evaluates compatibility or performs I/O | A contract travels inside a package, and a package is untrusted input; a contract that could decide its own eligibility would be a governance engine reachable by anyone able to write a manifest |
+
+I-89 checks two things, not one: the set of `*Execution*` classes matching
+`Contract`/`Validator`/`Requirements` is pinned exactly, **and** the contract
+still carries `final ExperienceManifest manifest;` rather than copied fields.
+The second clause is what distinguishes embedding from duplicating — a contract
+that dropped the field and copied `requiredCapabilities` into a parallel list
+would satisfy "exactly one contract" while creating exactly the second
+declaration the invariant exists to prevent.
+
+I-90 is a forbidden-symbol check over the comment-stripped source. It fails if
+the contract so much as *names* `OperatingSystemGovernanceEngine`,
+`GovernanceDecision`, `GovernanceEvaluation`, `GovernanceOutcome`,
+`ExperienceTrustClassifier`, `ExperienceTrustLevel`, `classify(`,
+`CapabilityPlatform`, `invoke(`, `WorkspaceSchedulingEngine`,
+`WorkspaceLifecyclePolicyEngine`, `RuntimePolicyAction`,
+`WorkspaceRuntimeSupervisor`, `AnythingRuntime`, `ExperienceEntryPipeline`,
+`SqliteExperienceRepository`, `ExperienceCommitFramework`, `dart:io`, `File(`
+or `ExperienceCompatibilityEvaluator`. The last is deliberate: R54's I-61
+forbids a second compatibility evaluator, and this validator is the obvious
+place one would grow.
+
+**I-89 was written whole-identifier from the start, because of R60.** R60's
+first attempt at the equivalent invariant anchored the suffix at the END of the
+class name and a probe called `ExperiencePackageReader2` escaped it entirely.
+I-89 matches `\bclass\s+(\w*Execution\w*)\b` and filters by content, and the
+probe `ExperienceExecutionContract2` failed it as required on the first run.
+
+**R61 mutation evidence — five probes, five failures.**
+
+| Probe | Invariant | Result |
+|---|---|---|
+| A second class `ExperienceExecutionContract2` | I-89 | FAILED as required — the escape R60 missed |
+| The manifest field replaced by copied `_copiedId` / `_copiedRequired` fields | I-89 | FAILED as required — "must CARRY the canonical manifest, not copy its capability fields" |
+| A second `ExperienceManifest` declared in the contract file | I-89 | FAILED as required |
+| A `CapabilityPlatform?` field on the contract | I-90 | FAILED as required |
+| A reference to `ExperienceCompatibilityEvaluator` | I-90 | FAILED as required |
+
+A sixth probe was written and **discarded as invalid**: it changed only
+whitespace in the manifest field declaration, which `\s+` still matched, so its
+"pass" proved nothing. It is recorded here because a probe that passes for the
+wrong reason is indistinguishable from an invariant that does not work.

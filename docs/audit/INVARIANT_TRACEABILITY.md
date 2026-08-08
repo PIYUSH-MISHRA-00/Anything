@@ -70,6 +70,8 @@ I-83 — EVERY declared type in lib/ is declared exactly once, or is a PINNED
 | **I-86** | **R59** | Every `lib/` file has a KNOWN runtime classification | 110 of 466 files unreachable from `main()` with no classification at all |
 | **I-87** | **R60** | Exactly one package format, reader and writer; manifest and validator not duplicated | A transport envelope with `toJson()` and no `fromJson` — a one-way street since R53 |
 | **I-88** | **R60** | The reader never installs, activates, computes trust or performs I/O | Parsing something must not run it, and a well-formed package must not earn authority |
+| **I-89** | **R61** | Exactly one execution contract and one execution validator; the contract EMBEDS the canonical manifest | A second execution contract would re-declare the capabilities `ExperienceManifest` has owned since R53 (I-60) |
+| **I-90** | **R61** | The execution contract DECLARES only — it never decides, schedules, executes, enforces or persists | A contract travels inside a package, and a package is untrusted input; a contract that could decide its own eligibility would be a governance engine reachable by anyone who can write a manifest |
 
 ## Remaining work, stated plainly
 

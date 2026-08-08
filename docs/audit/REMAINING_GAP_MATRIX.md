@@ -34,6 +34,13 @@ Severity: **A** = architectural integrity, **B** = correctness/UX,
 | G-18 | Persisted knowledge had no retention policy — unbounded growth | **CLOSED.** `RetentionPolicyEngine` now owns it: 500 entries / 20 MB / 30 days. `KnowledgeCache.applyRetention()` asks the engine and tells `KnowledgeRepository` which keys to drop; the repository still owns no policy (I-47). R48 deliberately did not invent a policy because none existed to reuse — R50 created the canonical owner first, then applied it. |
 | G-22 | Retention was invented independently three times with three magic numbers (`_maxRecords=100`, `_maxEvents=200`, `maxScheduled=200`) | **CLOSED.** All three delegate to the ONE engine. Values unchanged — three tests assert 100/200/200 exactly, so ownership moved without behaviour moving. No repository or capability service may hold a retention rule any more (I-46), mutation-proven. |
 
+## OPENED BY IS-R61 — recorded at the moment they were created
+
+| # | Sev | Gap | Evidence | Status |
+|---|---|---|---|---|
+| G-56 | MED | **Nothing consumes the execution contract.** No package carries one, `ExperienceEntryPipeline` does not read one, and no governance path is fed by one. The contract is a correct, certified, unwired declaration. | `grep -rln ExecutionMode lib/` returns exactly one file — the contract itself | **Open, deliberately.** IS-R61's ABSOLUTE RULES forbid redesigning the runtime, scheduler, lifecycle, installation, packaging, governance, trust, commit and repository layers, which is every subsystem a consumer would have to touch. Named as the recommended IS-R62. |
+| G-57 | LOW | **Reserved execution semantics have no implementation.** `ExecutionMode.headless`, `ExecutionMode.autonomous`, `IsolationPolicy.strict` and `recoverable` are architecture only. | `ExperienceExecutionValidator` refuses the two reserved modes; `strict` and `recoverable` are inert | **Open by design.** Refusing beats accepting-and-ignoring: accepting a reserved mode would promise execution semantics no runtime implements. Declaring the vocabulary now means no widening later. |
+
 ## PROGRESSED BY IS-R60
 
 | # | Sev | Gap | Movement |
