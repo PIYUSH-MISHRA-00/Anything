@@ -10,19 +10,6 @@ import '../synthesis/app_blueprint.dart';
 import 'creation_context.dart';
 import 'experience_package.dart';
 
-/// Status of creation phases.
-enum CreationPhase {
-  prepare,
-  design,
-  buildInterface,
-  buildBehavior,
-  buildData,
-  wireServices,
-  validate,
-  package,
-  ready,
-}
-
 /// Result of creation.
 sealed class CreationResult {
   final String message;

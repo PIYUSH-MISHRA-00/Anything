@@ -28,19 +28,6 @@ import 'knowledge_bundle.dart';
 import 'search_provider.dart';
 import 'webweavex_adapter.dart';
 
-/// Status of knowledge acquisition.
-enum AcquisitionStatus {
-  idle,
-  planning,
-  retrieving,
-  normalizing,
-  evaluating,
-  ready,
-  partial,
-  offlineCached,
-  failed,
-}
-
 /// Deterministic cache key: identical (query, language, provider, options)
 /// always maps to the same key, and only that.
 class KnowledgeCacheKey {
