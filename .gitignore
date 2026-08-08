@@ -58,3 +58,8 @@ android/key.properties
 *.jks
 *.keystore
 .env
+
+# ── Website (IS-P02) ───────────────────────────────────────────────────────
+website/node_modules/
+website/docs/.vitepress/dist/
+website/docs/.vitepress/cache/

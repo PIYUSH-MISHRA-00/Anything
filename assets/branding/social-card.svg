@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 640" role="img"
+     aria-label="Anything — an operating system for software that does not exist yet">
+  <title>Anything</title>
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#6C5CE7"/>
+      <stop offset="1" stop-color="#00B8A9"/>
+    </linearGradient>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0B0B10"/>
+      <stop offset="1" stop-color="#15131F"/>
+    </linearGradient>
+  </defs>
+  <rect width="1280" height="640" fill="url(#bg)"/>
+  <g transform="translate(96 200)">
+    <path d="M40 0 H22 a16 16 0 0 0-16 16 v72 a16 16 0 0 0 16 16 h18"
+          fill="none" stroke="url(#g)" stroke-width="12" stroke-linecap="round"/>
+    <rect x="62" y="18" width="68" height="68" rx="18" fill="url(#g)"/>
+  </g>
+  <text x="96" y="400" font-family="Inter, Segoe UI, system-ui, sans-serif"
+        font-size="76" font-weight="700" fill="#FFFFFF" letter-spacing="-2">Anything</text>
+  <text x="96" y="462" font-family="Inter, Segoe UI, system-ui, sans-serif"
+        font-size="34" font-weight="400" fill="#B9B6C7">An operating system for software that does not exist yet.</text>
+  <text x="96" y="524" font-family="Inter, Segoe UI, system-ui, sans-serif"
+        font-size="26" font-weight="500" fill="#00B8A9">Describe what you need. Anything builds it, runs it, and keeps it.</text>
+  <text x="96" y="586" font-family="Inter, Segoe UI, system-ui, sans-serif"
+        font-size="22" fill="#6E6A80">Apache-2.0 &#183; Flutter &#183; 102 certified invariants &#183; 2,141 tests</text>
+</svg>

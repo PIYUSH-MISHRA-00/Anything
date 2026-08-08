@@ -1,7 +1,7 @@
 # Contributing to Anything
 
 Thank you for considering it. This project is unusually safe to contribute to:
-**101 certified invariants and 2,127 tests will tell you immediately if a change
+**102 certified invariants and 2,141 tests will tell you immediately if a change
 breaks an architectural rule**, so you do not need to hold the whole system in
 your head to make a correct change.
 

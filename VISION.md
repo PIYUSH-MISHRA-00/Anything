@@ -33,7 +33,7 @@ commitment, not a phase.
 
 **2. One owner per concern, enforced by a machine.** Every capability in this
 system has exactly one owner, and that is verified by a test rather than a
-convention. 101 invariants, each mutation-proven.
+convention. 102 invariants, each mutation-proven.
 
 **3. A package is untrusted input.** An Experience arrives as data. It never
 earns authority by being well-formed: reading one does not install it,

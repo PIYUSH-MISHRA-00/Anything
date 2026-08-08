@@ -82,13 +82,14 @@ Each inserts a typed, reviewable stage into the creation pipeline. Together
 | COMMITS | `ExperienceCommitFramework` |
 | SERIALISES | `ExperiencePackageWriter` / `Reader` |
 | DECLARES | `ExperienceExecutionContract` |
+| MOVES between devices | `ExperiencePortability` |
 | PROTECTS | `ExperienceProtectionService` |
 
 Full table: [OWNERSHIP_MATRIX](docs/audit/OWNERSHIP_MATRIX.md).
 
 ## Certification
 
-101 invariants run on every commit from a single suite,
+102 invariants run on every commit from a single suite,
 `test/r46_architectural_integrity_certification_test.dart`. Each was
 **mutation-proven**: deliberately broken, and the check confirmed to fail.
 
@@ -101,6 +102,7 @@ Examples of what they enforce:
 - exactly one manifest, one validator, one package format (I-59/I-60/I-87)
 - the execution contract declares and never decides (I-90)
 - nothing reaches the scheduler except through the orchestrator (I-91)
+- **every canonical framework has a real production consumer (I-93)**
 
 Registry: [ARCHITECTURE_INVARIANT_MATRIX](docs/audit/ARCHITECTURE_INVARIANT_MATRIX.md) ·
 [INVARIANT_TRACEABILITY](docs/audit/INVARIANT_TRACEABILITY.md).
@@ -118,7 +120,6 @@ Stated plainly rather than buried:
 | Item | Detail |
 |---|---|
 | ~50 unreachable v1 files | A complete parallel application (`lib/screens`, `lib/agents`, `lib/tools`, `lib/ui_engine`, `lib/widgets`) that cannot run because nothing creates a `ProviderScope`. Kept, not deleted, because the files import each other and none is individually provably dead. |
-| Import/export unreachable | The package codec, installer and distribution framework are built and certified but have no UI entry point. |
 | Reachability analysis is pinned | `tool/reachability.py` produces the classification; the invariant checks a pinned list rather than recomputing. |
 
 Tracked in [REMAINING_GAP_MATRIX](docs/audit/REMAINING_GAP_MATRIX.md).

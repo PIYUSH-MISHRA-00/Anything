@@ -1,0 +1,23 @@
+# Categories for auto-generated GitHub release notes.
+# Mirrors the conventional-commit prefixes CONTRIBUTING.md asks for, so notes
+# organise themselves without anyone maintaining a second taxonomy.
+changelog:
+  exclude:
+    labels: [ignore-for-release]
+  categories:
+    - title: Breaking changes
+      labels: [breaking]
+    - title: Features
+      labels: [enhancement, feature]
+    - title: Fixes
+      labels: [bug, fix]
+    - title: Architecture and certification
+      labels: [architecture, certification]
+    - title: Android and release engineering
+      labels: [android, release]
+    - title: Documentation and website
+      labels: [documentation, website]
+    - title: Dependencies
+      labels: [dependencies]
+    - title: Other changes
+      labels: ['*']

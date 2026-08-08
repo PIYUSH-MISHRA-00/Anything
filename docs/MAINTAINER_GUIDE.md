@@ -30,7 +30,7 @@ Advancement is by invitation, and is recorded in a PR editing
 Never merge these without lead review, regardless of who approves:
 
 - `test/r46_architectural_integrity_certification_test.dart` — a change here can
-  silently weaken all 101 invariants
+  silently weaken all 102 invariants
 - `tool/analyze_gate.sh` — the baseline gate
 - `.github/workflows/` — the checks themselves
 - `android/` — signing, permissions, R8; decides whether the product ships

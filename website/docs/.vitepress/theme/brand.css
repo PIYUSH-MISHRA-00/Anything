@@ -1,0 +1,62 @@
+/* Anything brand palette.
+ *
+ * The same two colours as assets/branding/logo.svg, so the site and the mark
+ * cannot drift apart. Only VitePress' documented CSS variables are overridden
+ * -- no selector in the default theme is targeted directly, because those are
+ * internal and would break on a minor upgrade. */
+
+:root {
+  --anything-violet: #6c5ce7;
+  --anything-teal: #00b8a9;
+  --anything-ink: #0b0b10;
+
+  --vp-c-brand-1: var(--anything-violet);
+  --vp-c-brand-2: #7d70ea;
+  --vp-c-brand-3: #8d82ee;
+  --vp-c-brand-soft: rgba(108, 92, 231, 0.14);
+
+  /* The hero title carries the mark's gradient, left to right. */
+  --vp-home-hero-name-color: transparent;
+  --vp-home-hero-name-background: linear-gradient(
+    120deg,
+    var(--anything-violet) 0%,
+    var(--anything-teal) 100%
+  );
+
+  --vp-home-hero-image-background-image: linear-gradient(
+    -45deg,
+    var(--anything-violet) 40%,
+    var(--anything-teal) 100%
+  );
+  --vp-home-hero-image-filter: blur(48px);
+}
+
+.dark {
+  --vp-c-brand-1: #8d82ee;
+  --vp-c-brand-2: #9d93f1;
+  --vp-c-brand-3: #ada4f4;
+}
+
+/* The status tables on the landing page carry a lot of the site's honesty.
+ * Give them room to breathe rather than letting them read as fine print. */
+.vp-doc table {
+  display: table;
+  width: 100%;
+}
+
+.vp-doc td,
+.vp-doc th {
+  padding: 0.6rem 0.9rem;
+}
+
+/* Wide tables must scroll inside themselves rather than pushing the page
+ * sideways on a phone. */
+.vp-doc .table-wrapper {
+  overflow-x: auto;
+}
+
+@media (min-width: 640px) {
+  .VPHero .name {
+    letter-spacing: -0.02em;
+  }
+}

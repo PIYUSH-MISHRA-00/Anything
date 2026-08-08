@@ -1,0 +1,47 @@
+version: 2
+
+# Grouped and monthly on purpose. This project has one maintainer; a weekly
+# per-package PR stream would produce more noise than security value, and
+# noise is how a real advisory gets missed.
+updates:
+  - package-ecosystem: pub
+    directory: /
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 5
+    labels: [dependencies]
+    groups:
+      dart-dependencies:
+        patterns: ['*']
+        update-types: [minor, patch]
+    # kaalka and webweavex are first-party and released deliberately alongside
+    # the app. A bot bumping them would land a change nobody reviewed against
+    # the certified adapter boundaries.
+    ignore:
+      - dependency-name: kaalka
+      - dependency-name: webweavex
+
+  - package-ecosystem: npm
+    directory: /website
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 3
+    labels: [dependencies, website]
+    groups:
+      website:
+        patterns: ['*']
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    labels: [dependencies, ci]
+    groups:
+      actions:
+        patterns: ['*']
+
+  - package-ecosystem: gradle
+    directory: /android
+    schedule:
+      interval: monthly
+    labels: [dependencies, android]

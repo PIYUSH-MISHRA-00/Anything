@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="assets/branding/logo.svg" alt="Anything" width="120" height="120">
+
 # Anything
 
 **An operating system for software that does not exist yet.**
@@ -9,20 +11,21 @@ Describe what you need. Anything builds it, runs it, and keeps it.
 [![CI](https://github.com/PIYUSH-MISHRA-00/Anything/actions/workflows/ci.yml/badge.svg)](https://github.com/PIYUSH-MISHRA-00/Anything/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![Flutter](https://img.shields.io/badge/Flutter-3.44-02569B?logo=flutter)](https://flutter.dev)
-[![Tests](https://img.shields.io/badge/tests-2%2C127%20passing-success)](docs/audit/)
-[![Invariants](https://img.shields.io/badge/certified%20invariants-101-blueviolet)](docs/audit/ARCHITECTURE_INVARIANT_MATRIX.md)
+[![Tests](https://img.shields.io/badge/tests-2%2C141%20passing-success)](docs/audit/)
+[![Invariants](https://img.shields.io/badge/certified%20invariants-102-blueviolet)](docs/audit/ARCHITECTURE_INVARIANT_MATRIX.md)
 
-[Quick Start](#quick-start) · [Architecture](ARCHITECTURE.md) · [Vision](VISION.md) · [Roadmap](ROADMAP.md) · [Contributing](CONTRIBUTING.md) · [FAQ](docs/FAQ.md)
+[**Website**](https://piyush-mishra-00.github.io/Anything/) · [Quick Start](#quick-start) · [Architecture](ARCHITECTURE.md) · [Vision](VISION.md) · [Roadmap](ROADMAP.md) · [Contributing](CONTRIBUTING.md) · [FAQ](docs/FAQ.md)
 
 </div>
 
 ---
 
 > **Project status: pre-release.** The architecture is mature and heavily
-> certified. The product is not shipped yet — there is no Play Store build, and
-> Experiences cannot yet be imported or exported. [ROADMAP.md](ROADMAP.md) is
-> honest about exactly what works and what does not. If you are evaluating
-> whether to contribute, start there.
+> certified, and Experiences can now be exported and imported. What is missing
+> is the last mile: there is no Play Store build, and **nobody has yet run
+> Anything on a physical device**. [ROADMAP.md](ROADMAP.md) is specific about
+> what works and what does not. If you are evaluating whether to contribute,
+> start there.
 
 ## What is Anything?
 
@@ -65,8 +68,9 @@ time-keyed. There is no server, no account, and no sync.
 | Modify and evolve an existing Experience | ✅ works |
 | Protect an Experience with time-keyed encryption | ✅ works |
 | Persistent knowledge acquisition from the web | ✅ works |
-| **Import / export an Experience as a file** | ⚠️ built, not yet wired to the UI |
-| **Android release build** | ⚠️ not yet shippable — see [ROADMAP](ROADMAP.md) |
+| **Import / export an Experience as a file** | ✅ works |
+| **Android release build** | ⚠️ builds and is signed; not published — see [ROADMAP](ROADMAP.md) |
+| **Verified on a physical device** | ❌ not yet — the next milestone |
 | Marketplace, cloud sync, accounts | ❌ explicitly out of scope |
 
 ## Architecture at a glance
@@ -93,7 +97,7 @@ time-keyed. There is no server, no account, and no sync.
 ```
 
 Every box has exactly one owner, and that singularity is **mechanically
-certified** — 101 invariants run on every commit, each one mutation-proven by
+certified** — 102 invariants run on every commit, each one mutation-proven by
 deliberately breaking it and confirming the check fails.
 
 Full map: **[ARCHITECTURE.md](ARCHITECTURE.md)**.
@@ -132,8 +136,8 @@ home screen.
 ### Verify your checkout
 
 ```bash
-flutter test                                                  # 2,127 tests
-flutter test test/r46_architectural_integrity_certification_test.dart   # 101 invariants
+flutter test                                                  # 2,141 tests
+flutter test test/r46_architectural_integrity_certification_test.dart   # 102 invariants
 bash tool/analyze_gate.sh                                     # analyzer baseline
 ```
 
@@ -146,13 +150,13 @@ Runnable examples live in [`examples/`](examples/), each with its own README:
 | Example | Shows |
 |---|---|
 | [`minimal_experience`](examples/minimal_experience) | the smallest valid Experience package |
-| [`capability_experience`](examples/capability_experience) | declaring and using a capability |
 | [`package_codec`](examples/package_codec) | writing and reading a `.anything` package |
-| [`execution_contract`](examples/execution_contract) | declaring execution mode and orchestrating |
-| [`kaalka_protection`](examples/kaalka_protection) | protecting and recovering an Experience |
-| [`webweavex_knowledge`](examples/webweavex_knowledge) | semantic extraction and canonicalisation |
+| [`execution_contract`](examples/execution_contract) | declaring execution mode, and every fault refused |
+| [`orchestration`](examples/orchestration) | request → decision → priority |
 
-Run any of them with `dart run examples/<name>/main.dart`.
+`dart run examples/minimal_experience/main.dart` — see
+[`examples/README.md`](examples/README.md) for why two of them use
+`flutter test` instead.
 
 ## Repository structure
 
@@ -172,7 +176,7 @@ lib/
   solution_reasoning/ design_review/ evolution/
   runtime_intelligence/ world_model/         the nine intelligence engines
 
-test/             2,127 tests, 0 skipped, test LOC > source LOC
+test/             2,141 tests, 0 skipped, test LOC > source LOC
 docs/             172 documents — architecture, audits, ADRs, guides
 tool/             analyze gate, reachability analysis
 examples/         runnable examples
@@ -193,11 +197,12 @@ Detail per directory: [ARCHITECTURE.md](ARCHITECTURE.md).
 | report a vulnerability | [SECURITY.md](SECURITY.md) |
 | get help | [SUPPORT.md](SUPPORT.md) · [docs/FAQ.md](docs/FAQ.md) |
 | see what changed | [CHANGELOG.md](CHANGELOG.md) |
+| browse it as a website | [piyush-mishra-00.github.io/Anything](https://piyush-mishra-00.github.io/Anything/) |
 
 ## Contributing
 
 Contributions are genuinely welcome, and the project is unusually easy to
-contribute to safely: **101 certified invariants and 2,127 tests will tell you
+contribute to safely: **102 certified invariants and 2,141 tests will tell you
 immediately if a change breaks an architectural rule**, so you do not need to
 hold the whole system in your head.
 

@@ -3,7 +3,7 @@
 Honest status. Every claim here is measured, and where something is broken this
 file says so plainly.
 
-**Last verified:** IS-P01 · HEAD after R62 · `flutter test` 2,127 passing
+**Last verified:** IS-P02 · `flutter test` 2,141 passing · 102 invariants
 
 ---
 
@@ -11,15 +11,15 @@ file says so plainly.
 
 | Area | Complete | Note |
 |---|---|---|
-| Architecture | ~90% | 101 certified invariants, single ownership throughout |
-| Testing rigour | ~80% | 2,127 tests, 0 skipped; no golden tests yet |
+| Architecture | ~90% | 102 certified invariants, single ownership throughout |
+| Testing rigour | ~80% | 2,141 tests, 0 skipped; no golden tests yet |
 | Experience system (design) | ~85% | every stage exists and is certified |
-| **Experience system (reachable)** | **~35%** | import/export built but not wired to any UI |
+| **Experience system (reachable)** | **~75%** | import/export wired and reachable (IS-P02) |
 | AI / knowledge | ~60% | nine engines; one provider; needs a key |
 | UI / UX | ~45% | 7 reachable screens |
 | **Android release** | **~35%** | signing, permissions and R8 fixed in IS-P01; not yet published |
-| OSS readiness | ~75% | license, guides, templates added in IS-P01 |
-| **Play Store readiness** | **~40%** | see [PLAYSTORE_READINESS](docs/audit/) |
+| OSS readiness | ~85% | license, guides, templates, website, NOTICE, Dependabot |
+| **Play Store readiness** | **~50%** | see [PLAYSTORE_READINESS](docs/audit/) |
 
 ## What works today
 
@@ -31,7 +31,7 @@ persistent local knowledge acquisition.
 
 | Gap | Why it matters |
 |---|---|
-| **Experiences cannot be imported or exported** | The codec, installer and distribution framework are all built and certified, but nothing in the UI calls them. An Experience is trapped on the device that made it. |
+| **Never run on a physical device** | A signed release App Bundle builds, but nobody has installed it. Whether R8 broke anything at runtime is unknown. |
 | **No published Android build** | IS-P01 fixed release signing, permissions and R8. Publishing still needs a keystore, a privacy policy and a store listing. |
 | **One AI provider, and you must bring a key** | Without a Groq key the app runs and reports `ProviderRequired`. |
 | **Accessibility is minimal** | 5 `Semantics` widgets across the whole codebase. |
@@ -41,27 +41,26 @@ persistent local knowledge acquisition.
 
 ## Next
 
-### P02 — Experience Portability *(recommended)*
+### P03 — Device Verification & First Run *(recommended)*
 
-Wire the existing codec to real import and export actions. Everything needed is
-built, certified, and currently unreachable. Closes the oldest open gap in the
-project.
+Install the App Bundle on a real device, verify R8 broke nothing, then
+onboarding and the no-provider path.
 
-### P03 — First Run & Accessibility
+### P04 — Accessibility & Localisation
 
 Onboarding, the no-provider path, empty and error states, an accessibility pass
 over the seven reachable screens, localisation scaffolding.
 
-### P04 — Test Integrity
+### P05 — Test Integrity
 
 Diagnose and fix G-40. Golden tests for the reachable screens and the renderer.
 One end-to-end journey test from `main()`.
 
-### P05 — Launch
+### P06 — Launch
 
 Privacy policy, Data Safety, store listing, telemetry, closed testing.
 
-**Estimate: 5–8 milestones to a production-quality Play Store release**, of
+**Estimate: 4–6 milestones to a production-quality Play Store release**, of
 which at most one is architectural.
 
 ## Where help is most useful

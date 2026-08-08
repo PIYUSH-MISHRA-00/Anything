@@ -21,7 +21,7 @@ name: CI
 #
 # WHAT WAS STILL MISSING, MEASURED AT IS-P01 PHASE 1 (2026-08-08):
 #
-#   There was no `flutter build` step of ANY kind. 101 invariants gated every
+#   There was no `flutter build` step of ANY kind. 102 invariants gated every
 #   commit; whether the product compiled into a shippable artifact was gated by
 #   nothing -- and it did not. `flutter build apk --release` failed at
 #   :app:packageRelease because the release build type signed with the DEBUG
@@ -64,7 +64,7 @@ jobs:
       # ── CERTIFICATION IS ITS OWN STEP, ON PURPOSE ─────────────────────────
       # It ran inside the general test sweep before, where a failure was one
       # line in 2,000. Architectural regression now fails a step that says so.
-      - name: Architectural certification (101 invariants)
+      - name: Architectural certification (102 invariants)
         run: flutter test test/r46_architectural_integrity_certification_test.dart
 
       # The milestone suites carry the mutation-proven behavioural guarantees

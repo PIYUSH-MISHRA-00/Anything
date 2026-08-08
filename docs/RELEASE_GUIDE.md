@@ -94,7 +94,7 @@ understands rather than parsing it hopefully.
 
 | CI does | CI does not |
 |---|---|
-| format, analyzer baseline, 101 invariants, full suite with coverage | sign a publishable artifact — no keystore exists in CI, by design |
+| format, analyzer baseline, 102 invariants, full suite with coverage | sign a publishable artifact — no keystore exists in CI, by design |
 | build a release App Bundle (debug-signed) to prove it **packages** | upload to Play |
 | assert the **merged release manifest declares `INTERNET`** | run on a real device |
 

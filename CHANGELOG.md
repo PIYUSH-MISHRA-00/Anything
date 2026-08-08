@@ -9,6 +9,26 @@ human-readable summary.
 
 ## [Unreleased]
 
+### Added — IS-P02 (Public Product Foundation)
+
+- **Experience portability.** A user can now **export** an Experience to a
+  `.anything` file and **import** one back. This closes a gap open since R53 —
+  ten milestones — and makes five milestones of already-built, already-certified
+  machinery reachable for the first time: the R60 package codec had **zero
+  `lib/` importers**, and the R54 installer was read only by tests.
+- **I-93** — every canonical framework in `lib/` must have a real production
+  consumer. This is the invariant that would have caught the whole problem:
+  every existing invariant certifies *ownership*, and none asked whether the
+  owner was reachable.
+- **Public website** (`website/`) — VitePress, 18 pages, deployed to GitHub
+  Pages by `.github/workflows/website.yml`. Dead internal links fail the build.
+- **Branding** — logo, wordmark and social card as SVG, in `assets/branding/`.
+- `NOTICE`, `.github/dependabot.yml`, `.github/release.yml`.
+- **`v1.0.0` branch** preserving the original v1 commit exactly. No history was
+  rewritten, squashed or rebased; `main` is an ancestor of `v2.0.0`, so the
+  reorganisation is a fast-forward.
+
+
 ### Added — IS-P01 (Productization, Open Source & Play Store Foundation)
 
 - **Apache-2.0 `LICENSE`.** The repository previously had none, which made it
