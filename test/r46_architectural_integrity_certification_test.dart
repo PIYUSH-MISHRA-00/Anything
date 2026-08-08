@@ -3412,6 +3412,113 @@ final x = 1;
     );
 
     test(
+      'I-91 — exactly ONE Experience Orchestrator, and NOTHING bypasses it to reach the scheduler (IS-R62 Phase 5)',
+      () {
+        // Whole-identifier matching and content filtering, for the reason
+        // recorded against I-87/I-89: an end-anchored suffix let a probe named
+        // `...Reader2` escape R60's equivalent invariant entirely.
+        final orchestrators =
+            libFiles
+                .expand(
+                  (f) => RegExp(r'\bclass\s+(\w*Orchestrat\w*)\b')
+                      .allMatches(f.code)
+                      .map((m) => m.group(1)!)
+                      .map((n) => '${f.path}:$n'),
+                )
+                .toList()
+              ..sort();
+        expect(
+          orchestrators,
+          [
+            'lib/app/experience_orchestrator.dart:ExperienceOrchestrator',
+            'lib/app/experience_orchestrator.dart:OrchestrationDecision',
+            // Pre-existing and unrelated: solution-plan execution, not
+            // Experience execution. Pinned so a genuine second Experience
+            // orchestrator cannot hide behind it.
+            'lib/solution_orchestration/orchestration_result.dart:OrchestrationReport',
+            'lib/solution_orchestration/solution_execution_orchestrator.dart:SolutionExecutionOrchestrator',
+          ],
+          reason: 'a second Experience Orchestrator appeared: $orchestrators',
+        );
+
+        // THE BYPASS CHECK. Before R62 the Phase 1 audit found three calls into
+        // the scheduler, two of which reached it without passing through the
+        // R45 entry pipeline: the workspace switcher's no-live-runtime branch
+        // and the host screen's app-lifecycle notification. Every one now goes
+        // through the orchestrator, and this fails the moment a fourth appears.
+        final callers = libFiles
+            .where(
+              (f) =>
+                  f.path != 'lib/app/workspace_scheduling_engine.dart' &&
+                  RegExp(
+                    r'\.(scheduleForeground|scheduleActiveTransition)\s*\(',
+                  ).hasMatch(f.code),
+            )
+            .map((f) => f.path)
+            .toList();
+        expect(
+          callers,
+          ['lib/app/experience_orchestrator.dart'],
+          reason:
+              'these files call the scheduler directly, bypassing the '
+              'orchestrator: $callers',
+        );
+      },
+    );
+
+    test(
+      'I-92 — the Orchestrator DECIDES and never executes, navigates or supervises (IS-R62 Phase 5)',
+      () {
+        // HISTORICAL DEFECT THIS PREVENTS. A coordinator that can also execute
+        // stops being a coordinator: it becomes a second entry pipeline, and
+        // R45's I-02/I-16/I-17 exist precisely because four HomeScreen call
+        // sites once each opened Experiences their own way.
+        final orchestrator = libFiles.firstWhere(
+          (f) => f.path == 'lib/app/experience_orchestrator.dart',
+        );
+        for (final forbidden in [
+          // It never executes.
+          'AnythingRuntime', 'ExperienceRuntimeController',
+          'WorkspaceRuntimeSupervisor', 'openExperience',
+          // It never navigates — that is the entry pipeline's and the
+          // activation manager's ground.
+          'Navigator', 'MaterialPageRoute', 'ExperienceHostScreen',
+          'ExperienceEntryPipeline', 'ExperienceActivationManager',
+          'package:flutter/material.dart',
+          // It never re-decides what another owner already decides.
+          'OperatingSystemGovernanceEngine', 'ExperienceTrustClassifier',
+          'CapabilityPlatform', 'WorkspaceLifecyclePolicyEngine',
+          'RuntimePolicyAction', 'ExperienceCompatibilityEvaluator',
+          // It owns no persistence and no I/O.
+          'SqliteExperienceRepository', "dart:io", 'File(', 'Timer',
+        ]) {
+          expect(
+            orchestrator.code.contains(forbidden),
+            isFalse,
+            reason:
+                'the orchestrator coordinates only; referencing $forbidden would '
+                'make it a second owner of that subsystem',
+          );
+        }
+
+        // It reaches the scheduler through the scheduler's own public API and
+        // holds nothing else that could execute.
+        expect(
+          orchestrator.code.contains('WorkspaceSchedulingEngine'),
+          isTrue,
+          reason: 'it must forward to the ONE scheduler, not around it',
+        );
+        // The execution contract stays R61's: the orchestrator CONSUMES the
+        // canonical validator and declares no validation rule of its own.
+        expect(
+          _declaringFiles(libFiles, 'ExperienceExecutionValidator'),
+          ['lib/app/experience_execution_contract.dart'],
+          reason: 'R62 must not have grown a second contract validator',
+        );
+      },
+    );
+
+    test(
       'neither the Kernel nor any UI file imports an external cognition/protection package directly',
       () {
         final offenders = libFiles
