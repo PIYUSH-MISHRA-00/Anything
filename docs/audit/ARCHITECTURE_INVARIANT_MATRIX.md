@@ -645,3 +645,30 @@ deleted; pinned with the reason, because *suspected is not proven*.
 
 **R59 mutation evidence.** Probe E (a second `void main()` + `MaterialApp`)
 failed I-85. Probe F (an unreachable, unpinned file) failed I-86. Both reverted.
+
+
+## IS-R60 — Canonical Experience Package codec (I-87, I-88)
+
+| # | Invariant | Mechanism | Status |
+|---|---|---|---|
+| I-87 | Exactly ONE package format, reader and writer; manifest and validator not duplicated | STATIC | CERTIFIED |
+| I-88 | The reader never installs, activates, computes trust, distributes or performs I/O | STATIC | CERTIFIED |
+
+**PHASE 1 CHANGED THE MILESTONE.** R60 asked for a manifest and a validator;
+both existed and were certified (I-60; I-59/I-65). Creating either would have
+produced the second manifest and second validator the same document forbids.
+**R60 created neither.** What was genuinely missing was a container format, a
+reader, a writer, and `ExperienceDistributionPackage.fromJson` — R53 shipped
+`toJson()` with no way back, a one-way street open for four milestones and the
+concrete reason gap G-25 survived.
+
+**I-87 WAS WRONG ON ITS FIRST ATTEMPT AND THE MUTATION PROBE CAUGHT IT.** The
+regex required the suffix at the END of the class name, so a probe called
+`ExperiencePackageReader2` escaped entirely — `` cannot match between `r` and
+`2`, so a second reader would have been invisible with any trailing character.
+Rewritten to match the whole identifier and filter by content, after which the
+probe failed as required. Third time in five milestones that a probe has exposed
+a brand-new invariant rather than confirming it (R48, R56, R60).
+
+**R60 mutation evidence.** Probe A (a second reader) failed I-87 after the fix.
+Probe B (a `classify()` on the reader) failed I-88.

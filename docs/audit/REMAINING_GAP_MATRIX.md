@@ -34,6 +34,20 @@ Severity: **A** = architectural integrity, **B** = correctness/UX,
 | G-18 | Persisted knowledge had no retention policy — unbounded growth | **CLOSED.** `RetentionPolicyEngine` now owns it: 500 entries / 20 MB / 30 days. `KnowledgeCache.applyRetention()` asks the engine and tells `KnowledgeRepository` which keys to drop; the repository still owns no policy (I-47). R48 deliberately did not invent a policy because none existed to reuse — R50 created the canonical owner first, then applied it. |
 | G-22 | Retention was invented independently three times with three magic numbers (`_maxRecords=100`, `_maxEvents=200`, `maxScheduled=200`) | **CLOSED.** All three delegate to the ONE engine. Values unchanged — three tests assert 100/200/200 exactly, so ownership moved without behaviour moving. No repository or capability service may hold a retention rule any more (I-46), mutation-proven. |
 
+## PROGRESSED BY IS-R60
+
+| # | Sev | Gap | Movement |
+|---|---|---|---|
+| **G-25** | **A** | **A user still cannot import an Experience** — open since R53 | **HALF CLOSED, and only half.** The FORMAT half is done: a canonical container, a deterministic writer, a reader, checksum verification, and `ExperienceDistributionPackage.fromJson` (R53 shipped `toJson()` with no way back). The FILE half is NOT done — nothing writes bytes to a `.anything` file and no UI lets a user pick one. `RealFileService` (R49) owns file I/O and `file_picker` is already a dependency, so the remainder is small and named. **G-25 stays OPEN.** |
+
+## OPENED BY IS-R60
+
+| # | Sev | Gap | Evidence | Status |
+|---|---|---|---|---|
+| G-53 | MED | **No file I/O for packages.** The codec produces and consumes bytes; nothing persists them to disk or reads a user-chosen file. | `experience_package_codec.dart` contains no `dart:io` — certified by I-88 | **Open, deliberately.** The codec must not own file I/O (R49 does). Wiring the two is the last step of G-25 and the recommended IS-R61. |
+| G-54 | LOW | **No signature verification.** The container reserves a `signature` block, carries it verbatim and verifies nothing. | `ExperiencePackageReader` | **Open by design.** Same position as R52/R53: a package earns no authority by being well-formed. A real verifier needs a key-distribution decision, which is a product question. |
+| G-55 | LOW | **Packages are uncompressed.** Canonical JSON, no archive. | `ExperiencePackageFormat` | **Open, deliberately.** `archive` is not a dependency and R60 forbids adding one. The explicit `formatVersion` means a binary encoding can replace it without touching the manifest, the validator or any caller. |
+
 ## CLOSED BY IS-R59
 
 | # | Sev | Gap | How it was closed |
