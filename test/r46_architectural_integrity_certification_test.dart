@@ -3114,8 +3114,9 @@ final x = 1;
           if (uri.startsWith('package:anything/')) {
             return 'lib/${uri.substring('package:anything/'.length)}';
           }
-          if (uri.startsWith('package:') || uri.startsWith('dart:'))
+          if (uri.startsWith('package:') || uri.startsWith('dart:')) {
             return null;
+          }
           final parts = [
             ...importer.split('/')..removeLast(),
             ...uri.split('/'),
