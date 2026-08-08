@@ -77,4 +77,13 @@ class MemoryManager {
     final db = await _sqliteService.database;
     await db.delete('conversation_memory', where: 'id = ?', whereArgs: [id]);
   }
+
+  /// Releases the database handle this manager's [SQLiteService] owns
+  /// (IS-R58 Phase 8).
+  ///
+  /// Delegates rather than closing directly: `SQLiteService` opened the handle
+  /// and is its only owner, so it is the only thing that may close it. This
+  /// keeps disposal responsibility singular — no second closer, no ownership
+  /// duplication.
+  Future<void> close() => _sqliteService.close();
 }
