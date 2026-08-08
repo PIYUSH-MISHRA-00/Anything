@@ -20,18 +20,40 @@
     <!-- Fail fast and offline-aware rather than hanging on a dead socket. -->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
-    <!-- RealNotificationService / NotificationCapability (IS-R49).
-         Runtime-requested and mandatory from Android 13 (API 33). -->
-    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- POST_NOTIFICATIONS WAS REMOVED IN IS-P04, AND THE IS-P01 COMMENT THAT
+         JUSTIFIED IT WAS WRONG.
+         
+         It claimed RealNotificationService required it. Verified in IS-P04:
+         `pubspec.yaml` declares NO notification plugin (no
+         flutter_local_notifications, no awesome_notifications), and
+         `lib/capabilities/adapters/notification_service_adapter.dart` delivers
+         IN-APP ONLY: it publishes a NotificationGenerated event on the
+         existing EventBus. There is no path to the Android notification
+         system anywhere in this repository.
+         
+         A permission requested for a capability that does not exist is an
+         unexplained question at Play review and an inconsistency against the
+         Data Safety form. Re-add it in the same change that adds a real
+         notification plugin, and not before. -->
 
-    <!-- speech_to_text and record, both declared dependencies. Runtime-
-         requested; the app degrades to text input when it is refused. -->
+    <!-- speech_to_text, via lib/services/voice_service.dart, which is
+         REACHABLE (imported by home_screen.dart) and genuinely requests the
+         permission at runtime: `Permission.microphone.request()` at line 67.
+         Verified in IS-P04, correcting an IS-P03 triage entry that claimed no
+         reachable request existed.
+         
+         `record` was also cited here and has been REMOVED from pubspec.yaml:
+         it was imported by no file in lib/, test/ or examples/. -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
     <application
         android:label="Anything"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:enableOnBackInvokedCallback="true"
+        android:allowBackup="false"
+        android:fullBackupContent="false"
+        android:dataExtractionRules="@xml/data_extraction_rules">
         <activity
             android:name=".MainActivity"
             android:exported="true"

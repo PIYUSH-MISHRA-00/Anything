@@ -43,7 +43,12 @@ class AnythingButton extends StatelessWidget {
         scale: onPressed != null ? 1.0 : 0.98,
         duration: AnythingDurations.fast,
         child: SizedBox(
-          height: isCompact ? 40 : 48,
+          // ACCESSIBILITY (IS-P04). The compact variant was 40 dp, below the
+          // 48 dp minimum touch target in the Material guidelines and in
+          // Android's own accessibility scanner. Raised to 48; the visual
+          // difference stays in the horizontal padding and font size, which is
+          // what "compact" was actually communicating.
+          height: 48,
           child: ElevatedButton(
             onPressed: isLoading ? null : onPressed,
             style: ElevatedButton.styleFrom(

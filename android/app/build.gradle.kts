@@ -61,7 +61,18 @@ android {
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
+
+        // PINNED IN IS-P04, previously `flutter.targetSdkVersion`.
+        //
+        // Google Play enforces a targetSdk floor and raises it on a schedule.
+        // Inheriting the value means a Flutter upgrade can move it silently in
+        // either direction -- including below the floor, which fails an upload
+        // with no local signal. Pinning makes the number a reviewable decision
+        // in a diff.
+        //
+        // 35 = Android 15, which is the version this build was verified on
+        // (moto g45 5G, API 35, IS-P04 device test).
+        targetSdk = 35
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
