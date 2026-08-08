@@ -1,0 +1,33 @@
+name: Documentation
+description: Something is wrong, missing, outdated or contradictory in the docs.
+labels: ["documentation", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This repository has 172 documents and some carry stale counts. Precise
+        reports are genuinely useful.
+
+  - type: input
+    id: file
+    attributes:
+      label: Which document?
+      placeholder: "e.g. docs/audit/INVARIANT_TRACEABILITY.md"
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What is wrong?
+      description: Quote the claim and, if you can, what the repository actually shows.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Kind
+      options: [Incorrect, Outdated, Missing, Duplicated, Contradictory, Unclear]
+    validations:
+      required: true

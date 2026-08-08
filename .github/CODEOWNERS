@@ -1,0 +1,27 @@
+# Code owners — reviewers auto-requested on matching paths.
+# Ownership here is about REVIEW, not about the architectural "one owner per
+# concern" rule (that lives in docs/audit/OWNERSHIP_MATRIX.md).
+
+* @PIYUSH-MISHRA-00
+
+# ── Load-bearing paths: never merge without an explicit owner review ───────
+# The certification suite is the mechanism that keeps every architectural
+# guarantee true. A change here can silently weaken all 101 invariants.
+/test/r46_architectural_integrity_certification_test.dart  @PIYUSH-MISHRA-00
+/tool/analyze_gate.sh                                       @PIYUSH-MISHRA-00
+/.github/workflows/                                         @PIYUSH-MISHRA-00
+
+# Release engineering: signing, permissions and R8 decide whether the product
+# is publishable at all.
+/android/                                                   @PIYUSH-MISHRA-00
+
+# The composition root wires every canonical service exactly once.
+/lib/app/app_composition.dart                               @PIYUSH-MISHRA-00
+
+# External library boundaries — one adapter each, certified.
+/lib/knowledge/webweavex_adapter.dart                       @PIYUSH-MISHRA-00
+/lib/security/                                              @PIYUSH-MISHRA-00
+
+# Licensing and governance.
+/LICENSE                                                    @PIYUSH-MISHRA-00
+/CODE_OF_CONDUCT.md                                         @PIYUSH-MISHRA-00

@@ -1,0 +1,48 @@
+name: Feature request
+description: Suggest something Anything should do.
+labels: ["enhancement", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Please check [VISION.md](../blob/main/VISION.md) first.** Marketplace,
+        cloud sync, accounts, multi-device sync and autonomous execution are
+        explicitly out of scope — each conflicts with a stated principle. If you
+        want one of those, please open a Discussion instead; it is a product
+        conversation rather than a feature request.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: Describe the problem, not the solution you have in mind.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What would you like to happen?
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: improves
+    attributes:
+      label: Which does this improve?
+      options:
+        - label: Developer experience
+        - label: User experience
+        - label: Open source quality
+        - label: Play Store readiness
+        - label: Maintainability
+        - label: Documentation
+        - label: Testing
+        - label: Release engineering
+        - label: Community
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives you considered
+      description: Including "do nothing" — sometimes that is right.

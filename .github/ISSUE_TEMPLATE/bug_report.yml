@@ -1,0 +1,75 @@
+name: Bug report
+description: Something behaves differently from what it documents.
+labels: ["bug", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before filing, please check [SUPPORT.md](../blob/main/SUPPORT.md) —
+        import/export, the missing Play Store build, minimal accessibility and
+        the G-40 test flakiness are already known and tracked.
+
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What you expected, and what happened instead.
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. …
+        2. …
+        3. …
+    validations:
+      required: true
+
+  - type: textarea
+    id: checks
+    attributes:
+      label: Does a clean checkout pass its own checks?
+      description: |
+        Run these and paste the last line of each. If the invariants fail on a
+        clean checkout, that is itself the bug and worth saying so.
+      value: |
+        $ flutter test test/r46_architectural_integrity_certification_test.dart
+        <output>
+
+        $ bash tool/analyze_gate.sh
+        <output>
+    validations:
+      required: false
+
+  - type: input
+    id: flutter
+    attributes:
+      label: Flutter version
+      placeholder: "output of: flutter --version"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      options: [Android, iOS, Windows, macOS, Linux, Web]
+    validations:
+      required: true
+
+  - type: input
+    id: commit
+    attributes:
+      label: Commit or version
+      placeholder: "git rev-parse --short HEAD"
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or stack trace
+      render: shell

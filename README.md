@@ -1,65 +1,223 @@
+<div align="center">
+
 # Anything
 
-**Anything** is an AI-first Flutter application. Unlike traditional apps where users navigate through hardcoded menus and buttons, *Anything* allows you to express your intent natively through natural language. The app dynamically assembles the interface, tools, and widgets you need in real-time.
+**An operating system for software that does not exist yet.**
 
-## Features
+Describe what you need. Anything builds it, runs it, and keeps it.
 
-- **Generative UI (AUIL)**: *Anything UI Language* translates AI reasoning directly into native Flutter components (e.g., charts, metric cards, tables, and text blocks) dynamically on the fly.
-- **Groq Integration**: Lightning-fast inference via the Groq API, using state-of-the-art open models like `openai/gpt-oss-120b` and `gemma2-9b-it`.
-- **Kaalka Time-Key Security**: User data and context memory are encrypted locally using time-derived encryption keys via the `kaalka` package, ensuring your local memory is secure without relying on cloud storage.
-- **Context Engine**: A smart memory manager built on SQLite that learns your workflows and preferences locally, securely encrypted for privacy.
-- **AI Command Bar**: The central hub for all interaction. Just type what you want to achieve, and the app decides what tools to run and what UI to render.
+[![CI](https://github.com/PIYUSH-MISHRA-00/Anything/actions/workflows/ci.yml/badge.svg)](https://github.com/PIYUSH-MISHRA-00/Anything/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+[![Flutter](https://img.shields.io/badge/Flutter-3.44-02569B?logo=flutter)](https://flutter.dev)
+[![Tests](https://img.shields.io/badge/tests-2%2C127%20passing-success)](docs/audit/)
+[![Invariants](https://img.shields.io/badge/certified%20invariants-101-blueviolet)](docs/audit/ARCHITECTURE_INVARIANT_MATRIX.md)
 
-## Tech Stack
+[Quick Start](#quick-start) · [Architecture](ARCHITECTURE.md) · [Vision](VISION.md) · [Roadmap](ROADMAP.md) · [Contributing](CONTRIBUTING.md) · [FAQ](docs/FAQ.md)
 
-- **Framework**: Flutter (Dart)
-- **State Management**: `flutter_riverpod`
-- **Generative AI Inference**: `http` (targeting Groq API)
-- **Local Database**: `sqflite`
-- **Security / Encryption**: `kaalka` & `flutter_secure_storage`
-- **Data Visualization**: `fl_chart`
+</div>
 
-## Getting Started
+---
+
+> **Project status: pre-release.** The architecture is mature and heavily
+> certified. The product is not shipped yet — there is no Play Store build, and
+> Experiences cannot yet be imported or exported. [ROADMAP.md](ROADMAP.md) is
+> honest about exactly what works and what does not. If you are evaluating
+> whether to contribute, start there.
+
+## What is Anything?
+
+Most apps are a fixed set of screens somebody decided on in advance. Anything
+inverts that. You describe an outcome in your own words — *"track my water
+intake"*, *"a calculator that does unit conversions"* — and Anything designs,
+generates, validates and runs a real application to do it.
+
+The generated thing is called an **Experience**. It is not a chat response and
+not a script: it is a structured, versioned, validated package with its own
+interface, behaviour, state schema and declared capabilities, which the
+Anything runtime executes natively.
+
+## Why does it exist?
+
+Three problems, all of which show up as soon as you try to build software for
+one person's specific need.
+
+**1. Most software is never written because it is not worth writing.** A tool
+that helps exactly one person for six weeks cannot justify a development cycle.
+Anything moves that cost close to zero.
+
+**2. AI that generates code hands you a maintenance problem.** A generated file
+is yours to run, debug and keep working forever. Anything generates a
+*package the runtime understands* — versioned, validated, revisable, and
+removable — rather than source you now own.
+
+**3. Personal software should not require a cloud account.** Everything —
+generation state, knowledge, Experiences — is local. Protection is local and
+time-keyed. There is no server, no account, and no sync.
+
+## What Anything actually does today
+
+| Capability | Status |
+|---|---|
+| Describe an intent and get a working Experience | ✅ works |
+| Run it natively (interface + behaviour + state) | ✅ works |
+| Multiple Experiences running as a workspace | ✅ works |
+| Foreground/background scheduling and lifecycle | ✅ works |
+| Modify and evolve an existing Experience | ✅ works |
+| Protect an Experience with time-keyed encryption | ✅ works |
+| Persistent knowledge acquisition from the web | ✅ works |
+| **Import / export an Experience as a file** | ⚠️ built, not yet wired to the UI |
+| **Android release build** | ⚠️ not yet shippable — see [ROADMAP](ROADMAP.md) |
+| Marketplace, cloud sync, accounts | ❌ explicitly out of scope |
+
+## Architecture at a glance
+
+```
+        you type an intent
+                │
+                ▼
+        ┌───────────────┐   understanding, planning, architecture selection,
+        │ AnythingKernel│   feature discovery, engineering, design review,
+        └───────┬───────┘   evolution planning  (9 engines, ~20k LOC)
+                │
+                ▼
+        ExperiencePackage      manifest · interface · behaviour · state ·
+                │              capabilities · provenance · integrity
+                ▼
+        ┌───────────────────────────────────────────┐
+        │ commit → store → open → orchestrate →     │
+        │ schedule → execute → render               │
+        └───────────────────────────────────────────┘
+                │
+                ▼
+        a running Experience
+```
+
+Every box has exactly one owner, and that singularity is **mechanically
+certified** — 101 invariants run on every commit, each one mutation-proven by
+deliberately breaking it and confirming the check fails.
+
+Full map: **[ARCHITECTURE.md](ARCHITECTURE.md)**.
+
+### The two libraries Anything is built on
+
+| Library | Role | Boundary |
+|---|---|---|
+| **[Kaalka](https://pub.dev/packages/kaalka)** | Time-key protection for Experiences | one adapter, certified (I-21a/c) — see [KAALKA_GUIDE](docs/KAALKA_GUIDE.md) |
+| **[WebWeaveX](https://pub.dev/packages/webweavex)** | Semantic web extraction + deterministic canonicalisation | one adapter, certified (I-21b/d) — see [WEBWEAVEX_GUIDE](docs/WEBWEAVEX_GUIDE.md) |
+
+Neither is reachable from anywhere else in the codebase. That is not a
+convention — a test fails if it stops being true.
+
+## Quick Start
 
 ### Prerequisites
-- Flutter SDK (`^3.9.2` or later)
-- A valid [Groq API Key](https://console.groq.com/keys)
 
-### Installation
+- **Flutter 3.44+** ([install](https://docs.flutter.dev/get-started/install))
+- An **AI provider key** — currently [Groq](https://console.groq.com/keys)
+  (free tier available). Without one, Anything runs and reports
+  `ProviderRequired` rather than failing.
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/PIYUSH-MISHRA-00/Anything.git
-   cd Anything
-   ```
+### Run it
 
-2. Install dependencies:
-   ```bash
-   flutter pub get
-   ```
+```bash
+git clone https://github.com/PIYUSH-MISHRA-00/Anything.git
+cd Anything
+flutter pub get
+flutter run
+```
 
-3. Run the application:
-   ```bash
-   flutter run
-   ```
+Then: **Settings → AI Provider** to add your key, and type an intent on the
+home screen.
 
-### Configuration
+### Verify your checkout
 
-When you first launch the app, you will be taken through the onboarding process. 
-1. Navigate to **Settings > Groq AI Configuration** to enter and validate your Groq API key.
-2. Navigate to **Settings > Kaalka Security** to configure your local time-key encryption settings.
+```bash
+flutter test                                                  # 2,127 tests
+flutter test test/r46_architectural_integrity_certification_test.dart   # 101 invariants
+bash tool/analyze_gate.sh                                     # analyzer baseline
+```
 
-## Project Structure
+A green run of those three is exactly what CI enforces.
 
-- `lib/core/`: Contains the logic for the context engine, intent engine, and reasoning engine.
-- `lib/models/`: Contains data structures, such as the `AUILSchema`.
-- `lib/memory/`: SQLite service and memory manager for storing conversational data.
-- `lib/screens/`: Flutter UI screens (Settings, Workspaces, Onboarding, etc.).
-- `lib/security/`: Integration with the Kaalka encryption package and secure storage.
-- `lib/services/`: External API integrations, primarily the `GroqService`.
-- `lib/ui_engine/`: The core of the Generative UI system. Parses AUIL JSON and renders native Flutter widgets via the `ComponentRegistry` and `LayoutEngine`.
-- `lib/widgets/`: Reusable native widgets like the AI Command Bar and Loading Screen.
+## Examples
+
+Runnable examples live in [`examples/`](examples/), each with its own README:
+
+| Example | Shows |
+|---|---|
+| [`minimal_experience`](examples/minimal_experience) | the smallest valid Experience package |
+| [`capability_experience`](examples/capability_experience) | declaring and using a capability |
+| [`package_codec`](examples/package_codec) | writing and reading a `.anything` package |
+| [`execution_contract`](examples/execution_contract) | declaring execution mode and orchestrating |
+| [`kaalka_protection`](examples/kaalka_protection) | protecting and recovering an Experience |
+| [`webweavex_knowledge`](examples/webweavex_knowledge) | semantic extraction and canonicalisation |
+
+Run any of them with `dart run examples/<name>/main.dart`.
+
+## Repository structure
+
+```
+lib/
+  app/            composition root, entry pipeline, orchestrator, frameworks
+  kernel/         intent → understanding → plan → Experience
+  creation/       Experience package model, validator, codec
+  runtime/        AnythingRuntime, renderer, behaviour interpreter
+  capabilities/   capability platform + adapters (http, ai, files, …)
+  storage/        SQLite repositories, durable collection store
+  knowledge/      WebWeaveX-backed acquisition and cache
+  security/       Kaalka protection, credential vault
+  features/       the reachable UI
+  design_system/  themes and components
+  software_architect/ application_engineering/ feature_discovery/
+  solution_reasoning/ design_review/ evolution/
+  runtime_intelligence/ world_model/         the nine intelligence engines
+
+test/             2,127 tests, 0 skipped, test LOC > source LOC
+docs/             172 documents — architecture, audits, ADRs, guides
+tool/             analyze gate, reachability analysis
+examples/         runnable examples
+```
+
+Detail per directory: [ARCHITECTURE.md](ARCHITECTURE.md).
+
+## Documentation
+
+| If you want to… | Read |
+|---|---|
+| understand the system | [ARCHITECTURE.md](ARCHITECTURE.md) |
+| know where this is going | [VISION.md](VISION.md) · [ROADMAP.md](ROADMAP.md) |
+| contribute code | [CONTRIBUTING.md](CONTRIBUTING.md) · [docs/DEVELOPER_GUIDE.md](docs/DEVELOPER_GUIDE.md) |
+| build an Experience | [docs/EXPERIENCE_GUIDE.md](docs/EXPERIENCE_GUIDE.md) |
+| cut a release | [docs/RELEASE_GUIDE.md](docs/RELEASE_GUIDE.md) |
+| maintain the project | [docs/MAINTAINER_GUIDE.md](docs/MAINTAINER_GUIDE.md) |
+| report a vulnerability | [SECURITY.md](SECURITY.md) |
+| get help | [SUPPORT.md](SUPPORT.md) · [docs/FAQ.md](docs/FAQ.md) |
+| see what changed | [CHANGELOG.md](CHANGELOG.md) |
 
 ## Contributing
 
-Contributions, issues, and feature requests are welcome!
+Contributions are genuinely welcome, and the project is unusually easy to
+contribute to safely: **101 certified invariants and 2,127 tests will tell you
+immediately if a change breaks an architectural rule**, so you do not need to
+hold the whole system in your head.
+
+Good first areas are labelled in [ROADMAP.md](ROADMAP.md) — the highest-value
+work right now is product and release engineering, not architecture.
+
+Start with [CONTRIBUTING.md](CONTRIBUTING.md). By participating you agree to the
+[Code of Conduct](CODE_OF_CONDUCT.md).
+
+## Community & support
+
+- **Bugs and features** — [GitHub Issues](https://github.com/PIYUSH-MISHRA-00/Anything/issues)
+- **Questions and ideas** — [GitHub Discussions](https://github.com/PIYUSH-MISHRA-00/Anything/discussions)
+- **Security** — see [SECURITY.md](SECURITY.md); please do not open a public issue
+- **Support the work** — [GitHub Sponsors / Buy Me a Coffee](.github/FUNDING.yml)
+
+## License
+
+[Apache License 2.0](LICENSE) — permissive, with an explicit patent grant.
+
+Experiences you create with Anything are **yours**. The license covers this
+software, not the applications you generate with it. Third-party notices:
+[docs/oss/THIRD_PARTY_NOTICES.md](docs/oss/THIRD_PARTY_NOTICES.md).
