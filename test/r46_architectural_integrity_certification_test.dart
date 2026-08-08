@@ -416,6 +416,104 @@ const List<String> permittedModelInvocationFiles = [
 const Map<String, List<String>> knownDuplicateDeclarations =
     <String, List<String>>{};
 
+/// EVERY type declared in more than one file in `lib/`, each with the reason
+/// the two declarations are genuinely different subjects (IS-R58 Phase 6,
+/// invariant I-83).
+///
+/// WHY THIS TABLE EXISTS. R47 built [knownDuplicateDeclarations] to prevent a
+/// second `AnythingRuntime`, but the check that consumed it iterated only
+/// `canonicalConstructionSites.keys` — 13 types out of 1,263. The post-R57
+/// audit found TEN live collisions behind that blind spot. Two were dead
+/// contracts of exactly the kind R47 and R57 had each already deleted.
+///
+/// Every collision is a latent compile break: the first file to import both
+/// declaring libraries fails with `ambiguous_import`.
+///
+/// PINNING, NOT RENAMING, IS DELIBERATE. Renaming would touch public API for
+/// types with no proven defect. Pinning makes each one visible, individually
+/// justified and reviewable — and I-83 fails on an eleventh. This is the same
+/// discipline R51/R52/R54 used for sibling types: pin the real set with the
+/// reason recorded, never narrow the pattern until it passes.
+const Map<String, String> pinnedDuplicateTypes = <String, String>{
+  'AnythingPadding':
+      'design_system/tokens/layout.dart and spacing.dart. SAME package, SAME '
+          'concern — the strongest duplicate-consolidation candidate in this '
+          'table. Pinned rather than merged because merging is a design-system '
+          'change with no proven defect, and R58 is forbidden from refactoring '
+          'unrelated systems. Recorded as gap G-45.',
+  'CreationFailed':
+      'app/creation_coordinator.dart and creation/creation_engine.dart. Two '
+          'distinct result hierarchies at two layers — the coordinator reports '
+          'to the UI, the engine reports to the coordinator. Neither extends '
+          'the other and no file imports both.',
+  'CreationResult':
+      'the base of the two CreationFailed hierarchies above; same rationale.',
+  'DependencyGraph':
+      'feature_discovery/dependency_types.dart expands a FEATURE CANDIDATE '
+          'into capability/permission/storage primitives during design; '
+          'software_cognition/architecture_model.dart models an analysed '
+          'package. Different inputs, outputs and lifecycle stage — the same '
+          'distinction R54 pinned for the dependency planners.',
+  'ExecutionPlan':
+      'core/contracts/kernel.dart (61 importers) and '
+          'kernel/planning/execution_plan.dart (7). BOTH LIVE. Pinned rather '
+          'than merged because the contract version is imported by a third of '
+          'lib/ and unifying them is a Kernel change, not a gate change. '
+          'Recorded as gap G-44.',
+  'ExecutionStep': 'same two files and the same rationale as ExecutionPlan.',
+  'ExperienceFingerprint':
+      'app/experience_provenance.dart is R52 canonical provenance — a package '
+          'digest used by distribution and creation. '
+          'runtime_intelligence/experience_relationship_graph.dart is a '
+          'behavioural fingerprint used only to infer relationships between '
+          'Experiences, and never leaves that subsystem. Renaming R52 canonical '
+          'type would be a public API change for no proven defect.',
+  'ProtectionMetadata':
+      'core/contracts/experience.dart and creation/experience_package.dart. '
+          'The contract version is reachable only through the contracts barrel '
+          '(its file has three importers, all inside contracts/) and is a '
+          'SUSPECTED dead duplicate of the same family as the contracts R47 and '
+          'R57 deleted. Pinned rather than deleted because "suspected" is not '
+          '"proven" — R58 deletes only what it can prove. Recorded as G-46.',
+  'SemanticEntity':
+      'synthesis/application_reasoner.dart is a reasoning-time entity; '
+          'world_model/semantic_entity.dart is a persisted graph node. '
+          'Different lifetimes, different subjects.',
+
+  // ── Found by I-83 on its FIRST RUN, missed by the post-R57 audit ────────
+  // The audit's regex matched only `class` at line start; it did not match
+  // enums or leading modifiers. This invariant does, and immediately surfaced
+  // four more collisions. Recorded here rather than quietly folded in.
+  'CapabilityCategory':
+      'core/contracts/capability.dart and '
+          'capabilities/registry/capability_descriptor.dart. Both live enums. '
+          'The contract version belongs to the same barrel family R47 and R57 '
+          'each deleted a member of, so it is a consolidation candidate — but '
+          '"candidate" is not "proven dead", and R58 deletes only what it '
+          'proves. Recorded as gap G-47.',
+  'NetworkMode':
+      'creation/experience_package.dart declares {none, optional, required, '
+          'conditional} — an Experience package manifest mode. '
+          'software_architect/architecture_types.dart declares {none, '
+          'restrictedHttps} — an architecture-review posture. DIFFERENT VALUE '
+          'SETS, different subjects; merging them would lose meaning on both '
+          'sides.',
+  'OfflineCapability':
+      'kernel/specification/experience_spec.dart declares {fullyOffline, '
+          'mostlyOffline, requiresNetwork, hybrid} — a specification-time '
+          'requirement. software_architect/architecture_types.dart declares '
+          '{fullyOffline, cacheThenOnline, onlineRequired} — an architectural '
+          'strategy. DIFFERENT VALUE SETS, different subjects.',
+  'KnowledgeProvider':
+      'core/contracts/knowledge_provider.dart and '
+          'capabilities/builtin/knowledge_capability.dart. PROVEN DEAD on the '
+          'contracts side: it has zero direct importers, and BOTH implementors '
+          '(KnowledgeAcquisitionProviderAdapter and FakeKnowledgeProvider) '
+          'resolve the capability version. Pinned only so this Phase 6 commit '
+          'is independently green; IS-R58 Phase 7 DELETES the contract and '
+          'removes this pin, at which point I-83 requires the pin to be gone.',
+};
+
 /// Files deleted by an architectural-debt milestone that must never come
 /// back. R47 removed the dead v1 runtime contract; if any future change
 /// recreates that path, certification fails rather than silently
@@ -2708,6 +2806,170 @@ final x = 1;
           ['lib/storage/intent_repository.dart'],
           reason: 'the name collision R57 removed must not come back',
         );
+      },
+    );
+
+    // ── IS-R58 — THE GATE ITSELF (I-81 … I-83) ──────────────────────────
+    //
+    // HISTORICAL DEFECT THIS PREVENTS. Measured at IS-R58 Phase 1: CI ran
+    // `dart format --set-exit-if-changed` against a repository with 424 of 668
+    // files unformatted, and bare `flutter analyze` under a step name
+    // promising a baseline comparison it never performed. Both exited 1, and
+    // GitHub Actions halts a job at its first failing step — so `flutter test`
+    // had NEVER RUN IN CI and all 89 invariants below gated nothing.
+    //
+    // These three invariants make that unrepeatable.
+
+    test(
+      'I-81 — CI executes formatting, the analyze gate, certification and the full suite (IS-R58 Phase 10)',
+      () {
+        // Owning milestone: IS-R58. Architecture doc: CERTIFICATION_GATE.md.
+        // Mutation evidence: probe A (certification step deleted) fails this.
+        final ci = File('.github/workflows/ci.yml').readAsStringSync();
+
+        const requiredSteps = {
+          'dart format --set-exit-if-changed':
+              'without it, an unformatted repository silently passes',
+          'tool/analyze_gate.sh':
+              'without it, analyze either blocks every build or checks nothing',
+          'test/r46_architectural_integrity_certification_test.dart':
+              'without it, architectural certification does not run in CI at all',
+          'flutter test --coverage':
+              'without it, the behavioural suite does not run in CI',
+        };
+
+        for (final entry in requiredSteps.entries) {
+          expect(
+            ci.contains(entry.key),
+            isTrue,
+            reason:
+                'CI must run "${entry.key}" — ${entry.value}. Removing it would '
+                'return the repository to the pre-R58 state in which the '
+                'certification layer was advisory.',
+          );
+        }
+
+        // The certification step must be its OWN step. Folding it back into
+        // the general sweep is how a failure becomes one line in 2,000.
+        expect(
+          RegExp(
+            r'- name:[^\n]*ertification[^\n]*\n\s+run:[^\n]*r46_architectural',
+          ).hasMatch(ci),
+          isTrue,
+          reason:
+              'architectural certification must be a NAMED, independent CI step so a '
+              'regression identifies itself in the job list',
+        );
+      },
+    );
+
+    test(
+      'I-82 — the analyze gate exists, declares an explicit baseline, and weakens nothing (IS-R58 Phase 3)',
+      () {
+        // Historical defect: the pre-R58 step was NAMED for a baseline
+        // comparison it did not perform.
+        final gate = File('tool/analyze_gate.sh').readAsStringSync();
+
+        for (final required in [
+          'BASELINE_ERRORS',
+          'BASELINE_WARNINGS',
+          'BASELINE_INFOS',
+        ]) {
+          expect(
+            gate.contains(required),
+            isTrue,
+            reason: 'the baseline must be EXPLICIT, not implied: $required',
+          );
+        }
+
+        // Errors must be gated at zero, always.
+        expect(
+          RegExp(r'BASELINE_ERRORS=0').hasMatch(gate),
+          isTrue,
+          reason: 'the error baseline must be zero — errors are never acceptable',
+        );
+
+        // It must never reach for the escape hatches the milestone forbids.
+        for (final forbidden in [
+          '--no-fatal-warnings',
+          '--no-fatal-infos',
+          'exclude:',
+          '// ignore:',
+        ]) {
+          expect(
+            gate.contains(forbidden),
+            isFalse,
+            reason:
+                'the gate must not weaken analysis; found "$forbidden". Fix diagnostics '
+                'or raise the baseline deliberately — never suppress.',
+          );
+        }
+      },
+    );
+
+    test(
+      'I-83 — EVERY declared type in lib/ is declared exactly once, or is a PINNED documented duplicate (IS-R58 Phase 6)',
+      () {
+        // Historical defect: R47 built `knownDuplicateDeclarations` to stop a
+        // second `AnythingRuntime`, but the check iterated only
+        // `canonicalConstructionSites.keys` — THIRTEEN types out of 1,263. The
+        // post-R57 audit found TEN live collisions behind that blind spot,
+        // including R52's canonical `ExperienceFingerprint`. Two of them were
+        // dead contracts that R47 and R57 had each already deleted a sibling
+        // of.
+        //
+        // Every collision is a latent compile break: the first file to import
+        // both declaring libraries fails with `ambiguous_import` — exactly how
+        // R54 hit a duplicated constant and R57 hit `IntentRepository`.
+        final declarations = <String, List<String>>{};
+        final pattern = RegExp(
+          r'^\s*(?:abstract\s+|sealed\s+|final\s+|base\s+)?(?:class|enum|mixin)\s+([A-Z]\w*)',
+          multiLine: true,
+        );
+        for (final f in libFiles) {
+          for (final m in pattern.allMatches(f.code)) {
+            declarations.putIfAbsent(m.group(1)!, () => []).add(f.path);
+          }
+        }
+        expect(
+          declarations.length,
+          greaterThan(900),
+          reason:
+              'the declaration scan collapsed; every assertion below would pass vacuously',
+        );
+
+        final duplicates = <String, List<String>>{};
+        for (final entry in declarations.entries) {
+          final files = entry.value.toSet().toList()..sort();
+          if (files.length > 1) duplicates[entry.key] = files;
+        }
+
+        final unpinned = duplicates.keys
+            .where((t) => !pinnedDuplicateTypes.containsKey(t))
+            .toList()
+          ..sort();
+
+        expect(
+          unpinned,
+          isEmpty,
+          reason:
+              'a type is declared in more than one file and is NOT pinned: $unpinned. '
+              'Either give it one home, or add it to pinnedDuplicateTypes with the '
+              'reason the two are genuinely different subjects. Never narrow this '
+              'scan to make it pass.',
+        );
+
+        // A pinned entry must still describe reality — if a duplicate is
+        // resolved, its pin must go, or the pin silently protects nothing.
+        for (final pinned in pinnedDuplicateTypes.keys) {
+          expect(
+            duplicates.containsKey(pinned),
+            isTrue,
+            reason:
+                '"$pinned" is pinned as a documented duplicate but is no longer '
+                'declared twice — remove the pin so the set stays honest',
+          );
+        }
       },
     );
 

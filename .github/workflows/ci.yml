@@ -1,12 +1,23 @@
 name: CI
 
-# Vision Milestone V10 (Release Candidate Engineering & Production
-# Hardening) — the first CI/CD pipeline in this repository (repository
-# audit confirmed zero .github/workflows existed before this milestone).
-# Every step below uses tooling already present in this project's
-# pubspec.yaml (flutter_lints, sqflite_common_ffi) or built into the
-# Flutter/Dart SDK itself (flutter analyze, flutter test --coverage,
-# dart format) — no new dependency was added for CI.
+# Vision Milestone V10 introduced this pipeline. IS-R58 made it able to pass.
+#
+# WHAT WAS WRONG, MEASURED AT IS-R58 PHASE 1 (2026-08-08):
+#
+#   * "Verify formatting" ran `dart format --set-exit-if-changed` against a
+#     repository where 424 of 668 Dart files were unformatted. Exit 1.
+#   * "Analyze" ran bare `flutter analyze` under a step name promising a
+#     comparison against "the documented baseline". `flutter analyze` exits
+#     non-zero on ANY issue and this repository has a documented, non-empty
+#     baseline, so the step could never pass. It performed no comparison.
+#
+# GitHub Actions halts a job at its first failing step, so `flutter test` had
+# NEVER EXECUTED IN CI. The consequence was the reason IS-R58 exists: 89
+# architectural certification invariants and 40+ mutation proofs, built across
+# eleven milestones to prevent architectural drift, gated nothing at all.
+#
+# Every stage below is now independently visible, so a certification failure
+# names itself in the job list instead of hiding inside a generic test run.
 
 on:
   push:
@@ -16,7 +27,7 @@ on:
 
 jobs:
   analyze-and-test:
-    name: Analyze, Format, Test
+    name: Format, Analyze, Certify, Test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -32,10 +43,34 @@ jobs:
       - name: Verify formatting
         run: dart format --set-exit-if-changed .
 
-      - name: Analyze (0 new errors, 0 new warnings beyond the documented baseline)
-        run: flutter analyze
+      # Compares against the explicit baseline in tool/analyze_gate.sh rather
+      # than requiring zero issues. Fails on any NEW error, warning or info.
+      # Suppresses nothing, excludes nothing, lowers no lint.
+      - name: Analyze against the documented baseline
+        run: bash tool/analyze_gate.sh
 
-      - name: Run full test suite with coverage
+      # ── CERTIFICATION IS ITS OWN STEP, ON PURPOSE ─────────────────────────
+      # It ran inside the general test sweep before, where a failure was one
+      # line in 2,000. Architectural regression now fails a step that says so.
+      - name: Architectural certification (89 invariants)
+        run: flutter test test/r46_architectural_integrity_certification_test.dart
+
+      # The milestone suites carry the mutation-proven behavioural guarantees
+      # for commit, installation, distribution, trust, governance, retention
+      # and durable collections. Named separately for the same reason.
+      - name: Milestone guarantee suites (R45-R57)
+        run: |
+          flutter test \
+            test/r45_experience_entry_pipeline_test.dart \
+            test/r50_canonical_lifecycle_retention_test.dart \
+            test/r51_governance_framework_test.dart \
+            test/r52_experience_identity_provenance_test.dart \
+            test/r53_experience_distribution_test.dart \
+            test/r54_experience_installation_test.dart \
+            test/r55_experience_commit_test.dart \
+            test/r56_durable_collection_store_test.dart
+
+      - name: Full test suite with coverage
         run: flutter test --coverage
 
       - name: Upload coverage report
