@@ -264,6 +264,26 @@ class ExperienceDistributionPackage {
     'envelope': envelope.toJson(),
     'package': package.toJson(),
   };
+
+  /// IS-R60: the missing half of the round-trip.
+  ///
+  /// R53 gave this class a `toJson()` and no `fromJson`, so a transported
+  /// package could be written and never read back — a one-way street that
+  /// stayed open through four milestones and is a concrete reason gap G-25
+  /// ("a user still cannot import an Experience") survived. Parsing lives here
+  /// beside `toJson`; the CONTAINER around it is owned by
+  /// `ExperiencePackageReader`/`Writer` (IS-R60), which this does not
+  /// duplicate.
+  factory ExperienceDistributionPackage.fromJson(Map<String, dynamic> json) {
+    return ExperienceDistributionPackage(
+      envelope: ExperienceDistributionManifest.fromJson(
+        Map<String, dynamic>.from(json['envelope'] as Map),
+      ),
+      package: ExperiencePackage.fromJson(
+        Map<String, dynamic>.from(json['package'] as Map),
+      ),
+    );
+  }
 }
 
 /// Why a verification failed. A closed vocabulary so a caller can react to a

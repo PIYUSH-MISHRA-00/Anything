@@ -10,7 +10,7 @@ Measured at IS-R58 Phase 9:
 | | Count |
 |---|---|
 | Numbered IDs referenced in `ARCHITECTURE_INVARIANT_MATRIX.md` | 80 |
-| IDs that appear anywhere in the certification source | **15** |
+| IDs that appear anywhere in the certification source | **20** (was 15 at R58) |
 | Tests carrying an ID in their **name** | **3** |
 | IDs documented but absent from the source | **68** |
 
@@ -50,6 +50,9 @@ I-83 — EVERY declared type in lib/ is declared exactly once, or is a PINNED
 | I-21a | R46 | Exactly one crypto importer in `lib/` | Kaalka reachable outside its adapter, creating a second protection path |
 | I-49 | R51 | The governance engine imports nothing | A policy engine acquiring dependencies and becoming a second owner |
 | I-50 | R51 | Exactly one trust model | A second `TrustLevel` competing with the canonical one |
+| I-59 | R53 | The package verifier DELEGATES structural validation | A second verifier re-implementing the canonical validator's rules |
+| I-60 | R53 | The distribution manifest EMBEDS the canonical `ExperienceManifest` | A parallel manifest copying `experienceId`/`name`/`version` into itself |
+| I-65 | R54 | The installation transaction DELEGATES structural validation | The same "second validator" drift, one layer lower |
 | I-61 | R54 | One installer, one compatibility evaluator, one dependency planner | Duplicate installers/updaters |
 | I-67 | R54 | Distribution never commits | R53's distribution framework writing to the repository directly |
 | I-68 | R55 | One commit framework, one transaction coordinator | A second persistence commit path |
@@ -65,6 +68,8 @@ I-83 — EVERY declared type in lib/ is declared exactly once, or is a PINNED
 | **I-84** | **R58** | Invariant IDs are traceable in both directions | 80 documented IDs, 15 present in source, 3 tagged — ~4% traceability |
 | **I-85** | **R59** | Exactly one entry point, one app widget, no `ProviderScope` | A disconnected parallel v1 application revived by a second entry or a stray scope |
 | **I-86** | **R59** | Every `lib/` file has a KNOWN runtime classification | 110 of 466 files unreachable from `main()` with no classification at all |
+| **I-87** | **R60** | Exactly one package format, reader and writer; manifest and validator not duplicated | A transport envelope with `toJson()` and no `fromJson` — a one-way street since R53 |
+| **I-88** | **R60** | The reader never installs, activates, computes trust or performs I/O | Parsing something must not run it, and a well-formed package must not earn authority |
 
 ## Remaining work, stated plainly
 

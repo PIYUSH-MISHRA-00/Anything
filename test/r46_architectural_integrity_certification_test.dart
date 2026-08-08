@@ -3207,6 +3207,111 @@ final x = 1;
     );
 
     test(
+      'I-87 — exactly ONE package format, ONE reader and ONE writer (IS-R60 Phase 8)',
+      () {
+        // HISTORICAL DEFECT. R53 shipped a transport envelope with `toJson()`
+        // and NO `fromJson`, and no container, reader or writer of any kind.
+        // A package could be written and never read back. That one-way street
+        // is why gap G-25 ("a user still cannot import an Experience") stayed
+        // open through four milestones.
+        // MECHANISM NOTE — this scan was WRONG on its first attempt, and the
+        // mutation probe found it. It required the suffix at the END of the
+        // name (`...(?:Format|Reader|Writer|Codec))\b`), so a probe class
+        // called `ExperiencePackageReader2` escaped entirely: `\b` cannot
+        // match between `r` and `2`. A second reader would have been invisible
+        // as long as it carried any trailing character.
+        //
+        // It now matches the whole identifier and filters by CONTENT, so
+        // `Reader2`, `ReaderImpl` and `ReaderV2` are all caught.
+        final codecs =
+            libFiles
+                .expand(
+                  (f) => RegExp(r'\bclass\s+(\w*Package\w*)\b')
+                      .allMatches(f.code)
+                      .map((m) => m.group(1)!)
+                      .where(
+                        (n) =>
+                            n.contains('Format') ||
+                            n.contains('Reader') ||
+                            n.contains('Writer') ||
+                            n.contains('Codec'),
+                      )
+                      .map((n) => '${f.path}:$n'),
+                )
+                .toList()
+              ..sort();
+        expect(
+          codecs,
+          [
+            'lib/creation/experience_package_codec.dart:ExperiencePackageFormat',
+            'lib/creation/experience_package_codec.dart:ExperiencePackageReader',
+            'lib/creation/experience_package_codec.dart:ExperiencePackageWriter',
+          ],
+          reason: 'a second package format, reader or writer appeared: $codecs',
+        );
+
+        // The manifest and the validator were NOT recreated by R60. These
+        // re-assert I-60 and the R53/R54 delegation from the codec's angle.
+        expect(
+          _declaringFiles(libFiles, 'ExperienceManifest'),
+          ['lib/creation/experience_package.dart'],
+          reason: 'R60 must not have introduced a second manifest',
+        );
+        expect(
+          _declaringFiles(libFiles, 'ExperiencePackageValidator'),
+          ['lib/creation/package_validator.dart'],
+          reason: 'R60 must not have introduced a second validator',
+        );
+      },
+    );
+
+    test(
+      'I-88 — the READER never installs, activates, computes trust or performs I/O (IS-R60 Phase 4)',
+      () {
+        final codec = libFiles.firstWhere(
+          (f) => f.path == 'lib/creation/experience_package_codec.dart',
+        );
+
+        // It must DELEGATE structural validation — the "no second validator"
+        // rule in practice, identical in shape to I-59 and I-65.
+        expect(
+          codec.code.contains('ExperiencePackageValidator.validate'),
+          isTrue,
+          reason:
+              'structural validation must be delegated to the canonical validator, '
+              'never re-implemented inside the reader',
+        );
+
+        for (final forbidden in [
+          // Installation and persistence belong to R54/R55.
+          'ExperienceInstallationFramework', 'ExperienceCommitFramework',
+          'SqliteExperienceRepository', 'savePackage',
+          // Trust belongs to R52. A well-formed package must not be able to
+          // earn authority by being well-formed.
+          'ExperienceTrustClassifier', 'ExperienceTrustLevel', 'classify(',
+          // Activation belongs to R45.
+          'ExperienceEntryPipeline', 'ExperienceHostScreen', 'Navigator',
+          'AnythingRuntime',
+          // Movement belongs to R53.
+          'ExperienceDistributionFramework',
+          // File I/O belongs to RealFileService (R49); a codec turns bytes into
+          // a model and stops.
+          "dart:io", 'File(', 'RealFileService',
+          // No networking, no encryption — both explicitly forbidden by R60.
+          'HttpClient', 'KaalkaService', 'encrypt(',
+        ]) {
+          expect(
+            codec.code.contains(forbidden),
+            isFalse,
+            reason:
+                'the codec serialises only; referencing $forbidden would make it a '
+                'second owner of that subsystem',
+          );
+        }
+      },
+    );
+
+    test(
       'neither the Kernel nor any UI file imports an external cognition/protection package directly',
       () {
         final offenders = libFiles
