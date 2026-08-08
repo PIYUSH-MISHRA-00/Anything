@@ -1,9 +1,9 @@
 {
  "counts": {
-  "EXPERIMENTAL": 51,
+  "EXPERIMENTAL": 50,
   "REACHABLE": 356,
   "DORMANT": 43,
-  "DEAD": 16
+  "DEAD": 2
  },
  "rows": [
   {
@@ -568,7 +568,7 @@
    "file": "lib/core/errors/errors.dart",
    "class": "DORMANT",
    "test_refs": 1,
-   "lib_importers": 1
+   "lib_importers": 0
   },
   {
    "file": "lib/core/events/events.dart",
@@ -589,12 +589,6 @@
    "lib_importers": 1
   },
   {
-   "file": "lib/core/result/result.dart",
-   "class": "DEAD",
-   "test_refs": 0,
-   "lib_importers": 0
-  },
-  {
    "file": "lib/creation/creation_context.dart",
    "class": "REACHABLE",
    "test_refs": 9,
@@ -610,7 +604,7 @@
    "file": "lib/creation/experience_package.dart",
    "class": "REACHABLE",
    "test_refs": 39,
-   "lib_importers": 44
+   "lib_importers": 43
   },
   {
    "file": "lib/creation/experience_package_diff.dart",
@@ -622,13 +616,13 @@
    "file": "lib/creation/modification/experience_modification_spec.dart",
    "class": "REACHABLE",
    "test_refs": 4,
-   "lib_importers": 5
+   "lib_importers": 4
   },
   {
    "file": "lib/creation/modification/modification_engine.dart",
    "class": "REACHABLE",
    "test_refs": 4,
-   "lib_importers": 4
+   "lib_importers": 3
   },
   {
    "file": "lib/creation/package_validator.dart",
@@ -679,12 +673,6 @@
    "lib_importers": 3
   },
   {
-   "file": "lib/design_review/review_metrics.dart",
-   "class": "DEAD",
-   "test_refs": 0,
-   "lib_importers": 0
-  },
-  {
    "file": "lib/design_review/review_refinement.dart",
    "class": "REACHABLE",
    "test_refs": 2,
@@ -694,13 +682,13 @@
    "file": "lib/design_review/review_result.dart",
    "class": "REACHABLE",
    "test_refs": 2,
-   "lib_importers": 5
+   "lib_importers": 4
   },
   {
    "file": "lib/design_review/review_types.dart",
    "class": "REACHABLE",
    "test_refs": 7,
-   "lib_importers": 24
+   "lib_importers": 23
   },
   {
    "file": "lib/design_review/reviewers/accessibility_reviewer.dart",
@@ -1147,12 +1135,6 @@
    "lib_importers": 1
   },
   {
-   "file": "lib/feature_discovery/feature_recommendation.dart",
-   "class": "DEAD",
-   "test_refs": 0,
-   "lib_importers": 0
-  },
-  {
    "file": "lib/feature_discovery/feature_refinement.dart",
    "class": "REACHABLE",
    "test_refs": 1,
@@ -1168,7 +1150,7 @@
    "file": "lib/feature_discovery/feature_types.dart",
    "class": "REACHABLE",
    "test_refs": 14,
-   "lib_importers": 28
+   "lib_importers": 27
   },
   {
    "file": "lib/features/activity/activity_screen.dart",
@@ -1396,7 +1378,7 @@
    "file": "lib/memory/memory_manager.dart",
    "class": "EXPERIMENTAL",
    "test_refs": 0,
-   "lib_importers": 7
+   "lib_importers": 5
   },
   {
    "file": "lib/memory/sqlite_service.dart",
@@ -1409,18 +1391,6 @@
    "class": "EXPERIMENTAL",
    "test_refs": 0,
    "lib_importers": 3
-  },
-  {
-   "file": "lib/models/intent_model.dart",
-   "class": "DEAD",
-   "test_refs": 0,
-   "lib_importers": 0
-  },
-  {
-   "file": "lib/models/workspace_model.dart",
-   "class": "DEAD",
-   "test_refs": 0,
-   "lib_importers": 0
   },
   {
    "file": "lib/runtime/anything_runtime.dart",
@@ -1487,12 +1457,6 @@
    "class": "REACHABLE",
    "test_refs": 4,
    "lib_importers": 2
-  },
-  {
-   "file": "lib/runtime/golden_paths/calculator_modification.dart",
-   "class": "DEAD",
-   "test_refs": 0,
-   "lib_importers": 0
   },
   {
    "file": "lib/runtime/golden_paths/calculator_package.dart",
@@ -1705,12 +1669,6 @@
    "lib_importers": 22
   },
   {
-   "file": "lib/runtime_intelligence/runtime_context.dart",
-   "class": "DEAD",
-   "test_refs": 0,
-   "lib_importers": 0
-  },
-  {
    "file": "lib/runtime_intelligence/runtime_intelligence_coordinator.dart",
    "class": "REACHABLE",
    "test_refs": 3,
@@ -1732,19 +1690,19 @@
    "file": "lib/runtime_intelligence/session_context.dart",
    "class": "REACHABLE",
    "test_refs": 0,
-   "lib_importers": 2
+   "lib_importers": 1
   },
   {
    "file": "lib/runtime_intelligence/usage_graph.dart",
    "class": "REACHABLE",
    "test_refs": 4,
-   "lib_importers": 8
+   "lib_importers": 7
   },
   {
    "file": "lib/runtime_intelligence/workspace_context.dart",
    "class": "REACHABLE",
    "test_refs": 0,
-   "lib_importers": 2
+   "lib_importers": 1
   },
   {
    "file": "lib/screens/ai_settings_screen.dart",
@@ -1756,7 +1714,7 @@
    "file": "lib/screens/app_shell.dart",
    "class": "EXPERIMENTAL",
    "test_refs": 0,
-   "lib_importers": 4
+   "lib_importers": 2
   },
   {
    "file": "lib/screens/groq_settings_screen.dart",
@@ -1783,12 +1741,6 @@
    "lib_importers": 1
   },
   {
-   "file": "lib/screens/onboarding_screen.dart",
-   "class": "EXPERIMENTAL",
-   "test_refs": 0,
-   "lib_importers": 1
-  },
-  {
    "file": "lib/screens/personal_context_screen.dart",
    "class": "EXPERIMENTAL",
    "test_refs": 0,
@@ -1799,12 +1751,6 @@
    "class": "EXPERIMENTAL",
    "test_refs": 0,
    "lib_importers": 1
-  },
-  {
-   "file": "lib/screens/splash_screen.dart",
-   "class": "DEAD",
-   "test_refs": 0,
-   "lib_importers": 0
   },
   {
    "file": "lib/screens/templates_screen.dart",
@@ -1855,12 +1801,6 @@
    "lib_importers": 8
   },
   {
-   "file": "lib/services/analytics_service.dart",
-   "class": "DEAD",
-   "test_refs": 0,
-   "lib_importers": 0
-  },
-  {
    "file": "lib/services/file_context_service.dart",
    "class": "EXPERIMENTAL",
    "test_refs": 0,
@@ -1871,12 +1811,6 @@
    "class": "EXPERIMENTAL",
    "test_refs": 0,
    "lib_importers": 9
-  },
-  {
-   "file": "lib/services/latency_manager.dart",
-   "class": "DEAD",
-   "test_refs": 0,
-   "lib_importers": 0
   },
   {
    "file": "lib/services/provider_registry.dart",
@@ -1978,7 +1912,7 @@
    "file": "lib/software_architect/knowledge_graph.dart",
    "class": "REACHABLE",
    "test_refs": 4,
-   "lib_importers": 6
+   "lib_importers": 5
   },
   {
    "file": "lib/software_architect/refinement_planner.dart",
@@ -2098,7 +2032,7 @@
    "file": "lib/software_cognition/semantic_software_graph.dart",
    "class": "REACHABLE",
    "test_refs": 3,
-   "lib_importers": 14
+   "lib_importers": 13
   },
   {
    "file": "lib/software_cognition/software_cognition_coordinator.dart",
@@ -2117,12 +2051,6 @@
    "class": "REACHABLE",
    "test_refs": 4,
    "lib_importers": 9
-  },
-  {
-   "file": "lib/software_cognition/software_knowledge_graph.dart",
-   "class": "DEAD",
-   "test_refs": 0,
-   "lib_importers": 0
   },
   {
    "file": "lib/software_cognition/software_node.dart",
@@ -2494,7 +2422,7 @@
    "file": "lib/ui_engine/generative_ui_renderer.dart",
    "class": "EXPERIMENTAL",
    "test_refs": 0,
-   "lib_importers": 2
+   "lib_importers": 1
   },
   {
    "file": "lib/ui_engine/layout_engine.dart",
@@ -2524,25 +2452,13 @@
    "file": "lib/widgets/custom_hub_logo.dart",
    "class": "EXPERIMENTAL",
    "test_refs": 0,
-   "lib_importers": 2
-  },
-  {
-   "file": "lib/widgets/workspace_container.dart",
-   "class": "DEAD",
-   "test_refs": 0,
-   "lib_importers": 0
+   "lib_importers": 1
   },
   {
    "file": "lib/workflow/workflow_engine.dart",
    "class": "EXPERIMENTAL",
    "test_refs": 0,
    "lib_importers": 1
-  },
-  {
-   "file": "lib/workflow/workflow_executor.dart",
-   "class": "DEAD",
-   "test_refs": 0,
-   "lib_importers": 0
   },
   {
    "file": "lib/workflow/workflow_memory.dart",
@@ -2614,19 +2530,19 @@
    "file": "lib/world_model/context_analyzer.dart",
    "class": "REACHABLE",
    "test_refs": 0,
-   "lib_importers": 3
+   "lib_importers": 2
   },
   {
    "file": "lib/world_model/dependency_analyzer.dart",
    "class": "DORMANT",
    "test_refs": 1,
-   "lib_importers": 1
+   "lib_importers": 0
   },
   {
    "file": "lib/world_model/entity_identity.dart",
    "class": "REACHABLE",
    "test_refs": 13,
-   "lib_importers": 21
+   "lib_importers": 20
   },
   {
    "file": "lib/world_model/entity_resolver.dart",
@@ -2698,13 +2614,13 @@
    "file": "lib/world_model/graph_view.dart",
    "class": "REACHABLE",
    "test_refs": 1,
-   "lib_importers": 2
+   "lib_importers": 1
   },
   {
    "file": "lib/world_model/impact_analyzer.dart",
    "class": "REACHABLE",
    "test_refs": 3,
-   "lib_importers": 2
+   "lib_importers": 1
   },
   {
    "file": "lib/world_model/relationship_identity.dart",
@@ -2728,7 +2644,7 @@
    "file": "lib/world_model/semantic_query_engine.dart",
    "class": "DORMANT",
    "test_refs": 1,
-   "lib_importers": 1
+   "lib_importers": 0
   },
   {
    "file": "lib/world_model/world_edge.dart",
@@ -2740,7 +2656,7 @@
    "file": "lib/world_model/world_graph.dart",
    "class": "REACHABLE",
    "test_refs": 10,
-   "lib_importers": 21
+   "lib_importers": 20
   },
   {
    "file": "lib/world_model/world_history.dart",
@@ -2776,19 +2692,13 @@
    "file": "lib/world_model/world_node.dart",
    "class": "REACHABLE",
    "test_refs": 9,
-   "lib_importers": 24
+   "lib_importers": 23
   },
   {
    "file": "lib/world_model/world_planner.dart",
    "class": "REACHABLE",
    "test_refs": 1,
    "lib_importers": 1
-  },
-  {
-   "file": "lib/world_model/world_reasoner.dart",
-   "class": "DEAD",
-   "test_refs": 0,
-   "lib_importers": 0
   },
   {
    "file": "lib/world_model/world_snapshot.dart",

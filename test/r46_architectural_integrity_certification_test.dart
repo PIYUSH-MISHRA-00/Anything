@@ -416,6 +416,32 @@ const List<String> permittedModelInvocationFiles = [
 const Map<String, List<String>> knownDuplicateDeclarations =
     <String, List<String>>{};
 
+/// Files that are unreachable from `main()`, imported by no other `lib/` file
+/// and by no test — and which SURVIVE anyway, each with the reason
+/// (IS-R59 Phase 8/9, invariant I-86).
+///
+/// IS-R59 forbids an UNKNOWN runtime state. Fourteen files in this position
+/// were proven dead and deleted; these two could not be proven, and the
+/// difference is recorded rather than resolved by assumption.
+const Map<String, String> pinnedUnreachableFiles = <String, String>{
+  'lib/design_system/tokens/layout.dart':
+      'Unreachable and unimported, but the four types it declares '
+      '(AnythingPadding, AnythingBreakpoints, AnythingContentWidth, '
+      'AnythingNavigation) COLLIDE by name with live declarations in '
+      'design_system/tokens/spacing.dart. A text search finds 36 apparent '
+      'references and cannot tell which copy each one resolves to, so '
+      'import analysis says dead while name analysis cannot confirm it. '
+      'INSUFFICIENT PROOF — not deleted. Resolving it needs type-aware '
+      'analysis, and it is also the AnythingPadding duplicate pinned in '
+      'pinnedDuplicateTypes (gap G-45).',
+  'lib/world_model/semantic_entity.dart':
+      'Identical situation: SemanticEntity and SemanticRelationship collide '
+      'with the live synthesis/application_reasoner.dart declarations, '
+      'producing 167 apparent references that a text search cannot '
+      'attribute. INSUFFICIENT PROOF — not deleted. Also the SemanticEntity '
+      'duplicate pinned in pinnedDuplicateTypes.',
+};
+
 /// EVERY type declared in more than one file in `lib/`, each with the reason
 /// the two declarations are genuinely different subjects (IS-R58 Phase 6,
 /// invariant I-83).
@@ -3021,6 +3047,161 @@ final x = 1;
               'certification: $stale. Either the invariant was removed — in which case '
               'drop the row — or it was renamed and the map now protects nothing.',
         );
+      },
+    );
+
+    test(
+      'I-85 — exactly ONE application entry point reaches exactly ONE app widget (IS-R59 Phase 3)',
+      () {
+        // HISTORICAL DEFECT. The R58 audit found 28 files importing
+        // flutter_riverpod with NO `ProviderScope` anywhere, and a 13-file
+        // `lib/screens/` set referenced by nothing in the live shell — an
+        // entire parallel v1 application sitting beside the canonical one. A
+        // second entry point is how that becomes reachable again by accident.
+        final entries = <String>[];
+        final apps = <String>[];
+        for (final f in libFiles) {
+          if (RegExp(r'\bvoid\s+main\s*\(').hasMatch(f.code)) {
+            entries.add(f.path);
+          }
+          for (final m in RegExp(
+            r'\b(MaterialApp|CupertinoApp|WidgetsApp)\s*\(',
+          ).allMatches(f.code)) {
+            apps.add('${f.path}:${m.group(1)}');
+          }
+        }
+        expect(
+          entries,
+          ['lib/main.dart'],
+          reason:
+              'exactly one application entry point may exist; found: $entries',
+        );
+        expect(
+          apps,
+          ['lib/app/app.dart:MaterialApp'],
+          reason:
+              'exactly one application widget may exist; a second one is a parallel '
+              'runtime graph: $apps',
+        );
+
+        // A ProviderScope would silently revive the disconnected Riverpod
+        // subsystem. Its absence is the current, documented reality (G-48);
+        // adding one is a deliberate architectural act, not a side effect.
+        final scopes = libFiles
+            .where((f) => f.code.contains('ProviderScope'))
+            .map((f) => f.path)
+            .toList();
+        expect(
+          scopes,
+          isEmpty,
+          reason:
+              'no ProviderScope exists today, so every Riverpod provider is unreachable '
+              '(gap G-48). Introducing one revives ~50 disconnected files at once and '
+              'must be its own reviewed milestone: $scopes',
+        );
+      },
+    );
+
+    test(
+      'I-86 — every lib/ file has a KNOWN runtime classification (IS-R59 Phase 9)',
+      () {
+        // Reachability is computed the same way tool/classify_reachability.py
+        // computes it: transitive import closure from the single entry point.
+        // A file is DEAD only when nothing in lib/ or test/ imports it AND
+        // main() cannot reach it. IS-R59 requires zero UNKNOWN states, and
+        // requires every DEAD file to be pinned with the reason it survives.
+        String? resolve(String importer, String uri) {
+          if (uri.startsWith('package:anything/')) {
+            return 'lib/${uri.substring('package:anything/'.length)}';
+          }
+          if (uri.startsWith('package:') || uri.startsWith('dart:'))
+            return null;
+          final parts = [
+            ...importer.split('/')..removeLast(),
+            ...uri.split('/'),
+          ];
+          final out = <String>[];
+          for (final p in parts) {
+            if (p == '.' || p.isEmpty) continue;
+            if (p == '..') {
+              if (out.isNotEmpty) out.removeLast();
+            } else {
+              out.add(p);
+            }
+          }
+          return out.join('/');
+        }
+
+        final importRe = RegExp(
+          '''^\\s*(?:import|export)\\s+['"]([^'"]+)['"]''',
+          multiLine: true,
+        );
+        final paths = {for (final f in libFiles) f.path};
+        final graph = <String, List<String>>{};
+        for (final f in libFiles) {
+          graph[f.path] = [
+            for (final m in importRe.allMatches(f.raw))
+              if (resolve(f.path, m.group(1)!) case final t?)
+                if (paths.contains(t)) t,
+          ];
+        }
+
+        final reachable = <String>{};
+        final stack = ['lib/main.dart'];
+        while (stack.isNotEmpty) {
+          final cur = stack.removeLast();
+          if (!reachable.add(cur)) continue;
+          stack.addAll(graph[cur] ?? const []);
+        }
+        expect(
+          reachable.length,
+          greaterThan(300),
+          reason:
+              'the reachability walk collapsed; the assertion below would be vacuous',
+        );
+
+        final importedFromLib = <String>{for (final ts in graph.values) ...ts};
+        final testDir = Directory('test');
+        final importedFromTest = <String>{};
+        for (final e in testDir.listSync(recursive: true)) {
+          if (e is! File || !e.path.endsWith('.dart')) continue;
+          final raw = e.readAsStringSync();
+          for (final m in importRe.allMatches(raw)) {
+            final t = resolve(e.path.replaceAll(r'\', '/'), m.group(1)!);
+            if (t != null && paths.contains(t)) importedFromTest.add(t);
+          }
+        }
+
+        final dead = [
+          for (final f in libFiles)
+            if (!reachable.contains(f.path) &&
+                !importedFromLib.contains(f.path) &&
+                !importedFromTest.contains(f.path))
+              f.path,
+        ]..sort();
+
+        final unpinned = dead
+            .where((p) => !pinnedUnreachableFiles.containsKey(p))
+            .toList();
+        expect(
+          unpinned,
+          isEmpty,
+          reason:
+              'these lib/ files are unreachable from main(), imported by no other lib/ '
+              'file and by no test — an UNKNOWN runtime state, which IS-R59 forbids: '
+              '$unpinned. Prove them dead and delete them, or pin each with the reason '
+              'it survives.',
+        );
+
+        for (final pinned in pinnedUnreachableFiles.keys) {
+          expect(
+            dead.contains(pinned),
+            isTrue,
+            reason:
+                '"$pinned" is pinned as unreachable but is now referenced — drop the pin '
+                'so the set stays honest',
+          );
+        }
       },
     );
 

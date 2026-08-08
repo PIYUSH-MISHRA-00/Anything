@@ -63,6 +63,8 @@ I-83 — EVERY declared type in lib/ is declared exactly once, or is a PINNED
 | **I-82** | **R58** | The analyze gate declares an explicit baseline and weakens nothing | A step *named* for a baseline comparison that never performed one |
 | **I-83** | **R58** | Every declared type is declared once or is a pinned duplicate | A duplicate-declaration check that scanned 13 of 1,263 types |
 | **I-84** | **R58** | Invariant IDs are traceable in both directions | 80 documented IDs, 15 present in source, 3 tagged — ~4% traceability |
+| **I-85** | **R59** | Exactly one entry point, one app widget, no `ProviderScope` | A disconnected parallel v1 application revived by a second entry or a stray scope |
+| **I-86** | **R59** | Every `lib/` file has a KNOWN runtime classification | 110 of 466 files unreachable from `main()` with no classification at all |
 
 ## Remaining work, stated plainly
 
