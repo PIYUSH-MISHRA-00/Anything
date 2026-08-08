@@ -308,6 +308,11 @@ class _ProviderPreferencesScreenState extends State<ProviderPreferencesScreen> {
           const SizedBox(width: 8),
           IconButton(
             onPressed: () => _showConfigureDialog(config),
+            // ACCESSIBILITY (IS-P03 Phase 5). An icon-only control with no
+            // tooltip has NO accessible name -- a screen reader announces
+            // "button" and nothing else. The provider name is included
+            // because several of these appear in one list.
+            tooltip: 'Configure ${config.displayName}',
             icon: Icon(
               Icons.settings,
               color: colorScheme.onSurfaceVariant,

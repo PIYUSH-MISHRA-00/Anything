@@ -915,7 +915,13 @@ class HomeScreenState extends State<HomeScreen> {
                             : colorScheme.onSurfaceVariant,
                         size: 22,
                       ),
-                      tooltip: 'Voice input',
+                      // ACCESSIBILITY (IS-P03 Phase 5). The icon changes to
+                      // signal recording, which is invisible to a screen
+                      // reader. The label carries the state instead, so a
+                      // blind user can tell whether the microphone is live.
+                      tooltip: _isListening
+                          ? 'Listening. Tap to stop'
+                          : 'Voice input',
                     ),
             ),
           ),
