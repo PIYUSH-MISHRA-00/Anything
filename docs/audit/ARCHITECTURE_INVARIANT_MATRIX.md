@@ -722,3 +722,47 @@ A sixth probe was written and **discarded as invalid**: it changed only
 whitespace in the manifest field declaration, which `\s+` still matched, so its
 "pass" proved nothing. It is recorded here because a probe that passes for the
 wrong reason is indistinguishable from an invariant that does not work.
+
+
+---
+
+## I-91 / I-92 — the Experience Orchestrator (IS-R62)
+
+| ID | Invariant | Historical defect it prevents |
+|---|---|---|
+| **I-91** | Exactly one Experience Orchestrator, and nothing in `lib/` reaches `WorkspaceSchedulingEngine` except through it | Two call sites reached the scheduler directly, bypassing the R45 entry pipeline: the workspace switcher's no-live-runtime branch and the host screen's app-lifecycle notification |
+| **I-92** | The Orchestrator DECIDES and never executes, navigates, supervises, or re-decides what another owner decides | A coordinator that can also execute stops being a coordinator and becomes a second entry pipeline — the exact defect I-02/I-16/I-17 exist to prevent |
+
+I-91 checks two things. The class set is pinned exactly — including the two
+pre-existing `solution_orchestration` types, which concern solution-plan
+execution rather than Experience execution and are pinned precisely so a real
+second Experience orchestrator cannot hide behind them. Then the caller list:
+every file whose comment-stripped source calls `.scheduleForeground(` or
+`.scheduleActiveTransition(` must be `experience_orchestrator.dart` alone.
+
+I-92 is a forbidden-symbol check plus two positive assertions: the orchestrator
+must still name `WorkspaceSchedulingEngine` (forward TO the one scheduler, not
+around it), and `ExperienceExecutionValidator` must still be declared only in
+R61's contract file.
+
+**R62 mutation evidence — five probes, five failures.**
+
+| Probe | Invariant | Result |
+|---|---|---|
+| a second class `ExperienceOrchestrator2` | I-91 | FAILED as required |
+| the host screen restored to calling `scheduleActiveTransition()` directly | I-91 | FAILED as required, naming the file |
+| the orchestrator given an `AnythingRuntime?` field | I-92 | FAILED as required |
+| the orchestrator given a `NavigatorState?` field | I-92 | FAILED as required |
+| a second `ExperienceExecutionValidator` declared elsewhere in `lib/` | I-92 | FAILED as required |
+
+**THREE PROBES FAILED FOR THE WRONG REASON ON THE FIRST ATTEMPT.** The initial
+versions of the last three used undeclared types, so `flutter test` failed at
+COMPILATION before the certification suite ever ran — printing "Some tests
+failed" while proving nothing at all about I-92. They were rewritten with real
+imports and real field types, after which each failed on the invariant itself
+with the correct reason text.
+
+This is the same class of error IS-R61 recorded (a probe that changed only
+whitespace, which the regex still matched) and it is why R61's report insisted
+a probe must be checked for WHY it failed, not merely THAT it did. Two
+milestones running, the check has caught a worthless probe.

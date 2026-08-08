@@ -441,3 +441,49 @@ Execution **mode**. The Phase 1 audit found no execution-mode concept anywhere
 in `lib/`; `ExperienceRuntimeType` describes RENDERING (`auil`/`flutter`/`web`/
 `hybrid`) and lives in the unreachable v1 contracts set IS-R59 classified
 EXPERIMENTAL. Everything else R61's specification listed already had an owner.
+
+
+---
+
+## Orchestration ownership (IS-R62)
+
+`ExperienceOrchestrator` DECIDES whether and how. It executes nothing.
+
+| Verb | Owner | Milestone |
+|---|---|---|
+| DECIDES whether an execution request proceeds, and under what policy | `ExperienceOrchestrator` | **R62** |
+| SCHEDULES | `WorkspaceSchedulingEngine` | R42 |
+| SUPERVISES runtimes | `WorkspaceRuntimeSupervisor` | R40/R41 |
+| EXECUTES | `AnythingRuntime` | — |
+| ENTERS / navigates | `ExperienceEntryPipeline` | R45 |
+| TRACKS activation routes | `ExperienceActivationManager` | R44 |
+| DECIDES pause / resume / terminate | `WorkspaceLifecyclePolicyEngine` | R39 |
+| DECIDES background ELIGIBILITY | `BackgroundExecutionRule` -> `OperatingSystemGovernanceEngine` | R51 |
+| DECLARES what an Experience asks for | `ExperienceExecutionContract` | R61 |
+| VALIDATES that declaration | `ExperienceExecutionValidator` | R61 |
+
+### The bypass this closed
+
+The Phase 1 audit found exactly three calls into `WorkspaceSchedulingEngine` in
+reachable `lib/`, and **two reached it without passing through the R45 entry
+pipeline**: the workspace switcher's no-live-runtime branch
+(`workspace_switcher.dart:105`) and the host screen's app-lifecycle
+notification (`experience_host_screen.dart:399`). All three now state an
+execution request instead. **Certified by I-91**, which lists the permitted
+callers exactly and fails when a fourth appears.
+
+### Why the orchestrator sits in front of the SCHEDULER, not in front of ENTRY
+
+`ExperienceEntryPipeline` (R45) is already the ONE entry mechanism, certified
+by I-02/I-16/I-17 — invariants that exist because four `HomeScreen` call sites
+once each opened Experiences their own way. An orchestrator that accepted
+requests *and* navigated would recreate that defect as a second entry pipeline.
+So it was placed where there was genuinely nothing: between a request and the
+scheduler. **Certified by I-92.**
+
+### A contract narrows; it never widens
+
+A `userInitiated` trigger resolves to the `userInitiated` policy regardless of
+what `ExecutionMode` a contract declares. A package is untrusted input, and a
+contract that could claim the foreground from a waiting person would be the
+artefact setting policy. Asserted across every `ExecutionMode` value.

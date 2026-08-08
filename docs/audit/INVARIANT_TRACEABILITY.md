@@ -70,13 +70,18 @@ I-83 — EVERY declared type in lib/ is declared exactly once, or is a PINNED
 | **I-86** | **R59** | Every `lib/` file has a KNOWN runtime classification | 110 of 466 files unreachable from `main()` with no classification at all |
 | **I-87** | **R60** | Exactly one package format, reader and writer; manifest and validator not duplicated | A transport envelope with `toJson()` and no `fromJson` — a one-way street since R53 |
 | **I-88** | **R60** | The reader never installs, activates, computes trust or performs I/O | Parsing something must not run it, and a well-formed package must not earn authority |
+| **I-02** | **R45/R46** | Exactly one `ExperienceHostScreen` construction path — `experience_entry_pipeline.dart` only | Four `HomeScreen` call sites each opened Experiences their own way, every one bypassing workspace registration and scheduler participation |
+| **I-16** | **R45/R46** | `ExperienceEntryPipeline` is the ONLY `lib/` file constructing `ExperienceHostScreen` | Before R45's second pass `experiences_screen.dart` also constructed it, in three places |
+| **I-17** | **R45/R46** | No file outside the pipeline both references `ExperienceHostScreen` and calls `Navigator.push` | The mechanical form of "one entry mechanism": construction and navigation must not recombine outside the pipeline |
 | **I-89** | **R61** | Exactly one execution contract and one execution validator; the contract EMBEDS the canonical manifest | A second execution contract would re-declare the capabilities `ExperienceManifest` has owned since R53 (I-60) |
 | **I-90** | **R61** | The execution contract DECLARES only — it never decides, schedules, executes, enforces or persists | A contract travels inside a package, and a package is untrusted input; a contract that could decide its own eligibility would be a governance engine reachable by anyone who can write a manifest |
+| **I-91** | **R62** | Exactly one Experience Orchestrator, and nothing reaches `WorkspaceSchedulingEngine` except through it | Two call sites reached the scheduler directly, bypassing the R45 entry pipeline: the workspace switcher's no-live-runtime branch and the host screen's app-lifecycle notification |
+| **I-92** | **R62** | The Orchestrator DECIDES and never executes, navigates, supervises or re-decides another owner's decision | A coordinator that can also execute stops being a coordinator and becomes a second entry pipeline — the exact defect I-02/I-16/I-17 exist to prevent |
 
 ## Remaining work, stated plainly
 
-**68 documented IDs (I-01 … I-48, I-51, I-57–I-66, I-69, I-71–I-73, I-76, I-79
-and the lettered variants) are NOT yet registered**, because their tests do not
+**65 documented IDs (I-01, I-03–I-15, I-18–I-48, I-51, I-57–I-66, I-69,
+I-71–I-73, I-76, I-79 and the lettered variants) are NOT yet registered**, because their tests do not
 carry the ID and mapping 89 pre-R58 tests to matrix rows by hand is a
 substantial, error-prone edit that IS-R58 did not authorise — it changes no
 architecture, but a wrong mapping would be worse than none.
@@ -84,10 +89,12 @@ architecture, but a wrong mapping would be worse than none.
 I-84 prevents the gap from **growing**: any ID newly mentioned in the source
 must be registered, and any registered ID must exist.
 
+IS-R62 registered **I-02, I-16 and I-17** — not as a retro-tagging effort, but because R62's own certification comments cite them and I-84 requires any ID named in source to be registered. That is the incremental discipline I-84 was built for: the gap shrinks when a milestone actually touches an ID.
+
 `I-79` specifically remains unreconciled: it is referenced in
 `ARCHITECTURE_INVARIANT_MATRIX.md` and appears nowhere in the source. It is one
 of the 68 and is recorded as gap **G-49**.
 
-**Recommended:** retro-tag the 89 pre-R58 tests in a milestone of its own,
+**Recommended:** retro-tag the remaining pre-R58 tests in a milestone of its own,
 one milestone-family per commit, verifying each mapping against that
 milestone's own report.

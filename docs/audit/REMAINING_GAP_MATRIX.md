@@ -34,6 +34,20 @@ Severity: **A** = architectural integrity, **B** = correctness/UX,
 | G-18 | Persisted knowledge had no retention policy — unbounded growth | **CLOSED.** `RetentionPolicyEngine` now owns it: 500 entries / 20 MB / 30 days. `KnowledgeCache.applyRetention()` asks the engine and tells `KnowledgeRepository` which keys to drop; the repository still owns no policy (I-47). R48 deliberately did not invent a policy because none existed to reuse — R50 created the canonical owner first, then applied it. |
 | G-22 | Retention was invented independently three times with three magic numbers (`_maxRecords=100`, `_maxEvents=200`, `maxScheduled=200`) | **CLOSED.** All three delegate to the ONE engine. Values unchanged — three tests assert 100/200/200 exactly, so ownership moved without behaviour moving. No repository or capability service may hold a retention rule any more (I-46), mutation-proven. |
 
+## CLOSED BY IS-R62
+
+| # | Sev | Gap | Closed by |
+|---|---|---|---|
+| **G-56** | MED | **Nothing consumes the execution contract** (opened by R61 one milestone ago) | `ExperienceOrchestrator.decide()` validates a supplied contract by delegating to the canonical `ExperienceExecutionValidator`, and refuses the request on any fault. The first consumer of IS-R61 anywhere in the repository. **Closed honestly, not completely:** the path is real, tested and reachable, but no production call site supplies a contract yet — that residue is recorded as G-58 rather than folded into a claim of full closure. |
+
+## OPENED BY IS-R62 — recorded at the moment they were created
+
+| # | Sev | Gap | Evidence | Status |
+|---|---|---|---|---|
+| G-58 | MED | **No production call site supplies an execution contract.** All three orchestrator call sites pass `contract: null`. | `experience_activation_manager.dart`, `workspace_switcher.dart`, `experience_host_screen.dart` | **Open.** Downstream of G-25: nothing produces a contract because nothing reads a package from a file. Closing G-25 closes the producer side, after which this is a wiring step rather than a design question. |
+| G-59 | LOW | **`deferred` and `scheduled` policies forward nothing.** No future-execution mechanism exists in this repository. | `ExperienceOrchestrator.orchestrate()` returns `forwarded: false` for both | **Open, deliberately.** Faking deferral with a `Timer` would be inventing a scheduler, and R62 forbids redesigning the one that exists. The decision is real and reported; only the mechanism is absent. |
+| G-60 | LOW | **The orchestrator does not consult governance.** A `background` policy is resolved without asking `BackgroundExecutionRule` (R51). | `experience_orchestrator.dart` names no governance symbol — certified by I-92 | **Open, deliberately.** Governance owns eligibility (R51). Consulting it from here is a real future wiring step; re-deciding it here would move a decision out of its owner, which R62 forbids. |
+
 ## OPENED BY IS-R61 — recorded at the moment they were created
 
 | # | Sev | Gap | Evidence | Status |
