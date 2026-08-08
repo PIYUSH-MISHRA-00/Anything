@@ -1,4 +1,33 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- ── Permissions (IS-P01) ───────────────────────────────────────────
+         WHAT WAS WRONG, MEASURED BY THE IS-P01 PRODUCT AUDIT:
+
+         This manifest declared NO permissions at all. `INTERNET` existed only
+         in the debug/ and profile/ manifests, which Flutter generates and
+         which are NOT merged into release builds. Every AI call
+         (GroqModelProvider), every capability HTTP request (HttpCapability)
+         and every knowledge fetch (WebWeaveXAdapter) would have failed
+         silently in a shipped build.
+
+         Each permission below is required by a dependency the project
+         already declares in pubspec.yaml. Nothing speculative is requested —
+         a permission with no caller is an unexplained Play review question. -->
+
+    <!-- GroqModelProvider, HttpCapability, WebWeaveXAdapter, SearchProvider. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- Fail fast and offline-aware rather than hanging on a dead socket. -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <!-- RealNotificationService / NotificationCapability (IS-R49).
+         Runtime-requested and mandatory from Android 13 (API 33). -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!-- speech_to_text and record, both declared dependencies. Runtime-
+         requested; the app degrades to text input when it is refused. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
     <application
         android:label="Anything"
         android:name="${applicationName}"

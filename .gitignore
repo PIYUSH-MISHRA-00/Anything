@@ -48,3 +48,13 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 /android/.kotlin/
+
+# ── Release signing (IS-P01) ───────────────────────────────────────────────
+# A release keystore is UNRECOVERABLE if lost and grants publishing authority
+# if leaked. Never commit either the keystore or the properties file that
+# names its passwords. CI already fails the build if any of these are tracked
+# (.github/workflows/ci.yml → "Confirm no forbidden files are tracked").
+android/key.properties
+*.jks
+*.keystore
+.env

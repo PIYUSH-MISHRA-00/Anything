@@ -1,8 +1,32 @@
+import java.util.Properties
+import java.io.FileInputStream
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
+}
+
+// ── Release signing (IS-P01) ────────────────────────────────────────────────
+//
+// WHAT WAS WRONG, MEASURED BY THE IS-P01 PRODUCT AUDIT:
+//
+//   The release build type signed with `signingConfigs.getByName("debug")`.
+//   Google Play REJECTS debug-signed uploads outright, so no artifact this
+//   repository could produce was ever publishable. `flutter build apk
+//   --release` was never run by CI or by any of milestones R1-R62, so the
+//   defect was invisible for the project's entire history.
+//
+// `android/key.properties` is gitignored and absent from a fresh clone, which
+// is deliberate: a contributor building locally keeps working with debug
+// signing, and only a release build on a machine holding the real keystore
+// produces a publishable artifact. See docs/RELEASE_GUIDE.md.
+val keystorePropertiesFile = rootProject.file("key.properties")
+val keystoreProperties = Properties()
+val hasReleaseKeystore = keystorePropertiesFile.exists()
+if (hasReleaseKeystore) {
+    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
 }
 
 configurations.all {
@@ -42,11 +66,37 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        if (hasReleaseKeystore) {
+            create("release") {
+                keyAlias = keystoreProperties["keyAlias"] as String
+                keyPassword = keystoreProperties["keyPassword"] as String
+                storeFile = file(keystoreProperties["storeFile"] as String)
+                storePassword = keystoreProperties["storePassword"] as String
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            // Real release signing when a keystore is configured; debug signing
+            // otherwise, so a fresh clone still builds. A debug-signed artifact
+            // is NOT publishable — RELEASE_GUIDE.md covers keystore setup, and
+            // the release workflow refuses to publish without one.
+            signingConfig = if (hasReleaseKeystore) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
+            }
+
+            // R8 with the Flutter/Android defaults plus this project's rules.
+            // Measured effect is recorded in PLAYSTORE_READINESS.md.
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
         }
     }
 }

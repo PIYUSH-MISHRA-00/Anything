@@ -1,5 +1,5 @@
 name: anything
-description: "A new Flutter project."
+description: "An operating system for software that does not exist yet — describe what you need, and Anything builds, runs and keeps it."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
