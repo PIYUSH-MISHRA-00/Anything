@@ -2968,6 +2968,63 @@ final x = 1;
     );
 
     test(
+      'I-84 — every invariant ID is traceable in BOTH directions (IS-R58 Phase 9)',
+      () {
+        // HISTORICAL DEFECT. The matrices reference 80 numbered invariant IDs;
+        // measured at Phase 9, only 15 appeared anywhere in this file and only
+        // 3 tests carried one in their name — traceability of ~4%. A reader
+        // could not map a failed test to the matrix row explaining it, nor a
+        // matrix row to the test enforcing it. The post-R57 audit reported this
+        // as one missing ID; it understated the gap 68-fold.
+        //
+        // This does not retro-tag 89 pre-R58 tests — that is a milestone of its
+        // own (gap G-49). It stops the gap GROWING, in both directions.
+        final map = File(
+          'docs/audit/INVARIANT_TRACEABILITY.md',
+        ).readAsStringSync();
+        final source = File(
+          'test/r46_architectural_integrity_certification_test.dart',
+        ).readAsStringSync();
+
+        final idPattern = RegExp(r'\bI-\d+[a-c]?\b');
+        final inSource = idPattern.allMatches(source).map((m) => m[0]!).toSet();
+        // Only IDs in the registry TABLE count, not prose mentions.
+        final registered = <String>{
+          for (final line in map.split('\n'))
+            if (line.trimLeft().startsWith('|'))
+              ...idPattern.allMatches(line).map((m) => m[0]!),
+        };
+
+        expect(
+          inSource,
+          isNotEmpty,
+          reason:
+              'the ID scan found nothing; every assertion below would pass vacuously',
+        );
+
+        final orphans = inSource.difference(registered).toList()..sort();
+        expect(
+          orphans,
+          isEmpty,
+          reason:
+              'these invariant IDs are used in certification but are not registered in '
+              'docs/audit/INVARIANT_TRACEABILITY.md: $orphans. Register each one with the '
+              'milestone that owns it and the historical defect it prevents.',
+        );
+
+        final stale = registered.difference(inSource).toList()..sort();
+        expect(
+          stale,
+          isEmpty,
+          reason:
+              'these IDs are registered in the traceability map but appear nowhere in '
+              'certification: $stale. Either the invariant was removed — in which case '
+              'drop the row — or it was renamed and the map now protects nothing.',
+        );
+      },
+    );
+
+    test(
       'neither the Kernel nor any UI file imports an external cognition/protection package directly',
       () {
         final offenders = libFiles
