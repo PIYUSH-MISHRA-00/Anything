@@ -176,9 +176,23 @@ class IntentPreservationValidator {
       'workout',
       'library',
       'project planner',
+      'manage',
+      'manager',
+      'operations',
+      'maintenance',
+      'schedule',
+      'schedules',
+      'members',
+      'records',
+      'planner',
     ], (n) => collection += n);
 
     // Prefer weather/news over generic "dashboard" network when both score.
+    // Durable management intents win over incidental "articles"/"temperature".
+    if (collection > 0 && collection >= weather && collection >= news) {
+      weather = 0;
+      news = 0;
+    }
     final scores = {
       IntentPurpose.timing: timing,
       IntentPurpose.calculation: calc,

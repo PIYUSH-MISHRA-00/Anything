@@ -978,6 +978,12 @@ class AnythingKernel {
         o.contains('track') ||
         o.contains('list') ||
         o.contains('manager') ||
+        o.contains('manage') ||
+        o.contains('operations') ||
+        o.contains('maintenance') ||
+        o.contains('inventory') ||
+        o.contains('schedule') ||
+        o.contains('planner') ||
         o.contains('log') ||
         o.contains('record') ||
         o.contains('collection');

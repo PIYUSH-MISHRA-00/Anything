@@ -266,22 +266,43 @@ class AppCapabilityInferrer {
           }
         }
 
+        // Durable-record cues beat weather/news lexical shells — otherwise
+        // "articles" / "temperature" hijack management apps into domain shells.
+        final looksManagedRecords =
+            expression.contains('manage') ||
+            expression.contains('manager') ||
+            expression.contains('operations') ||
+            expression.contains('maintenance') ||
+            expression.contains('inventory') ||
+            expression.contains('schedule') ||
+            expression.contains('records') ||
+            expression.contains('members') ||
+            expression.contains('recipes') ||
+            expression.contains('batches') ||
+            expression.contains('track') ||
+            expression.contains('planner');
+
         final looksWeather =
-            expression.contains('weather') ||
-            expression.contains('forecast') ||
-            expression.contains('temperature') ||
-            expression.contains('humidity');
+            !looksManagedRecords &&
+            (expression.contains('weather') ||
+                expression.contains('forecast') ||
+                (expression.contains('temperature') &&
+                    !expression.contains('manage')) ||
+                expression.contains('humidity'));
         final looksNews =
-            RegExp(r'\bnews\b').hasMatch(expression) ||
-            expression.contains('headline') ||
-            expression.contains('headlines') ||
-            expression.contains('articles');
+            !looksManagedRecords &&
+            (RegExp(r'\bnews\b').hasMatch(expression) ||
+                expression.contains('headline') ||
+                expression.contains('headlines') ||
+                (expression.contains('articles') &&
+                    !expression.contains('manage')));
         final looksResearch =
-            expression.contains('research') ||
-            expression.contains('explain') ||
-            expression.contains('wikipedia') ||
-            expression.contains('who founded') ||
-            expression.contains('history of');
+            !looksManagedRecords &&
+            (expression.contains('research') ||
+                expression.contains('explain') ||
+                expression.contains('wikipedia') ||
+                expression.contains('who founded') ||
+                expression.contains('history of'));
 
         if (looksWeather) {
           caps.add(AppCapabilityIds.weatherData);

@@ -34,8 +34,20 @@ class CompositeApplicationReasoner implements ApplicationReasoner {
     // Step 1: Try deterministic reasoning
     final deterministicResult = await _deterministic.reason(context);
 
-    // If deterministic succeeded, use it
+    // If deterministic succeeded: use it for simple cases. When a model is
+    // configured and deterministic only built a multi-entity "managed-records"
+    // shell, prefer the model's richer SemanticApp (Stage 11 / open-world AI).
     if (deterministicResult is ReasoningReady) {
+      final managed = deterministicResult.semanticApp.tags.contains(
+        'managed-records',
+      );
+      final provider = _providerRegistry?.activeProvider;
+      if (managed && provider != null && provider.isConfigured) {
+        final modelResult = await ModelApplicationReasoner(
+          provider,
+        ).reason(context);
+        if (modelResult is ReasoningReady) return modelResult;
+      }
       return deterministicResult;
     }
 

@@ -1,26 +1,15 @@
-/// Deterministic Application Reasoner — handles simple structural requests
-/// without AI.
+/// Deterministic Application Reasoner — handles structural requests without AI.
 ///
-/// This reasoner works from generic semantic information already available
-/// in the user's intent. It does not contain domain-specific knowledge.
-///
-/// Its purpose is to handle requests where:
-/// - objective already contains explicit entities/fields/actions
-/// - simple collection request where entity name is obvious from words
-///
-/// Everything else escalates to model reasoning.
+/// Works from generic semantic information in the user's intent. Does not
+/// contain domain-specific application factories.
 library;
 
+import '../creation/app_capabilities.dart';
 import 'app_blueprint.dart';
 import 'application_reasoner.dart';
+import 'structural_entity_extractor.dart';
 
 /// Deterministic application reasoner.
-///
-/// Handles simple structural requests by extracting semantic information
-/// directly from the intent understanding. No AI required.
-///
-/// Principle: only handle requests whose semantics are obvious from
-/// the words themselves. When uncertain, escalate.
 class DeterministicReasoner implements ApplicationReasoner {
   const DeterministicReasoner();
 
@@ -29,135 +18,173 @@ class DeterministicReasoner implements ApplicationReasoner {
     final understanding = context.understanding;
     final objective = understanding.objective;
 
-    // Simple collection patterns: "make a list of X", "create a list of X"
+    final managed = _tryManagedRecordsReasoning(objective);
+    if (managed != null) {
+      return ReasoningReady(semanticApp: managed);
+    }
+
     final collectionResult = _tryCollectionReasoning(objective);
     if (collectionResult != null) {
       return ReasoningReady(semanticApp: collectionResult);
     }
 
-    // Cannot handle deterministically — require model reasoning
     return const ReasoningProviderRequired();
   }
 
-  /// Try to handle as a simple collection.
+  /// Multi-entity durable apps from structural noun lists (manage / bullets).
   ///
-  /// Only succeeds when:
-  /// - "list of X" or "create a list of X" pattern is explicit
-  /// - Entity name is clearly extractable from the objective
-  /// - No ambiguous domain semantics
+  /// Requires ≥2 extractable entities so vague "track habits" / "planner"
+  /// prompts still escalate to the model (Stage 10 contract).
+  SemanticApp? _tryManagedRecordsReasoning(String objective) {
+    final entities = StructuralEntityExtractor.extract(objective);
+    if (entities.length < 2) return null;
+
+    final semanticEntities = <SemanticEntity>[
+      for (final e in entities) _defaultEntity(e),
+    ];
+    final actions = <SemanticAction>[
+      for (final e in entities) ..._crudActions(e),
+    ];
+    final views = <SemanticView>[
+      for (var i = 0; i < entities.length; i++) ..._views(entities[i], i == 0),
+    ];
+
+    return SemanticApp(
+      name: _deriveName(objective),
+      purpose: objective,
+      entities: semanticEntities,
+      actions: actions,
+      views: views,
+      archetypes: const ['collection', 'tracker'],
+      tags: const ['collection', 'local', 'managed-records'],
+      requiredCapabilities: const [
+        AppCapabilityIds.crud,
+        AppCapabilityIds.collection,
+        AppCapabilityIds.persistence,
+        AppCapabilityIds.form,
+        AppCapabilityIds.input,
+        AppCapabilityIds.search,
+      ],
+    );
+  }
+
+  /// Simple "list of X" collection.
   SemanticApp? _tryCollectionReasoning(String objective) {
     final lower = objective.toLowerCase();
 
-    // Must contain collection keywords
     if (!lower.contains('list') && !lower.contains('collection')) {
       return null;
     }
 
-    // Must have "of X" or similar explicit entity reference
-    final entityName = _extractEntityName(objective);
+    final extracted = StructuralEntityExtractor.extract(objective);
+    final entityName = extracted.isNotEmpty
+        ? extracted.first.name
+        : _extractEntityNameLegacy(objective);
     if (entityName == null) return null;
+    if (_isTooGeneric(lower) && extracted.isEmpty) return null;
 
-    // Reject overly generic requests
-    if (_isTooGeneric(lower)) return null;
-
-    final entityId = _toEntityId(entityName);
-
-    final entity = SemanticEntity(
-      id: entityId,
+    final entity = StructuralEntityName(
+      id: _toEntityId(entityName),
       name: entityName,
-      fields: [
-        SemanticField(
-          id: '${entityId}_name',
-          name: 'Name',
-          type: BlueprintFieldType.text,
-          required: true,
-        ),
-        SemanticField(
-          id: '${entityId}_description',
-          name: 'Description',
-          type: BlueprintFieldType.multilineText,
-        ),
-        SemanticField(
-          id: '${entityId}_created_at',
-          name: 'Created At',
-          type: BlueprintFieldType.dateTime,
-          required: true,
-        ),
-        SemanticField(
-          id: '${entityId}_updated_at',
-          name: 'Updated At',
-          type: BlueprintFieldType.dateTime,
-          required: true,
-        ),
-      ],
-      displayField: '${entityId}_name',
-    );
-
-    final actions = [
-      SemanticAction(
-        id: 'create_$entityId',
-        name: 'Add $entityName',
-        targetEntityId: entityId,
-        actionType: BlueprintActionType.create,
-      ),
-      SemanticAction(
-        id: 'update_$entityId',
-        name: 'Update $entityName',
-        targetEntityId: entityId,
-        actionType: BlueprintActionType.update,
-      ),
-      SemanticAction(
-        id: 'delete_$entityId',
-        name: 'Delete $entityName',
-        targetEntityId: entityId,
-        actionType: BlueprintActionType.delete,
-      ),
-    ];
-
-    final listView = SemanticView(
-      id: '${entityId}_list',
-      name: '$entityName List',
-      purpose: 'View all $entityName',
-      sourceEntityId: entityId,
-      viewType: BlueprintViewType.list,
-      sections: [
-        SemanticViewSection(
-          id: '${entityId}_list_section',
-          purpose: 'All $entityName',
-          sourceEntityId: entityId,
-          sectionType: BlueprintSectionType.list,
-        ),
-      ],
-      isDefault: true,
-    );
-
-    final formView = SemanticView(
-      id: '${entityId}_form',
-      name: 'Add/Edit $entityName',
-      purpose: 'Create or edit $entityName',
-      sourceEntityId: entityId,
-      viewType: BlueprintViewType.form,
     );
 
     return SemanticApp(
       name: _deriveName(objective),
       purpose: objective,
-      entities: [entity],
-      actions: actions,
-      views: [listView, formView],
-      archetypes: ['collection'],
-      tags: _extractTags(objective),
+      entities: [_defaultEntity(entity)],
+      actions: _crudActions(entity),
+      views: _views(entity, true),
+      archetypes: const ['collection'],
+      tags: const ['list', 'collection'],
+      requiredCapabilities: const [
+        AppCapabilityIds.crud,
+        AppCapabilityIds.collection,
+        AppCapabilityIds.persistence,
+        AppCapabilityIds.form,
+        AppCapabilityIds.input,
+      ],
     );
   }
 
-  /// Check if the objective is too generic for deterministic handling.
+  SemanticEntity _defaultEntity(StructuralEntityName e) {
+    return SemanticEntity(
+      id: e.id,
+      name: e.name,
+      displayField: 'name',
+      fields: [
+        SemanticField(
+          id: 'name',
+          name: 'Name',
+          type: BlueprintFieldType.text,
+          required: true,
+        ),
+        SemanticField(
+          id: 'details',
+          name: 'Details',
+          type: BlueprintFieldType.multilineText,
+        ),
+        SemanticField(
+          id: 'status',
+          name: 'Status',
+          type: BlueprintFieldType.text,
+        ),
+        SemanticField(
+          id: 'related_ref',
+          name: 'Related',
+          type: BlueprintFieldType.text,
+        ),
+        SemanticField(
+          id: 'created_at',
+          name: 'Created At',
+          type: BlueprintFieldType.dateTime,
+        ),
+      ],
+    );
+  }
+
+  List<SemanticAction> _crudActions(StructuralEntityName e) => [
+        SemanticAction(
+          id: 'create_${e.id}',
+          name: 'Add ${e.name}',
+          targetEntityId: e.id,
+          actionType: BlueprintActionType.create,
+        ),
+        SemanticAction(
+          id: 'update_${e.id}',
+          name: 'Edit ${e.name}',
+          targetEntityId: e.id,
+          actionType: BlueprintActionType.update,
+        ),
+        SemanticAction(
+          id: 'delete_${e.id}',
+          name: 'Delete ${e.name}',
+          targetEntityId: e.id,
+          actionType: BlueprintActionType.delete,
+        ),
+      ];
+
+  List<SemanticView> _views(StructuralEntityName e, bool isDefault) => [
+        SemanticView(
+          id: '${e.id}_list',
+          name: '${e.name} List',
+          purpose: 'list',
+          sourceEntityId: e.id,
+          viewType: BlueprintViewType.list,
+          isDefault: isDefault,
+        ),
+        SemanticView(
+          id: '${e.id}_form',
+          name: '${e.name} Form',
+          purpose: 'form',
+          sourceEntityId: e.id,
+          viewType: BlueprintViewType.form,
+        ),
+      ];
+
   bool _isTooGeneric(String lower) {
     const genericPhrases = [
       'create an app',
       'make me something',
-      'manage my',
-      'organize my',
-      'organize life',
       'build something',
       'i need an app',
       'an application',
@@ -171,13 +198,7 @@ class DeterministicReasoner implements ApplicationReasoner {
     return false;
   }
 
-  /// Extract entity name from the objective.
-  ///
-  /// This is purely structural — it looks for nouns after "list of" or
-  /// "collection of". It does NOT contain domain-specific knowledge.
-  /// Returns null when extraction is uncertain.
-  String? _extractEntityName(String objective) {
-    // Stop words that should not become entity names
+  String? _extractEntityNameLegacy(String objective) {
     const stopWords = {
       'a',
       'an',
@@ -197,57 +218,45 @@ class DeterministicReasoner implements ApplicationReasoner {
       'records',
       'collection',
     };
-
-    // Only extract from clear collection patterns
     final patterns = [
       RegExp(r'list of (\w+)', caseSensitive: false),
       RegExp(r'collection of (\w+)', caseSensitive: false),
       RegExp(r'(\w+) list', caseSensitive: false),
       RegExp(r'(\w+) collection', caseSensitive: false),
     ];
-
     for (final pattern in patterns) {
       final match = pattern.firstMatch(objective);
       if (match != null) {
         final name = match.group(1)!;
-        final lower = name.toLowerCase();
-        if (stopWords.contains(lower)) continue;
+        if (stopWords.contains(name.toLowerCase())) continue;
         return name[0].toUpperCase() + name.substring(1);
       }
     }
-
     return null;
   }
 
-  /// Derive a display name from the objective.
   String _deriveName(String objective) {
-    if (objective.isEmpty) return 'Untitled';
-    return objective[0].toUpperCase() + objective.substring(1);
+    final firstLine = objective.split(RegExp(r'[\r\n]+')).first.trim();
+    if (firstLine.isEmpty) return 'Untitled';
+    final cleaned = firstLine
+        .replaceAll(
+          RegExp(
+            r'^(create|build|make)\s+(a|an|me\s+a|me\s+an)?\s*',
+            caseSensitive: false,
+          ),
+          '',
+        )
+        .trim();
+    final base = cleaned.isEmpty ? firstLine : cleaned;
+    final clipped = base.length > 48 ? '${base.substring(0, 45)}…' : base;
+    return clipped[0].toUpperCase() + clipped.substring(1);
   }
 
-  /// Convert a name to a stable entity ID.
   String _toEntityId(String name) {
     return name
         .toLowerCase()
         .replaceAll(RegExp(r'[^a-z0-9]'), '_')
         .replaceAll(RegExp(r'_+'), '_')
         .replaceAll(RegExp(r'^_|_$'), '');
-  }
-
-  /// Extract open-world tags from the objective.
-  List<String> _extractTags(String objective) {
-    final tags = <String>[];
-    final lower = objective.toLowerCase();
-
-    // Structural tags (not domain-specific)
-    if (_containsWord(lower, 'list')) tags.add('list');
-    if (_containsWord(lower, 'collection')) tags.add('collection');
-
-    return tags;
-  }
-
-  /// Check if text contains a whole word (not as substring of another word).
-  bool _containsWord(String text, String word) {
-    return RegExp(r'\b' + RegExp.escape(word) + r'\b').hasMatch(text);
   }
 }

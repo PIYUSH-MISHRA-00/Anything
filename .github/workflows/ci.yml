@@ -67,6 +67,14 @@ jobs:
       - name: Architectural certification (102 invariants)
         run: flutter test test/r46_architectural_integrity_certification_test.dart
 
+      # P16: open-world generation must stay factory-free for unknown domains.
+      - name: P16 dynamicity + unknown-domain pipeline certification
+        run: |
+          flutter test \
+            test/dynamic/p16_architecture_mutation_test.dart \
+            test/dynamic/p16_unknown_domain_pipeline_test.dart \
+            test/dynamic/p15_search_image_test.dart
+
       # The milestone suites carry the mutation-proven behavioural guarantees
       # for commit, installation, distribution, trust, governance, retention
       # and durable collections. Named separately for the same reason.
