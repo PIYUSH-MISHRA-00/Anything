@@ -566,7 +566,12 @@ class PackageCapabilityProbe {
 
   bool get hasRefreshAction => _nodes.any((n) {
     final id = n.actionBinding?.actionId.toLowerCase() ?? '';
-    return id == 'refreshdata' || id == 'refresh' || id.contains('refresh');
+    // SearchAction is the generic refresh/query entry point (P15).
+    return id == 'refreshdata' ||
+        id == 'refresh' ||
+        id.contains('refresh') ||
+        id == 'search' ||
+        id == 'searchaction';
   });
 
   bool get hasLoadingState => package.state.variables.any(

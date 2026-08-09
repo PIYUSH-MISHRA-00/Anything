@@ -38,23 +38,31 @@ class BehaviorInterpreter {
   }) async {
     _eventData = data;
 
-    // Find the node matching the event
+    // Find the node matching the event (prefer exact id).
     var startNode = graph.nodes.where((n) => n.id == eventId).firstOrNull;
+
+    // Generic SearchAction aliases → data refresh entry points when the
+    // Experience shell exposes refreshData but the UI fires search.
+    if (startNode == null) {
+      final aliased = switch (eventId) {
+        'search' || 'SearchAction' || 'searchAction' => 'refreshData',
+        _ => null,
+      };
+      if (aliased != null) {
+        startNode = graph.nodes.where((n) => n.id == aliased).firstOrNull;
+      }
+    }
 
     // If no direct match, try the _event suffix convention used by generated
     // behavior graphs (e.g., button fires 'add_person', graph has 'add_person_event').
-    if (startNode == null) {
-      startNode = graph.nodes
-          .where((n) => n.id == '${eventId}_event')
-          .firstOrNull;
-    }
+    startNode ??= graph.nodes
+        .where((n) => n.id == '${eventId}_event')
+        .firstOrNull;
 
     // If no direct match, resolve generic renderer events to behavior graph nodes.
     // The renderer sends generic IDs (submitForm, deleteRecord) but the graph
     // uses action-specific IDs (create_person_event, delete_person_event).
-    if (startNode == null) {
-      startNode = _resolveGenericEvent(graph, eventId, data);
-    }
+    startNode ??= _resolveGenericEvent(graph, eventId, data);
 
     if (startNode == null) return;
 
@@ -514,11 +522,19 @@ class BehaviorInterpreter {
       return;
     }
 
-    final query = queryStateId != null
+    // Prefer explicit event payload query (SearchAction), then state, then config.
+    final eventQuery = _eventData?['query']?.toString();
+    final stateQuery = queryStateId != null
         ? (context.stateEngine.read(queryStateId)?.toString() ?? '')
-        : (node.config['query'] as String? ?? '');
+        : '';
+    final configQuery = node.config['query'] as String? ?? '';
+    final query = (eventQuery != null && eventQuery.trim().isNotEmpty)
+        ? eventQuery.trim()
+        : (stateQuery.trim().isNotEmpty
+              ? stateQuery.trim()
+              : configQuery.trim());
 
-    if (query.trim().isEmpty) {
+    if (query.isEmpty) {
       if (errorStateId != null) {
         context.stateEngine.write(errorStateId, 'Enter a query first.');
       }
@@ -531,12 +547,32 @@ class BehaviorInterpreter {
       return;
     }
 
-    final params = Map<String, dynamic>.from(node.config)..['query'] = query;
+    // Keep state aligned with the query actually sent to the provider.
+    if (queryStateId != null) {
+      context.stateEngine.write(queryStateId, query);
+    }
+
+    final requestId =
+        '${DateTime.now().microsecondsSinceEpoch}-$serviceId-$operation';
+    // Write when the Experience declares activeRequestId (news/weather shells).
+    context.stateEngine.write('activeRequestId', requestId);
+
+    final params = <String, dynamic>{
+      'query': query,
+      'location': query,
+      'requestId': requestId,
+    };
     final result = await context.serviceResolver.execute(
       serviceId,
       operation,
       params,
     );
+
+    // Drop stale responses when a newer search superseded this one.
+    final active = context.stateEngine.read('activeRequestId')?.toString();
+    if (active != null && active.isNotEmpty && active != requestId) {
+      return;
+    }
 
     if (loadingStateId != null) {
       context.stateEngine.write(loadingStateId, false);
@@ -663,6 +699,13 @@ class BehaviorInterpreter {
         }
       }
       context.stateEngine.write(imageStateId, imageUrl ?? '');
+    }
+    final linkStateId = node.config['linkStateId'] as String?;
+    if (linkStateId != null && first is Map) {
+      context.stateEngine.write(
+        linkStateId,
+        (first['sourceUri'] ?? first['url'] ?? '').toString(),
+      );
     }
     if (sourceTypeStateId != null && sourceType.isNotEmpty) {
       context.stateEngine.write(sourceTypeStateId, sourceType);

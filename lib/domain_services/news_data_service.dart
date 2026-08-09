@@ -42,15 +42,21 @@ class NewsArticle {
   };
 
   String get _block {
+    // Never dump raw image/article URLs as the primary visual — URLs live in
+    // structured fields (url / imageUrl) for ImageNode / link binding.
     final buf = StringBuffer()..writeln(title);
     if (source.isNotEmpty) buf.writeln('Source: $source');
     if (publishedAt != null && publishedAt!.isNotEmpty) {
       buf.writeln('Published: $publishedAt');
     }
     if (summary != null && summary!.trim().isNotEmpty) {
-      buf.writeln(summary!.trim());
+      final cleaned = summary!
+          .trim()
+          .replaceAll(RegExp(r'https?://\S+', caseSensitive: false), '')
+          .replaceAll(RegExp(r'\s+'), ' ')
+          .trim();
+      if (cleaned.isNotEmpty) buf.writeln(cleaned);
     }
-    if (url != null && url!.isNotEmpty) buf.writeln(url);
     buf.writeln('Retrieved: ${retrievedAt.toLocal().toIso8601String()}');
     buf.writeln('Source type: structured news ($provider)');
     return buf.toString().trim();

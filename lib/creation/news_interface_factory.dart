@@ -108,7 +108,8 @@ class NewsInterfaceFactory {
                     'primary': true,
                     'flex': 0,
                   },
-                  actionBinding: const ActionBinding(actionId: 'refreshData'),
+                  // Generic SearchAction — interpreter aliases to refreshData.
+                  actionBinding: const ActionBinding(actionId: 'search'),
                 ),
               ],
             ),
@@ -116,7 +117,7 @@ class NewsInterfaceFactory {
               type: 'button',
               id: 'refresh',
               properties: const {'label': 'Refresh'},
-              actionBinding: const ActionBinding(actionId: 'refreshData'),
+              actionBinding: const ActionBinding(actionId: 'search'),
             ),
             InterfaceNode(
               type: 'text',
@@ -187,6 +188,8 @@ class NewsInterfaceFactory {
       ),
       StateVariable(id: 'provenanceLabel', type: 'string', defaultValue: ''),
       StateVariable(id: 'sourceType', type: 'string', defaultValue: ''),
+      StateVariable(id: 'activeRequestId', type: 'string', defaultValue: ''),
+      StateVariable(id: 'articleUrl', type: 'string', defaultValue: ''),
     ],
   );
 
@@ -196,6 +199,11 @@ class NewsInterfaceFactory {
         id: 'refreshData',
         type: 'event',
         config: {'description': 'Fetch structured news'},
+      ),
+      BehaviorNode(
+        id: 'search',
+        type: 'event',
+        config: {'description': 'Generic SearchAction'},
       ),
       BehaviorNode(
         id: 'refreshData_invoke',
@@ -213,12 +221,16 @@ class NewsInterfaceFactory {
           'provenanceStateId': 'provenanceLabel',
           'sourceTypeStateId': 'sourceType',
           'imageStateId': 'heroImageUrl',
+          'linkStateId': 'articleUrl',
           'expectedSourceType': 'structuredNews',
           'aggregateResults': true,
         },
       ),
     ],
-    edges: [BehaviorEdge(from: 'refreshData', to: 'refreshData_invoke')],
+    edges: [
+      BehaviorEdge(from: 'refreshData', to: 'refreshData_invoke'),
+      BehaviorEdge(from: 'search', to: 'refreshData_invoke'),
+    ],
   );
 
   StateSchema _mergeState(StateSchema a, StateSchema b) {

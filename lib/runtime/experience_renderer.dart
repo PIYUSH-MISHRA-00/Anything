@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 
 import '../creation/experience_package.dart';
 import '../design_system/tokens/spacing.dart';
+import 'bound_text_field.dart';
 import 'component_registry.dart';
 import 'form_controller.dart';
 import 'remote_image.dart';
@@ -336,6 +337,7 @@ class ExperienceRenderer {
           node,
           resolvedProperties,
           onEvent: onEvent,
+          stateEngine: stateEngine,
         );
       case 'input':
         return _renderInput(context, node, stateEngine, onEvent: onEvent);
@@ -432,7 +434,10 @@ class ExperienceRenderer {
         resolvedProperties['label']?.toString() ??
         'Image';
     final scheme = Theme.of(context).colorScheme;
+    final showPlaceholder = resolvedProperties['showPlaceholder'] == true;
+    // Empty URL: hide by default (news often has no media). Never show raw URL.
     if (url == null) {
+      if (!showPlaceholder) return const SizedBox.shrink();
       return Container(
         width: width,
         height: height,
@@ -1362,6 +1367,7 @@ class ExperienceRenderer {
     InterfaceNode node,
     Map<String, dynamic> resolvedProperties, {
     void Function(String eventId, {Map<String, dynamic>? data})? onEvent,
+    ExperienceStateEngine? stateEngine,
   }) {
     final label = resolvedProperties['label']?.toString() ?? 'Button';
     final actionId = node.actionBinding?.actionId;
@@ -1372,10 +1378,25 @@ class ExperienceRenderer {
 
     final button = ElevatedButton(
       onPressed: actionId != null
-          ? () => onEvent?.call(
-              actionId,
-              data: node.actionBinding?.parameters,
-            )
+          ? () {
+              final base = Map<String, dynamic>.from(
+                node.actionBinding?.parameters ?? const {},
+              );
+              // SearchAction: ensure the typed query reaches the provider even
+              // if the last keystroke race lost to a rebuild.
+              final isSearch = actionId == 'search' ||
+                  actionId == 'SearchAction' ||
+                  actionId == 'searchAction' ||
+                  actionId == 'refreshData';
+              if (isSearch &&
+                  stateEngine != null &&
+                  (base['query'] == null ||
+                      base['query'].toString().trim().isEmpty)) {
+                final q = stateEngine.read('query')?.toString() ?? '';
+                if (q.trim().isNotEmpty) base['query'] = q.trim();
+              }
+              onEvent?.call(actionId, data: base.isEmpty ? null : base);
+            }
           : null,
       style: ElevatedButton.styleFrom(
         minimumSize: Size(expand ? 48 : 0, expand ? 48 : 40),
@@ -1423,30 +1444,33 @@ class ExperienceRenderer {
     final stateId = node.stateBinding;
     final expand = node.properties['width'] == 'expand';
 
-    final field = TextField(
-      textInputAction: TextInputAction.search,
-      decoration: InputDecoration(
-        labelText: label.isEmpty ? null : label,
-        hintText: hint,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-      onChanged: stateId != null
-          ? (value) => stateEngine.write(stateId, value)
-          : null,
-      onSubmitted: (_) {
-        // Keyboard search submits the same retrieval action as Search.
-        onEvent?.call('refreshData');
-      },
-    );
-    if (expand) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4),
-        child: field,
+    Widget field;
+    if (stateId != null) {
+      field = BoundTextField(
+        key: ValueKey('bound_$stateId'),
+        stateEngine: stateEngine,
+        stateId: stateId,
+        label: label,
+        hint: hint,
+        onSubmitted: (value) {
+          // Generic search submit — carry query so stale/empty state cannot win.
+          onEvent?.call('search', data: {'query': value});
+        },
+      );
+    } else {
+      field = TextField(
+        textInputAction: TextInputAction.search,
+        decoration: InputDecoration(
+          labelText: label.isEmpty ? null : label,
+          hintText: hint,
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+        onSubmitted: (_) => onEvent?.call('search'),
       );
     }
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
-      child: field,
+      child: expand ? field : field,
     );
   }
 
