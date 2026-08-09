@@ -285,7 +285,7 @@ void main() {
     test(
       'AppComposition.production().experienceActivationManager is a real, non-null ExperienceActivationManager; two reads return the IDENTICAL instance',
       () async {
-        final composition = AppComposition.production();
+        final composition = AppComposition.freshForTesting();
         addTearDown(() => composition.experienceRepository.close());
 
         expect(

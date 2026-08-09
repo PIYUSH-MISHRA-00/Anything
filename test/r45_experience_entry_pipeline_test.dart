@@ -339,7 +339,7 @@ void main() {
     test(
       'AppComposition.production().experienceEntryPipeline is a real, non-null ExperienceEntryPipeline; two reads return the IDENTICAL instance',
       () async {
-        final composition = AppComposition.production();
+        final composition = AppComposition.freshForTesting();
         addTearDown(() => composition.experienceRepository.close());
 
         expect(

@@ -9,6 +9,48 @@ human-readable summary.
 
 ## [Unreleased]
 
+### Fixed — IS-P07 (AI Runtime Integration & End-to-End Creation Pipeline)
+
+- **A configured AI provider is now visible to the runtime.** Connecting,
+  verifying and persisting a provider all worked, yet the application still
+  answered "Connect an AI provider to create new things" — including after a
+  restart. `AppComposition.production()` was a plain factory, so every caller
+  built its own dependency graph: Settings wrote provider state into one
+  registry and the Kernel read `activeProvider` from another. It is now
+  memoised, with `freshForTesting()` and `resetForTesting()` for test
+  isolation. A user can connect a provider and create an Experience in the
+  same session.
+- **The Kernel plans against capabilities that exist.** It was constructed
+  with an empty `CapabilityRegistry` while blueprints require `storage`, so
+  valid creations were refused. The composition root now registers every
+  platform capability before building the Kernel.
+- **Provider loading is awaited at the launch gate**, not fired and forgotten,
+  removing a race where the shell could read `activeProvider` before storage
+  had been read.
+- **SQLite `busy_timeout`** is now set, so ordinary write contention waits
+  instead of failing with `database is locked`.
+
+### Added — IS-P07
+
+- **Structured logging across the AI boundary and the creation pipeline**, with
+  per-request correlation ids, surfaced on-device in Developer Mode. Provider
+  selection, verification, model selection, every HTTP call, streaming start
+  and finish, completion, and failure. This is what identified the
+  device-only SQLite defect that 2214 passing tests did not.
+- **Real server-sent-event streaming** in `OpenAiCompatibleProvider`,
+  replacing a placeholder that yielded the whole answer as one event. Delivers
+  incrementally, survives malformed and keep-alive frames, and cancels
+  promptly. The creation path deliberately does not consume it: it parses
+  complete JSON documents, so there is no partial Experience to show.
+
+### Changed — IS-P07
+
+- **Failures explain how to recover.** "Unable to create this type of app.
+  Please try rephrasing" no longer overwrites every classified provider error;
+  rate limits, retired models, rejected keys and network failures now say what
+  happened. The provider-required refusal names Settings and offers a button
+  that opens it. Validation failures report the validator's actual reasons.
+
 ### Added — IS-P02 (Public Product Foundation)
 
 - **Experience portability.** A user can now **export** an Experience to a

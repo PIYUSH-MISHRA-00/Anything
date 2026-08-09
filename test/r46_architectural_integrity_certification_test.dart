@@ -3614,7 +3614,7 @@ final x = 1;
     test(
       'AppComposition.production() exposes exactly one instance of each canonical service, stable across reads',
       () {
-        final c = AppComposition.production();
+        final c = AppComposition.freshForTesting();
         addTearDown(() => c.experienceRepository.close());
 
         expect(
@@ -3656,7 +3656,7 @@ final x = 1;
     test(
       'the composition wires the scheduler and the activation manager to the SAME supervisor and workspace — no split-brain graph',
       () {
-        final c = AppComposition.production();
+        final c = AppComposition.freshForTesting();
         addTearDown(() => c.experienceRepository.close());
 
         expect(
@@ -3771,7 +3771,7 @@ final x = 1;
     testWidgets(
       'both real production entry surfaces build against the same composition without throwing',
       (tester) async {
-        final c = AppComposition.production();
+        final c = AppComposition.freshForTesting();
         addTearDown(() => c.experienceRepository.close());
 
         // Scaffold, not a bare MaterialApp home: HomeScreen contains a
@@ -3807,7 +3807,7 @@ final x = 1;
     test(
       'SCHEDULER certification — activation cannot bypass the scheduler: the activation manager has no path to a runtime except through it',
       () {
-        final c = AppComposition.production();
+        final c = AppComposition.freshForTesting();
         addTearDown(() => c.experienceRepository.close());
 
         // Structural, on live objects: the activation manager's ONLY collaborator
@@ -3833,7 +3833,7 @@ final x = 1;
     test(
       'RUNTIME certification — a fresh supervisor reports no unsupervised runtimes, and registration is the only way in',
       () {
-        final c = AppComposition.production();
+        final c = AppComposition.freshForTesting();
         addTearDown(() => c.experienceRepository.close());
 
         // Nothing is registered before any Experience is opened.

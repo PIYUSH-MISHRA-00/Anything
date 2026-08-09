@@ -20,6 +20,8 @@
 /// reached from every wired subsystem.
 library;
 
+import 'package:flutter/foundation.dart' show visibleForTesting;
+
 import 'package:anything/app/autonomous_workspace_runtime.dart';
 import 'package:anything/app/creation_coordinator.dart';
 import 'package:anything/app/engineering_lifecycle_coordinator.dart';
@@ -51,7 +53,10 @@ import 'package:anything/capabilities/builtin/http_capability.dart';
 import 'package:anything/capabilities/builtin/knowledge_capability.dart';
 import 'package:anything/capabilities/builtin/notification_capability.dart';
 import 'package:anything/capabilities/platform/capability_platform.dart';
+import 'package:anything/capabilities/registry/capability_descriptor.dart';
+import 'package:anything/capabilities/registry/capability_registry.dart';
 import 'package:anything/core/events/events.dart';
+import 'package:anything/diagnostics/structured_logger.dart';
 import 'package:anything/kernel/anything_kernel.dart';
 import 'package:anything/knowledge/knowledge_acquisition_engine.dart';
 import 'package:anything/knowledge/search_provider.dart';
@@ -78,14 +83,144 @@ import 'package:anything/world_model/world_model_coordinator.dart';
 /// list.
 const List<String> _defaultHttpAllowedHosts = [];
 
-/// The one production composition root. Construct exactly once (in
-/// `AnythingAppShell`), never per-screen.
+/// What the Kernel is allowed to plan against — Implementation Specification
+/// IS-P07.
+///
+/// THE DEFECT THIS FIXES. `AnythingKernel` defaults its `capabilityRegistry`
+/// to an EMPTY `CapabilityRegistry()`, and `AppComposition` never passed one.
+/// Kernel Step 8 resolves the spec's required capabilities against that
+/// registry and returns `UnsupportedIntent` for anything unresolved, so in
+/// production EVERY requirement was unresolvable. `BlueprintToSpecConverter`
+/// requires `storage` for any blueprint that declares an entity — which is
+/// every useful application — so every creation ended as
+/// "Required capabilities not available: storage", after the model call had
+/// already been paid for.
+///
+/// It was invisible because roughly forty test files register these
+/// descriptors themselves before exercising the Kernel (see
+/// `test/r31_intent_session_manager_test.dart`, which states the consequence
+/// outright), and `CertificationRunner` builds its own full registry. Only
+/// the real composition root went without.
+///
+/// This list is the six capabilities `capabilityPlatform` below actually
+/// registers, plus `storage`, which the runtime provides intrinsically
+/// through an Experience's own state schema rather than as a dispatchable
+/// capability. `test/p07_ai_runtime_integration_test.dart` fails if the two
+/// lists drift apart.
+const List<CapabilityDescriptor> _platformCapabilityDescriptors = [
+  CapabilityDescriptor(
+    id: 'storage',
+    version: '1.0.0',
+    name: 'Storage',
+    description: 'Durable local storage for an Experience\'s own state.',
+    category: CapabilityCategory.storage,
+    inputContract: 'state values',
+    outputContract: 'persisted state',
+  ),
+  CapabilityDescriptor(
+    id: 'clock',
+    version: '1.0.0',
+    name: 'Clock',
+    description: 'Trusted time source for timestamps and date arithmetic.',
+    category: CapabilityCategory.computation,
+    inputContract: 'none',
+    outputContract: 'timestamp',
+  ),
+  CapabilityDescriptor(
+    id: 'http',
+    version: '1.0.0',
+    name: 'HTTP',
+    description: 'HTTPS access to declared, allow-listed hosts.',
+    category: CapabilityCategory.integration,
+    inputContract: 'request',
+    outputContract: 'response',
+    requiredPermissions: ['internet'],
+    networkRequired: true,
+  ),
+  CapabilityDescriptor(
+    id: 'ai',
+    version: '1.0.0',
+    name: 'AI',
+    description: 'Generation through the configured model provider.',
+    category: CapabilityCategory.integration,
+    inputContract: 'prompt',
+    outputContract: 'completion',
+    networkRequired: true,
+  ),
+  CapabilityDescriptor(
+    id: 'knowledge',
+    version: '1.0.0',
+    name: 'Knowledge',
+    description: 'Reference lookups, treated as untrusted data.',
+    category: CapabilityCategory.knowledge,
+    inputContract: 'query',
+    outputContract: 'resources',
+    networkRequired: true,
+  ),
+  CapabilityDescriptor(
+    id: 'notifications',
+    version: '1.0.0',
+    name: 'Notifications',
+    description: 'Per-Experience scheduled reminders, delivered in-app.',
+    category: CapabilityCategory.integration,
+    inputContract: 'schedule',
+    outputContract: 'notification',
+    requiredPermissions: ['notifications'],
+  ),
+  CapabilityDescriptor(
+    id: 'files',
+    version: '1.0.0',
+    name: 'Files',
+    description: 'Sandboxed file picking, import and export.',
+    category: CapabilityCategory.data,
+    inputContract: 'file reference',
+    outputContract: 'file contents',
+    requiredPermissions: ['storage'],
+  ),
+];
+
+/// The one production composition root.
 class AppComposition {
+  /// The process-wide graph, built on first use.
+  ///
+  /// IS-P07 — THE DEFECT THIS FIELD FIXES.
+  ///
+  /// `production()` was a plain factory, so EVERY caller got a different
+  /// graph: a different `AnythingProviderRegistry`, a different
+  /// `SqliteExperienceRepository`, a different `EventBus`, a different
+  /// Kernel. Five call sites did so independently — `AnythingAppShell`,
+  /// `HomeScreen`, `ExperiencesScreen`, `ProviderPreferencesScreen`,
+  /// `DeveloperScreen` — plus `_AnythingRoot`, which built a whole graph
+  /// purely to call `providerRegistry.initialize()` on it and then dropped
+  /// it on the floor.
+  ///
+  /// The user-visible consequence: configuring a provider wrote to the
+  /// Settings screen's OWN registry, while the Kernel read the shell's,
+  /// whose `_activeProviderId` was never resolved by anybody. A valid,
+  /// verified key therefore still produced "Connect an AI provider to
+  /// create new things", and no restart could fix it, because the next
+  /// launch built fresh unrelated graphs again.
+  ///
+  /// Every doc in `docs/architecture/` already described this class as
+  /// constructed exactly once; the certification invariant only asserted
+  /// that reads OF ONE INSTANCE were stable, which was true and beside the
+  /// point. This makes the claim real.
+  static AppComposition? _production;
   final SqliteExperienceRepository experienceRepository;
   final WorldModelCoordinator worldModel;
   final AnythingProviderRegistry providerRegistry;
   final CredentialVault credentialVault;
   final CapabilityPlatform capabilityPlatform;
+
+  /// What the Kernel plans against (IS-P07), as distinct from
+  /// [capabilityPlatform], which DISPATCHES at runtime. Exposed so the two
+  /// can be compared — they described different worlds until IS-P07.
+  final CapabilityRegistry capabilityRegistry;
+
+  /// The one structured logger (IS-P07). Its ring buffer is what Developer
+  /// Mode reads, so recent AI activity is inspectable on the device itself
+  /// rather than only through `adb logcat`.
+  final StructuredLogger logger;
   final KnowledgeAcquisitionEngine knowledgeEngine;
   final SoftwareCognitionCoordinator softwareCognition;
   final RuntimeIntelligenceCoordinator runtimeIntelligence;
@@ -226,6 +361,8 @@ class AppComposition {
     required this.providerRegistry,
     required this.credentialVault,
     required this.capabilityPlatform,
+    required this.capabilityRegistry,
+    required this.logger,
     required this.knowledgeEngine,
     required this.softwareCognition,
     required this.runtimeIntelligence,
@@ -251,11 +388,38 @@ class AppComposition {
     required this.intentRepository,
   });
 
+  /// The ONE canonical production graph, shared by every caller.
+  ///
+  /// Built on first call and returned unchanged thereafter, so a screen that
+  /// resolves a service from here gets the same object the Kernel is using.
+  /// Constructor injection remains the way to supply a different graph — see
+  /// [freshForTesting].
+  factory AppComposition.production() =>
+      _production ??= AppComposition._build();
+
+  /// A brand-new, independent graph that the caller owns and must close.
+  ///
+  /// Tests that construct a composition and then `close()` its repository
+  /// need their own; closing the shared one would leave every later caller
+  /// in the same isolate holding a closed database.
+  @visibleForTesting
+  factory AppComposition.freshForTesting() => AppComposition._build();
+
+  /// Forgets the shared graph so the next [production] call builds a new one.
+  ///
+  /// Needed by any test that launches the real application more than once in
+  /// one file. The graph caches in-flight futures (the provider registry's
+  /// storage load), and `flutter_test` tears down a zone between tests, so a
+  /// future completed in the first test is awaited forever by the second —
+  /// the same trap `DurableCollectionStore`'s own doc comment records.
+  @visibleForTesting
+  static void resetForTesting() => _production = null;
+
   /// Builds the real, production composition graph. Every dependency below
   /// is the SAME canonical implementation MIS-1 Part 1/2 already identified
   /// â€” this constructor wires them together, it does not invent any of
   /// them.
-  factory AppComposition.production() {
+  factory AppComposition._build() {
     final experienceRepository = SqliteExperienceRepository();
 
     // IS-R57: the ONE activity repository. Every coordinator and screen that
@@ -263,8 +427,17 @@ class AppComposition {
     const activityRepository = ActivityRepository();
     const intentRepository = IntentRepository();
     final credentialVault = CredentialVault();
+
+    // IS-P07: `StructuredLogger` has existed since V10 and, before this
+    // milestone, no production code constructed one — the AI boundary, the
+    // one subsystem that reaches the network and spends a user's quota,
+    // reported nothing at all. This is the ONE logger; it is passed to the
+    // provider registry, which passes it to every provider it builds.
+    final logger = StructuredLogger();
+
     final providerRegistry = AnythingProviderRegistry(
       credentialVault: credentialVault,
+      logger: logger,
     );
 
     final worldModel = WorldModelCoordinator(
@@ -414,8 +587,18 @@ class AppComposition {
     // AND `ExperienceCreationCoordinator`'s manual-reference path below â€”
     // never a second Software Cognition Engine.
     final softwareCognition = SoftwareCognitionCoordinator();
+
+    // IS-P07: without this the Kernel plans against an empty registry and
+    // refuses every Experience at Step 8 — see
+    // `_platformCapabilityDescriptors`.
+    final capabilityRegistry = CapabilityRegistry();
+    for (final descriptor in _platformCapabilityDescriptors) {
+      capabilityRegistry.register(descriptor);
+    }
+
     final kernel = AnythingKernel(
       providerRegistry: providerRegistry,
+      capabilityRegistry: capabilityRegistry,
       knowledgeEngine: knowledgeEngine,
       worldModel: worldModel,
       softwareCognition: softwareCognition,
@@ -445,6 +628,7 @@ class AppComposition {
       worldModel: worldModel,
       softwareCognition: softwareCognition,
       engineeringMemory: engineeringMemory,
+      logger: logger,
     );
     final engineeringLifecycleCoordinator = EngineeringLifecycleCoordinator(
       kernel: kernel,
@@ -535,6 +719,8 @@ class AppComposition {
       providerRegistry: providerRegistry,
       credentialVault: credentialVault,
       capabilityPlatform: capabilityPlatform,
+      capabilityRegistry: capabilityRegistry,
+      logger: logger,
       knowledgeEngine: knowledgeEngine,
       softwareCognition: softwareCognition,
       runtimeIntelligence: RuntimeIntelligenceCoordinator(),

@@ -5,7 +5,10 @@ library;
 
 import 'dart:async';
 
+import 'package:anything/ai/provider_error.dart';
 import 'package:anything/application_engineering/engineering_plan.dart';
+import 'package:anything/diagnostics/log_entry.dart';
+import 'package:anything/diagnostics/structured_logger.dart';
 import 'package:anything/backend_engineering/backend_engineering_plan.dart';
 import 'package:anything/implementation_model/canonical_implementation_model.dart';
 import 'package:anything/core/contracts/intent.dart';
@@ -130,6 +133,11 @@ class ExperienceCreationCoordinator {
   /// Null by default, fully backward compatible.
   final EngineeringMemoryRepository? _engineeringMemory;
 
+  /// IS-P07: creation failures were previously unobservable. The validator's
+  /// reasons and the caught exception both existed and both ended at a
+  /// four-word snackbar, so a failing device could not be diagnosed at all.
+  final StructuredLogger? _logger;
+
   CreationState _state = CreationState.idle;
   CreationState get state => _state;
 
@@ -142,7 +150,9 @@ class ExperienceCreationCoordinator {
     SoftwareCognitionCoordinator? softwareCognition,
     EngineeringMemoryRepository? engineeringMemory,
     ExperienceCommitFramework? commitFramework,
-  }) : _kernel = kernel,
+    StructuredLogger? logger,
+  }) : _logger = logger,
+       _kernel = kernel,
        _creationEngine = creationEngine ?? CreationEngine(),
        _commits =
            commitFramework ??
@@ -253,9 +263,10 @@ class ExperienceCreationCoordinator {
           );
 
         case ProviderRequired():
-          return const CreationProviderRequired(
-            message: 'Connect an AI provider to create new things',
-          );
+          // IS-P07: pass the Kernel's own message through rather than
+          // replacing it with a second, vaguer one written here. Every other
+          // branch in this switch already does.
+          return CreationProviderRequired(message: kernelOutcome.message);
 
         case UnsupportedIntent():
           return CreationFailed(
@@ -434,9 +445,14 @@ class ExperienceCreationCoordinator {
         );
         if (!validation.isValid) {
           _state = CreationState.failed;
+          final reasons = validation.errors.join('; ');
+          _logger?.error(
+            LogCategory.creation,
+            'package rejected by validator: $reasons',
+          );
           return CreationFailed(
-            error: validation.errors.join('; '),
-            message: 'Could not complete this app',
+            error: reasons,
+            message: 'Could not complete this app: $reasons',
           );
         }
         package = creationResult.package;
@@ -543,9 +559,17 @@ class ExperienceCreationCoordinator {
       );
     } catch (e) {
       _state = CreationState.failed;
+      // A classified provider failure already reads as a user instruction;
+      // anything else stays redacted, because raw exception text is not a
+      // message and may carry content this app has no business displaying.
+      final safe = e is ProviderException ? e.message : null;
+      _logger?.error(
+        LogCategory.creation,
+        'creation threw: ${e.runtimeType}${safe == null ? '' : ' — $safe'}',
+      );
       return CreationFailed(
         error: e.toString(),
-        message: 'Could not complete this app',
+        message: safe ?? 'Could not complete this app',
       );
     }
   }

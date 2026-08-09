@@ -315,7 +315,7 @@ void main() {
     test(
       'AppComposition.production().workspaceSchedulingEngine is a real, non-null WorkspaceSchedulingEngine; two reads return the IDENTICAL instance',
       () async {
-        final composition = AppComposition.production();
+        final composition = AppComposition.freshForTesting();
         addTearDown(() => composition.experienceRepository.close());
 
         expect(

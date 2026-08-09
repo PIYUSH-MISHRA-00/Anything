@@ -25,6 +25,7 @@ import 'package:http/http.dart' as http;
 
 import '../ai/openai_compatible_provider.dart';
 import '../ai/provider_catalogue.dart';
+import '../diagnostics/structured_logger.dart';
 import '../security/credential_vault.dart';
 
 /// Groq, bound to the shared OpenAI-compatible adapter.
@@ -36,10 +37,14 @@ import '../security/credential_vault.dart';
 /// migrating.
 class GroqModelProvider extends OpenAiCompatibleProvider {
   // ignore: use_super_parameters
-  GroqModelProvider({CredentialVault? credentialVault, http.Client? client})
-    : super(
-        descriptor: ProviderCatalogue.groq,
-        credentialVault: credentialVault,
-        client: client,
-      );
+  GroqModelProvider({
+    CredentialVault? credentialVault,
+    http.Client? client,
+    StructuredLogger? logger,
+  }) : super(
+         descriptor: ProviderCatalogue.groq,
+         credentialVault: credentialVault,
+         client: client,
+         logger: logger,
+       );
 }

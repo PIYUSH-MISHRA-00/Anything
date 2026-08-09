@@ -20,6 +20,19 @@ enum LogCategory {
   security,
   ui,
   automation,
+
+  /// The AI provider boundary — provider selection and verification, model
+  /// selection, and every outbound model call (IS-P07). Added because the
+  /// one subsystem that reaches the network on a user's behalf, spends their
+  /// quota and fails in a dozen distinguishable ways had no category at all.
+  aiProvider,
+
+  /// The creation pipeline — reasoning, package assembly, validation and
+  /// persistence (IS-P07). Added because a creation that fails validation
+  /// tells the user only "Could not complete this app": the specific
+  /// validator errors existed, were attached to the result, and were then
+  /// displayed nowhere at all.
+  creation,
 }
 
 /// One structured log line. [message] must never contain raw exception
@@ -32,14 +45,23 @@ class LogEntry {
   final String message;
   final DateTime timestamp;
 
+  /// Correlates the lines belonging to one operation (IS-P07).
+  ///
+  /// A single model call emits a request line, a result line and possibly a
+  /// failure line. Without an id they are three unrelated lines in a log that
+  /// also contains everything else happening at the same moment.
+  final String? requestId;
+
   LogEntry({
     required this.severity,
     required this.category,
     required this.message,
+    this.requestId,
     DateTime? timestamp,
   }) : timestamp = timestamp ?? DateTime.now();
 
   @override
   String toString() =>
-      '[${timestamp.toIso8601String()}] ${severity.name.toUpperCase()} (${category.name}) $message';
+      '[${timestamp.toIso8601String()}] ${severity.name.toUpperCase()} '
+      '(${category.name})${requestId == null ? '' : ' [$requestId]'} $message';
 }

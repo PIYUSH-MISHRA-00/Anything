@@ -272,6 +272,12 @@ class ProviderConfig {
 /// Abstract interface for managing multiple model providers.
 abstract class ModelProviderRegistry {
   /// Get the currently active provider.
+  ///
+  /// Synchronous, so it reports only what the registry has already loaded.
+  /// `AnythingProviderRegistry` resolves this from stored configuration by an
+  /// async read, so the application awaits `initialize()` at the launch gate
+  /// (`_AnythingRoot`) BEFORE any consumer exists — see IS-P07. Nothing on
+  /// this interface can enforce that, which is why the gate does.
   ModelProvider? get activeProvider;
 
   /// Set the active provider by ID.

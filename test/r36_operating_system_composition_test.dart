@@ -316,7 +316,7 @@ void main() {
       test(
         'constructs the full R31-R36 service graph without throwing — every new field is real, non-null, and correctly typed',
         () async {
-          final composition = AppComposition.production();
+          final composition = AppComposition.freshForTesting();
           addTearDown(() => composition.experienceRepository.close());
 
           expect(
@@ -345,7 +345,7 @@ void main() {
       test(
         'singleton lifetime — workspaceManager/intentRouter/workspaceRuntime constructed from ONE production() call share the SAME underlying workspace, proven by a real cross-service observation, never a private-field assumption',
         () async {
-          final composition = AppComposition.production();
+          final composition = AppComposition.freshForTesting();
           addTearDown(() => composition.experienceRepository.close());
 
           final routeResult = await composition.intentRouter.route(
@@ -380,7 +380,7 @@ void main() {
       test(
         'EventBus sharing — a real event published via composition.eventPublisher is received by a subscriber obtained via composition.eventBus, a completely independent access path through the SAME composition',
         () async {
-          final composition = AppComposition.production();
+          final composition = AppComposition.freshForTesting();
           addTearDown(() => composition.experienceRepository.close());
 
           final received = <IntentRouted>[];
@@ -401,7 +401,7 @@ void main() {
       test(
         'workspace lifetime == application singleton (real, honest finding, documented in docs/architecture/OPERATING_SYSTEM_COMPOSITION.md): every read of composition.workspaceManager across this composition\'s lifetime returns the IDENTICAL instance — no multi-workspace concept exists in this codebase',
         () async {
-          final composition = AppComposition.production();
+          final composition = AppComposition.freshForTesting();
           addTearDown(() => composition.experienceRepository.close());
 
           final firstRead = composition.workspaceManager;
@@ -646,7 +646,7 @@ void main() {
         'AppComposition.production() full graph construction latency',
         () async {
           final stopwatch = Stopwatch()..start();
-          final composition = AppComposition.production();
+          final composition = AppComposition.freshForTesting();
           stopwatch.stop();
           // ignore: avoid_print
           print(
@@ -661,7 +661,7 @@ void main() {
         () async {
           final rssBefore = ProcessInfo.currentRss;
           for (var i = 0; i < 10; i++) {
-            final composition = AppComposition.production();
+            final composition = AppComposition.freshForTesting();
             await composition.experienceRepository.close();
           }
           final rssAfter = ProcessInfo.currentRss;

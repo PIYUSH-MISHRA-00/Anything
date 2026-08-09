@@ -35,31 +35,37 @@ class StructuredLogger {
     return result;
   }
 
-  void log(LogSeverity severity, LogCategory category, String message) {
+  void log(
+    LogSeverity severity,
+    LogCategory category,
+    String message, {
+    String? requestId,
+  }) {
     final entry = LogEntry(
       severity: severity,
       category: category,
       message: redact(message),
+      requestId: requestId,
     );
     _buffer.add(entry);
     if (_buffer.length > _maxBuffer) _buffer.removeAt(0);
 
     developer.log(
-      entry.message,
+      requestId == null ? entry.message : '[$requestId] ${entry.message}',
       name: category.name,
       level: _levelFor(severity),
       time: entry.timestamp,
     );
   }
 
-  void debug(LogCategory category, String message) =>
-      log(LogSeverity.debug, category, message);
-  void info(LogCategory category, String message) =>
-      log(LogSeverity.info, category, message);
-  void warning(LogCategory category, String message) =>
-      log(LogSeverity.warning, category, message);
-  void error(LogCategory category, String message) =>
-      log(LogSeverity.error, category, message);
+  void debug(LogCategory category, String message, {String? requestId}) =>
+      log(LogSeverity.debug, category, message, requestId: requestId);
+  void info(LogCategory category, String message, {String? requestId}) =>
+      log(LogSeverity.info, category, message, requestId: requestId);
+  void warning(LogCategory category, String message, {String? requestId}) =>
+      log(LogSeverity.warning, category, message, requestId: requestId);
+  void error(LogCategory category, String message, {String? requestId}) =>
+      log(LogSeverity.error, category, message, requestId: requestId);
 
   List<LogEntry> get recent => List.unmodifiable(_buffer);
 

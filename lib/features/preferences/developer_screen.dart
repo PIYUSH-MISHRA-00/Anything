@@ -17,6 +17,7 @@ import 'package:flutter/services.dart';
 import '../../app/app_composition.dart';
 import '../../app/crash_log.dart';
 import '../../creation/experience_package_codec.dart';
+import '../../diagnostics/log_entry.dart';
 import '../../design_system/tokens/spacing.dart';
 
 class DeveloperScreen extends StatefulWidget {
@@ -33,6 +34,7 @@ class _DeveloperScreenState extends State<DeveloperScreen> {
   static const CrashLog _crashLog = CrashLog();
 
   List<String> _crashes = const [];
+  List<LogEntry> _aiLog = const [];
   int _experienceCount = 0;
   int _activityCount = 0;
   bool _loading = true;
@@ -45,6 +47,9 @@ class _DeveloperScreenState extends State<DeveloperScreen> {
   }
 
   Future<void> _load() async {
+    // So "active provider" reports the resolved answer rather than whatever
+    // was known before storage had been read.
+    await _composition.providerRegistry.initialize();
     final crashes = await _crashLog.read();
     var experiences = 0;
     var activity = 0;
@@ -63,6 +68,11 @@ class _DeveloperScreenState extends State<DeveloperScreen> {
     if (!mounted) return;
     setState(() {
       _crashes = crashes;
+      _aiLog =
+          [
+            ..._composition.logger.recentOfCategory(LogCategory.aiProvider),
+            ..._composition.logger.recentOfCategory(LogCategory.creation),
+          ]..sort((a, b) => a.timestamp.compareTo(b.timestamp));
       _experienceCount = experiences;
       _activityCount = activity;
       _loading = false;
@@ -157,8 +167,50 @@ class _DeveloperScreenState extends State<DeveloperScreen> {
 
                 _Section('CAPABILITIES'),
                 ..._composition.capabilityPlatform.all.map(
-                  (c) => _Kv(c.id, 'registered'),
+                  (c) => _Kv(c.id, 'dispatchable + plannable'),
                 ),
+                // IS-P07: the Kernel refuses an Experience whose capabilities
+                // it cannot resolve, so "what the Kernel can plan" is the
+                // number that matters when a creation is rejected.
+                _Kv(
+                  'Kernel can plan',
+                  _composition.capabilityRegistry.all
+                      .map((d) => d.id)
+                      .join(', '),
+                ),
+
+                // IS-P07: the AI boundary now reports what it did. Shown here
+                // so a failing generation can be diagnosed on the device,
+                // without a cable and without `adb logcat`.
+                _Section('AI & CREATION ACTIVITY'),
+                if (_aiLog.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    child: Text(
+                      'Nothing yet. Provider selection, verification, model '
+                      'choice and every model call appear here.',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  )
+                else
+                  ..._aiLog.reversed.map(
+                    (e) => Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Text(
+                        e.toString(),
+                        style: TextStyle(
+                          fontFamily: 'monospace',
+                          fontSize: 11,
+                          color: e.severity == LogSeverity.error
+                              ? colorScheme.error
+                              : colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                  ),
 
                 _Section('CRASH LOG'),
                 if (_crashes.isEmpty)

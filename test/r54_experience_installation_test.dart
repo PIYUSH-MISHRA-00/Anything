@@ -1048,7 +1048,7 @@ void main() {
         // A second installer instance would mean two commit paths with two
         // protection configurations — exactly the split this milestone exists to
         // prevent.
-        final composition = AppComposition.production();
+        final composition = AppComposition.freshForTesting();
         addTearDown(() => composition.experienceRepository.close());
 
         expect(

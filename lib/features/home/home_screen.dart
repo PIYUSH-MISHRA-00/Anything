@@ -444,9 +444,21 @@ class HomeScreenState extends State<HomeScreen> {
       await _intentRepository.updateStatus(intent.id, core.IntentStatus.failed);
       setState(() => _showBirth = false);
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(result.message)));
+        // IS-P07: the refusal names the destination, so the snackbar goes
+        // there. Telling someone to visit Settings and making them find it is
+        // most of the friction.
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result.message),
+            duration: const Duration(seconds: 8),
+            action: widget.onOpenSettings == null
+                ? null
+                : SnackBarAction(
+                    label: 'Settings',
+                    onPressed: widget.onOpenSettings!,
+                  ),
+          ),
+        );
       }
     }
   }

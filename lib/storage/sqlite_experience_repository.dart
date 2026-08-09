@@ -133,7 +133,14 @@ class SqliteExperienceRepository {
     : _dbName = dbName;
 
   Future<Database> get database async {
-    if (_database != null) return _database!;
+    // IS-P07: `isOpen`, not just non-null. sqflite shares one connection per
+    // database path, so another holder of the same path closing it leaves
+    // this instance caching a handle that answers every query with
+    // `DatabaseException(error database_closed)`. Reopening is what the
+    // caller wants in every case; the alternative is a repository that is
+    // permanently dead because something else finished with the file.
+    final existing = _database;
+    if (existing != null && existing.isOpen) return existing;
     _database = await _initDatabase();
     return _database!;
   }
@@ -144,9 +151,24 @@ class SqliteExperienceRepository {
     return await openDatabase(
       path,
       version: 3,
+      onConfigure: _configure,
       onCreate: _createTables,
       onUpgrade: _upgradeTables,
     );
+  }
+
+  /// IS-P07: without a busy timeout SQLite reports `database is locked`
+  /// (SQLITE_BUSY) the instant another connection holds the write lock,
+  /// instead of waiting for it to clear. The default is zero, which turns
+  /// ordinary contention into a hard failure. Five seconds is far longer than
+  /// any statement this repository issues, so a real deadlock still surfaces.
+  ///
+  /// `rawQuery`, not `execute`: this PRAGMA returns the value it set, and
+  /// Android's `SQLiteDatabase.execSQL` rejects any statement that returns
+  /// rows. The desktop FFI backend accepts either, so `execute` passed every
+  /// test and failed on the first real device.
+  Future<void> _configure(Database db) async {
+    await db.rawQuery('PRAGMA busy_timeout = 5000');
   }
 
   Future<void> _createTables(Database db, int version) async {

@@ -234,7 +234,7 @@ void main() {
     test(
       'AppComposition.production().workspaceRuntimeSupervisor is a real, non-null WorkspaceRuntimeSupervisor; two reads return the IDENTICAL instance',
       () async {
-        final composition = AppComposition.production();
+        final composition = AppComposition.freshForTesting();
         addTearDown(() => composition.experienceRepository.close());
 
         expect(
@@ -593,7 +593,7 @@ void main() {
         'AppComposition.production() construction latency, now with the shared supervisor field',
         () async {
           final stopwatch = Stopwatch()..start();
-          final composition = AppComposition.production();
+          final composition = AppComposition.freshForTesting();
           stopwatch.stop();
           // ignore: avoid_print
           print(
@@ -610,7 +610,7 @@ void main() {
       test(
         'supervisor.lookup() latency through the shared-instance path',
         () async {
-          final composition = AppComposition.production();
+          final composition = AppComposition.freshForTesting();
           addTearDown(() => composition.experienceRepository.close());
           final controller = ExperienceRuntimeController(
             runtime: AnythingRuntime(),
@@ -661,7 +661,7 @@ void main() {
         () async {
           final rssBefore = ProcessInfo.currentRss;
           for (var i = 0; i < 10; i++) {
-            final composition = AppComposition.production();
+            final composition = AppComposition.freshForTesting();
             await composition.experienceRepository.close();
           }
           final rssAfter = ProcessInfo.currentRss;

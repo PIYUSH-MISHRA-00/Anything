@@ -14,6 +14,7 @@ library;
 
 import 'dart:convert';
 
+import '../ai/provider_error.dart';
 import '../core/contracts/model_provider.dart';
 import '../kernel/specification/experience_spec.dart' show NetworkNeed;
 import '../knowledge/knowledge_bundle.dart';
@@ -49,6 +50,14 @@ class ModelApplicationReasoner implements ApplicationReasoner {
       );
 
       return _parseResponse(response.text);
+    } on ProviderException catch (e) {
+      // IS-P07: a classified provider failure already carries a sentence the
+      // user can act on — "you are rate limited", "that model was retired",
+      // "you are offline". Collapsing all of them into "please try
+      // rephrasing" told the user to fix the one thing that was not wrong.
+      // `ProviderErrors` messages are curated for display; the provider's own
+      // raw text stays in `providerDetail`, which never reaches here.
+      return ReasoningFailed(error: e.message);
     } catch (e) {
       return const ReasoningFailed(
         error: 'Unable to create this type of app. Please try rephrasing.',

@@ -541,7 +541,7 @@ void main() {
         // CredentialVault (see that file's own doc comment for the full
         // reasoning).
         final stopwatch = Stopwatch()..start();
-        final composition = AppComposition.production();
+        final composition = AppComposition.freshForTesting();
         stopwatch.stop();
         // ignore: avoid_print
         print(

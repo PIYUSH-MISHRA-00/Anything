@@ -297,7 +297,10 @@ class AnythingKernel {
           );
         case ReasoningProviderRequired():
           return ProviderRequired(
-            message: 'Connect an AI provider to create this kind of app',
+            // IS-P07: a refusal that does not say where to go is a dead end.
+            message:
+                'This needs an AI model. Add a provider in '
+                'Settings → AI Providers, then try again.',
             timestamp: DateTime.now(),
           );
         case ReasoningKnowledgeRequired():

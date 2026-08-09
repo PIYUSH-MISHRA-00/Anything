@@ -30,6 +30,8 @@ import '../ai/openai_compatible_provider.dart';
 import '../ai/provider_catalogue.dart';
 import '../ai/provider_error.dart';
 import '../core/contracts/model_provider.dart';
+import '../diagnostics/log_entry.dart';
+import '../diagnostics/structured_logger.dart';
 import '../legacy/groq_adapter.dart';
 import '../security/credential_vault.dart';
 import '../storage/durable_collection_store.dart';
@@ -64,15 +66,21 @@ class AnythingProviderRegistry implements ModelProviderRegistry {
   /// [credentialVault] is the canonical, shared credential store
   /// (Implementation Milestone R1) — routed to every built-in provider rather
   /// than each provider constructing its own raw secure-storage instance.
+  /// Where provider selection, verification and model choice are reported
+  /// (IS-P07). Optional, so a directly-constructed registry needs no setup.
+  final StructuredLogger? _logger;
+
   AnythingProviderRegistry({
     CredentialVault? credentialVault,
     DurableCollectionStore store = const DurableCollectionStore(),
+    StructuredLogger? logger,
   }) : _store = store,
+       _logger = logger,
        _vault = credentialVault ?? CredentialVault() {
     // Groq keeps its named class so the R1 composition-root test and the
     // credential purpose `groq_api_key` are unchanged; it is the same
     // OpenAI-compatible adapter underneath.
-    final groq = GroqModelProvider(credentialVault: _vault);
+    final groq = GroqModelProvider(credentialVault: _vault, logger: logger);
     _providers[groq.providerId] = groq;
 
     for (final descriptor in ProviderCatalogue.implemented) {
@@ -84,6 +92,7 @@ class AnythingProviderRegistry implements ModelProviderRegistry {
       _providers[descriptor.id] = OpenAiCompatibleProvider(
         descriptor: descriptor,
         credentialVault: _vault,
+        logger: logger,
       );
     }
   }
@@ -98,6 +107,7 @@ class AnythingProviderRegistry implements ModelProviderRegistry {
   Future<void> setActiveProvider(String providerId) async {
     if (!_providers.containsKey(providerId)) return;
     _activeProviderId = providerId;
+    _logger?.info(LogCategory.aiProvider, 'provider selected: $providerId');
     try {
       await _store.update<void>(
         _activeKey,
@@ -132,6 +142,7 @@ class AnythingProviderRegistry implements ModelProviderRegistry {
       descriptor: descriptor,
       credentialVault: _vault,
       endpointOverride: config.endpoint,
+      logger: _logger,
     );
   }
 
@@ -179,14 +190,38 @@ class AnythingProviderRegistry implements ModelProviderRegistry {
 
     // `isConfigured` is a synchronous getter over an async keystore read, so
     // it reports `false` until primed. Consumers check it before generating.
-    for (final provider in _providers.values) {
-      if (provider is OpenAiCompatibleProvider) {
-        await provider.prime();
-      }
-    }
+    //
+    // IS-P07 CHANGED THIS IN TWO WAYS, both because the launch gate now
+    // AWAITS this method.
+    //
+    // Concurrently, not one provider at a time: this is ~16 independent
+    // keystore reads and serialising them made launch wait for their sum.
+    //
+    // And BOUNDED. A platform channel with no implementation behind it does
+    // not fail, it simply never answers — reproduced in
+    // `flutter_test`, where an unmocked `flutter_secure_storage` read hangs
+    // forever. Without a bound, launch would hang on a blank screen with no
+    // error and no way out. The reads are not cancelled by the timeout, so a
+    // slow keystore still populates the cache a moment later; the app simply
+    // stops waiting for it.
+    await Future.wait([
+      for (final provider in _providers.values)
+        if (provider is OpenAiCompatibleProvider) provider.prime(),
+    ]).timeout(_primeTimeout, onTimeout: () => const <void>[]);
   }
 
-  /// Loads persisted state. Call once at startup.
+  /// How long launch will wait for the keystore before starting anyway.
+  ///
+  /// A real read is single-digit milliseconds; this only bounds the
+  /// pathological case.
+  static const Duration _primeTimeout = Duration(seconds: 2);
+
+  /// Loads persisted state, resolving the active provider.
+  ///
+  /// IS-P07: awaited by `_AnythingRoot` before the app shell is built, so no
+  /// consumer can read [activeProvider] while it still reports `null` for a
+  /// provider the user has configured. Idempotent — every caller awaits the
+  /// same in-flight load.
   Future<void> initialize() => _ensureLoaded();
 
   Future<void> _persist() async {
@@ -215,7 +250,15 @@ class AnythingProviderRegistry implements ModelProviderRegistry {
   @override
   Future<void> saveConfig(ProviderConfig config) async {
     await _ensureLoaded();
+    final previous = _configs[config.id];
     _configs[config.id] = config;
+    if (config.preferredModel != null &&
+        config.preferredModel != previous?.preferredModel) {
+      _logger?.info(
+        LogCategory.aiProvider,
+        'model selected for ${config.providerType}: ${config.preferredModel}',
+      );
+    }
     await _persist();
 
     // A configuration that is ready to use becomes the active provider when
@@ -325,6 +368,11 @@ class AnythingProviderRegistry implements ModelProviderRegistry {
 
     try {
       final accepted = await provider.testConnection(apiKey);
+      _logger?.info(
+        LogCategory.aiProvider,
+        'provider verification for ${provider.providerId}: '
+        '${accepted ? 'accepted' : 'key rejected'}',
+      );
       return accepted
           ? const ProviderTestResult(
               success: true,
@@ -341,6 +389,11 @@ class AnythingProviderRegistry implements ModelProviderRegistry {
       final classified = ProviderErrors.fromException(
         e,
         providerName: provider.providerName,
+      );
+      _logger?.warning(
+        LogCategory.aiProvider,
+        'provider verification for ${provider.providerId} failed: '
+        '${classified.failure.name}',
       );
       return ProviderTestResult(
         success: false,

@@ -61,16 +61,13 @@ class CompositeApplicationReasoner implements ApplicationReasoner {
     }
 
     // Step 3: Use model reasoner
-    final modelReasoner = ModelApplicationReasoner(provider);
-    final modelResult = await modelReasoner.reason(context);
-
-    // Redact error messages from model reasoning before returning
-    if (modelResult is ReasoningFailed) {
-      return const ReasoningFailed(
-        error: 'Unable to create this type of app. Please try rephrasing.',
-      );
-    }
-
-    return modelResult;
+    //
+    // IS-P07: this used to overwrite EVERY failure with "Unable to create
+    // this type of app. Please try rephrasing." The redaction was right in
+    // intent and wrong in reach — `ModelApplicationReasoner` now performs it
+    // at the only place raw exception text exists, and returns a curated
+    // sentence for classified provider failures. Overwriting again here
+    // discards the one thing the user needed to know.
+    return ModelApplicationReasoner(provider).reason(context);
   }
 }

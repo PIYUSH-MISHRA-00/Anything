@@ -3,8 +3,6 @@
 /// Sets up theme, navigation, and the app shell.
 library;
 
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 
 import '../design_system/theme/anything_theme.dart';
@@ -82,11 +80,22 @@ class _AnythingRootState extends State<_AnythingRoot> {
     // `activeProvider` stayed null for the whole session and a configured key
     // was never actually used.
     //
-    // Started here but deliberately NOT awaited before the first frame: it
-    // reads the keystore once per provider, and the launch decision below does
-    // not depend on it. Every registry method awaits the same in-flight load,
-    // so a caller that arrives early still sees the finished state.
-    unawaited(_initialiseProviders());
+    // IS-P07 — AWAITED, and it must stay awaited.
+    //
+    // Two things were wrong here. `AppComposition.production()` built a fresh
+    // graph per call, so this initialised a registry no other object ever
+    // saw; that is fixed in `AppComposition` itself. What remains is
+    // ordering: `activeProvider` is a synchronous getter over an
+    // asynchronous storage read, and it answers `null` both while loading
+    // and when nothing is configured. Every consumer reads it synchronously
+    // and cannot tell those apart.
+    //
+    // Awaiting here is what makes them indistinguishable-proof: the shell —
+    // and therefore the Kernel, the reasoner and the AI capability — is not
+    // built until the answer is real. The cost is one SharedPreferences read
+    // plus one keystore read per provider, on the same order as the
+    // onboarding check already awaited below.
+    await _initialiseProviders();
 
     var completed = false;
     try {

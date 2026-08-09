@@ -565,7 +565,7 @@ void main() {
     test(
       'ONE commit framework is shared by the installer and the whole graph',
       () {
-        final composition = AppComposition.production();
+        final composition = AppComposition.freshForTesting();
         addTearDown(() => composition.experienceRepository.close());
 
         expect(
