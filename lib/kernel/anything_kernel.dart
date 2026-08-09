@@ -22,6 +22,8 @@ import 'package:anything/kernel/planning/execution_plan.dart';
 import 'package:anything/kernel/resolution/experience_resolver.dart';
 import 'package:anything/capabilities/registry/capability_descriptor.dart';
 import 'package:anything/capabilities/registry/capability_registry.dart';
+import 'package:anything/creation/local_collection_semantic_fallback.dart';
+import 'package:anything/creation/network_reference_semantic_fallback.dart';
 import 'package:anything/knowledge/knowledge_acquisition_engine.dart';
 import 'package:anything/knowledge/knowledge_bundle.dart';
 import 'package:anything/synthesis/application_reasoner.dart';
@@ -79,15 +81,14 @@ const int _maxKnowledgeRequirements = 20;
 /// Maximum warnings in accumulated knowledge.
 const int _maxKnowledgeWarnings = 20;
 
-/// Consumer-safe message for knowledge loop limit exceeded.
+/// Consumer-safe message for knowledge loop limit exceeded (diagnostics).
 const String _knowledgeLoopLimitMessage =
-    'Unable to create this app. The system could not gather enough '
-    'information to build a reliable application in this domain.';
+    'Knowledge refinement budget exhausted; continuing with a capability shell.';
 
-/// Consumer-safe message for knowledge acquisition failure.
+/// Consumer-safe message for knowledge acquisition failure (diagnostics).
 const String _knowledgeFailureMessage =
-    'Unable to gather the information needed to build this app. '
-    'Please try a simpler request or a different approach.';
+    'Live knowledge could not be acquired at plan time; continuing with a '
+    'capability shell.';
 
 /// The Anything Kernel.
 class AnythingKernel {
@@ -275,7 +276,7 @@ class AnythingKernel {
       }
 
       // Step 5: Reason about the application with knowledge refinement loop
-      final reasonResult = await _reasonWithKnowledgeLoop(
+      var reasonResult = await _reasonWithKnowledgeLoop(
         understanding,
         seedKnowledge: seedKnowledge,
       );
@@ -303,12 +304,20 @@ class AnythingKernel {
                 'Settings → AI Providers, then try again.',
             timestamp: DateTime.now(),
           );
-        case ReasoningKnowledgeRequired():
-          // Knowledge was requested but loop exhausted without resolution
-          return PlanningFailed(
-            error: _knowledgeFailureMessage,
-            message: _knowledgeFailureMessage,
-            timestamp: DateTime.now(),
+        case final ReasoningKnowledgeRequired knowledgeRequired:
+          // IS-P10: should be unreachable after knowledge-loop degradation,
+          // but if it escapes, continue with a network reference shell.
+          final purpose = knowledgeRequired.requirements
+              .map((r) => r.query)
+              .where((q) => q.trim().isNotEmpty)
+              .join('; ');
+          reasonResult = ReasoningReady(
+            semanticApp: _semanticAppAfterKnowledgeGap(
+              understanding,
+              knowledgePurpose: purpose.isEmpty
+                  ? _knowledgeFailureMessage
+                  : purpose,
+            ),
           );
         case ReasoningUnsupported():
           return UnsupportedIntent(
@@ -317,19 +326,25 @@ class AnythingKernel {
             timestamp: DateTime.now(),
           );
         case ReasoningFailed():
+          // IS-P10: message must carry the real cause — redacting to a
+          // shrug made Path B undiagnosable and sounded like an allow-list.
           return PlanningFailed(
             error: reasonResult.error,
-            message: 'Something went wrong during reasoning',
+            message: reasonResult.error,
             timestamp: DateTime.now(),
           );
       }
+
+      // After degradation, reasonResult is always ReasoningReady here
+      // (non-ready arms return above or rewrite reasonResult).
+      final semanticApp = (reasonResult as ReasoningReady).semanticApp;
 
       // Step 5.5: Autonomous Knowledge Acquisition (Implementation
       // Milestone R16) — deterministic, zero new LLM call. Opt-in; a
       // no-op when `autoDiscoverKnowledge` is false (the default) or no
       // `SoftwareCognitionCoordinator` was injected.
       final autoDiscoveredRecommendations = autoDiscoverKnowledge
-          ? await _autoDiscoverSoftwareKnowledge(reasonResult.semanticApp)
+          ? await _autoDiscoverSoftwareKnowledge(semanticApp)
           : const <SoftwareRecommendation>[];
 
       // Step 5.6: Feature Discovery Engine — Requirement Graph -> Knowledge
@@ -337,7 +352,7 @@ class AnythingKernel {
       // Runs before Architecture, per the Vision Milestone V4 pipeline;
       // every ReasoningReady result passes through here, no bypass.
       final requirementGraph = _requirementExtractor.extract(
-        app: reasonResult.semanticApp,
+        app: semanticApp,
         understanding: understanding,
       );
       _constraintPlanner.plan(requirementGraph);
@@ -364,7 +379,7 @@ class AnythingKernel {
       }
       final featureGraph = _featureDiscoveryEngine.plan(
         FeatureDiscoveryContext(
-          app: reasonResult.semanticApp,
+          app: semanticApp,
           requirements: requirementGraph,
           knowledge: knowledgeGraph,
           priorCapabilityIds: _priorCapabilityIdsSafely(),
@@ -394,9 +409,9 @@ class AnythingKernel {
         featurePlan.finalGraph.nodes.map((n) => n.candidate).toList(),
       );
       final explorationResult = _solutionExplorer.explore(
-        app: reasonResult.semanticApp,
+        app: semanticApp,
         context: SolutionExplorationContext(
-          app: reasonResult.semanticApp,
+          app: semanticApp,
           featureGraph: featurePlan.finalGraph,
           dependencyGraph: dependencyGraph,
         ),
@@ -412,7 +427,7 @@ class AnythingKernel {
       final selectedSolution = solutionDecision.selected;
 
       final blueprint = _architectureToBlueprint.convert(
-        originalApp: reasonResult.semanticApp,
+        originalApp: semanticApp,
         approved: selectedSolution.architecture,
         reasonerForConversion: _reasoner,
       );
@@ -436,7 +451,7 @@ class AnythingKernel {
       // closed otherwise.
       final reviewOutcome = _designReviewEngine.review(
         ReviewContext(
-          app: reasonResult.semanticApp,
+          app: semanticApp,
           requirements: requirementGraph,
           featureGraph: featurePlan.finalGraph,
           dependencyGraph: dependencyGraph,
@@ -509,12 +524,12 @@ class AnythingKernel {
       // R8) — deterministic Database/API/Authentication/Storage/
       // Background-Jobs/Deployment specification, derived from the SAME
       // already-computed `selectedSolution.architecture`/
-      // `reasonResult.semanticApp` frontend Engineering already consumed
+      // `semanticApp` frontend Engineering already consumed
       // at Step 7.6 — zero new AI call, zero new upstream dependency.
       final backendEngineeringPlan = _backendEngineeringPlanner.plan(
         BackendEngineeringContext(
           architecture: selectedSolution.architecture,
-          app: reasonResult.semanticApp,
+          app: semanticApp,
         ),
       );
       _ingestIntoWorldModelSafely(
@@ -550,11 +565,15 @@ class AnythingKernel {
 
       final unresolved = resolutions.where((r) => !r.isResolved).toList();
       if (unresolved.isNotEmpty) {
+        final missing = unresolved.map((r) => r.capabilityId).join(', ');
         return UnsupportedIntent(
-          reason:
-              'Required capabilities not available: '
-              '${unresolved.map((r) => r.capabilityId).join(', ')}',
-          message: 'Some requirements cannot be met yet',
+          reason: 'Required capabilities not available: $missing',
+          // IS-P10: name the missing platform capabilities — the shrug
+          // "Some requirements cannot be met yet" hid networkData→platform
+          // mapping bugs and looked like an allow-list refusal.
+          message:
+              'This app needs platform capabilities that are not available: '
+              '$missing',
           timestamp: DateTime.now(),
         );
       }
@@ -583,17 +602,17 @@ class AnythingKernel {
             ...autoDiscoveredRecommendations,
           ],
           // Real, already-reasoned field/derived-value metadata
-          // (Implementation Milestone R20) — `reasonResult.semanticApp` is
+          // (Implementation Milestone R20) — `semanticApp` is
           // the SAME single reasoning call's output already used above
           // (Step 7.8); passing it through here lets
           // `CanonicalImplementationPlanner` enrich `ImplementationField`/
           // `derivedValues` with data legacy's `CreationEngine` pipeline
           // already reads from this exact object.
-          semanticEntities: reasonResult.semanticApp.entities,
-          derivedValues: reasonResult.semanticApp.derivedValues,
+          semanticEntities: semanticApp.entities,
+          derivedValues: semanticApp.derivedValues,
           // Real non-CRUD experience views (Implementation Milestone
-          // R21) — same `reasonResult.semanticApp`, already in scope.
-          semanticViews: reasonResult.semanticApp.views,
+          // R21) — same `semanticApp`, already in scope.
+          semanticViews: semanticApp.views,
         ),
       );
       _ingestIntoWorldModelSafely(
@@ -651,10 +670,12 @@ class AnythingKernel {
         timestamp: DateTime.now(),
       );
     } catch (e, stack) {
+      // IS-P10: never hide the cause behind a fixed shrug sentence.
+      final cause = e.toString();
       return PlanningFailed(
-        error: e.toString(),
+        error: cause,
         stackTrace: stack,
-        message: 'Something went wrong during planning',
+        message: 'Planning failed: $cause',
         timestamp: DateTime.now(),
       );
     }
@@ -800,21 +821,21 @@ class AnythingKernel {
 
       // Knowledge required — check if we have budget
       if (round >= _maxKnowledgeRounds) {
-        // Last round — if only optional requirements remain, try to continue
-        // without them. The reasoner produced a result requesting only optional
-        // knowledge; we cannot acquire it, so we return the last non-knowledge
-        // result if available, or fail.
-        final requiredRemaining = result.requirements
-            .where((r) => r.required)
-            .toList();
-        if (requiredRemaining.isEmpty) {
-          // Only optional requirements remain and budget is exhausted.
-          // Do NOT return ReasoningKnowledgeRequired to the creation pipeline.
-          // Fail gracefully — the reasoner cannot produce a valid app without
-          // deciding how to handle the absence of optional knowledge.
-          return const ReasoningFailed(error: _knowledgeLoopLimitMessage);
-        }
-        return const ReasoningFailed(error: _knowledgeLoopLimitMessage);
+        // IS-P10: do not fail planning. Network/reference apps must still
+        // install with honest unavailable/runtime fetch states. Knowledge at
+        // plan time is an enhancement, not a generation gate.
+        final purpose = result.requirements
+            .map((r) => r.query)
+            .where((q) => q.trim().isNotEmpty)
+            .join('; ');
+        return ReasoningReady(
+          semanticApp: _semanticAppAfterKnowledgeGap(
+            understanding,
+            knowledgePurpose: purpose.isEmpty
+                ? _knowledgeLoopLimitMessage
+                : purpose,
+          ),
+        );
       }
 
       // Separate required and optional requirements
@@ -840,13 +861,37 @@ class AnythingKernel {
             queryHints: [understanding.objective],
           );
 
-          // Required knowledge failed — do not fabricate
+          // IS-P10: required knowledge failure must not abort planning.
+          // Fabricating live facts is forbidden; fabricating an app shell
+          // that can fetch later (or show unavailable) is required.
           if (requiredBundle.status == BundleStatus.failed ||
               requiredBundle.isEmpty) {
-            return const ReasoningFailed(error: _knowledgeFailureMessage);
+            final purpose = requiredRequirements
+                .map((r) => r.query)
+                .where((q) => q.trim().isNotEmpty)
+                .join('; ');
+            return ReasoningReady(
+              semanticApp: _semanticAppAfterKnowledgeGap(
+                understanding,
+                knowledgePurpose: purpose.isEmpty
+                    ? _knowledgeFailureMessage
+                    : purpose,
+              ),
+            );
           }
         } catch (e) {
-          return const ReasoningFailed(error: _knowledgeFailureMessage);
+          final purpose = requiredRequirements
+              .map((r) => r.query)
+              .where((q) => q.trim().isNotEmpty)
+              .join('; ');
+          return ReasoningReady(
+            semanticApp: _semanticAppAfterKnowledgeGap(
+              understanding,
+              knowledgePurpose: purpose.isEmpty
+                  ? _knowledgeFailureMessage
+                  : purpose,
+            ),
+          );
         }
       }
 
@@ -889,8 +934,58 @@ class AnythingKernel {
       _lastAcquiredKnowledge = knowledgeBundle;
     }
 
-    // Should not reach here, but safety fallback
-    return const ReasoningFailed(error: _knowledgeLoopLimitMessage);
+    // Should not reach here, but safety fallback — still installable.
+    return ReasoningReady(
+      semanticApp: _semanticAppAfterKnowledgeGap(
+        understanding,
+        knowledgePurpose: _knowledgeLoopLimitMessage,
+      ),
+    );
+  }
+
+  /// When plan-time knowledge cannot complete: network-primary intents get a
+  /// reference shell; everything else gets a local collection shell so CRUD
+  /// apps are not replaced by a query/refresh UI (IS-P10 expense regression).
+  SemanticApp _semanticAppAfterKnowledgeGap(
+    IntentUnderstanding understanding, {
+    String? knowledgePurpose,
+  }) {
+    if (_isNetworkPrimaryIntent(understanding)) {
+      return const NetworkReferenceSemanticFallback().fromUnderstanding(
+        understanding,
+        knowledgePurpose: knowledgePurpose,
+      );
+    }
+    return const LocalCollectionSemanticFallback().fromUnderstanding(
+      understanding,
+    );
+  }
+
+  bool _isNetworkPrimaryIntent(IntentUnderstanding understanding) {
+    final o = understanding.objective.toLowerCase();
+    final looksLive =
+        o.contains('live') ||
+        o.contains('online') ||
+        o.contains('dashboard') ||
+        o.contains('api') ||
+        o.contains('fetch') ||
+        o.contains('realtime') ||
+        o.contains('real-time') ||
+        o.contains('lookup') ||
+        o.contains('reference');
+    // Structural durable-record cues — not product-domain allow-lists.
+    final looksLocalDurable =
+        o.contains('track') ||
+        o.contains('list') ||
+        o.contains('manager') ||
+        o.contains('log') ||
+        o.contains('record') ||
+        o.contains('collection');
+    // Prefer local collection when the request is clearly about records,
+    // even if the model over-claims networkNeed=required.
+    if (looksLocalDurable && !looksLive) return false;
+    if (looksLive) return true;
+    return understanding.networkNeed == NetworkNeed.required;
   }
 
   /// Enforce trusted budget limits on accumulated knowledge.

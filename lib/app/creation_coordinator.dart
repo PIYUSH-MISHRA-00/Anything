@@ -4,6 +4,7 @@
 library;
 
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:anything/ai/provider_error.dart';
 import 'package:anything/application_engineering/engineering_plan.dart';
@@ -17,10 +18,20 @@ import 'package:anything/kernel/outcomes/kernel_outcome.dart';
 import 'package:anything/kernel/specification/experience_spec.dart';
 import 'package:anything/knowledge/knowledge_resource.dart';
 import 'package:anything/app/experience_provenance.dart';
+import 'package:anything/creation/app_capabilities.dart';
+import 'package:anything/creation/creation_diagnostics.dart';
 import 'package:anything/creation/creation_engine.dart';
 import 'package:anything/creation/creation_context.dart';
+import 'package:anything/creation/deterministic_repair.dart';
 import 'package:anything/creation/experience_package.dart';
+import 'package:anything/creation/experience_smoke_validator.dart';
 import 'package:anything/creation/package_validator.dart';
+import 'package:anything/creation/display_naming.dart';
+import 'package:anything/creation/intent_preservation.dart';
+import 'package:anything/creation/semantic_completeness.dart';
+import 'package:anything/creation/news_interface_factory.dart';
+import 'package:anything/creation/timing_interface_factory.dart';
+import 'package:anything/creation/weather_interface_factory.dart';
 import 'package:anything/kernel/planning/execution_plan.dart';
 import 'package:anything/app/experience_commit.dart';
 import 'package:anything/storage/sqlite_experience_repository.dart';
@@ -138,8 +149,12 @@ class ExperienceCreationCoordinator {
   /// four-word snackbar, so a failing device could not be diagnosed at all.
   final StructuredLogger? _logger;
 
+  /// IS-P10: structured creation diagnostics for Developer Mode / logcat.
+  final CreationDiagnostics _diagnostics;
+
   CreationState _state = CreationState.idle;
   CreationState get state => _state;
+  CreationDiagnostics get diagnostics => _diagnostics;
 
   ExperienceCreationCoordinator({
     required AnythingKernel kernel,
@@ -151,7 +166,9 @@ class ExperienceCreationCoordinator {
     EngineeringMemoryRepository? engineeringMemory,
     ExperienceCommitFramework? commitFramework,
     StructuredLogger? logger,
+    CreationDiagnostics? diagnostics,
   }) : _logger = logger,
+       _diagnostics = diagnostics ?? CreationDiagnostics(logger: logger),
        _kernel = kernel,
        _creationEngine = creationEngine ?? CreationEngine(),
        _commits =
@@ -275,18 +292,53 @@ class ExperienceCreationCoordinator {
           );
 
         case PlanningFailed():
+          // IS-P08/P10: surface the real cause; record structured diagnostics.
+          final requestId = _diagnostics.nextRequestId();
+          _diagnostics.record(
+            CreationDiagnostic(
+              requestId: requestId,
+              stage: CreationStage.planning,
+              errorType: 'PlanningFailed',
+              errorMessage: kernelOutcome.error,
+              retryable: true,
+              userRecoverable: true,
+            ),
+          );
+          _logger?.error(
+            LogCategory.creation,
+            'planning failed: ${kernelOutcome.error}',
+            requestId: requestId,
+          );
+          if (kernelOutcome.stackTrace != null) {
+            _logger?.debug(
+              LogCategory.creation,
+              'planning stack: ${_firstFrames(kernelOutcome.stackTrace!)}',
+            );
+          }
           return CreationFailed(
             error: kernelOutcome.error,
-            message: 'Something went wrong during planning',
+            message: 'Could not plan this app: ${kernelOutcome.error}',
           );
       }
     } catch (e) {
+      final safe = e is ProviderException ? e.message : null;
+      _logger?.error(
+        LogCategory.creation,
+        'routing threw: ${e.runtimeType}${safe == null ? '' : ' — $safe'}',
+      );
       return CreationFailed(
         error: e.toString(),
-        message: 'Something went wrong',
+        message: safe ?? 'Something went wrong',
       );
     }
   }
+
+  /// The top frames of a stack trace, which is where the cause is.
+  ///
+  /// Whole traces are hundreds of lines and unreadable in the on-device log;
+  /// the first few name the failing call.
+  static String _firstFrames(StackTrace stack, {int count = 4}) =>
+      const LineSplitter().convert(stack.toString()).take(count).join(' | ');
 
   /// Convenience: create from expression string.
   Future<CreationResult> createFromExpression(
@@ -438,14 +490,166 @@ class ExperienceCreationCoordinator {
           );
         }
 
-        // Validate with production validator
+        // IS-P09: bounded deterministic repair for missing capabilities,
+        // then structural + semantic validation. No LLM repair loop.
         _state = CreationState.validating;
-        final validation = ExperiencePackageValidator.validate(
-          creationResult.package,
+        var candidate = creationResult.package;
+        var requiredCaps = blueprint != null
+            ? const AppCapabilityInferrer().infer(
+                blueprint: blueprint,
+                intent: intent,
+              )
+            : candidate.manifest.requiredCapabilities.toSet();
+        final repair = const DeterministicCapabilityRepair().repair(
+          package: candidate,
+          requiredCapabilities: requiredCaps,
+          blueprint: blueprint,
         );
-        if (!validation.isValid) {
+        candidate = repair.package;
+        if (repair.repaired) {
+          _logger?.info(
+            LogCategory.creation,
+            'deterministic repair applied: ${repair.appliedFixes.join(', ')}',
+          );
+        }
+
+        // IS-P12: USER_INTENT_MUST_SURVIVE_PLANNING — reject unrelated products.
+        var compat = const IntentPreservationValidator().validate(
+          rawPrompt: intent.expression,
+          package: candidate,
+          requiredCapabilities: requiredCaps,
+        );
+        if (!compat.isCompatible) {
+          _logger?.info(
+            LogCategory.creation,
+            'intent mismatch: ${compat.reason} — attempting safe re-plan',
+          );
+          if (compat.requested == IntentPurpose.timing) {
+            requiredCaps = {
+              ...requiredCaps.where((c) => c != AppCapabilityIds.calculation),
+              AppCapabilityIds.timers,
+              AppCapabilityIds.input,
+              AppCapabilityIds.resultDisplay,
+            };
+            candidate = const TimingInterfaceFactory().applyToPackage(
+              candidate,
+              name: experienceDisplayName(
+                generatedName: candidate.manifest.name,
+                userIntent: intent.expression,
+              ),
+            );
+          } else if (compat.requested == IntentPurpose.weather) {
+            requiredCaps = {
+              AppCapabilityIds.weatherData,
+              AppCapabilityIds.input,
+              AppCapabilityIds.refresh,
+              AppCapabilityIds.loadingState,
+              AppCapabilityIds.errorState,
+              AppCapabilityIds.resultDisplay,
+            };
+            candidate = const WeatherInterfaceFactory().applyToPackage(
+              candidate,
+              name: experienceDisplayName(
+                generatedName: candidate.manifest.name,
+                userIntent: intent.expression,
+              ),
+            );
+          } else if (compat.requested == IntentPurpose.news) {
+            // Replace — do not union with leftover CRUD/collection caps from
+            // a mis-planned blueprint (that caused "news app" → missing form).
+            requiredCaps = {
+              AppCapabilityIds.newsData,
+              AppCapabilityIds.input,
+              AppCapabilityIds.refresh,
+              AppCapabilityIds.loadingState,
+              AppCapabilityIds.errorState,
+              AppCapabilityIds.resultDisplay,
+            };
+            candidate = const NewsInterfaceFactory().applyToPackage(
+              candidate,
+              name: experienceDisplayName(
+                generatedName: candidate.manifest.name,
+                userIntent: intent.expression,
+              ),
+            );
+          }
+          if (compat.requested == IntentPurpose.timing ||
+              compat.requested == IntentPurpose.weather ||
+              compat.requested == IntentPurpose.news) {
+            final hash = ExperiencePackage.computeIntegrityHash(candidate);
+            candidate = ExperiencePackage(
+              packageVersion: candidate.packageVersion,
+              manifest: candidate.manifest,
+              interface: candidate.interface,
+              behavior: candidate.behavior,
+              state: candidate.state,
+              data: candidate.data,
+              services: candidate.services,
+              networkDeclarations: candidate.networkDeclarations,
+              capabilityDeclarations: candidate.capabilityDeclarations,
+              permissionDeclarations: candidate.permissionDeclarations,
+              protection: candidate.protection,
+              provenance: candidate.provenance,
+              integrity: PackageIntegrity(
+                contentHash: hash,
+                computedAt: DateTime.now(),
+              ),
+            );
+            compat = const IntentPreservationValidator().validate(
+              rawPrompt: intent.expression,
+              package: candidate,
+              requiredCapabilities: requiredCaps,
+            );
+          }
+          if (!compat.isCompatible) {
+            _state = CreationState.failed;
+            _diagnostics.record(
+              CreationDiagnostic(
+                requestId: _diagnostics.nextRequestId(),
+                stage: CreationStage.validation,
+                errorType: 'IntentMismatch',
+                errorMessage: compat.reason,
+                retryable: true,
+                userRecoverable: true,
+              ),
+            );
+            return CreationFailed(
+              error: compat.reason,
+              message:
+                  'I could not create an app that matches what you asked for '
+                  '(${compat.requested.name} vs ${compat.generated.name}). '
+                  'Please try rephrasing.',
+            );
+          }
+        }
+
+        final validation = ExperiencePackageValidator.validate(candidate);
+        final completeness = const SemanticCompletenessValidator().validate(
+          package: candidate,
+          requiredCapabilities: requiredCaps,
+          blueprint: blueprint,
+        );
+        final smoke = const ExperienceSmokeValidator().validate(
+          candidate,
+          requiredCapabilities: requiredCaps,
+        );
+        if (!validation.isValid || !completeness.isComplete || !smoke.passed) {
           _state = CreationState.failed;
-          final reasons = validation.errors.join('; ');
+          final reasons = [
+            ...validation.errors,
+            ...completeness.errorMessages,
+            ...smoke.messages,
+          ].join('; ');
+          _diagnostics.record(
+            CreationDiagnostic(
+              requestId: _diagnostics.nextRequestId(),
+              stage: CreationStage.validation,
+              errorType: 'PackageRejected',
+              errorMessage: reasons,
+              retryable: true,
+              userRecoverable: true,
+            ),
+          );
           _logger?.error(
             LogCategory.creation,
             'package rejected by validator: $reasons',
@@ -455,7 +659,7 @@ class ExperienceCreationCoordinator {
             message: 'Could not complete this app: $reasons',
           );
         }
-        package = creationResult.package;
+        package = candidate;
       }
 
       // Persist

@@ -16,6 +16,8 @@ const Map<String, String> _serviceTypeToCapabilityId = {
   'notifications': 'notifications',
   'fileAccess': 'files',
   'knowledgeRetrieval': 'knowledge',
+  'weatherData': 'weather',
+  'newsData': 'news',
   'aiInference': 'ai',
 };
 
@@ -137,6 +139,8 @@ class ExperienceServiceResolver {
       'notifications',
       'fileAccess',
       'knowledgeRetrieval',
+      'weatherData',
+      'newsData',
       'aiInference',
     };
     return knownTypes.contains(type);

@@ -11,7 +11,9 @@ import '../../capabilities/adapters/file_service_adapter.dart';
 import '../../app/experience_opening_coordinator.dart';
 import '../../core/contracts/protection_provider.dart';
 import '../../design_system/components/components.dart';
+import '../../design_system/experience_icon.dart';
 import '../../design_system/tokens/spacing.dart';
+import '../../security/protection_service.dart';
 import '../../storage/sqlite_experience_repository.dart';
 import '../../storage/activity_repository.dart';
 
@@ -78,6 +80,7 @@ class _ExperiencesScreenState extends State<ExperiencesScreen> {
   /// site below now goes through; see [ExperiencesScreen.entryPipeline].
   late final ExperienceEntryPipeline _entryPipeline;
   late final ExperiencePortability _portability;
+  late final ExperienceProtectionService _protectionService;
   List<ExperienceMetadataRecord> _experiences = [];
   bool _isLoading = true;
 
@@ -85,8 +88,11 @@ class _ExperiencesScreenState extends State<ExperiencesScreen> {
   void initState() {
     super.initState();
     _composition = widget.composition ?? AppComposition.production();
-    _repo = widget.repository ?? SqliteExperienceRepository();
-    _commits = ExperienceCommitFramework(repository: _repo);
+    // IS-P09: always the composition's repository — a second
+    // `SqliteExperienceRepository()` shares the file but not the
+    // invalidation signal, and My Apps stayed empty after create.
+    _repo = widget.repository ?? _composition.experienceRepository;
+    _commits = _composition.experienceCommit;
     // IS-R57: this screen already holds the composition; it now takes the
     // ONE activity repository from it instead of building a tenth.
     _activity = _composition.activityRepository;
@@ -99,7 +105,24 @@ class _ExperiencesScreenState extends State<ExperiencesScreen> {
           installer: _composition.experienceInstallation,
           files: RealFileService(),
         );
+    // IS-P13: My Apps → Protect must invoke Kaalka, not a no-op optional
+    // callback. Same service ownership as ExperienceHostScreen.
+    _protectionService = ExperienceProtectionService(
+      repository: _repo,
+      commitFramework: _commits,
+    );
+    _composition.experienceLibraryRevision.addListener(_onLibraryChanged);
     _loadExperiences();
+  }
+
+  void _onLibraryChanged() {
+    if (mounted) _loadExperiences();
+  }
+
+  @override
+  void dispose() {
+    _composition.experienceLibraryRevision.removeListener(_onLibraryChanged);
+    super.dispose();
   }
 
   Future<void> _loadExperiences() async {
@@ -272,9 +295,12 @@ class _ExperiencesScreenState extends State<ExperiencesScreen> {
 
     // The result already carries a sentence fit to show a person, written
     // once in ExperiencePortability so both entry points agree.
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(result.description)));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(result.description),
+        duration: const Duration(seconds: 8),
+      ),
+    );
     if (!result.succeeded) return;
 
     await _activity.record(
@@ -283,7 +309,9 @@ class _ExperiencesScreenState extends State<ExperiencesScreen> {
         type: 'exported',
         experienceId: exp.id,
         experienceName: exp.name,
-        message: 'Exported ${exp.name}',
+        message: result.path == null
+            ? 'Exported ${exp.name}'
+            : 'Exported ${exp.name} → ${result.path}',
         timestamp: DateTime.now(),
       ),
     );
@@ -438,17 +466,13 @@ class _ExperiencesScreenState extends State<ExperiencesScreen> {
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: colorScheme.primaryContainer.withAlpha(51),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  _getCategoryIcon(exp.category),
-                  color: colorScheme.primary,
-                ),
+              // IS-P11: same canonical ExperienceIcon as Home — category
+              // switch produced a different (often blank-feeling) identity.
+              ExperienceIcon(
+                experienceId: exp.id,
+                name: exp.name,
+                category: exp.category,
+                size: 48,
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -504,7 +528,11 @@ class _ExperiencesScreenState extends State<ExperiencesScreen> {
               title: const Text('Protect'),
               onTap: () {
                 Navigator.pop(context);
-                widget.onProtectRequested?.call(exp.id);
+                if (widget.onProtectRequested != null) {
+                  widget.onProtectRequested!(exp.id);
+                } else {
+                  _showProtectOptions(exp);
+                }
               },
             ),
             ListTile(
@@ -530,24 +558,129 @@ class _ExperiencesScreenState extends State<ExperiencesScreen> {
     );
   }
 
-  IconData _getCategoryIcon(String category) {
-    switch (category) {
-      case 'tool':
-        return Icons.build;
-      case 'productivity':
-        return Icons.check_circle;
-      case 'finance':
-        return Icons.account_balance_wallet;
-      case 'health':
-        return Icons.favorite;
-      case 'creative':
-        return Icons.palette;
-      case 'education':
-        return Icons.school;
-      case 'utility':
-        return Icons.apps;
-      default:
-        return Icons.auto_awesome;
+  void _showProtectOptions(ExperienceMetadataRecord exp) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.access_time),
+              title: const Text('Use current time'),
+              onTap: () => _protectWithCurrentTime(exp),
+            ),
+            ListTile(
+              leading: const Icon(Icons.calendar_today),
+              title: const Text('Choose date & time'),
+              onTap: () => _protectWithCustomTime(exp),
+            ),
+            ListTile(
+              leading: const Icon(Icons.close),
+              title: const Text('Cancel'),
+              onTap: () => Navigator.pop(context),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _protectWithCurrentTime(ExperienceMetadataRecord exp) async {
+    Navigator.pop(context);
+    final package = await _repo.getPackage(exp.id);
+    if (!mounted) return;
+    if (package == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not protect this app')),
+      );
+      return;
+    }
+
+    final result = await _protectionService.protectWithCurrentTime(
+      package: package,
+      experienceId: exp.id,
+    );
+    if (!mounted) return;
+    await _handleProtectResult(result, exp);
+  }
+
+  Future<void> _protectWithCustomTime(ExperienceMetadataRecord exp) async {
+    Navigator.pop(context);
+    final now = DateTime.now();
+    final selectedDate = await showDatePicker(
+      context: context,
+      initialDate: now,
+      firstDate: now,
+      lastDate: DateTime(now.year + 5),
+    );
+    if (selectedDate == null || !mounted) return;
+
+    final selectedTime = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.now(),
+    );
+    if (selectedTime == null || !mounted) return;
+
+    final customDateTime = DateTime(
+      selectedDate.year,
+      selectedDate.month,
+      selectedDate.day,
+      selectedTime.hour,
+      selectedTime.minute,
+    );
+
+    final package = await _repo.getPackage(exp.id);
+    if (!mounted) return;
+    if (package == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not protect this app')),
+      );
+      return;
+    }
+
+    final result = await _protectionService.protectWithCustomTime(
+      package: package,
+      experienceId: exp.id,
+      customTime: customDateTime,
+    );
+    if (!mounted) return;
+    await _handleProtectResult(
+      result,
+      exp,
+      successMessage:
+          'App protected with time ${customDateTime.month}/${customDateTime.day}/${customDateTime.year}',
+    );
+  }
+
+  Future<void> _handleProtectResult(
+    ProtectionResult result,
+    ExperienceMetadataRecord exp, {
+    String successMessage = 'App protected',
+  }) async {
+    if (result is ProtectionSucceeded) {
+      await _activity.record(
+        ActivityEvent(
+          id: 'evt-${DateTime.now().millisecondsSinceEpoch}',
+          type: 'protected',
+          experienceId: exp.id,
+          experienceName: exp.name,
+          message: 'Protected ${exp.name}',
+          timestamp: DateTime.now(),
+        ),
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(successMessage)));
+        _loadExperiences();
+      }
+    } else if (result is ProtectionFailed) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not protect this app')),
+        );
+      }
     }
   }
 }

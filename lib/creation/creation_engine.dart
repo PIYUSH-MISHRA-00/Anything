@@ -6,9 +6,17 @@ library;
 
 import '../application_engineering/engineering_to_blueprint.dart';
 import '../kernel/specification/experience_spec.dart';
+import '../synthesis/app_archetype.dart';
 import '../synthesis/app_blueprint.dart';
+import 'app_capabilities.dart';
+import 'calculation_interface_factory.dart';
 import 'creation_context.dart';
+import 'display_naming.dart';
 import 'experience_package.dart';
+import 'network_reference_interface_factory.dart';
+import 'news_interface_factory.dart';
+import 'timing_interface_factory.dart';
+import 'weather_interface_factory.dart';
 
 /// Result of creation.
 sealed class CreationResult {
@@ -94,7 +102,7 @@ class CreationEngine {
       }
 
       // Build interface — use blueprint when available for richer UI
-      final interface = blueprint != null
+      var interface = blueprint != null
           ? _buildInterfaceFromBlueprint(blueprint)
           : _buildInterface(spec);
 
@@ -133,25 +141,282 @@ class CreationEngine {
       }
 
       // Build services
-      final services = _buildServices(spec);
+      var services = _buildServices(spec);
 
       // Build network declarations
-      final network = _buildNetwork(spec);
+      var network = _buildNetwork(spec);
 
       // Build capability declarations
-      final capabilities = _buildCapabilities(spec);
+      var capabilities = _buildCapabilities(spec);
 
       // Build permission declarations
       final permissions = _buildPermissions(spec);
 
+      // IS-P09: open-world capability surfaces (calculation / network data).
+      // Applied before packaging so generated apps are usable, not shell-only.
+      final inferredCaps = blueprint != null
+          ? const AppCapabilityInferrer().infer(
+              blueprint: blueprint,
+              intent: context.intent,
+            )
+          : <String>{};
+      // Do NOT copy every semantic capability into
+      // `capabilityDeclarations` — those declarations are the Runtime
+      // allow-list (knowledge/http/…), and flooding them with planner
+      // vocabulary (entity/form/crud/…) breaks compiler/legacy
+      // equivalence. Semantic caps stay on the inferrer + quality gate.
+
+      // IS-P12: timers before calculation so utility timing apps never become
+      // calculator pads.
+      if (inferredCaps.contains(AppCapabilityIds.timers)) {
+        final timing = const TimingInterfaceFactory();
+        final probePackage = ExperiencePackage(
+          manifest: ExperienceManifest(
+            experienceId: spec.id,
+            name: spec.name,
+            description: spec.description,
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ),
+          interface: interface,
+          behavior: behavior,
+          state: state,
+          provenance: const PackageProvenance(
+            creationEngineVersion: '1.0.0',
+            specVersion: 1,
+            planVersion: 1,
+          ),
+          integrity: PackageIntegrity(
+            contentHash: '',
+            computedAt: DateTime.now(),
+          ),
+        );
+        if (!PackageCapabilityProbe(probePackage).hasTimingControls) {
+          interface = timing.buildInterface(
+            title: experienceDisplayName(
+              generatedName: spec.name,
+              userIntent: context.intent.expression,
+            ),
+          );
+          state = _mergeStatePreferOverlay(state, timing.buildState());
+          behavior = _mergeBehaviorGraph(behavior, timing.buildBehavior());
+          if (!capabilities.any((c) => c.capabilityId == 'timers')) {
+            capabilities = [
+              ...capabilities,
+              const CapabilityDeclaration(
+                capabilityId: 'timers',
+                isRequired: true,
+              ),
+            ];
+          }
+        }
+      } else if (inferredCaps.contains(AppCapabilityIds.calculation)) {
+        final calc = const CalculationInterfaceFactory();
+        final probePackage = ExperiencePackage(
+          manifest: ExperienceManifest(
+            experienceId: spec.id,
+            name: spec.name,
+            description: spec.description,
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ),
+          interface: interface,
+          behavior: behavior,
+          state: state,
+          provenance: const PackageProvenance(
+            creationEngineVersion: '1.0.0',
+            specVersion: 1,
+            planVersion: 1,
+          ),
+          integrity: PackageIntegrity(
+            contentHash: '',
+            computedAt: DateTime.now(),
+          ),
+        );
+        if (!PackageCapabilityProbe(probePackage).hasCalculationPad) {
+          interface = calc.buildInterface(
+            title: experienceDisplayName(
+              generatedName: spec.name,
+              userIntent: context.intent.expression,
+            ),
+          );
+          state = _mergeStateSchema(state, calc.buildState());
+          behavior = _mergeBehaviorGraph(behavior, calc.buildBehavior());
+          if (!capabilities.any((c) => c.capabilityId == 'calculation')) {
+            capabilities = [
+              ...capabilities,
+              const CapabilityDeclaration(
+                capabilityId: 'calculation',
+                isRequired: true,
+              ),
+            ];
+          }
+        }
+      }
+
+      // IS-P13: structured domain services before generic knowledge shell.
+      final wantsWeather = inferredCaps.contains(AppCapabilityIds.weatherData);
+      final wantsNews = inferredCaps.contains(AppCapabilityIds.newsData);
+      final wantsWebKnowledge =
+          inferredCaps.contains(AppCapabilityIds.webKnowledge) ||
+          ((inferredCaps.contains(AppCapabilityIds.networkData) ||
+                  inferredCaps.contains(AppCapabilityIds.webData)) &&
+              !wantsWeather &&
+              !wantsNews);
+
+      if (wantsWeather) {
+        final wx = const WeatherInterfaceFactory();
+        interface = wx.buildInterface(
+          title: experienceDisplayName(
+            generatedName: spec.name,
+            userIntent: context.intent.expression,
+          ),
+        );
+        state = _mergeStatePreferOverlay(state, wx.buildState());
+        behavior = wx.buildBehavior();
+        services = [
+          ...services.where((s) => s.type != 'knowledgeRetrieval'),
+          if (!services.any((s) => s.type == 'weatherData'))
+            const ServiceDefinition(id: 'weather', type: 'weatherData'),
+        ];
+        if (!capabilities.any((c) => c.capabilityId == 'weather')) {
+          capabilities = [
+            ...capabilities.where((c) => c.capabilityId != 'knowledge'),
+            const CapabilityDeclaration(
+              capabilityId: 'weather',
+              isRequired: true,
+            ),
+          ];
+        }
+      } else if (wantsNews) {
+        final news = const NewsInterfaceFactory();
+        interface = news.buildInterface(
+          title: experienceDisplayName(
+            generatedName: spec.name,
+            userIntent: context.intent.expression,
+          ),
+        );
+        state = _mergeStatePreferOverlay(state, news.buildState());
+        behavior = news.buildBehavior();
+        services = [
+          ...services.where((s) => s.type != 'knowledgeRetrieval'),
+          if (!services.any((s) => s.type == 'newsData'))
+            const ServiceDefinition(id: 'news', type: 'newsData'),
+        ];
+        if (!capabilities.any((c) => c.capabilityId == 'news')) {
+          capabilities = [
+            ...capabilities.where((c) => c.capabilityId != 'knowledge'),
+            const CapabilityDeclaration(
+              capabilityId: 'news',
+              isRequired: true,
+            ),
+          ];
+        }
+      } else if (wantsWebKnowledge) {
+        final net = const NetworkReferenceInterfaceFactory();
+        final probePackage = ExperiencePackage(
+          manifest: ExperienceManifest(
+            experienceId: spec.id,
+            name: spec.name,
+            description: spec.description,
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ),
+          interface: interface,
+          behavior: behavior,
+          state: state,
+          services: services,
+          provenance: const PackageProvenance(
+            creationEngineVersion: '1.0.0',
+            specVersion: 1,
+            planVersion: 1,
+          ),
+          integrity: PackageIntegrity(
+            contentHash: '',
+            computedAt: DateTime.now(),
+          ),
+        );
+        final probe = PackageCapabilityProbe(probePackage);
+        final needsNetworkShell =
+            !probe.hasRefreshAction ||
+            !probe.hasKnowledgeService ||
+            !probe.hasLoadingState ||
+            !probe.hasErrorState;
+        // Prefer network shell when reference/network-first; keep CRUD when
+        // the blueprint is a durable collection with network as optional.
+        final prefersNetworkShell =
+            blueprint != null &&
+            (blueprint.archetypes.contains(AppArchetype.reference) ||
+                !inferredCaps.contains(AppCapabilityIds.crud));
+        if (needsNetworkShell && prefersNetworkShell) {
+          interface = net.buildInterface(
+            title: experienceDisplayName(
+              generatedName: spec.name,
+              userIntent: context.intent.expression,
+            ),
+            purpose: blueprint.description.isNotEmpty
+                ? blueprint.description
+                : spec.description,
+          );
+          state = _mergeStateSchema(state, net.buildState());
+          behavior = _mergeBehaviorGraph(behavior, net.buildBehavior());
+        } else if (needsNetworkShell) {
+          // Augment without replacing CRUD UI: ensure service + states + refresh
+          // behavior exist for optional network enrichment.
+          state = _mergeStateSchema(state, net.buildState());
+          behavior = _mergeBehaviorGraph(behavior, net.buildBehavior());
+        }
+        if (!services.any((s) => s.type == 'knowledgeRetrieval')) {
+          services = [
+            ...services,
+            const ServiceDefinition(
+              id: 'knowledge',
+              type: 'knowledgeRetrieval',
+            ),
+          ];
+        }
+        if (network.isEmpty) {
+          network = [
+            NetworkDeclaration(
+              purpose:
+                  blueprint?.networkConfig?.purpose ??
+                  'External reference data',
+              allowedHosts: blueprint?.networkConfig?.allowedHosts ?? const [],
+              requiresCredential: false,
+            ),
+          ];
+        }
+        if (!capabilities.any((c) => c.capabilityId == 'knowledge')) {
+          capabilities = [
+            ...capabilities,
+            const CapabilityDeclaration(
+              capabilityId: 'knowledge',
+              isRequired: true,
+            ),
+          ];
+        }
+      }
+
       // Build manifest
+      // IS-P08: `experienceId` is the internal identity; `name` is what a
+      // person reads. They had drifted into being the same string, so users
+      // were shown `task_manager` and `calculator_app`. The spec's name is
+      // still preferred — this only rescues the cases where the model
+      // returned an identifier or a placeholder.
       final manifest = ExperienceManifest(
         experienceId: spec.id,
-        name: spec.name,
+        name: experienceDisplayName(
+          generatedName: spec.name,
+          userIntent: context.intent.expression,
+        ),
         description: spec.description,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
-        networkMode: _mapNetworkMode(spec.networkRequirements.networkNeed),
+        networkMode:
+            inferredCaps.contains(AppCapabilityIds.networkData) ||
+                inferredCaps.contains(AppCapabilityIds.webData)
+            ? NetworkMode.required
+            : _mapNetworkMode(spec.networkRequirements.networkNeed),
         storageMode: _mapStorageMode(spec.storageRequirements.storageType),
         requiredCapabilities: capabilities
             .where((c) => c.isRequired)
@@ -500,24 +765,7 @@ class CreationEngine {
 
         case BlueprintViewType.form:
           if (entity != null) {
-            final fieldDefs = <Map<String, dynamic>>[];
-            for (final field in entity.fields) {
-              fieldDefs.add({
-                'id': field.id,
-                'name': field.name,
-                'type': _mapBlueprintFieldType(field.type),
-                'required': field.required,
-                if (field.referenceEntityId != null)
-                  'referenceEntityId': field.referenceEntityId,
-                if (field.allowedValues.isNotEmpty)
-                  'allowedValues': field.allowedValues,
-                if (field.minLength != null) 'minLength': field.minLength,
-                if (field.maxLength != null) 'maxLength': field.maxLength,
-                if (field.minimum != null) 'minimum': field.minimum,
-                if (field.maximum != null) 'maximum': field.maximum,
-                if (field.description.isNotEmpty) 'hint': field.description,
-              });
-            }
+            final fieldDefs = _fieldDefsFor(entity);
             nodes.add(
               InterfaceNode(
                 type: 'entityForm',
@@ -663,23 +911,15 @@ class CreationEngine {
           break;
       }
 
-      // Add section header for each view
-      if (nodes.isNotEmpty) {
-        nodes.insert(
-          0,
-          InterfaceNode(
-            type: 'heading',
-            id: '${view.id}_title',
-            properties: {'content': view.name, 'level': 2},
-          ),
-        );
-      }
-
+      // IS-P08: no heading node. It repeated `view.name`, which the host's
+      // AppBar already shows, so every screen displayed its own title twice
+      // — three times counting the Experience name above it.
+      final screenTitle = _humanLabel(view.name);
       screens.add(
         InterfaceScreen(
           id: view.id,
-          title: view.name,
-          appBarTitle: view.name,
+          title: screenTitle,
+          appBarTitle: screenTitle,
           children: nodes,
         ),
       );
@@ -687,46 +927,11 @@ class CreationEngine {
       // For form views, also generate an edit screen so the detail view's
       // Edit button has a target to navigate to.
       if (view.viewType == BlueprintViewType.form && entity != null) {
-        final editNodes = <InterfaceNode>[];
-        final fieldDefs = <Map<String, dynamic>>[];
-        for (final field in entity.fields) {
-          fieldDefs.add({
-            'id': field.id,
-            'name': field.name,
-            'type': _mapBlueprintFieldType(field.type),
-            'required': field.required,
-            if (field.referenceEntityId != null)
-              'referenceEntityId': field.referenceEntityId,
-            if (field.allowedValues.isNotEmpty)
-              'allowedValues': field.allowedValues,
-            if (field.minLength != null) 'minLength': field.minLength,
-            if (field.maxLength != null) 'maxLength': field.maxLength,
-            if (field.minimum != null) 'minimum': field.minimum,
-            if (field.maximum != null) 'maximum': field.maximum,
-            if (field.description.isNotEmpty) 'hint': field.description,
-          });
-        }
-        editNodes.add(
-          InterfaceNode(
-            type: 'entityForm',
-            id: '${entity.id}_edit_form',
-            properties: {
-              'entityId': entity.id,
-              'mode': 'edit',
-              'fields': fieldDefs,
-            },
-          ),
-        );
-        screens.add(
-          InterfaceScreen(
-            id: '${entity.id}_edit',
-            title: 'Edit ${entity.name}',
-            appBarTitle: 'Edit ${entity.name}',
-            children: editNodes,
-          ),
-        );
+        screens.add(_entityFormScreen(entity, mode: 'edit'));
       }
     }
+
+    _ensureCanonicalFormScreens(blueprint, screens);
 
     if (screens.isEmpty) {
       screens.add(
@@ -753,7 +958,7 @@ class CreationEngine {
                 .take(5)
                 .map(
                   (v) => NavigationItem(
-                    label: v.name,
+                    label: _humanLabel(v.name),
                     icon: _viewTypeToIcon(v.viewType),
                     screenId: v.id,
                   ),
@@ -763,6 +968,109 @@ class CreationEngine {
         : null;
 
     return InterfaceDefinition(screens: screens, navigation: navigation);
+  }
+
+  /// Title-cased label for a screen or navigation destination.
+  String _humanLabel(String raw) => humanLabel(raw);
+
+  /// The form field descriptors the runtime's `entityForm` renders.
+  List<Map<String, dynamic>> _fieldDefsFor(BlueprintEntity entity) => [
+    for (final field in entity.fields)
+      {
+        'id': field.id,
+        'name': field.name,
+        'type': _mapBlueprintFieldType(field.type),
+        'required': field.required,
+        if (field.referenceEntityId != null)
+          'referenceEntityId': field.referenceEntityId,
+        if (field.allowedValues.isNotEmpty)
+          'allowedValues': field.allowedValues,
+        if (field.minLength != null) 'minLength': field.minLength,
+        if (field.maxLength != null) 'maxLength': field.maxLength,
+        if (field.minimum != null) 'minimum': field.minimum,
+        if (field.maximum != null) 'maximum': field.maximum,
+        if (field.description.isNotEmpty) 'hint': field.description,
+      },
+  ];
+
+  /// A canonical create/edit screen for [entity].
+  ///
+  /// The id follows `<entityId>_form` / `<entityId>_edit` because that is the
+  /// convention the runtime host resolves against. See
+  /// [_ensureCanonicalFormScreens] for why that matters.
+  InterfaceScreen _entityFormScreen(
+    BlueprintEntity entity, {
+    required String mode,
+  }) {
+    final isEdit = mode == 'edit';
+    final title = '${isEdit ? 'Edit' : 'Add'} ${entity.name}';
+    return InterfaceScreen(
+      id: '${entity.id}_${isEdit ? 'edit' : 'form'}',
+      title: title,
+      appBarTitle: title,
+      children: [
+        InterfaceNode(
+          type: 'entityForm',
+          id: '${entity.id}_${isEdit ? 'edit_form' : 'form'}',
+          properties: {
+            'entityId': entity.id,
+            'mode': mode,
+            'fields': _fieldDefsFor(entity),
+          },
+        ),
+      ],
+    );
+  }
+
+  /// IS-P08: guarantees every create/update action has somewhere to go.
+  ///
+  /// THE DEFECT THIS FIXES. A list view emits an "Add <entity>" button bound
+  /// to the create action, and the runtime host answers that tap by
+  /// navigating to a form screen. But a form screen existed only when the
+  /// model happened to declare a separate form view, and its id came from
+  /// whatever the model called that view — `add_task`, not `task_form`. So
+  /// the button rendered, the tap dispatched, no destination resolved, and
+  /// the fallback ran a create mutation with no field values, which the
+  /// interpreter correctly skips. The result was a visible control that did
+  /// nothing at all, silently.
+  ///
+  /// Generation must not depend on the model choosing a naming convention it
+  /// was never told about. Every entity with a create action gets a
+  /// `<entityId>_form` screen and every entity with an update action gets a
+  /// `<entityId>_edit` screen, whether or not the model asked for one.
+  /// Existing screens are never replaced — a model-authored form view still
+  /// wins for anything it already covers.
+  void _ensureCanonicalFormScreens(
+    AppBlueprint blueprint,
+    List<InterfaceScreen> screens,
+  ) {
+    bool hasFormFor(String entityId, String mode) => screens.any(
+      (s) => s.children.any(
+        (n) =>
+            n.type == 'entityForm' &&
+            n.properties['entityId'] == entityId &&
+            n.properties['mode'] == mode,
+      ),
+    );
+
+    for (final entity in blueprint.entities) {
+      final actions = blueprint.actions.where(
+        (a) => a.targetEntityId == entity.id,
+      );
+      final needsCreate = actions.any(
+        (a) => a.actionType == BlueprintActionType.create,
+      );
+      final needsEdit = actions.any(
+        (a) => a.actionType == BlueprintActionType.update,
+      );
+
+      if (needsCreate && !hasFormFor(entity.id, 'create')) {
+        screens.add(_entityFormScreen(entity, mode: 'create'));
+      }
+      if (needsEdit && !hasFormFor(entity.id, 'edit')) {
+        screens.add(_entityFormScreen(entity, mode: 'edit'));
+      }
+    }
   }
 
   String _findDisplayField(BlueprintEntity? entity) {
@@ -1045,5 +1353,37 @@ class CreationEngine {
       case BlueprintViewType.summary:
         return 'bar_chart';
     }
+  }
+
+  StateSchema _mergeStateSchema(StateSchema base, StateSchema extra) {
+    final ids = base.variables.map((v) => v.id).toSet();
+    return StateSchema(
+      variables: [
+        ...base.variables,
+        ...extra.variables.where((v) => !ids.contains(v.id)),
+      ],
+    );
+  }
+
+  StateSchema _mergeStatePreferOverlay(StateSchema base, StateSchema overlay) {
+    final overlayIds = overlay.variables.map((v) => v.id).toSet();
+    return StateSchema(
+      variables: [
+        ...base.variables.where((v) => !overlayIds.contains(v.id)),
+        ...overlay.variables,
+      ],
+    );
+  }
+
+  BehaviorGraph _mergeBehaviorGraph(BehaviorGraph base, BehaviorGraph extra) {
+    final ids = base.nodes.map((n) => n.id).toSet();
+    final edgeKeys = base.edges.map((e) => '${e.from}->${e.to}').toSet();
+    return BehaviorGraph(
+      nodes: [...base.nodes, ...extra.nodes.where((n) => !ids.contains(n.id))],
+      edges: [
+        ...base.edges,
+        ...extra.edges.where((e) => !edgeKeys.contains('${e.from}->${e.to}')),
+      ],
+    );
   }
 }

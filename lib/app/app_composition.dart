@@ -20,7 +20,7 @@
 /// reached from every wired subsystem.
 library;
 
-import 'package:flutter/foundation.dart' show visibleForTesting;
+import 'package:flutter/foundation.dart' show ValueNotifier, visibleForTesting;
 
 import 'package:anything/app/autonomous_workspace_runtime.dart';
 import 'package:anything/app/creation_coordinator.dart';
@@ -51,6 +51,8 @@ import 'package:anything/capabilities/builtin/clock_capability.dart';
 import 'package:anything/capabilities/builtin/file_capability.dart';
 import 'package:anything/capabilities/builtin/http_capability.dart';
 import 'package:anything/capabilities/builtin/knowledge_capability.dart';
+import 'package:anything/capabilities/builtin/news_capability.dart';
+import 'package:anything/capabilities/builtin/weather_capability.dart';
 import 'package:anything/capabilities/builtin/notification_capability.dart';
 import 'package:anything/capabilities/platform/capability_platform.dart';
 import 'package:anything/capabilities/registry/capability_descriptor.dart';
@@ -155,6 +157,26 @@ const List<CapabilityDescriptor> _platformCapabilityDescriptors = [
     category: CapabilityCategory.knowledge,
     inputContract: 'query',
     outputContract: 'resources',
+    networkRequired: true,
+  ),
+  CapabilityDescriptor(
+    id: 'weather',
+    version: '1.0.0',
+    name: 'Weather',
+    description: 'Structured weather observations (not web knowledge).',
+    category: CapabilityCategory.integration,
+    inputContract: 'location',
+    outputContract: 'weather observation',
+    networkRequired: true,
+  ),
+  CapabilityDescriptor(
+    id: 'news',
+    version: '1.0.0',
+    name: 'News',
+    description: 'Structured news articles (not web knowledge).',
+    category: CapabilityCategory.integration,
+    inputContract: 'query',
+    outputContract: 'articles',
     networkRequired: true,
   ),
   CapabilityDescriptor(
@@ -355,6 +377,12 @@ class AppComposition {
   /// never encrypts — it asks `ExperienceProtectionService` to protect.
   final ExperienceInstallationFramework experienceInstallation;
 
+  /// IS-P09: canonical My Apps invalidation signal. Incremented whenever the
+  /// shared [experienceCommit] successfully mutates the library. Screens that
+  /// list Experiences listen here so newly created apps appear immediately
+  /// without restart or manual refresh.
+  final ValueNotifier<int> experienceLibraryRevision;
+
   AppComposition._({
     required this.experienceRepository,
     required this.worldModel,
@@ -384,6 +412,7 @@ class AppComposition {
     required this.experienceDistribution,
     required this.experienceInstallation,
     required this.experienceCommit,
+    required this.experienceLibraryRevision,
     required this.activityRepository,
     required this.intentRepository,
   });
@@ -504,8 +533,12 @@ class AppComposition {
     // state — creation, modification, evolution, protection, installation and
     // removal — writes through this and nothing else. See
     // docs/architecture/EXPERIENCE_COMMIT_ARCHITECTURE.md.
+    final experienceLibraryRevision = ValueNotifier<int>(0);
     final commitFramework = ExperienceCommitFramework(
       repository: experienceRepository,
+      onLibraryMutation: () {
+        experienceLibraryRevision.value = experienceLibraryRevision.value + 1;
+      },
     );
 
     final installer = ExperienceInstallationFramework(
@@ -546,6 +579,8 @@ class AppComposition {
               provider: KnowledgeAcquisitionProviderAdapter(knowledgeEngine),
             ),
           )
+          ..register(WeatherCapability())
+          ..register(NewsCapability())
           // Implementation Specification IS-R49: the last two production Fake*
           // registrations are gone. Both now resolve to real services, each
           // constructed exactly once here â€” there is no alternate composition
@@ -742,6 +777,7 @@ class AppComposition {
       experienceDistribution: distribution,
       experienceInstallation: installer,
       experienceCommit: commitFramework,
+      experienceLibraryRevision: experienceLibraryRevision,
       activityRepository: activityRepository,
       intentRepository: intentRepository,
     );

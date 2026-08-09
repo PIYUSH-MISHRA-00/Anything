@@ -23,7 +23,13 @@ class ExperienceRenderer {
 
   RuntimeComponentRegistry get registry => _registry;
 
-  /// Render an InterfaceDefinition into a Widget tree using registry.
+  /// Renders an entire interface as a standalone surface.
+  ///
+  /// This entry point supplies its own [Scaffold] because it has no host to
+  /// sit inside; it renders the first screen as a complete page. [renderScreen]
+  /// deliberately does NOT, because the runtime host already provides the
+  /// Scaffold, AppBar and navigation around it — nesting a second set is what
+  /// gave generated Experiences two title bars and two back arrows.
   Widget render(
     BuildContext context,
     InterfaceDefinition interface,
@@ -37,13 +43,18 @@ class ExperienceRenderer {
     }
 
     final mainScreen = interface.screens.first;
-    return _renderScreen(
-      context,
-      mainScreen,
-      stateEngine,
-      onEvent: onEvent,
-      runtimeContext: runtimeContext,
-      data: data,
+    // Standalone entry: one AppBar is correct here because there is no host.
+    // Hosted Experiences must call [renderScreen], which intentionally has none.
+    return Scaffold(
+      appBar: AppBar(title: Text(mainScreen.appBarTitle ?? mainScreen.title)),
+      body: _renderScreen(
+        context,
+        mainScreen,
+        stateEngine,
+        onEvent: onEvent,
+        runtimeContext: runtimeContext,
+        data: data,
+      ),
     );
   }
 
@@ -79,20 +90,44 @@ class ExperienceRenderer {
     RuntimeComponentContext? runtimeContext,
     Map<String, dynamic>? data,
   }) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(screen.appBarTitle ?? screen.title),
-        backgroundColor: Theme.of(context).colorScheme.surface,
-        elevation: 0,
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
+    // IS-P08: content only — no Scaffold, no AppBar.
+    //
+    // This used to return a full Scaffold with its own AppBar, rendered into
+    // the BODY of the host's Scaffold. Two AppBars stacked, so the user saw
+    // two titles and TWO back arrows, and because both sat under the same
+    // MaterialPageRoute both back arrows did the same thing: pop the route
+    // and leave the Experience entirely. The inner one could not go back one
+    // screen, which is the only thing a second back arrow could have meant.
+    //
+    // The host owns the chrome; the renderer draws the screen.
+    final hasPad = screen.children.any(
+      (c) => c.type == 'calculationPad' || c.type == 'timingPad',
+    );
+    if (hasPad) {
+      // IS-P11/P13: calculation + timing Experiences need a BOUNDED Column so
+      // Expanded / expandChildren rows receive finite height. Inside a
+      // SingleChildScrollView those controls collapse (owner: stopwatch with
+      // no usable Start/Stop).
+      return SafeArea(
+        child: Padding(
           padding: const EdgeInsets.all(AnythingPadding.regular),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: screen.children
-                .map(
-                  (node) => _renderNode(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              for (final node in screen.children)
+                if (node.type == 'calculationPad' || node.type == 'timingPad')
+                  Expanded(
+                    child: _renderNode(
+                      context,
+                      node,
+                      stateEngine,
+                      onEvent: onEvent,
+                      runtimeContext: runtimeContext,
+                      data: data,
+                    ),
+                  )
+                else
+                  _renderNode(
                     context,
                     node,
                     stateEngine,
@@ -100,9 +135,28 @@ class ExperienceRenderer {
                     runtimeContext: runtimeContext,
                     data: data,
                   ),
-                )
-                .toList(),
+            ],
           ),
+        ),
+      );
+    }
+    return SafeArea(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(AnythingPadding.regular),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: screen.children
+              .map(
+                (node) => _renderNode(
+                  context,
+                  node,
+                  stateEngine,
+                  onEvent: onEvent,
+                  runtimeContext: runtimeContext,
+                  data: data,
+                ),
+              )
+              .toList(),
         ),
       ),
     );
@@ -181,6 +235,22 @@ class ExperienceRenderer {
           stateEngine,
           runtimeContext: runtimeContext,
         );
+    }
+
+    // IS-P11: row/input must use legacy renderers. Registry `row` cannot
+    // see per-child width:expand (children are already Widgets), and older
+    // registry `input` omitted state binding — Search then ran with empty
+    // query while the TextFormField collapsed in an unbounded Row.
+    if (node.type == 'row' || node.type == 'input') {
+      return _renderLegacyNode(
+        context,
+        node,
+        stateEngine,
+        resolvedProperties,
+        onEvent: onEvent,
+        runtimeContext: runtimeContext,
+        data: data,
+      );
     }
 
     // Try registry for standard components
@@ -276,6 +346,24 @@ class ExperienceRenderer {
         );
       case 'row':
         return _renderRow(
+          context,
+          node,
+          stateEngine,
+          onEvent: onEvent,
+          runtimeContext: runtimeContext,
+          data: data,
+        );
+      case 'calculationPad':
+        return _renderCalculationPad(
+          context,
+          node,
+          stateEngine,
+          onEvent: onEvent,
+          runtimeContext: runtimeContext,
+          data: data,
+        );
+      case 'timingPad':
+        return _renderTimingPad(
           context,
           node,
           stateEngine,
@@ -437,13 +525,11 @@ class ExperienceRenderer {
             subtitle: subtitle != null ? Text(subtitle) : null,
             trailing: const Icon(Icons.chevron_right),
             onTap: () {
+              // One navigation path only — see Edit button. Dual push left
+              // an extra detail on the stack so Back did not reach the list.
               onEvent?.call(
                 'openDetail',
                 data: {'entityId': entityId, 'recordId': record['id']},
-              );
-              runtimeContext?.navigate(
-                '${entityId}_detail',
-                arguments: {'recordId': record['id']},
               );
             },
           ),
@@ -537,13 +623,11 @@ class ExperienceRenderer {
           child: InkWell(
             borderRadius: BorderRadius.circular(12),
             onTap: () {
+              // One navigation path only — see Edit button. Dual push left
+              // an extra detail on the stack so Back did not reach the list.
               onEvent?.call(
                 'openDetail',
                 data: {'entityId': entityId, 'recordId': record['id']},
-              );
-              runtimeContext?.navigate(
-                '${entityId}_detail',
-                arguments: {'recordId': record['id']},
               );
             },
             child: Padding(
@@ -611,13 +695,13 @@ class ExperienceRenderer {
             Expanded(
               child: OutlinedButton(
                 onPressed: () {
+                  // IS-P08: only notify the host. Calling navigate() here as
+                  // well pushed the edit screen twice — Save's single pop
+                  // then left the user on a second copy of the same form,
+                  // with Delete unreachable underneath.
                   onEvent?.call(
                     'editRecord',
                     data: {'entityId': entityId, 'recordId': record['id']},
-                  );
-                  runtimeContext?.navigate(
-                    '${entityId}_edit',
-                    arguments: {'recordId': record['id']},
                   );
                 },
                 child: const Text('Edit'),
@@ -1196,19 +1280,50 @@ class ExperienceRenderer {
   }) {
     final label = resolvedProperties['label']?.toString() ?? 'Button';
     final actionId = node.actionBinding?.actionId;
+    final expand = resolvedProperties['width'] == 'expand';
+    final accent = resolvedProperties['accent'] == true;
+    final primary = resolvedProperties['primary'] == true;
+    final scheme = Theme.of(context).colorScheme;
 
+    final button = ElevatedButton(
+      onPressed: actionId != null
+          ? () => onEvent?.call(
+              actionId,
+              data: node.actionBinding?.parameters,
+            )
+          : null,
+      style: ElevatedButton.styleFrom(
+        minimumSize: Size(expand ? 48 : 0, expand ? 48 : 40),
+        backgroundColor: primary
+            ? scheme.primary
+            : accent
+            ? scheme.secondaryContainer
+            : null,
+        foregroundColor: primary
+            ? scheme.onPrimary
+            : accent
+            ? scheme.onSecondaryContainer
+            : null,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(expand ? 16 : 9999),
+        ),
+        padding: EdgeInsets.symmetric(
+          horizontal: expand ? 8 : 24,
+          vertical: expand ? 8 : 12,
+        ),
+        textStyle: TextStyle(
+          fontSize: expand ? 22 : 16,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      child: Text(label),
+    );
+    if (expand) {
+      return SizedBox.expand(child: button);
+    }
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
-      child: ElevatedButton(
-        onPressed: actionId != null ? () => onEvent?.call(actionId) : null,
-        style: ElevatedButton.styleFrom(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(9999),
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-        ),
-        child: Text(label),
-      ),
+      child: button,
     );
   }
 
@@ -1219,19 +1334,34 @@ class ExperienceRenderer {
     void Function(String eventId, {Map<String, dynamic>? data})? onEvent,
   }) {
     final hint = node.properties['hint'] as String? ?? '';
+    final label = node.properties['label'] as String? ?? '';
     final stateId = node.stateBinding;
+    final expand = node.properties['width'] == 'expand';
 
+    final field = TextField(
+      textInputAction: TextInputAction.search,
+      decoration: InputDecoration(
+        labelText: label.isEmpty ? null : label,
+        hintText: hint,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+      onChanged: stateId != null
+          ? (value) => stateEngine.write(stateId, value)
+          : null,
+      onSubmitted: (_) {
+        // Keyboard search submits the same retrieval action as Search.
+        onEvent?.call('refreshData');
+      },
+    );
+    if (expand) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: field,
+      );
+    }
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
-      child: TextField(
-        decoration: InputDecoration(
-          hintText: hint,
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-        ),
-        onChanged: stateId != null
-            ? (value) => stateEngine.write(stateId, value)
-            : null,
-      ),
+      child: field,
     );
   }
 
@@ -1300,10 +1430,103 @@ class ExperienceRenderer {
     RuntimeComponentContext? runtimeContext,
     Map<String, dynamic>? data,
   }) {
-    return Row(
-      children: node.children
-          .map(
-            (child) => _renderNode(
+    final expandAll = node.properties['expandChildren'] == true;
+    final stretch =
+        node.properties['stretchCrossAxis'] == true || expandAll;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        // IS-P11: stretch only for equal-height keypad rows. Weather query
+        // rows must stay intrinsic height — stretch + Expanded inside a
+        // scrollable Column made Search a full-viewport slab and hid results.
+        crossAxisAlignment: stretch
+            ? CrossAxisAlignment.stretch
+            : CrossAxisAlignment.center,
+        children: [
+          for (var i = 0; i < node.children.length; i++) ...[
+            if (i > 0) const SizedBox(width: 6),
+            Builder(
+              builder: (context) {
+                final child = node.children[i];
+                final flex = (child.properties['flex'] is num)
+                    ? (child.properties['flex'] as num).toInt()
+                    : 1;
+                final rendered = _renderNode(
+                  context,
+                  child,
+                  stateEngine,
+                  onEvent: onEvent,
+                  runtimeContext: runtimeContext,
+                  data: data,
+                );
+                // IS-P13: TextField without Expanded in a Row takes infinite
+                // width and collapses sibling Search buttons to 0×0 bounds.
+                final wantsExpand = expandAll ||
+                    child.properties['width'] == 'expand' ||
+                    (child.type == 'input' &&
+                        child.properties['width'] != 'intrinsic');
+                if (!wantsExpand) return rendered;
+                return Expanded(flex: flex <= 0 ? 1 : flex, child: rendered);
+              },
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _renderCalculationPad(
+    BuildContext context,
+    InterfaceNode node,
+    ExperienceStateEngine stateEngine, {
+    void Function(String eventId, {Map<String, dynamic>? data})? onEvent,
+    RuntimeComponentContext? runtimeContext,
+    Map<String, dynamic>? data,
+  }) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final rows = node.children.where((c) => c.type == 'row').toList();
+        final rowCount = rows.isEmpty ? 1 : rows.length;
+        final rowHeight = (constraints.maxHeight / rowCount).clamp(52.0, 96.0);
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            for (final row in rows)
+              SizedBox(
+                height: rowHeight,
+                child: _renderRow(
+                  context,
+                  row,
+                  stateEngine,
+                  onEvent: onEvent,
+                  runtimeContext: runtimeContext,
+                  data: data,
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+
+  /// IS-P13: bounded layout for stopwatch/timer controls.
+  Widget _renderTimingPad(
+    BuildContext context,
+    InterfaceNode node,
+    ExperienceStateEngine stateEngine, {
+    void Function(String eventId, {Map<String, dynamic>? data})? onEvent,
+    RuntimeComponentContext? runtimeContext,
+    Map<String, dynamic>? data,
+  }) {
+    final rows = node.children.where((c) => c.type == 'row').toList();
+    final others = node.children.where((c) => c.type != 'row').toList();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (final child in others)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child: _renderNode(
               context,
               child,
               stateEngine,
@@ -1311,8 +1534,24 @@ class ExperienceRenderer {
               runtimeContext: runtimeContext,
               data: data,
             ),
-          )
-          .toList(),
+          ),
+        const Spacer(),
+        for (final row in rows)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: SizedBox(
+              height: 56,
+              child: _renderRow(
+                context,
+                row,
+                stateEngine,
+                onEvent: onEvent,
+                runtimeContext: runtimeContext,
+                data: data,
+              ),
+            ),
+          ),
+      ],
     );
   }
 

@@ -480,12 +480,182 @@ class BehaviorInterpreter {
     final operation = node.config['operation'] as String?;
     if (serviceId == null || operation == null) return;
 
-    // Check if service is available
+    final loadingStateId = node.config['loadingStateId'] as String?;
+    final loadingLabelStateId = node.config['loadingLabelStateId'] as String?;
+    final errorStateId = node.config['errorStateId'] as String?;
+    final resultStateId = node.config['resultStateId'] as String?;
+    final titleStateId = node.config['titleStateId'] as String?;
+    final cacheStateId = node.config['cacheStateId'] as String?;
+    final queryStateId = node.config['queryStateId'] as String?;
+
+    if (loadingStateId != null) {
+      context.stateEngine.write(loadingStateId, true);
+    }
+    if (loadingLabelStateId != null) {
+      context.stateEngine.write(loadingLabelStateId, 'Loading…');
+    }
+    if (errorStateId != null) {
+      context.stateEngine.write(errorStateId, '');
+    }
+
     if (!context.serviceResolver.isAvailable(serviceId)) {
+      if (errorStateId != null) {
+        context.stateEngine.write(
+          errorStateId,
+          'Data service is not available.',
+        );
+      }
+      if (loadingStateId != null) {
+        context.stateEngine.write(loadingStateId, false);
+      }
+      if (loadingLabelStateId != null) {
+        context.stateEngine.write(loadingLabelStateId, '');
+      }
       return;
     }
 
-    // Execute through trusted service resolver
-    await context.serviceResolver.execute(serviceId, operation, node.config);
+    final query = queryStateId != null
+        ? (context.stateEngine.read(queryStateId)?.toString() ?? '')
+        : (node.config['query'] as String? ?? '');
+
+    if (query.trim().isEmpty) {
+      if (errorStateId != null) {
+        context.stateEngine.write(errorStateId, 'Enter a query first.');
+      }
+      if (loadingStateId != null) {
+        context.stateEngine.write(loadingStateId, false);
+      }
+      if (loadingLabelStateId != null) {
+        context.stateEngine.write(loadingLabelStateId, '');
+      }
+      return;
+    }
+
+    final params = Map<String, dynamic>.from(node.config)..['query'] = query;
+    final result = await context.serviceResolver.execute(
+      serviceId,
+      operation,
+      params,
+    );
+
+    if (loadingStateId != null) {
+      context.stateEngine.write(loadingStateId, false);
+    }
+    if (loadingLabelStateId != null) {
+      context.stateEngine.write(loadingLabelStateId, '');
+    }
+
+    if (result['error'] != null) {
+      if (errorStateId != null) {
+        context.stateEngine.write(errorStateId, result['error'].toString());
+      }
+      if (cacheStateId != null && resultStateId != null) {
+        final cached = context.stateEngine.read(cacheStateId)?.toString() ?? '';
+        if (cached.isNotEmpty) {
+          context.stateEngine.write(resultStateId, cached);
+          if (errorStateId != null) {
+            context.stateEngine.write(
+              errorStateId,
+              '${result['error']} Showing last known data.',
+            );
+          }
+        }
+      }
+      return;
+    }
+
+    final results = result['results'] as List? ?? const [];
+    if (results.isEmpty) {
+      if (resultStateId != null) {
+        context.stateEngine.write(resultStateId, 'No data found for "$query".');
+      }
+      if (titleStateId != null) {
+        context.stateEngine.write(titleStateId, query);
+      }
+      return;
+    }
+
+    final expectedSourceType =
+        node.config['expectedSourceType']?.toString() ?? '';
+    final provenanceStateId = node.config['provenanceStateId'] as String?;
+    final sourceTypeStateId = node.config['sourceTypeStateId'] as String?;
+    final aggregate = node.config['aggregateResults'] == true;
+
+    final first = results.first;
+    String title = query;
+    String body = '';
+    String sourceType = '';
+    String provider = '';
+    if (first is Map) {
+      title = (first['title'] ?? query).toString();
+      sourceType = (first['sourceType'] ?? '').toString();
+      provider = (first['provider'] ?? '').toString();
+      if (aggregate) {
+        final chunks = <String>[];
+        for (final item in results) {
+          if (item is Map) {
+            chunks.add((item['content'] ?? item['title'] ?? '').toString());
+          } else {
+            chunks.add(item.toString());
+          }
+        }
+        body = chunks.where((c) => c.trim().isNotEmpty).join('\n\n——\n\n');
+      } else {
+        body = (first['content'] ?? first['sourceUri'] ?? '').toString();
+        if (results.length > 1) {
+          body =
+              '$body\n\n(+${results.length - 1} more source'
+              '${results.length - 1 == 1 ? '' : 's'})';
+        }
+      }
+    } else {
+      body = first.toString();
+    }
+
+    // IS-P13: never accept Wikipedia/generic knowledge as weather/news.
+    if (expectedSourceType.isNotEmpty) {
+      final uri = first is Map ? (first['sourceUri'] ?? '').toString() : '';
+      final looksWiki =
+          uri.contains('wikipedia.org') ||
+          body.toLowerCase().contains('wikipedia') ||
+          sourceType == 'genericKnowledge' ||
+          sourceType.isEmpty &&
+              (expectedSourceType == 'structuredWeather' ||
+                  expectedSourceType == 'structuredNews');
+      if (sourceType != expectedSourceType || looksWiki) {
+        if (errorStateId != null) {
+          context.stateEngine.write(
+            errorStateId,
+            'Expected $expectedSourceType data, but received '
+            '${sourceType.isEmpty ? 'generic knowledge' : sourceType}. '
+            'Retry or re-create this app.',
+          );
+        }
+        return;
+      }
+    }
+
+    if (titleStateId != null) {
+      context.stateEngine.write(titleStateId, title);
+    }
+    if (resultStateId != null) {
+      context.stateEngine.write(resultStateId, body);
+    }
+    if (cacheStateId != null) {
+      context.stateEngine.write(cacheStateId, body);
+    }
+    if (sourceTypeStateId != null && sourceType.isNotEmpty) {
+      context.stateEngine.write(sourceTypeStateId, sourceType);
+    }
+    if (provenanceStateId != null) {
+      final prov = result['provenance'];
+      final label = prov is Map
+          ? '${prov['sourceType'] ?? sourceType} via '
+              '${prov['provider'] ?? provider}'
+          : (provider.isEmpty
+              ? sourceType
+              : '$sourceType via $provider');
+      context.stateEngine.write(provenanceStateId, label);
+    }
   }
 }
