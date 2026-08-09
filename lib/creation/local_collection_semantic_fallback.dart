@@ -8,6 +8,7 @@ import '../kernel/understanding/intent_understanding.dart';
 import '../synthesis/app_blueprint.dart';
 import '../synthesis/application_reasoner.dart';
 import '../synthesis/structural_entity_extractor.dart';
+import '../synthesis/structural_field_inferrer.dart';
 import 'app_capabilities.dart';
 import 'display_naming.dart';
 
@@ -25,11 +26,14 @@ class LocalCollectionSemanticFallback {
         ? understanding.desiredOutcome
         : understanding.objective;
 
-    final extracted = StructuralEntityExtractor.extract(understanding.objective);
+    final extracted = StructuralEntityExtractor.extract(
+      understanding.objective,
+    );
     final entities = extracted.isNotEmpty
         ? extracted
         : [const StructuralEntityName(id: 'entry', name: 'Entry')];
 
+    final objective = understanding.objective;
     return SemanticApp(
       name: name,
       purpose: purpose,
@@ -39,29 +43,11 @@ class LocalCollectionSemanticFallback {
             id: e.id,
             name: e.name,
             displayField: 'name',
-            fields: const [
-              SemanticField(
-                id: 'name',
-                name: 'Name',
-                type: BlueprintFieldType.text,
-                required: true,
-              ),
-              SemanticField(
-                id: 'details',
-                name: 'Details',
-                type: BlueprintFieldType.multilineText,
-              ),
-              SemanticField(
-                id: 'status',
-                name: 'Status',
-                type: BlueprintFieldType.text,
-              ),
-              SemanticField(
-                id: 'related_ref',
-                name: 'Related',
-                type: BlueprintFieldType.text,
-              ),
-            ],
+            fields: StructuralFieldInferrer.fieldsFor(
+              e,
+              objective: objective,
+              peers: entities,
+            ),
           ),
       ],
       actions: [

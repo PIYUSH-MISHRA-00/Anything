@@ -18,7 +18,6 @@ import 'package:anything/runtime/data_runtime.dart';
 import 'package:anything/runtime/experience_session.dart';
 import 'package:anything/runtime/service_resolver.dart';
 import 'package:anything/runtime/state_engine.dart';
-import 'package:anything/services/provider_registry.dart';
 import 'package:anything/storage/sqlite_experience_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -117,9 +116,9 @@ ExperienceCreationCoordinator _coordinator(String dbName) {
 Future<CreationCreated> _create(String prompt) async {
   SharedPreferences.setMockInitialValues({});
   final dbName = 'p16_${DateTime.now().microsecondsSinceEpoch}.db';
-  final result = await _coordinator(dbName).createFromIntent(
-    Intent.create(expression: prompt),
-  );
+  final result = await _coordinator(
+    dbName,
+  ).createFromIntent(Intent.create(expression: prompt));
   expect(
     result,
     isA<CreationCreated>(),
@@ -174,41 +173,58 @@ Manage:
 - results
 ''';
 
-  test('garden + bakery + photo: real pipeline, different schemas, no AI', () async {
-    final garden = await _create(gardenPrompt);
-    final bakery = await _create(bakeryPrompt);
-    final photo = await _create(photoPrompt);
+  test(
+    'garden + bakery + photo: real pipeline, different schemas, no AI',
+    () async {
+      final garden = await _create(gardenPrompt);
+      final bakery = await _create(bakeryPrompt);
+      final photo = await _create(photoPrompt);
 
-    final gIds = garden.package.data!.entities.map((e) => e.id).toSet();
-    final bIds = bakery.package.data!.entities.map((e) => e.id).toSet();
-    final pIds = photo.package.data!.entities.map((e) => e.id).toSet();
+      final gIds = garden.package.data!.entities.map((e) => e.id).toSet();
+      final bIds = bakery.package.data!.entities.map((e) => e.id).toSet();
+      final pIds = photo.package.data!.entities.map((e) => e.id).toSet();
 
-    expect(gIds.length, greaterThanOrEqualTo(3));
-    expect(bIds.length, greaterThanOrEqualTo(3));
-    expect(pIds.length, greaterThanOrEqualTo(3));
-    expect(gIds.intersection(bIds), isNot(gIds));
-    expect(bIds.intersection(pIds), isNot(bIds));
+      expect(gIds.any((e) => e.contains('plot')), isTrue);
+      expect(gIds.any((e) => e.contains('plant')), isTrue);
+      expect(gIds.any((e) => e.contains('recipe')), isFalse);
+      expect(bIds.any((e) => e.contains('recipe')), isTrue);
+      expect(bIds.any((e) => e.contains('ingredient')), isTrue);
+      expect(bIds.any((e) => e.contains('garden')), isFalse);
+      expect(
+        pIds.any((e) => e.contains('submission') || e.contains('photo')),
+        isTrue,
+      );
+      expect(pIds.any((e) => e.contains('ingredient')), isFalse);
+      expect(gIds.intersection(bIds).length, lessThan(gIds.length));
+      expect(bIds.intersection(pIds).length, lessThan(bIds.length));
 
-    // Same generator surface: entityList/entityForm + dataMutation — not shells.
-    expect(
-      garden.package.interface.screens
-          .expand((s) => s.children)
-          .any((n) => n.type == 'entityList' || n.type == 'list'),
-      isTrue,
-    );
-    expect(
-      garden.package.behavior.nodes.any((n) => n.type == 'dataMutation'),
-      isTrue,
-    );
-    expect(
-      bakery.package.services.any((s) => s.type == 'newsData'),
-      isFalse,
-    );
-    expect(
-      photo.package.services.any((s) => s.type == 'weatherData'),
-      isFalse,
-    );
-  });
+      // Semantic field differentiation (P17): not identical generic shells.
+      final gFields = garden.package.data!.entities
+          .expand((e) => e.fields.map((f) => '${e.id}.${f.id}:${f.type}'))
+          .toSet();
+      final bFields = bakery.package.data!.entities
+          .expand((e) => e.fields.map((f) => '${e.id}.${f.id}:${f.type}'))
+          .toSet();
+      expect(gFields.intersection(bFields).length, lessThan(gFields.length));
+
+      // Same generator surface: entityList/entityForm + dataMutation — not shells.
+      expect(
+        garden.package.interface.screens
+            .expand((s) => s.children)
+            .any((n) => n.type == 'entityList' || n.type == 'list'),
+        isTrue,
+      );
+      expect(
+        garden.package.behavior.nodes.any((n) => n.type == 'dataMutation'),
+        isTrue,
+      );
+      expect(bakery.package.services.any((s) => s.type == 'newsData'), isFalse);
+      expect(
+        photo.package.services.any((s) => s.type == 'weatherData'),
+        isFalse,
+      );
+    },
+  );
 
   test('garden CRUD + persist via real BehaviorInterpreter + SQLite', () async {
     final created = await _create(gardenPrompt);

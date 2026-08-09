@@ -240,7 +240,8 @@ class CreationEngine {
           ),
         );
         final probe = PackageCapabilityProbe(probePackage);
-        final needsPad = !probe.hasCalculationPad ||
+        final needsPad =
+            !probe.hasCalculationPad ||
             (calcSpec.isScientific && !probe.hasScientificOps);
         if (needsPad) {
           interface = calc.buildInterface(
@@ -328,10 +329,7 @@ class CreationEngine {
         if (!capabilities.any((c) => c.capabilityId == 'news')) {
           capabilities = [
             ...capabilities.where((c) => c.capabilityId != 'knowledge'),
-            const CapabilityDeclaration(
-              capabilityId: 'news',
-              isRequired: true,
-            ),
+            const CapabilityDeclaration(capabilityId: 'news', isRequired: true),
           ];
         }
       } else if (wantsWebKnowledge) {
@@ -750,6 +748,45 @@ class CreationEngine {
               },
             ),
           );
+          if (blueprint.requiredCapabilities.contains(
+                AppCapabilityIds.filter,
+              ) &&
+              entity != null &&
+              entity.fields.any((f) => f.id == 'status')) {
+            nodes.add(
+              InterfaceNode(
+                type: 'filterField',
+                id: '${view.id}_filter',
+                properties: {
+                  'fieldId': 'status',
+                  'hint': 'Filter by status',
+                  'entityId': view.sourceEntityId ?? '',
+                },
+              ),
+            );
+          }
+          if (blueprint.requiredCapabilities.contains(AppCapabilityIds.sort) &&
+              entity != null) {
+            final sortField = entity.fields.firstWhere(
+              (f) =>
+                  f.type == BlueprintFieldType.dateTime ||
+                  f.type == BlueprintFieldType.date ||
+                  f.type == BlueprintFieldType.integer ||
+                  f.type == BlueprintFieldType.decimal,
+              orElse: () => entity.fields.first,
+            );
+            nodes.add(
+              InterfaceNode(
+                type: 'sortField',
+                id: '${view.id}_sort',
+                properties: {
+                  'fieldId': sortField.id,
+                  'hint': 'Sort by ${sortField.name}',
+                  'entityId': view.sourceEntityId ?? '',
+                },
+              ),
+            );
+          }
           nodes.add(
             InterfaceNode(
               type: 'entityList',
@@ -758,6 +795,10 @@ class CreationEngine {
                 'entityId': view.sourceEntityId ?? '',
                 'titleField': _findDisplayField(entity),
                 'subtitleField': _findSecondaryField(entity),
+                if (blueprint.requiredCapabilities.contains(
+                  AppCapabilityIds.filter,
+                ))
+                  'filterFieldId': 'status',
               },
             ),
           );
@@ -1046,7 +1087,7 @@ class CreationEngine {
 
   /// IS-P08: guarantees every create/update action has somewhere to go.
   ///
-  /// THE DEFECT THIS FIXES. A list view emits an "Add <entity>" button bound
+  /// THE DEFECT THIS FIXES. A list view emits an "Add `<entity>`" button bound
   /// to the create action, and the runtime host answers that tap by
   /// navigating to a form screen. But a form screen existed only when the
   /// model happened to declare a separate form view, and its id came from

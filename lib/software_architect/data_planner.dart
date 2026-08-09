@@ -111,10 +111,15 @@ class RelationshipPlanner {
   const RelationshipPlanner();
 
   List<RelationshipDecision> plan(List<SemanticEntity> entities) {
+    final entityIds = entities.map((e) => e.id).toSet();
     final decisions = <RelationshipDecision>[];
     for (final entity in entities) {
       for (final field in entity.fields) {
-        if (field.referenceEntityId == null) continue;
+        final toId = field.referenceEntityId;
+        if (toId == null) continue;
+        // Dangling refs are dropped (legacy/R20 contract), not planned.
+        // BlueprintValidator still rejects any that leak into a final blueprint.
+        if (!entityIds.contains(toId)) continue;
         // A required reference cannot be silently orphaned -> restrict.
         // An optional reference may be cleared -> setNull. Both are real,
         // generic policies (see docs/audit/V2_SECURITY_AUDIT.md §12 for
@@ -126,7 +131,7 @@ class RelationshipPlanner {
         decisions.add(
           RelationshipDecision(
             fromEntityId: entity.id,
-            toEntityId: field.referenceEntityId!,
+            toEntityId: toId,
             fieldId: field.id,
             deletePolicy: policy,
             decision: ArchitectureDecision(
@@ -134,8 +139,8 @@ class RelationshipPlanner {
               category: ArchitectureDecisionCategory.relationship,
               subjectId: '${entity.id}.${field.id}',
               decision: policy == RelationshipDeletePolicy.restrict
-                  ? 'Restrict deletion of ${field.referenceEntityId} while referenced'
-                  : 'Clear reference on ${field.referenceEntityId} deletion',
+                  ? 'Restrict deletion of $toId while referenced'
+                  : 'Clear reference on $toId deletion',
               rationale: field.required
                   ? '${field.name} is a required reference; the '
                         'referenced record must not be allowed to vanish '

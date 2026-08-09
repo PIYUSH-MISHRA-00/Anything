@@ -8,6 +8,7 @@ import '../creation/app_capabilities.dart';
 import 'app_blueprint.dart';
 import 'application_reasoner.dart';
 import 'structural_entity_extractor.dart';
+import 'structural_field_inferrer.dart';
 
 /// Deterministic application reasoner.
 class DeterministicReasoner implements ApplicationReasoner {
@@ -40,7 +41,8 @@ class DeterministicReasoner implements ApplicationReasoner {
     if (entities.length < 2) return null;
 
     final semanticEntities = <SemanticEntity>[
-      for (final e in entities) _defaultEntity(e),
+      for (final e in entities)
+        _entityFromStructural(e, objective: objective, peers: entities),
     ];
     final actions = <SemanticAction>[
       for (final e in entities) ..._crudActions(e),
@@ -48,6 +50,18 @@ class DeterministicReasoner implements ApplicationReasoner {
     final views = <SemanticView>[
       for (var i = 0; i < entities.length; i++) ..._views(entities[i], i == 0),
     ];
+
+    final caps = <String>{
+      AppCapabilityIds.crud,
+      AppCapabilityIds.collection,
+      AppCapabilityIds.persistence,
+      AppCapabilityIds.form,
+      AppCapabilityIds.input,
+      AppCapabilityIds.search,
+    };
+    final lower = objective.toLowerCase();
+    if (lower.contains('filter')) caps.add(AppCapabilityIds.filter);
+    if (lower.contains('sort')) caps.add(AppCapabilityIds.sort);
 
     return SemanticApp(
       name: _deriveName(objective),
@@ -57,14 +71,7 @@ class DeterministicReasoner implements ApplicationReasoner {
       views: views,
       archetypes: const ['collection', 'tracker'],
       tags: const ['collection', 'local', 'managed-records'],
-      requiredCapabilities: const [
-        AppCapabilityIds.crud,
-        AppCapabilityIds.collection,
-        AppCapabilityIds.persistence,
-        AppCapabilityIds.form,
-        AppCapabilityIds.input,
-        AppCapabilityIds.search,
-      ],
+      requiredCapabilities: caps.toList(growable: false),
     );
   }
 
@@ -91,7 +98,9 @@ class DeterministicReasoner implements ApplicationReasoner {
     return SemanticApp(
       name: _deriveName(objective),
       purpose: objective,
-      entities: [_defaultEntity(entity)],
+      entities: [
+        _entityFromStructural(entity, objective: objective, peers: [entity]),
+      ],
       actions: _crudActions(entity),
       views: _views(entity, true),
       archetypes: const ['collection'],
@@ -106,80 +115,61 @@ class DeterministicReasoner implements ApplicationReasoner {
     );
   }
 
-  SemanticEntity _defaultEntity(StructuralEntityName e) {
+  SemanticEntity _entityFromStructural(
+    StructuralEntityName e, {
+    required String objective,
+    required List<StructuralEntityName> peers,
+  }) {
     return SemanticEntity(
       id: e.id,
       name: e.name,
       displayField: 'name',
-      fields: [
-        SemanticField(
-          id: 'name',
-          name: 'Name',
-          type: BlueprintFieldType.text,
-          required: true,
-        ),
-        SemanticField(
-          id: 'details',
-          name: 'Details',
-          type: BlueprintFieldType.multilineText,
-        ),
-        SemanticField(
-          id: 'status',
-          name: 'Status',
-          type: BlueprintFieldType.text,
-        ),
-        SemanticField(
-          id: 'related_ref',
-          name: 'Related',
-          type: BlueprintFieldType.text,
-        ),
-        SemanticField(
-          id: 'created_at',
-          name: 'Created At',
-          type: BlueprintFieldType.dateTime,
-        ),
-      ],
+      fields: StructuralFieldInferrer.fieldsFor(
+        e,
+        objective: objective,
+        peers: peers,
+      ),
     );
   }
 
   List<SemanticAction> _crudActions(StructuralEntityName e) => [
-        SemanticAction(
-          id: 'create_${e.id}',
-          name: 'Add ${e.name}',
-          targetEntityId: e.id,
-          actionType: BlueprintActionType.create,
-        ),
-        SemanticAction(
-          id: 'update_${e.id}',
-          name: 'Edit ${e.name}',
-          targetEntityId: e.id,
-          actionType: BlueprintActionType.update,
-        ),
-        SemanticAction(
-          id: 'delete_${e.id}',
-          name: 'Delete ${e.name}',
-          targetEntityId: e.id,
-          actionType: BlueprintActionType.delete,
-        ),
-      ];
+    SemanticAction(
+      id: 'create_${e.id}',
+      name: 'Add ${e.name}',
+      targetEntityId: e.id,
+      actionType: BlueprintActionType.create,
+    ),
+    SemanticAction(
+      id: 'update_${e.id}',
+      name: 'Edit ${e.name}',
+      targetEntityId: e.id,
+      actionType: BlueprintActionType.update,
+    ),
+    SemanticAction(
+      id: 'delete_${e.id}',
+      name: 'Delete ${e.name}',
+      targetEntityId: e.id,
+      actionType: BlueprintActionType.delete,
+    ),
+  ];
 
   List<SemanticView> _views(StructuralEntityName e, bool isDefault) => [
-        SemanticView(
-          id: '${e.id}_list',
-          name: '${e.name} List',
-          purpose: 'list',
-          sourceEntityId: e.id,
-          viewType: BlueprintViewType.list,
-          isDefault: isDefault,
-        ),
-        SemanticView(
-          id: '${e.id}_form',
-          name: '${e.name} Form',
-          purpose: 'form',
-          sourceEntityId: e.id,
-          viewType: BlueprintViewType.form,
-        ),
-      ];
+    SemanticView(
+      id: '${e.id}_list',
+      name: '${e.name} List',
+      purpose: 'list',
+      sourceEntityId: e.id,
+      viewType: BlueprintViewType.list,
+      isDefault: isDefault,
+    ),
+    SemanticView(
+      id: '${e.id}_form',
+      name: '${e.name} Form',
+      purpose: 'form',
+      sourceEntityId: e.id,
+      viewType: BlueprintViewType.form,
+    ),
+  ];
 
   bool _isTooGeneric(String lower) {
     const genericPhrases = [

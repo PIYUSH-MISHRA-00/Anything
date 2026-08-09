@@ -64,9 +64,7 @@ abstract final class StructuralEntityExtractor {
   static List<String> _fromBullets(String objective) {
     final out = <String>[];
     for (final line in objective.split(RegExp(r'[\r\n]+'))) {
-      final m = RegExp(
-        r'^\s*[-*•]\s+(.+)$',
-      ).firstMatch(line.trim());
+      final m = RegExp(r'^\s*[-*•]\s+(.+)$').firstMatch(line.trim());
       if (m != null) out.add(m.group(1)!.trim());
     }
     return out;
@@ -119,6 +117,14 @@ abstract final class StructuralEntityExtractor {
 
   static String? _clean(String raw) {
     var t = raw.trim();
+    // "inventory with quantity…" → entity "inventory"; fields inferred elsewhere.
+    final withHead = RegExp(
+      r'^(.+?)\s+\bwith\b\s+',
+      caseSensitive: false,
+    ).firstMatch(t);
+    if (withHead != null) {
+      t = withHead.group(1)!.trim();
+    }
     t = t.replaceAll(RegExp(r'[.。;:]+$'), '').trim();
     if (t.isEmpty) return null;
     // Drop verb-y fragments and filler.

@@ -239,7 +239,12 @@ class ExperienceRenderer {
         );
       case 'remoteImage':
       case 'image':
-        return _renderRemoteImage(context, node, stateEngine, resolvedProperties);
+        return _renderRemoteImage(
+          context,
+          node,
+          stateEngine,
+          resolvedProperties,
+        );
     }
 
     // IS-P11: row/input must use legacy renderers. Registry `row` cannot
@@ -403,9 +408,18 @@ class ExperienceRenderer {
           onEvent: onEvent,
           runtimeContext: runtimeContext,
         );
+      case 'filterField':
+        return _renderFilterField(context, node, stateEngine, onEvent: onEvent);
+      case 'sortField':
+        return _renderSortField(context, node, stateEngine, onEvent: onEvent);
       case 'remoteImage':
       case 'image':
-        return _renderRemoteImage(context, node, stateEngine, resolvedProperties);
+        return _renderRemoteImage(
+          context,
+          node,
+          stateEngine,
+          resolvedProperties,
+        );
       default:
         return _renderUnknown(node);
     }
@@ -430,7 +444,8 @@ class ExperienceRenderer {
     final width = resolvedProperties['width'] is num
         ? (resolvedProperties['width'] as num).toDouble()
         : double.infinity;
-    final label = resolvedProperties['semanticLabel']?.toString() ??
+    final label =
+        resolvedProperties['semanticLabel']?.toString() ??
         resolvedProperties['label']?.toString() ??
         'Image';
     final scheme = Theme.of(context).colorScheme;
@@ -543,36 +558,78 @@ class ExperienceRenderer {
         stream: stateEngine.watch('searchTerm'),
         builder: (context, searchTermSnapshot) {
           final searchTerm = (searchTermSnapshot.data as String?) ?? '';
-          return FutureBuilder<List<Map<String, dynamic>>>(
-            future: runtimeContext.queryRecords(entityId),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Card(
-                  margin: EdgeInsets.symmetric(vertical: 8),
-                  child: Padding(
-                    padding: EdgeInsets.all(32),
-                    child: Center(child: CircularProgressIndicator()),
-                  ),
-                );
-              }
-              var records = snapshot.data ?? [];
-              // Filter by search term if present
-              if (searchTerm.isNotEmpty) {
-                final lowerSearch = searchTerm.toLowerCase();
-                records = records.where((r) {
-                  return r.values.any(
-                    (v) => v.toString().toLowerCase().contains(lowerSearch),
+          return StreamBuilder<dynamic>(
+            stream: stateEngine.watch('filterValue'),
+            builder: (context, filterSnapshot) {
+              final filterValue = (filterSnapshot.data as String?) ?? '';
+              return StreamBuilder<dynamic>(
+                stream: stateEngine.watch('sortField'),
+                builder: (context, sortSnapshot) {
+                  final sortField =
+                      (sortSnapshot.data as String?) ??
+                      (node.properties['sortFieldId'] as String? ?? '');
+                  return FutureBuilder<List<Map<String, dynamic>>>(
+                    future: runtimeContext.queryRecords(entityId),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Card(
+                          margin: EdgeInsets.symmetric(vertical: 8),
+                          child: Padding(
+                            padding: EdgeInsets.all(32),
+                            child: Center(child: CircularProgressIndicator()),
+                          ),
+                        );
+                      }
+                      var records = snapshot.data ?? [];
+                      if (searchTerm.isNotEmpty) {
+                        final lowerSearch = searchTerm.toLowerCase();
+                        records = records.where((r) {
+                          return r.values.any(
+                            (v) => v.toString().toLowerCase().contains(
+                              lowerSearch,
+                            ),
+                          );
+                        }).toList();
+                      }
+                      if (filterValue.isNotEmpty) {
+                        final filterFieldId =
+                            node.properties['filterFieldId'] as String? ??
+                            'status';
+                        records = records
+                            .where(
+                              (r) =>
+                                  (r[filterFieldId] ?? '')
+                                      .toString()
+                                      .toLowerCase() ==
+                                  filterValue.toLowerCase(),
+                            )
+                            .toList();
+                      }
+                      if (sortField.isNotEmpty) {
+                        records = List<Map<String, dynamic>>.from(records)
+                          ..sort((a, b) {
+                            final av = a[sortField];
+                            final bv = b[sortField];
+                            if (av is num && bv is num) {
+                              return av.compareTo(bv);
+                            }
+                            return (av?.toString() ?? '').compareTo(
+                              bv?.toString() ?? '',
+                            );
+                          });
+                      }
+                      return _buildEntityListView(
+                        context,
+                        node,
+                        records,
+                        titleField,
+                        subtitleField,
+                        onEvent: onEvent,
+                        runtimeContext: runtimeContext,
+                      );
+                    },
                   );
-                }).toList();
-              }
-              return _buildEntityListView(
-                context,
-                node,
-                records,
-                titleField,
-                subtitleField,
-                onEvent: onEvent,
-                runtimeContext: runtimeContext,
+                },
               );
             },
           );
@@ -1384,7 +1441,8 @@ class ExperienceRenderer {
               );
               // SearchAction: ensure the typed query reaches the provider even
               // if the last keystroke race lost to a rebuild.
-              final isSearch = actionId == 'search' ||
+              final isSearch =
+                  actionId == 'search' ||
                   actionId == 'SearchAction' ||
                   actionId == 'searchAction' ||
                   actionId == 'refreshData';
@@ -1506,6 +1564,56 @@ class ExperienceRenderer {
     );
   }
 
+  Widget _renderFilterField(
+    BuildContext context,
+    InterfaceNode node,
+    ExperienceStateEngine stateEngine, {
+    void Function(String eventId, {Map<String, dynamic>? data})? onEvent,
+  }) {
+    final hint = node.properties['hint'] as String? ?? 'Filter...';
+    final fieldId = node.properties['fieldId'] as String? ?? 'status';
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: TextField(
+        decoration: InputDecoration(
+          hintText: hint,
+          prefixIcon: const Icon(Icons.filter_list),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(24)),
+          filled: true,
+        ),
+        onChanged: (value) {
+          stateEngine.write('filterValue', value);
+          stateEngine.write('filterFieldId', fieldId);
+          onEvent?.call(
+            'filterChanged',
+            data: {'fieldId': fieldId, 'value': value},
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _renderSortField(
+    BuildContext context,
+    InterfaceNode node,
+    ExperienceStateEngine stateEngine, {
+    void Function(String eventId, {Map<String, dynamic>? data})? onEvent,
+  }) {
+    final hint = node.properties['hint'] as String? ?? 'Sort field';
+    final fieldId = node.properties['fieldId'] as String? ?? 'name';
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: OutlinedButton.icon(
+        icon: const Icon(Icons.sort),
+        label: Text(hint),
+        onPressed: () {
+          stateEngine.write('sortField', fieldId);
+          onEvent?.call('sortChanged', data: {'fieldId': fieldId});
+        },
+      ),
+    );
+  }
+
   Widget _renderColumn(
     BuildContext context,
     InterfaceNode node,
@@ -1540,8 +1648,7 @@ class ExperienceRenderer {
     Map<String, dynamic>? data,
   }) {
     final expandAll = node.properties['expandChildren'] == true;
-    final stretch =
-        node.properties['stretchCrossAxis'] == true || expandAll;
+    final stretch = node.properties['stretchCrossAxis'] == true || expandAll;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 3),
       child: Row(
@@ -1570,7 +1677,8 @@ class ExperienceRenderer {
                 );
                 // IS-P13: TextField without Expanded in a Row takes infinite
                 // width and collapses sibling Search buttons to 0×0 bounds.
-                final wantsExpand = expandAll ||
+                final wantsExpand =
+                    expandAll ||
                     child.properties['width'] == 'expand' ||
                     (child.type == 'input' &&
                         child.properties['width'] != 'intrinsic');
@@ -1883,9 +1991,10 @@ class _EntityFormWidgetState extends State<_EntityFormWidget> {
       initialValues: initialValues,
       fieldDefinitions: widget.fieldDefinitions,
     );
-    _formBoundContext = widget.runtimeContext != null
-        ? widget.runtimeContext!.withForm(_formController, widget.entityId)
-        : null;
+    _formBoundContext = widget.runtimeContext?.withForm(
+      _formController,
+      widget.entityId,
+    );
   }
 
   @override

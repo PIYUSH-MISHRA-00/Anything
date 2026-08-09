@@ -9,6 +9,7 @@
 library;
 
 import '../application_engineering/engineering_plan.dart';
+import '../creation/app_capabilities.dart';
 import '../kernel/specification/experience_spec.dart';
 import 'app_archetype.dart';
 import 'app_blueprint.dart';
@@ -207,21 +208,78 @@ class BlueprintToSpecConverter {
     return BackendClassification.none;
   }
 
+  /// Platform capability IDs the Kernel registry can resolve (IS-P07/P10).
+  ///
+  /// App-level IDs (`networkData`, `calculation`, `crud`, …) describe
+  /// generation/runtime shape. Passing them into Kernel Step 8 made every
+  /// network/reference plan fail as "Some requirements cannot be met yet"
+  /// after a paid model call — the human weather-dashboard failure mode.
+  static const Set<String> _platformCapabilityIds = {
+    'storage',
+    'clock',
+    'http',
+    'ai',
+    'knowledge',
+    'notifications',
+    'files',
+  };
+
   static List<RequiredCapability> _deriveRequiredCapabilities(
     AppBlueprint blueprint,
   ) {
-    final capabilities = <RequiredCapability>[];
+    final ids = <String>{};
+
     if (blueprint.entities.isNotEmpty) {
-      capabilities.add(
-        const RequiredCapability(capabilityId: 'storage', isRequired: true),
-      );
+      ids.add('storage');
     }
+    if (blueprint.networkConfig != null) {
+      ids.add('http');
+      ids.add('knowledge');
+    }
+
     for (final capId in blueprint.requiredCapabilities) {
-      capabilities.add(
-        RequiredCapability(capabilityId: capId, isRequired: true),
-      );
+      if (_platformCapabilityIds.contains(capId)) {
+        ids.add(capId);
+        continue;
+      }
+      switch (capId) {
+        case AppCapabilityIds.networkData:
+        case AppCapabilityIds.webData:
+        case AppCapabilityIds.refresh:
+        case AppCapabilityIds.offlineCache:
+        case AppCapabilityIds.synchronization:
+          ids.add('http');
+          ids.add('knowledge');
+          break;
+        case AppCapabilityIds.persistence:
+        case AppCapabilityIds.crud:
+        case AppCapabilityIds.entity:
+        case AppCapabilityIds.collection:
+        case AppCapabilityIds.secureStorage:
+          ids.add('storage');
+          break;
+        case AppCapabilityIds.scheduling:
+        case AppCapabilityIds.notifications:
+          ids.add('notifications');
+          ids.add('clock');
+          break;
+        case AppCapabilityIds.files:
+        case AppCapabilityIds.media:
+          ids.add('files');
+          break;
+        case AppCapabilityIds.timers:
+          ids.add('clock');
+          break;
+        // UI/runtime-only capabilities are not Kernel resolve gates.
+        default:
+          break;
+      }
     }
-    return capabilities;
+
+    return [
+      for (final id in ids)
+        RequiredCapability(capabilityId: id, isRequired: true),
+    ];
   }
 
   static OfflineBehavior _deriveOfflineBehavior(AppBlueprint blueprint) {

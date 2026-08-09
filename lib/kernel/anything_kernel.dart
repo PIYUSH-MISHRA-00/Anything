@@ -337,7 +337,7 @@ class AnythingKernel {
 
       // After degradation, reasonResult is always ReasoningReady here
       // (non-ready arms return above or rewrite reasonResult).
-      final semanticApp = (reasonResult as ReasoningReady).semanticApp;
+      final semanticApp = reasonResult.semanticApp;
 
       // Step 5.5: Autonomous Knowledge Acquisition (Implementation
       // Milestone R16) — deterministic, zero new LLM call. Opt-in; a

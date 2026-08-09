@@ -111,8 +111,28 @@ class BlueprintValidator {
         if (field.name.isEmpty) {
           errors.add('Field name is required for ${field.id} in ${entity.id}');
         }
+        final cueError = _fieldTypeCueError(entity.id, field);
+        if (cueError != null) errors.add(cueError);
       }
     }
+  }
+
+  /// Structural name/type contracts (not product-domain rules).
+  static String? _fieldTypeCueError(String entityId, BlueprintField field) {
+    final id = field.id.toLowerCase();
+    if ((id == 'quantity' ||
+            id.endsWith('_quantity') ||
+            id == 'reorder_threshold') &&
+        field.type != BlueprintFieldType.integer &&
+        field.type != BlueprintFieldType.decimal) {
+      return 'Field $entityId.${field.id} must be numeric, got ${field.type.name}';
+    }
+    if ((id == 'amount' || id.endsWith('_amount') || id == 'total') &&
+        field.type != BlueprintFieldType.decimal &&
+        field.type != BlueprintFieldType.integer) {
+      return 'Field $entityId.${field.id} must be numeric money/amount, got ${field.type.name}';
+    }
+    return null;
   }
 
   static void _validateViews(
@@ -210,6 +230,19 @@ class BlueprintValidator {
         errors.add(
           'Derived value ${dv.id} references unknown entity ${dv.sourceEntityId}',
         );
+      }
+    }
+
+    // Validate field → entity references (relationships)
+    for (final entity in blueprint.entities) {
+      for (final field in entity.fields) {
+        final ref = field.referenceEntityId;
+        if (ref == null) continue;
+        if (!entityIds.contains(ref)) {
+          errors.add(
+            'Field ${entity.id}.${field.id} references unknown entity $ref',
+          );
+        }
       }
     }
   }
