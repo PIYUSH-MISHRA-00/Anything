@@ -10,6 +10,7 @@ library;
 import '../synthesis/app_blueprint.dart';
 import 'app_capabilities.dart';
 import 'calculation_interface_factory.dart';
+import 'calculation_spec.dart';
 import 'experience_package.dart';
 import 'network_reference_interface_factory.dart';
 import 'news_interface_factory.dart';
@@ -87,12 +88,33 @@ class DeterministicCapabilityRepair {
                 _looksNumericCalculation(blueprint)));
     if (wantsCalculation) {
       final before = PackageCapabilityProbe(current);
-      if (!before.hasCalculationPad && !before.hasTimingControls) {
+      final calcSpec = CalculationSpec.resolve(
+        capabilityIds: {
+          ...requiredCapabilities,
+          ...gapIds,
+        },
+        intentExpression: blueprint?.name ?? current.manifest.name,
+      );
+      final needsSci =
+          calcSpec.isScientific ||
+          requiredCapabilities.contains(AppCapabilityIds.scientificCalculation);
+      if ((!before.hasCalculationPad && !before.hasTimingControls) ||
+          (needsSci && !before.hasScientificOps && !before.hasTimingControls)) {
         current = const CalculationInterfaceFactory().applyToPackage(
           current,
           name: blueprint?.name ?? current.manifest.name,
+          spec: needsSci
+              ? const CalculationSpec(
+                  mode: CalculationMode.scientific,
+                  operations: CalculationSpec.scientificOps,
+                )
+              : calcSpec,
         );
-        fixes.add('injected_calculation_pad');
+        fixes.add(
+          needsSci
+              ? 'injected_scientific_calculation_pad'
+              : 'injected_calculation_pad',
+        );
       }
     }
 

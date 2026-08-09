@@ -230,6 +230,8 @@ void main() {
         'tabBar',
         'tab',
         'grid',
+        'remoteImage',
+        'image',
       };
 
       for (final type in registered) {

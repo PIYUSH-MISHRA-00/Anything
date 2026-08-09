@@ -136,6 +136,16 @@ class NewsInterfaceFactory {
               properties: {'content': '', 'fontSize': 18},
               stateBinding: 'resultTitle',
             ),
+            const InterfaceNode(
+              type: 'remoteImage',
+              id: 'hero_image',
+              properties: {
+                'height': 180,
+                'fit': 'cover',
+                'semanticLabel': 'Article image',
+              },
+              stateBinding: 'heroImageUrl',
+            ),
             InterfaceNode(
               type: 'text',
               id: 'result',
@@ -168,6 +178,7 @@ class NewsInterfaceFactory {
         type: 'string',
         defaultValue: 'Search to load headlines from news sources.',
       ),
+      StateVariable(id: 'heroImageUrl', type: 'string', defaultValue: ''),
       StateVariable(
         id: 'lastKnownResult',
         type: 'string',
@@ -201,6 +212,7 @@ class NewsInterfaceFactory {
           'cacheStateId': 'lastKnownResult',
           'provenanceStateId': 'provenanceLabel',
           'sourceTypeStateId': 'sourceType',
+          'imageStateId': 'heroImageUrl',
           'expectedSourceType': 'structuredNews',
           'aggregateResults': true,
         },

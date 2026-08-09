@@ -10,6 +10,7 @@ import '../synthesis/app_archetype.dart';
 import '../synthesis/app_blueprint.dart';
 import 'app_capabilities.dart';
 import 'calculation_interface_factory.dart';
+import 'calculation_spec.dart';
 import 'creation_context.dart';
 import 'display_naming.dart';
 import 'experience_package.dart';
@@ -210,8 +211,13 @@ class CreationEngine {
             ];
           }
         }
-      } else if (inferredCaps.contains(AppCapabilityIds.calculation)) {
+      } else if (inferredCaps.contains(AppCapabilityIds.calculation) ||
+          inferredCaps.contains(AppCapabilityIds.scientificCalculation)) {
         final calc = const CalculationInterfaceFactory();
+        final calcSpec = CalculationSpec.resolve(
+          capabilityIds: inferredCaps,
+          intentExpression: context.intent.expression,
+        );
         final probePackage = ExperiencePackage(
           manifest: ExperienceManifest(
             experienceId: spec.id,
@@ -233,20 +239,36 @@ class CreationEngine {
             computedAt: DateTime.now(),
           ),
         );
-        if (!PackageCapabilityProbe(probePackage).hasCalculationPad) {
+        final probe = PackageCapabilityProbe(probePackage);
+        final needsPad = !probe.hasCalculationPad ||
+            (calcSpec.isScientific && !probe.hasScientificOps);
+        if (needsPad) {
           interface = calc.buildInterface(
             title: experienceDisplayName(
               generatedName: spec.name,
               userIntent: context.intent.expression,
             ),
+            spec: calcSpec,
           );
-          state = _mergeStateSchema(state, calc.buildState());
+          state = _mergeStateSchema(state, calc.buildState(spec: calcSpec));
           behavior = _mergeBehaviorGraph(behavior, calc.buildBehavior());
           if (!capabilities.any((c) => c.capabilityId == 'calculation')) {
             capabilities = [
               ...capabilities,
               const CapabilityDeclaration(
                 capabilityId: 'calculation',
+                isRequired: true,
+              ),
+            ];
+          }
+          if (calcSpec.isScientific &&
+              !capabilities.any(
+                (c) => c.capabilityId == AppCapabilityIds.scientificCalculation,
+              )) {
+            capabilities = [
+              ...capabilities,
+              const CapabilityDeclaration(
+                capabilityId: AppCapabilityIds.scientificCalculation,
                 isRequired: true,
               ),
             ];

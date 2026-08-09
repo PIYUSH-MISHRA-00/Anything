@@ -134,37 +134,58 @@ class RuntimeComponentRegistry {
           final isPrimary = props['primary'] == true;
           final isDanger = props['danger'] == true;
           final isCompact = props['compact'] == true;
+          final isAccent = props['accent'] == true;
+          final expand = props['width']?.toString() == 'expand';
           final onPressed = props['_onPressed'] as VoidCallback?;
+          final scheme = Theme.of(ctx).colorScheme;
+          final minH = expand ? 56.0 : (isCompact ? 36.0 : 48.0);
+          final radius = expand ? 16.0 : 9999.0;
 
+          Widget button;
           if (isDanger) {
-            return ElevatedButton(
+            button = ElevatedButton(
               onPressed: onPressed ?? () {},
               style: ElevatedButton.styleFrom(
-                backgroundColor: Theme.of(ctx).colorScheme.error,
-                foregroundColor: Theme.of(ctx).colorScheme.onError,
-                minimumSize: Size(0, isCompact ? 36 : 48),
+                backgroundColor: scheme.error,
+                foregroundColor: scheme.onError,
+                minimumSize: Size(expand ? 48 : 0, minH),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(radius),
+                ),
+                textStyle: TextStyle(
+                  fontSize: expand ? 22 : 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              child: Text(label),
+            );
+          } else {
+            button = ElevatedButton(
+              onPressed: onPressed ?? () {},
+              style: ElevatedButton.styleFrom(
+                backgroundColor: isPrimary
+                    ? scheme.primary
+                    : isAccent
+                    ? scheme.secondaryContainer
+                    : null,
+                foregroundColor: isPrimary
+                    ? scheme.onPrimary
+                    : isAccent
+                    ? scheme.onSecondaryContainer
+                    : null,
+                minimumSize: Size(expand ? 48 : 0, minH),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(radius),
+                ),
+                textStyle: TextStyle(
+                  fontSize: expand ? 22 : 16,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
               child: Text(label),
             );
           }
-
-          if (isPrimary) {
-            return ElevatedButton(
-              onPressed: onPressed ?? () {},
-              style: ElevatedButton.styleFrom(
-                minimumSize: Size(0, isCompact ? 36 : 48),
-              ),
-              child: Text(label),
-            );
-          }
-
-          return ElevatedButton(
-            onPressed: onPressed ?? () {},
-            style: ElevatedButton.styleFrom(
-              minimumSize: Size(0, isCompact ? 36 : 48),
-            ),
-            child: Text(label),
-          );
+          return expand ? SizedBox.expand(child: button) : button;
         },
       ),
     );
@@ -222,11 +243,30 @@ class RuntimeComponentRegistry {
         type: 'row',
         description: 'Horizontal layout',
         builder: (ctx, props, children) {
-          final spacing = _parseDouble(props['spacing']);
+          final spacing = _parseDouble(props['spacing']) ?? 6;
+          final expand = props['expandChildren'] == true;
+          // IS-P11: when expandChildren is false, still honor per-child
+          // width:expand so query rows (input + Search) layout correctly.
+          // A bare TextFormField in a Row gets unbounded width and collapses.
+          if (!expand) {
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                for (var i = 0; i < children.length; i++) ...[
+                  if (i > 0) SizedBox(width: spacing),
+                  children[i],
+                ],
+              ],
+            );
+          }
           return Row(
-            children: spacing != null
-                ? _addSpacing(children, spacing)
-                : children,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              for (var i = 0; i < children.length; i++) ...[
+                if (i > 0) SizedBox(width: spacing),
+                Expanded(child: children[i]),
+              ],
+            ],
           );
         },
       ),
@@ -309,9 +349,29 @@ class RuntimeComponentRegistry {
           final label = props['label']?.toString() ?? '';
           final hint = props['hint']?.toString() ?? '';
           final maxLines = _parseInt(props['maxLines']) ?? 1;
+          final stateValue = props['_stateValue']?.toString();
+          final onStateChanged = props['_onStateChanged'] as Function(dynamic)?;
+          final onEvent = props['_onEvent'] as void Function(
+            String eventId, {
+            Map<String, dynamic>? data,
+          })?;
+          // IS-P11: bind Experience state + keyboard Search submit.
+          // Do not wrap in Expanded here — parent Row decides flex.
           return TextFormField(
-            decoration: InputDecoration(labelText: label, hintText: hint),
+            initialValue: stateValue,
+            decoration: InputDecoration(
+              labelText: label.isEmpty ? null : label,
+              hintText: hint,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
             maxLines: maxLines,
+            textInputAction: TextInputAction.search,
+            onChanged: onStateChanged != null
+                ? (value) => onStateChanged(value)
+                : null,
+            onFieldSubmitted: (_) => onEvent?.call('refreshData'),
           );
         },
       ),
@@ -537,7 +597,121 @@ class RuntimeComponentRegistry {
       ),
     );
 
+    // Remote / local-declared image (generic media capability — not domain-specific)
+    void registerImage(String type) {
+      registry.register(
+        ComponentRegistration(
+          type: type,
+          description: 'Remote image with loading/error placeholders',
+          builder: (ctx, props, children) {
+            final stateValue = props['_stateValue']?.toString();
+            final rawUrl =
+                (stateValue != null && stateValue.isNotEmpty
+                    ? stateValue
+                    : props['url']?.toString()) ??
+                '';
+            final url = _sanitizeImageUrl(rawUrl);
+            final width = _parseDouble(props['width']);
+            final height = _parseDouble(props['height']) ?? 180;
+            final fit = _parseBoxFit(props['fit']) ?? BoxFit.cover;
+            final label = props['semanticLabel']?.toString() ??
+                props['label']?.toString() ??
+                'Image';
+            final scheme = Theme.of(ctx).colorScheme;
+            if (url == null) {
+              return Container(
+                width: width ?? double.infinity,
+                height: height,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: scheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.image_not_supported_outlined,
+                  color: scheme.outline,
+                  size: 40,
+                ),
+              );
+            }
+            return ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.network(
+                url,
+                width: width ?? double.infinity,
+                height: height,
+                fit: fit,
+                semanticLabel: label,
+                loadingBuilder: (context, child, progress) {
+                  if (progress == null) return child;
+                  return Container(
+                    width: width ?? double.infinity,
+                    height: height,
+                    alignment: Alignment.center,
+                    color: scheme.surfaceContainerHighest,
+                    child: const SizedBox(
+                      width: 28,
+                      height: 28,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  );
+                },
+                errorBuilder: (context, error, stack) {
+                  return Container(
+                    width: width ?? double.infinity,
+                    height: height,
+                    alignment: Alignment.center,
+                    color: scheme.surfaceContainerHighest,
+                    child: Icon(
+                      Icons.broken_image_outlined,
+                      color: scheme.outline,
+                      size: 40,
+                    ),
+                  );
+                },
+              ),
+            );
+          },
+        ),
+      );
+    }
+
+    registerImage('remoteImage');
+    registerImage('image');
+
     return registry;
+  }
+
+  static String? _sanitizeImageUrl(String? raw) {
+    final t = raw?.trim() ?? '';
+    if (t.isEmpty || t.length > 2048) return null;
+    Uri uri;
+    try {
+      uri = Uri.parse(t);
+    } catch (_) {
+      return null;
+    }
+    if (!uri.hasScheme || !uri.hasAuthority || uri.host.isEmpty) return null;
+    final scheme = uri.scheme.toLowerCase();
+    if (scheme != 'https' && scheme != 'http') return null;
+    return uri.toString();
+  }
+
+  static BoxFit? _parseBoxFit(dynamic value) {
+    switch (value?.toString().toLowerCase()) {
+      case 'contain':
+        return BoxFit.contain;
+      case 'fill':
+        return BoxFit.fill;
+      case 'fitwidth':
+        return BoxFit.fitWidth;
+      case 'fitheight':
+        return BoxFit.fitHeight;
+      case 'cover':
+        return BoxFit.cover;
+      default:
+        return null;
+    }
   }
 
   // ── Helpers ──────────────────────────────────────────────────────

@@ -60,6 +60,7 @@ import 'package:anything/capabilities/registry/capability_registry.dart';
 import 'package:anything/core/events/events.dart';
 import 'package:anything/diagnostics/structured_logger.dart';
 import 'package:anything/kernel/anything_kernel.dart';
+import 'package:anything/knowledge/default_data_providers.dart';
 import 'package:anything/knowledge/knowledge_acquisition_engine.dart';
 import 'package:anything/knowledge/search_provider.dart';
 import 'package:anything/knowledge/webweavex_adapter.dart';
@@ -492,6 +493,9 @@ class AppComposition {
       ),
     );
 
+    // Data providers (weather/news/…) — selectable by DataRequirement.
+    final dataProviderRegistry = buildDefaultDataProviderRegistry();
+
     // IS-R49: constructed here rather than further down, because the real
     // notification presenter registered below delivers through it. Exactly
     // one EventBus still exists in the production graph.
@@ -579,8 +583,10 @@ class AppComposition {
               provider: KnowledgeAcquisitionProviderAdapter(knowledgeEngine),
             ),
           )
-          ..register(WeatherCapability())
-          ..register(NewsCapability())
+          // Shared data-provider registry: weather/news select by
+          // DataRequirement compatibility, not Kernel domain routing.
+          ..register(WeatherCapability(registry: dataProviderRegistry))
+          ..register(NewsCapability(registry: dataProviderRegistry))
           // Implementation Specification IS-R49: the last two production Fake*
           // registrations are gone. Both now resolve to real services, each
           // constructed exactly once here â€” there is no alternate composition

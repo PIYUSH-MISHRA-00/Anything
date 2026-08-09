@@ -1,21 +1,25 @@
-/// News capability — structured articles (not WebWeaveX knowledge).
+/// News capability — structured articles via DataProviderRegistry.
 library;
 
-import '../../domain_services/news_data_service.dart';
+import '../../knowledge/data_provider_registry.dart';
+import '../../knowledge/default_data_providers.dart';
 import '../platform/capability_platform.dart';
 
 /// Platform capability: `news` / searchArticles.
+///
+/// Selects a provider that satisfies `news_articles`, not a hardcoded
+/// "news → Google News" Kernel rule.
 class NewsCapability extends PlatformCapability {
-  NewsCapability({NewsDataService? service})
-    : _service = service ?? NewsDataService(),
+  NewsCapability({DataProviderRegistry? registry})
+    : _registry = registry ?? buildDefaultDataProviderRegistry(),
       super(
         id: 'news',
         name: 'News',
-        description: 'Structured news article retrieval',
+        description: 'Structured news article search',
         supportedOperations: const ['searchArticles', 'retrieve'],
       );
 
-  final NewsDataService _service;
+  final DataProviderRegistry _registry;
 
   @override
   Future<CapabilityInvocationResult> execute(
@@ -36,20 +40,26 @@ class NewsCapability extends PlatformCapability {
         error: 'Query required',
       );
     }
-    try {
-      final articles = await _service.searchArticles(query);
-      return CapabilityInvocationResult.success(
-        data: {
-          'results': articles.map((a) => a.toResultMap()).toList(),
-          'provenance': {
-            'sourceType': 'structuredNews',
-            'provider': 'google-news-rss',
-            'retrievedAt': DateTime.now().toUtc().toIso8601String(),
-          },
-        },
+    final result = await _registry.acquire(
+      const DataRequirement(
+        domainConcept: DataConcepts.newsArticles,
+        fields: ['title', 'source', 'summary', 'url'],
+        freshness: 'current',
+      ),
+      {'query': query},
+    );
+    if (!result.ok) {
+      return CapabilityInvocationResult.failure(
+        result.error ?? 'News provider unavailable',
       );
-    } catch (e) {
-      return CapabilityInvocationResult.failure(e.toString());
     }
+    final data = Map<String, dynamic>.from(result.data!);
+    final prov = Map<String, dynamic>.from(
+      (data['provenance'] as Map?)?.cast<String, dynamic>() ?? {},
+    );
+    prov['selectedProvider'] = result.providerId;
+    prov['attemptedProviders'] = result.attempted;
+    data['provenance'] = prov;
+    return CapabilityInvocationResult.success(data: data);
   }
 }

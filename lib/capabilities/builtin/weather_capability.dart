@@ -1,13 +1,17 @@
-/// Weather capability — structured observations (not WebWeaveX knowledge).
+/// Weather capability — structured observations via DataProviderRegistry.
 library;
 
-import '../../domain_services/weather_data_service.dart';
+import '../../knowledge/data_provider_registry.dart';
+import '../../knowledge/default_data_providers.dart';
 import '../platform/capability_platform.dart';
 
 /// Platform capability: `weather` / getCurrentWeather.
+///
+/// Selects a provider that satisfies `atmospheric_conditions`, not a
+/// hardcoded "weather → Open-Meteo" Kernel rule.
 class WeatherCapability extends PlatformCapability {
-  WeatherCapability({WeatherDataService? service})
-    : _service = service ?? WeatherDataService(),
+  WeatherCapability({DataProviderRegistry? registry})
+    : _registry = registry ?? buildDefaultDataProviderRegistry(),
       super(
         id: 'weather',
         name: 'Weather',
@@ -15,7 +19,7 @@ class WeatherCapability extends PlatformCapability {
         supportedOperations: const ['getCurrentWeather', 'retrieve'],
       );
 
-  final WeatherDataService _service;
+  final DataProviderRegistry _registry;
 
   @override
   Future<CapabilityInvocationResult> execute(
@@ -36,20 +40,26 @@ class WeatherCapability extends PlatformCapability {
         error: 'Location required',
       );
     }
-    try {
-      final obs = await _service.getCurrentWeather(location);
-      return CapabilityInvocationResult.success(
-        data: {
-          'results': [obs.toResultMap()],
-          'provenance': {
-            'sourceType': 'structuredWeather',
-            'provider': obs.provider,
-            'retrievedAt': obs.retrievedAt.toIso8601String(),
-          },
-        },
+    final result = await _registry.acquire(
+      const DataRequirement(
+        domainConcept: DataConcepts.atmosphericConditions,
+        fields: ['temperature', 'humidity', 'wind', 'condition'],
+        freshness: 'current',
+      ),
+      {'location': location, 'query': location},
+    );
+    if (!result.ok) {
+      return CapabilityInvocationResult.failure(
+        result.error ?? 'Weather provider unavailable',
       );
-    } catch (e) {
-      return CapabilityInvocationResult.failure(e.toString());
     }
+    final data = Map<String, dynamic>.from(result.data!);
+    final prov = Map<String, dynamic>.from(
+      (data['provenance'] as Map?)?.cast<String, dynamic>() ?? {},
+    );
+    prov['selectedProvider'] = result.providerId;
+    prov['attemptedProviders'] = result.attempted;
+    data['provenance'] = prov;
+    return CapabilityInvocationResult.success(data: data);
   }
 }

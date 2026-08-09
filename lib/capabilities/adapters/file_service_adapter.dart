@@ -50,7 +50,9 @@
 /// no unit test can drive on any platform — is left to the device.
 library;
 
+import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart' as picker_pkg;
 import 'package:path/path.dart' as p;
@@ -63,15 +65,22 @@ import '../builtin/file_capability.dart';
 class PickedFile {
   final String name;
   final String? path;
+  /// In-memory bytes from the picker (required on Android SAF when path is null).
+  final List<int>? bytes;
   final int? sizeBytes;
   final String? mimeType;
 
   const PickedFile({
     required this.name,
     this.path,
+    this.bytes,
     this.sizeBytes,
     this.mimeType,
   });
+
+  bool get hasReadableContent =>
+      (bytes != null && bytes!.isNotEmpty) ||
+      (path != null && path!.isNotEmpty);
 }
 
 /// The OS file-selection seam. Real implementation uses `file_picker`;
@@ -99,13 +108,15 @@ class PlatformFilePicker implements FilePicker {
                 ? picker_pkg.FileType.any
                 : picker_pkg.FileType.custom),
       allowedExtensions: imagesOnly ? null : allowedExtensions,
-      withData: false,
+      // Android document providers often return path == null; bytes are required.
+      withData: true,
     );
     final file = result?.files.singleOrNull;
     if (file == null) return null;
     return PickedFile(
       name: file.name,
       path: file.path,
+      bytes: file.bytes,
       sizeBytes: file.size,
       mimeType: _mimeFor(file.extension),
     );
@@ -209,10 +220,7 @@ class RealFileService implements FileService {
   @override
   Future<bool> adoptFile(String fileId, String experienceId) async {
     final picked = _pendingPicks[fileId];
-    if (picked?.path == null) return false;
-
-    final source = File(picked!.path!);
-    if (!source.existsSync()) return false;
+    if (picked == null || !picked.hasReadableContent) return false;
 
     final destination = await _resolveInside(
       p.join('experiences', experienceId, fileId),
@@ -220,7 +228,13 @@ class RealFileService implements FileService {
     if (destination == null) return false;
 
     Directory(p.dirname(destination.path)).createSync(recursive: true);
-    source.copySync(destination.path);
+    if (picked.bytes != null && picked.bytes!.isNotEmpty) {
+      destination.writeAsBytesSync(picked.bytes!);
+    } else {
+      final source = File(picked.path!);
+      if (!source.existsSync()) return false;
+      source.copySync(destination.path);
+    }
     _pendingPicks.remove(fileId);
     return true;
   }
@@ -278,19 +292,93 @@ class RealFileService implements FileService {
 
   /// EXPORT A TEXT PAYLOAD — Implementation Specification IS-P02 Phase 9.
   ///
-  /// Additive. [exportFile] above copies an ALREADY-ADOPTED file belonging to
-  /// an Experience; this writes a payload an Experience does not own, which is
-  /// what exporting a `.anything` package is. Both land in the same `exports/`
-  /// area and both refuse to escape the sandbox through [_resolveInside].
+  /// IS-P12: prefer a user-visible `Downloads/Anything/` location when the
+  /// platform allows it. Fall back to a Storage Access Framework save dialog,
+  /// then to the sandboxed `exports/` directory. The returned [File.path] is
+  /// always the real destination — never a guessed Downloads path.
   ///
   /// This service owns file I/O (IS-R49) and nothing else: it never learns
   /// what a package is. `ExperiencePortability` composes it with the codec.
   Future<File?> writeExport(String name, String contents) async {
+    final public = await _tryWritePublicExport(name, contents);
+    if (public != null) return public;
+
+    final picked = await _trySaveViaPicker(name, contents);
+    if (picked != null) return picked;
+
     final destination = await _resolveInside(p.join('exports', name));
     if (destination == null) return null;
-    Directory(p.dirname(destination.path)).createSync(recursive: true);
-    destination.writeAsStringSync(contents);
-    return destination;
+    final dir = Directory(p.dirname(destination.path));
+    dir.createSync(recursive: true);
+    final uniqueName = _uniqueFileName(dir, name);
+    // Basename-only rename stays inside the already-sandboxed exports/ dir.
+    final unique = File(p.join(dir.path, uniqueName));
+    unique.writeAsStringSync(contents);
+    return unique;
+  }
+
+  /// User-visible Downloads/Anything when writable; otherwise null.
+  Future<File?> _tryWritePublicExport(String name, String contents) async {
+    final dirs = <Directory>[];
+    if (Platform.isAndroid) {
+      dirs.addAll([
+        Directory('/storage/emulated/0/Download/Anything'),
+        Directory('/storage/emulated/0/Downloads/Anything'),
+      ]);
+    }
+    try {
+      final downloads = await getDownloadsDirectory();
+      if (downloads != null) {
+        dirs.add(Directory(p.join(downloads.path, 'Anything')));
+      }
+    } catch (_) {}
+
+    for (final dir in dirs) {
+      try {
+        if (!dir.existsSync()) dir.createSync(recursive: true);
+        final unique = _uniqueFileName(dir, name);
+        final file = File(p.join(dir.path, unique));
+        file.writeAsStringSync(contents);
+        return file;
+      } catch (_) {
+        // Scoped storage or permission — try next candidate.
+      }
+    }
+    return null;
+  }
+
+  Future<File?> _trySaveViaPicker(String name, String contents) async {
+    try {
+      final path = await picker_pkg.FilePicker.platform.saveFile(
+        dialogTitle: 'Export Experience',
+        fileName: name,
+        type: picker_pkg.FileType.custom,
+        allowedExtensions: const ['anything', 'json'],
+        bytes: Uint8List.fromList(contents.codeUnits),
+      );
+      if (path == null || path.isEmpty) return null;
+      final file = File(path);
+      if (!file.existsSync()) {
+        file.writeAsStringSync(contents);
+      }
+      return file;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  String _uniqueFileName(Directory dir, String name) {
+    final file = File(p.join(dir.path, name));
+    if (!file.existsSync()) return name;
+    final dot = name.lastIndexOf('.');
+    final stem = dot > 0 ? name.substring(0, dot) : name;
+    final ext = dot > 0 ? name.substring(dot) : '';
+    for (var i = 2; i < 1000; i++) {
+      final candidate = '${stem}_$i$ext';
+      if (!File(p.join(dir.path, candidate)).existsSync()) return candidate;
+    }
+    final stamp = DateTime.now().millisecondsSinceEpoch;
+    return '${stem}_$stamp$ext';
   }
 
   /// READ A PICKED FILE AS TEXT — Implementation Specification IS-P02 Phase 9.
@@ -305,8 +393,17 @@ class RealFileService implements FileService {
   /// all this does: the caller decides whether the bytes mean anything.
   Future<String?> readPickedText(String fileId) async {
     final picked = _pendingPicks[fileId];
-    final path = picked?.path;
-    if (path == null) return null;
+    if (picked == null) return null;
+    // Prefer in-memory bytes (Android SAF / content URI picks).
+    if (picked.bytes != null && picked.bytes!.isNotEmpty) {
+      try {
+        return utf8.decode(picked.bytes!, allowMalformed: true);
+      } catch (_) {
+        return null;
+      }
+    }
+    final path = picked.path;
+    if (path == null || path.isEmpty) return null;
     final source = File(path);
     if (!source.existsSync()) return null;
     try {

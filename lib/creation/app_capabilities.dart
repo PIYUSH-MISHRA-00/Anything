@@ -1,8 +1,8 @@
 /// Open-world application capabilities — describe WHAT an app needs, not its name.
 ///
-/// Capabilities are structural. The planner/reasoner may emit them; the
-/// creation engine and semantic completeness validator consume them. Domain
-/// keywords ("weather", "calculator") are never hard-coded here.
+/// Primary path: structured capability ids from the model/blueprint.
+/// Lexical cues are a bounded fallback only when the structured plan under-
+/// specifies primary purpose — they must not be the sole application selector.
 library;
 
 import '../core/contracts/intent.dart';
@@ -22,6 +22,8 @@ abstract final class AppCapabilityIds {
   static const sort = 'sort';
   static const navigation = 'navigation';
   static const calculation = 'calculation';
+  /// Calculation mode with scientific / trig / log operations.
+  static const scientificCalculation = 'scientificCalculation';
   static const networkData = 'networkData';
   static const webData = 'webData';
   /// Structured weather observations — NOT generic web knowledge.
@@ -64,6 +66,7 @@ abstract final class AppCapabilityIds {
     sort,
     navigation,
     calculation,
+    scientificCalculation,
     networkData,
     webData,
     weatherData,
@@ -192,120 +195,139 @@ class AppCapabilityInferrer {
     }
 
     final expression = intent?.expression.toLowerCase() ?? '';
+    // Structured plan wins. Lexical cues only fill gaps when the model/
+    // blueprint omitted a primary capability surface.
+    final hasPrimarySurface =
+        caps.contains(AppCapabilityIds.calculation) ||
+        caps.contains(AppCapabilityIds.scientificCalculation) ||
+        caps.contains(AppCapabilityIds.timers) ||
+        caps.contains(AppCapabilityIds.weatherData) ||
+        caps.contains(AppCapabilityIds.newsData) ||
+        caps.contains(AppCapabilityIds.webKnowledge) ||
+        caps.contains(AppCapabilityIds.crud);
+
     if (expression.isNotEmpty) {
-      // Only structural cues from the expression shape — not domain allow-lists.
       if (expression.contains('offline') || expression.contains('sync')) {
         caps.add(AppCapabilityIds.offlineCache);
         caps.add(AppCapabilityIds.synchronization);
       }
-      // Same structural live/lookup cues as IntentUnderstanding heuristics.
-      final looksLive =
-          expression.contains('live') ||
-          expression.contains('online') ||
-          expression.contains('dashboard') ||
-          expression.contains('api') ||
-          expression.contains('fetch') ||
-          expression.contains('realtime') ||
-          expression.contains('real-time');
-      final looksLookup =
-          expression.contains('search') ||
-          expression.contains('web') ||
-          expression.contains('lookup') ||
-          expression.contains('reference');
-      if (looksLive || looksLookup) {
-        caps.add(AppCapabilityIds.networkData);
-        caps.add(AppCapabilityIds.webData);
-        caps.add(AppCapabilityIds.refresh);
-        caps.add(AppCapabilityIds.loadingState);
-        caps.add(AppCapabilityIds.errorState);
-        caps.add(AppCapabilityIds.input);
-        caps.add(AppCapabilityIds.resultDisplay);
-      }
 
-      // Time-measurement language → timers capability (not a product template).
-      final looksTiming =
-          expression.contains('stopwatch') ||
-          expression.contains('timer') ||
-          expression.contains('countdown') ||
-          expression.contains('chronometer') ||
-          expression.contains('elapsed') ||
-          RegExp(r'\blap\b').hasMatch(expression);
-      if (looksTiming && !caps.contains(AppCapabilityIds.calculation)) {
-        caps.add(AppCapabilityIds.timers);
-        caps.add(AppCapabilityIds.input);
-        caps.add(AppCapabilityIds.resultDisplay);
-        // Timing and calculation are mutually exclusive primary surfaces.
-        caps.remove(AppCapabilityIds.calculation);
-      }
+      if (!hasPrimarySurface) {
+        // Bounded lexical FALLBACK (under-specified plans only).
+        final looksLive =
+            expression.contains('live') ||
+            expression.contains('online') ||
+            expression.contains('dashboard') ||
+            expression.contains('api') ||
+            expression.contains('fetch') ||
+            expression.contains('realtime') ||
+            expression.contains('real-time');
+        final looksLookup =
+            expression.contains('search') ||
+            expression.contains('web') ||
+            expression.contains('lookup') ||
+            expression.contains('reference');
+        if (looksLive || looksLookup) {
+          caps.add(AppCapabilityIds.networkData);
+          caps.add(AppCapabilityIds.webData);
+          caps.add(AppCapabilityIds.refresh);
+          caps.add(AppCapabilityIds.loadingState);
+          caps.add(AppCapabilityIds.errorState);
+          caps.add(AppCapabilityIds.input);
+          caps.add(AppCapabilityIds.resultDisplay);
+        }
 
-      final looksArithmetic =
-          expression.contains('calculator') ||
-          expression.contains('arithmetic') ||
-          expression.contains('calculate');
-      if (looksArithmetic && !caps.contains(AppCapabilityIds.timers)) {
-        caps.add(AppCapabilityIds.calculation);
-        caps.add(AppCapabilityIds.input);
-        caps.add(AppCapabilityIds.resultDisplay);
-      }
+        final looksTiming =
+            expression.contains('stopwatch') ||
+            expression.contains('timer') ||
+            expression.contains('countdown') ||
+            expression.contains('chronometer') ||
+            expression.contains('elapsed') ||
+            RegExp(r'\blap\b').hasMatch(expression);
+        if (looksTiming && !caps.contains(AppCapabilityIds.calculation)) {
+          caps.add(AppCapabilityIds.timers);
+          caps.add(AppCapabilityIds.input);
+          caps.add(AppCapabilityIds.resultDisplay);
+          caps.remove(AppCapabilityIds.calculation);
+        }
 
-      // IS-P13: structured domain data ≠ generic web knowledge.
-      final looksWeather =
-          expression.contains('weather') ||
-          expression.contains('forecast') ||
-          expression.contains('temperature') ||
-          expression.contains('humidity');
-      final looksNews =
-          RegExp(r'\bnews\b').hasMatch(expression) ||
-          expression.contains('headline') ||
-          expression.contains('headlines') ||
-          expression.contains('articles');
-      final looksResearch =
-          expression.contains('research') ||
-          expression.contains('explain') ||
-          expression.contains('wikipedia') ||
-          expression.contains('who founded') ||
-          expression.contains('history of');
+        final looksArithmetic =
+            expression.contains('calculator') ||
+            expression.contains('arithmetic') ||
+            expression.contains('calculate');
+        if (looksArithmetic && !caps.contains(AppCapabilityIds.timers)) {
+          caps.add(AppCapabilityIds.calculation);
+          caps.add(AppCapabilityIds.input);
+          caps.add(AppCapabilityIds.resultDisplay);
+          if (expression.contains('scientific') ||
+              expression.contains('trig') ||
+              expression.contains('engineering')) {
+            caps.add(AppCapabilityIds.scientificCalculation);
+          }
+        }
 
-      if (looksWeather) {
-        caps.add(AppCapabilityIds.weatherData);
-        caps.add(AppCapabilityIds.input);
-        caps.add(AppCapabilityIds.refresh);
-        caps.add(AppCapabilityIds.loadingState);
-        caps.add(AppCapabilityIds.errorState);
-        caps.add(AppCapabilityIds.resultDisplay);
-        // Do not satisfy weather with generic knowledge/Wikipedia.
-        caps.remove(AppCapabilityIds.networkData);
-        caps.remove(AppCapabilityIds.webData);
-        caps.remove(AppCapabilityIds.webKnowledge);
-        // Model often emits collection/CRUD for "dashboard" — strip those.
-        caps.remove(AppCapabilityIds.crud);
-        caps.remove(AppCapabilityIds.form);
-        caps.remove(AppCapabilityIds.entity);
-        caps.remove(AppCapabilityIds.collection);
-      } else if (looksNews) {
-        caps.add(AppCapabilityIds.newsData);
-        caps.add(AppCapabilityIds.input);
-        caps.add(AppCapabilityIds.refresh);
-        caps.add(AppCapabilityIds.loadingState);
-        caps.add(AppCapabilityIds.errorState);
-        caps.add(AppCapabilityIds.resultDisplay);
-        caps.remove(AppCapabilityIds.networkData);
-        caps.remove(AppCapabilityIds.webData);
-        caps.remove(AppCapabilityIds.webKnowledge);
-        // "news app" must not be coerced into a CRUD list/form product.
-        caps.remove(AppCapabilityIds.crud);
-        caps.remove(AppCapabilityIds.form);
-        caps.remove(AppCapabilityIds.entity);
-        caps.remove(AppCapabilityIds.collection);
-      } else if (looksResearch) {
-        caps.add(AppCapabilityIds.webKnowledge);
-        caps.add(AppCapabilityIds.networkData);
-        caps.add(AppCapabilityIds.webData);
-        caps.add(AppCapabilityIds.refresh);
-        caps.add(AppCapabilityIds.loadingState);
-        caps.add(AppCapabilityIds.errorState);
-        caps.add(AppCapabilityIds.input);
-        caps.add(AppCapabilityIds.resultDisplay);
+        final looksWeather =
+            expression.contains('weather') ||
+            expression.contains('forecast') ||
+            expression.contains('temperature') ||
+            expression.contains('humidity');
+        final looksNews =
+            RegExp(r'\bnews\b').hasMatch(expression) ||
+            expression.contains('headline') ||
+            expression.contains('headlines') ||
+            expression.contains('articles');
+        final looksResearch =
+            expression.contains('research') ||
+            expression.contains('explain') ||
+            expression.contains('wikipedia') ||
+            expression.contains('who founded') ||
+            expression.contains('history of');
+
+        if (looksWeather) {
+          caps.add(AppCapabilityIds.weatherData);
+          caps.add(AppCapabilityIds.input);
+          caps.add(AppCapabilityIds.refresh);
+          caps.add(AppCapabilityIds.loadingState);
+          caps.add(AppCapabilityIds.errorState);
+          caps.add(AppCapabilityIds.resultDisplay);
+          caps.remove(AppCapabilityIds.networkData);
+          caps.remove(AppCapabilityIds.webData);
+          caps.remove(AppCapabilityIds.webKnowledge);
+          caps.remove(AppCapabilityIds.crud);
+          caps.remove(AppCapabilityIds.form);
+          caps.remove(AppCapabilityIds.entity);
+          caps.remove(AppCapabilityIds.collection);
+        } else if (looksNews) {
+          caps.add(AppCapabilityIds.newsData);
+          caps.add(AppCapabilityIds.input);
+          caps.add(AppCapabilityIds.refresh);
+          caps.add(AppCapabilityIds.loadingState);
+          caps.add(AppCapabilityIds.errorState);
+          caps.add(AppCapabilityIds.resultDisplay);
+          caps.remove(AppCapabilityIds.networkData);
+          caps.remove(AppCapabilityIds.webData);
+          caps.remove(AppCapabilityIds.webKnowledge);
+          caps.remove(AppCapabilityIds.crud);
+          caps.remove(AppCapabilityIds.form);
+          caps.remove(AppCapabilityIds.entity);
+          caps.remove(AppCapabilityIds.collection);
+        } else if (looksResearch) {
+          caps.add(AppCapabilityIds.webKnowledge);
+          caps.add(AppCapabilityIds.networkData);
+          caps.add(AppCapabilityIds.webData);
+          caps.add(AppCapabilityIds.refresh);
+          caps.add(AppCapabilityIds.loadingState);
+          caps.add(AppCapabilityIds.errorState);
+          caps.add(AppCapabilityIds.input);
+          caps.add(AppCapabilityIds.resultDisplay);
+        }
+      } else if (caps.contains(AppCapabilityIds.calculation) &&
+          !caps.contains(AppCapabilityIds.scientificCalculation) &&
+          (expression.contains('scientific') ||
+              expression.contains('trig') ||
+              expression.contains('engineering'))) {
+        // Mode refinement when calculation already structured.
+        caps.add(AppCapabilityIds.scientificCalculation);
       }
     }
 
@@ -317,12 +339,14 @@ class AppCapabilityInferrer {
               expression.contains('stopwatch') ||
               expression.contains('countdown'))) {
         caps.remove(AppCapabilityIds.calculation);
+        caps.remove(AppCapabilityIds.scientificCalculation);
       } else if (_looksLikeCalculationUtility(blueprint)) {
         caps.remove(AppCapabilityIds.timers);
       } else {
         // Prefer neither false product over the wrong one: drop calculation
         // (historically the unsafe default).
         caps.remove(AppCapabilityIds.calculation);
+        caps.remove(AppCapabilityIds.scientificCalculation);
       }
     }
 
@@ -418,6 +442,10 @@ class AppCapabilityInferrer {
       case 'math':
       case 'arithmetic':
         return AppCapabilityIds.calculation;
+      case 'scientific_calculation':
+      case 'scientific-calc':
+      case 'scientific_calculator':
+        return AppCapabilityIds.scientificCalculation;
       case 'timer':
       case 'timing':
       case 'stopwatch':
@@ -502,6 +530,15 @@ class PackageCapabilityProbe {
     final hasClear =
         actions.contains('calc.clear') || actions.contains('clearPressed');
     return hasDigit && hasOp && hasEquals && hasClear;
+  }
+
+  /// Scientific ops present (unary functions / constants) — not just basic pad.
+  bool get hasScientificOps {
+    final actions = _nodes
+        .map((n) => n.actionBinding?.actionId)
+        .whereType<String>()
+        .toSet();
+    return actions.contains('calc.unary') || actions.contains('calc.constant');
   }
 
   /// Timing surface: start + pause/reset + elapsed display binding.

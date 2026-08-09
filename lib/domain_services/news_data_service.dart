@@ -13,6 +13,7 @@ class NewsArticle {
   final String? publishedAt;
   final String? summary;
   final String? url;
+  final String? imageUrl;
   final DateTime retrievedAt;
   final String provider;
 
@@ -23,6 +24,7 @@ class NewsArticle {
     this.publishedAt,
     this.summary,
     this.url,
+    this.imageUrl,
     this.provider = 'google-news-rss',
   });
 
@@ -35,6 +37,7 @@ class NewsArticle {
     'source': source,
     'publishedAt': publishedAt,
     'summary': summary,
+    'imageUrl': imageUrl,
     'retrievedAt': retrievedAt.toIso8601String(),
   };
 
@@ -88,13 +91,15 @@ class NewsDataService {
       final link = _stripCdata(_tag(item, 'link') ?? '');
       final pub = _stripCdata(_tag(item, 'pubDate') ?? '');
       final desc = _stripHtml(_stripCdata(_tag(item, 'description') ?? ''));
-      final source = _stripCdata(_tag(item, 'source') ?? '') ;
+      final source = _stripCdata(_tag(item, 'source') ?? '');
+      final imageUrl = _extractImageUrl(item);
       return NewsArticle(
         title: title,
         source: source.isEmpty ? 'Google News' : source,
         publishedAt: pub.isEmpty ? null : pub,
         summary: desc.isEmpty ? null : desc,
         url: link.isEmpty ? null : link,
+        imageUrl: imageUrl,
         retrievedAt: now,
       );
     }).toList();
@@ -115,6 +120,39 @@ class NewsDataService {
       caseSensitive: false,
     );
     return re.firstMatch(xml)?.group(1);
+  }
+
+  /// Prefer media:content / enclosure / img src when present in the item XML.
+  static String? _extractImageUrl(String itemXml) {
+    final media = RegExp(
+      r'''<(?:media:content|media:thumbnail)[^>]+url=["']([^"']+)["']''',
+      caseSensitive: false,
+    ).firstMatch(itemXml)?.group(1);
+    if (media != null && media.trim().isNotEmpty) return media.trim();
+
+    final enclosure = RegExp(
+      r'''<enclosure[^>]+url=["']([^"']+)["'][^>]*>''',
+      caseSensitive: false,
+    ).firstMatch(itemXml);
+    if (enclosure != null) {
+      final url = enclosure.group(1)?.trim();
+      final type = RegExp(
+        r'''type=["']([^"']+)["']''',
+        caseSensitive: false,
+      ).firstMatch(enclosure.group(0) ?? '')?.group(1);
+      if (url != null &&
+          url.isNotEmpty &&
+          (type == null || type.startsWith('image/'))) {
+        return url;
+      }
+    }
+
+    final img = RegExp(
+      r'''<img[^>]+src=["']([^"']+)["']''',
+      caseSensitive: false,
+    ).firstMatch(itemXml)?.group(1);
+    if (img != null && img.trim().isNotEmpty) return img.trim();
+    return null;
   }
 
   static String _stripCdata(String raw) {

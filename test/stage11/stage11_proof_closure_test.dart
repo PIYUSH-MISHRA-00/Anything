@@ -390,7 +390,7 @@ void main() {
   // C. UNKNOWN / FORBIDDEN COMPONENTS
   // =========================================================================
   group('Component Registry — Security', () {
-    test('All 25 trusted component types are registered', () {
+    test('All trusted component types are registered', () {
       final registry = RuntimeComponentRegistry.defaults();
       final expected = {
         'text',
@@ -418,6 +418,8 @@ void main() {
         'tabBar',
         'tab',
         'grid',
+        'remoteImage',
+        'image',
       };
       for (final type in expected) {
         expect(
@@ -426,7 +428,7 @@ void main() {
           reason: '$type should be registered',
         );
       }
-      expect(registry.registeredTypes.length, equals(25));
+      expect(registry.registeredTypes.length, equals(expected.length));
     });
 
     test('Shell/terminal/JS/dartCode are NOT registered', () {

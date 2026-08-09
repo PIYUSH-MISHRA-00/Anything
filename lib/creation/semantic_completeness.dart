@@ -46,7 +46,8 @@ class SemanticCompletenessValidator {
     final gaps = <CapabilityGap>[];
     final warnings = <String>[];
 
-    if (requiredCapabilities.contains(AppCapabilityIds.calculation)) {
+    if (requiredCapabilities.contains(AppCapabilityIds.calculation) ||
+        requiredCapabilities.contains(AppCapabilityIds.scientificCalculation)) {
       if (!probe.hasCalculationPad && !probe.hasTextInput) {
         gaps.add(
           const CapabilityGap(
@@ -61,6 +62,19 @@ class SemanticCompletenessValidator {
             capabilityId: AppCapabilityIds.calculation,
             reason:
                 'calculation requires digit pad, operators, equals, and clear',
+          ),
+        );
+      }
+      if (requiredCapabilities.contains(
+            AppCapabilityIds.scientificCalculation,
+          ) &&
+          probe.hasCalculationPad &&
+          !probe.hasScientificOps) {
+        gaps.add(
+          const CapabilityGap(
+            capabilityId: AppCapabilityIds.scientificCalculation,
+            reason:
+                'scientific calculation requires unary/scientific operations',
           ),
         );
       }

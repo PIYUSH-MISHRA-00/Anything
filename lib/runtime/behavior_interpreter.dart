@@ -644,6 +644,26 @@ class BehaviorInterpreter {
     if (cacheStateId != null) {
       context.stateEngine.write(cacheStateId, body);
     }
+    final imageStateId = node.config['imageStateId'] as String?;
+    if (imageStateId != null) {
+      String? imageUrl;
+      if (first is Map) {
+        imageUrl = (first['imageUrl'] ?? first['image'] ?? '').toString();
+        if (imageUrl.isEmpty) {
+          for (final item in results) {
+            if (item is Map) {
+              final candidate =
+                  (item['imageUrl'] ?? item['image'] ?? '').toString();
+              if (candidate.isNotEmpty) {
+                imageUrl = candidate;
+                break;
+              }
+            }
+          }
+        }
+      }
+      context.stateEngine.write(imageStateId, imageUrl ?? '');
+    }
     if (sourceTypeStateId != null && sourceType.isNotEmpty) {
       context.stateEngine.write(sourceTypeStateId, sourceType);
     }

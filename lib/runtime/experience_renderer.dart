@@ -11,6 +11,7 @@ import '../creation/experience_package.dart';
 import '../design_system/tokens/spacing.dart';
 import 'component_registry.dart';
 import 'form_controller.dart';
+import 'remote_image.dart';
 import 'runtime_context.dart';
 import 'state_engine.dart';
 
@@ -235,6 +236,9 @@ class ExperienceRenderer {
           stateEngine,
           runtimeContext: runtimeContext,
         );
+      case 'remoteImage':
+      case 'image':
+        return _renderRemoteImage(context, node, stateEngine, resolvedProperties);
     }
 
     // IS-P11: row/input must use legacy renderers. Registry `row` cannot
@@ -397,9 +401,90 @@ class ExperienceRenderer {
           onEvent: onEvent,
           runtimeContext: runtimeContext,
         );
+      case 'remoteImage':
+      case 'image':
+        return _renderRemoteImage(context, node, stateEngine, resolvedProperties);
       default:
         return _renderUnknown(node);
     }
+  }
+
+  Widget _renderRemoteImage(
+    BuildContext context,
+    InterfaceNode node,
+    ExperienceStateEngine stateEngine,
+    Map<String, dynamic> resolvedProperties,
+  ) {
+    final bound = node.stateBinding != null
+        ? stateEngine.read(node.stateBinding!)?.toString()
+        : null;
+    final raw = (bound != null && bound.isNotEmpty)
+        ? bound
+        : resolvedProperties['url']?.toString();
+    final url = RemoteImageUrl.sanitize(raw);
+    final height = resolvedProperties['height'] is num
+        ? (resolvedProperties['height'] as num).toDouble()
+        : 180.0;
+    final width = resolvedProperties['width'] is num
+        ? (resolvedProperties['width'] as num).toDouble()
+        : double.infinity;
+    final label = resolvedProperties['semanticLabel']?.toString() ??
+        resolvedProperties['label']?.toString() ??
+        'Image';
+    final scheme = Theme.of(context).colorScheme;
+    if (url == null) {
+      return Container(
+        width: width,
+        height: height,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: scheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Icon(
+          Icons.image_not_supported_outlined,
+          color: scheme.outline,
+          size: 40,
+        ),
+      );
+    }
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(12),
+      child: Image.network(
+        url,
+        width: width,
+        height: height,
+        fit: BoxFit.cover,
+        semanticLabel: label,
+        loadingBuilder: (context, child, progress) {
+          if (progress == null) return child;
+          return Container(
+            width: width,
+            height: height,
+            alignment: Alignment.center,
+            color: scheme.surfaceContainerHighest,
+            child: const SizedBox(
+              width: 28,
+              height: 28,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          );
+        },
+        errorBuilder: (context, error, stack) {
+          return Container(
+            width: width,
+            height: height,
+            alignment: Alignment.center,
+            color: scheme.surfaceContainerHighest,
+            child: Icon(
+              Icons.broken_image_outlined,
+              color: scheme.outline,
+              size: 40,
+            ),
+          );
+        },
+      ),
+    );
   }
 
   Map<String, dynamic> _resolveBindings(
