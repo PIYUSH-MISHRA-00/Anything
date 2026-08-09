@@ -3,10 +3,13 @@
 /// Sets up theme, navigation, and the app shell.
 library;
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../design_system/theme/anything_theme.dart';
 import '../design_system/theme/theme_provider.dart';
+import 'app_composition.dart';
 import 'app_shell.dart';
 import '../features/onboarding/onboarding_screen.dart';
 
@@ -74,6 +77,17 @@ class _AnythingRootState extends State<_AnythingRoot> {
   }
 
   Future<void> _check() async {
+    // IS-P06: the provider registry resolves its ACTIVE provider from stored
+    // configuration at launch. Nothing used to call `setActiveProvider`, so
+    // `activeProvider` stayed null for the whole session and a configured key
+    // was never actually used.
+    //
+    // Started here but deliberately NOT awaited before the first frame: it
+    // reads the keystore once per provider, and the launch decision below does
+    // not depend on it. Every registry method awaits the same in-flight load,
+    // so a caller that arrives early still sees the finished state.
+    unawaited(_initialiseProviders());
+
     var completed = false;
     try {
       completed = await const OnboardingState().hasCompleted();
@@ -83,6 +97,15 @@ class _AnythingRootState extends State<_AnythingRoot> {
       completed = true;
     }
     if (mounted) setState(() => _needsOnboarding = !completed);
+  }
+
+  Future<void> _initialiseProviders() async {
+    try {
+      await AppComposition.production().providerRegistry.initialize();
+    } catch (_) {
+      // A provider that cannot be restored must not affect launch; the user
+      // sees no configured provider and can add one again.
+    }
   }
 
   @override

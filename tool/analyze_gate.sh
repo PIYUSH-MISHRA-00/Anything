@@ -27,13 +27,35 @@ set -uo pipefail
 # create.
 BASELINE_ERRORS=0
 BASELINE_WARNINGS=27
-BASELINE_INFOS=43
+# Lowered 43 -> 41 by IS-P06: replacing the hand-rolled Groq adapter with the
+# shared OpenAI-compatible one removed two style infos along with the code.
+BASELINE_INFOS=41
 
 FLUTTER="${FLUTTER:-flutter}"
 OUT="$(mktemp)"
 trap 'rm -f "$OUT"' EXIT
 
 "$FLUTTER" analyze > "$OUT" 2>&1 || true
+
+# IS-P06 — PROVE THE ANALYZER ACTUALLY RAN.
+#
+# `|| true` above exists because `flutter analyze` exits non-zero whenever it
+# finds any issue, and this repository has a non-empty baseline. But it also
+# swallowed the case where the command never ran at all: with `flutter` absent
+# from PATH the counts below all came back 0, which compares favourably against
+# every baseline, and the gate printed "PASS". A validation gate that passes
+# when the validation did not happen is worse than no gate.
+#
+# `flutter analyze` always ends with "No issues found!" or "N issues found.",
+# so the presence of that line is proof of a real run.
+if ! grep -qE 'issues? found|No issues found' "$OUT"; then
+  echo "FAIL: the analyzer did not run. Output was:"
+  cat "$OUT"
+  echo
+  echo "Set FLUTTER to the Flutter binary if it is not on PATH, e.g."
+  echo "  FLUTTER=/path/to/flutter bash tool/analyze_gate.sh"
+  exit 1
+fi
 
 errors=$(grep -c 'error - '   "$OUT" || true)
 warnings=$(grep -c 'warning - ' "$OUT" || true)

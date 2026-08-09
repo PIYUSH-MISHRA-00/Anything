@@ -167,6 +167,19 @@ class ProviderConfig {
   final DateTime createdAt;
   final DateTime updatedAt;
 
+  /// IS-P06 — when this configuration last passed a connection test.
+  ///
+  /// `null` means never tested, which is DIFFERENT from tested-and-failed and
+  /// is shown differently. A key can stop working without the app touching it
+  /// (revoked, expired, out of credit), so "configured" alone was never
+  /// enough to tell the user whether it still works.
+  final DateTime? lastValidatedAt;
+
+  /// IS-P06 — the message from the most recent failed test, cleared on
+  /// success. Kept so the user can come back to the screen and still see WHY
+  /// it failed rather than only that it did.
+  final String? lastFailureReason;
+
   const ProviderConfig({
     required this.id,
     required this.providerType,
@@ -177,6 +190,8 @@ class ProviderConfig {
     this.isConfigured = false,
     required this.createdAt,
     required this.updatedAt,
+    this.lastValidatedAt,
+    this.lastFailureReason,
   });
 
   /// IS-P05: additive serialisation so provider configuration can be
@@ -194,8 +209,13 @@ class ProviderConfig {
     'isConfigured': isConfigured,
     'createdAt': createdAt.toIso8601String(),
     'updatedAt': updatedAt.toIso8601String(),
+    'lastValidatedAt': lastValidatedAt?.toIso8601String(),
+    'lastFailureReason': lastFailureReason,
   };
 
+  /// Tolerant of configurations written before IS-P06 added the validation
+  /// fields: absent keys read as `null`, so an existing install upgrades
+  /// rather than losing its provider.
   factory ProviderConfig.fromJson(Map<String, dynamic> json) => ProviderConfig(
     id: json['id'] as String,
     providerType: json['providerType'] as String,
@@ -206,6 +226,11 @@ class ProviderConfig {
     isConfigured: json['isConfigured'] == true,
     createdAt: DateTime.parse(json['createdAt'] as String),
     updatedAt: DateTime.parse(json['updatedAt'] as String),
+    lastValidatedAt: switch (json['lastValidatedAt']) {
+      final String s => DateTime.tryParse(s),
+      _ => null,
+    },
+    lastFailureReason: json['lastFailureReason'] as String?,
   );
 
   ProviderConfig copyWith({
@@ -218,6 +243,13 @@ class ProviderConfig {
     bool? isConfigured,
     DateTime? createdAt,
     DateTime? updatedAt,
+    DateTime? lastValidatedAt,
+    String? lastFailureReason,
+
+    /// A successful test must be able to REMOVE a stale failure message.
+    /// `copyWith(lastFailureReason: null)` cannot express that, because null
+    /// means "unchanged" everywhere else in this method.
+    bool clearFailureReason = false,
   }) {
     return ProviderConfig(
       id: id ?? this.id,
@@ -229,6 +261,10 @@ class ProviderConfig {
       isConfigured: isConfigured ?? this.isConfigured,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? DateTime.now(),
+      lastValidatedAt: lastValidatedAt ?? this.lastValidatedAt,
+      lastFailureReason: clearFailureReason
+          ? null
+          : (lastFailureReason ?? this.lastFailureReason),
     );
   }
 }

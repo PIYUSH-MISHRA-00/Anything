@@ -1,18 +1,22 @@
-/// AI Provider preferences screen.
+/// AI Provider preferences — Implementation Specification IS-P06.
 ///
-/// Allows users to add, configure, test, and manage AI providers.
-/// BYOK (Bring Your Own Key) architecture.
+/// BYOK (Bring Your Own Key). The screen browses `ProviderCatalogue`, so the
+/// list is generated from the same declaration the registry instantiates from.
+/// Before IS-P06 the "not available" names were a hand-written list in this
+/// file, which is how a settings screen drifts out of step with what the app
+/// can actually do.
 library;
 
 import 'package:flutter/material.dart';
 
-import 'package:anything/core/contracts/model_provider.dart';
-import 'package:anything/design_system/components/components.dart';
-import 'package:anything/design_system/tokens/spacing.dart';
-import 'package:anything/services/provider_registry.dart';
+import '../../ai/provider_catalogue.dart';
 import '../../app/app_composition.dart';
+import '../../core/contracts/model_provider.dart';
+import '../../design_system/components/components.dart';
+import '../../design_system/tokens/spacing.dart';
+import '../../services/provider_registry.dart';
+import 'provider_configuration_sheet.dart';
 
-/// AI Provider preferences screen.
 class ProviderPreferencesScreen extends StatefulWidget {
   /// Injectable for tests; production uses the composition root's single
   /// registry so configuration is shared with the rest of the app.
@@ -27,345 +31,148 @@ class ProviderPreferencesScreen extends StatefulWidget {
 
 class _ProviderPreferencesScreenState extends State<ProviderPreferencesScreen> {
   late final AnythingProviderRegistry _registry;
-  List<ProviderConfig> _configs = [];
+  final TextEditingController _searchController = TextEditingController();
+
+  List<ProviderConfig> _configs = const [];
   bool _isLoading = true;
+  String _query = '';
+  ProviderCategory? _categoryFilter;
 
   @override
   void initState() {
     super.initState();
-    // IS-P05: was `AnythingProviderRegistry()` -- a PRIVATE registry.
-    // Anything saved here went into a throwaway instance the rest of the app
-    // never saw, so configuring a provider had no effect on generation. It now
-    // uses the ONE registry from the composition root.
+    // IS-P05: was `AnythingProviderRegistry()` — a PRIVATE registry, so
+    // anything saved here went into a throwaway instance the rest of the app
+    // never saw. It now uses the ONE registry from the composition root.
     _registry = widget.registry ?? AppComposition.production().providerRegistry;
-    _loadConfigs();
+    _load();
   }
 
-  Future<void> _loadConfigs() async {
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _load() async {
     final configs = await _registry.listConfigs();
+    if (!mounted) return;
     setState(() {
       _configs = configs;
       _isLoading = false;
     });
   }
 
-  Future<void> _addGroqProvider() async {
-    final config = await _registry.createGroqConfig();
-    await _loadConfigs();
-    if (mounted) {
-      _showConfigureDialog(config);
+  ProviderConfig? _configFor(String providerId) {
+    for (final c in _configs) {
+      if (c.providerType == providerId) return c;
     }
+    return null;
   }
 
-  void _showConfigureDialog(ProviderConfig config) {
-    final apiKeyController = TextEditingController();
-    bool isTesting = false;
-    bool testSuccess = false;
-    String? testMessage;
+  Future<void> _open(ProviderDescriptor descriptor) async {
+    if (!descriptor.isImplemented) {
+      _explainUnavailable(descriptor);
+      return;
+    }
 
-    showModalBottomSheet(
+    var config = _configFor(descriptor.id);
+    config ??= await _registry.createConfig(descriptor);
+    await _load();
+    if (!mounted) return;
+
+    await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setModalState) {
-          final colorScheme = Theme.of(context).colorScheme;
-
-          return Container(
-            padding: EdgeInsets.fromLTRB(
-              32,
-              32,
-              32,
-              MediaQuery.of(context).viewInsets.bottom + 32,
-            ),
-            decoration: BoxDecoration(
-              color: colorScheme.surface,
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(24),
-              ),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Configure ${config.displayName}',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w600,
-                    color: colorScheme.onSurface,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Enter your API key from console.groq.com',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                AnythingTextField(
-                  label: 'API Key',
-                  hint: 'gsk_...',
-                  controller: apiKeyController,
-                  obscureText: true,
-                ),
-                if (testMessage != null) ...[
-                  const SizedBox(height: 12),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: testSuccess
-                          ? Colors.green.withAlpha(26)
-                          : colorScheme.errorContainer.withAlpha(51),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          testSuccess ? Icons.check_circle : Icons.error,
-                          size: 16,
-                          color: testSuccess ? Colors.green : colorScheme.error,
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            testMessage!,
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: testSuccess
-                                  ? Colors.green
-                                  : colorScheme.error,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 24),
-                Row(
-                  children: [
-                    Expanded(
-                      child: AnythingButton(
-                        label: isTesting ? 'Testing...' : 'Test Connection',
-                        isLoading: isTesting,
-                        onPressed: isTesting
-                            ? null
-                            : () async {
-                                setModalState(() {
-                                  isTesting = true;
-                                  testMessage = null;
-                                });
-                                final result = await _registry.testProvider(
-                                  config.providerType,
-                                  apiKeyController.text,
-                                );
-                                setModalState(() {
-                                  isTesting = false;
-                                  testSuccess = result.success;
-                                  testMessage = result.message;
-                                });
-                              },
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: AnythingGhostButton(
-                        label: 'Save',
-                        onPressed: () async {
-                          if (apiKeyController.text.isNotEmpty) {
-                            final provider = _registry.getProvider(
-                              config.providerType,
-                            );
-                            if (provider != null) {
-                              await provider.saveApiKey(apiKeyController.text);
-                              await _registry.saveConfig(
-                                config.copyWith(isConfigured: true),
-                              );
-                              await _loadConfigs();
-                            }
-                          }
-                          if (mounted) Navigator.pop(context);
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          );
-        },
+      builder: (_) => ProviderConfigurationSheet(
+        config: config!,
+        descriptor: descriptor,
+        registry: _registry,
+        onChanged: _load,
       ),
     );
+    await _load();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Scaffold(
-      backgroundColor: colorScheme.surface,
-      appBar: AppBar(
-        title: const Text('AI Providers'),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : ListView(
-              padding: const EdgeInsets.all(AnythingPadding.regular),
-              children: [
-                // Header
-                Text(
-                  'Bring Your Own Key',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                const SizedBox(height: 24),
-
-                // Existing providers
-                if (_configs.isEmpty)
-                  AnythingEmptyState(
-                    icon: Icons.psychology,
-                    title: 'No providers configured',
-                    message:
-                        'Add an AI provider to start creating experiences.',
-                    actionLabel: 'Add Groq',
-                    onAction: _addGroqProvider,
-                  )
-                else ...[
-                  ...(_configs.map((config) => _buildProviderCard(config))),
-                  const SizedBox(height: 16),
-                  AnythingButton(
-                    label: 'Add Groq',
-                    icon: Icons.add,
-                    onPressed: _addGroqProvider,
-                  ),
-                ],
-
-                // IS-P05 finding 4. The screen offered only Groq with no
-                // explanation, which reads as an unfinished list rather than a
-                // deliberate one. These are named as NOT AVAILABLE with the
-                // real reason -- each needs an adapter implementing
-                // `ModelProvider`, and none exists yet.
-                const SizedBox(height: 32),
-                Text(
-                  'NOT AVAILABLE YET',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.8,
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                ..._unavailable.map(
-                  (p) => _buildUnavailableCard(p, colorScheme),
-                ),
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: colorScheme.surfaceContainerHigh,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    'Anything talks to a provider through a small adapter. '
-                    'Only Groq has one today, so it is the only key that can '
-                    'do anything. Adding another is a contained piece of work '
-                    'and contributions are welcome.',
-                    style: TextStyle(
-                      fontSize: 13,
-                      height: 1.5,
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-    );
-  }
-
-  /// IS-P05 finding 4 — providers a user will look for and cannot use yet.
-  /// Each carries the real reason, so the list reads as a deliberate state
-  /// rather than an unfinished one.
-  static const List<({String name, String why})> _unavailable = [
-    (name: 'OpenAI', why: 'No adapter implemented yet'),
-    (name: 'Anthropic', why: 'No adapter implemented yet'),
-    (name: 'Google Gemini', why: 'No adapter implemented yet'),
-    (name: 'Ollama (on-device)', why: 'Needs local model support'),
-  ];
-
-  Widget _buildUnavailableCard(
-    ({String name, String why}) provider,
-    ColorScheme colorScheme,
-  ) {
-    return Semantics(
-      // Announced as disabled, so a screen-reader user is told the same thing
-      // the greying-out tells a sighted one.
-      enabled: false,
-      label: '${provider.name}, not available. ${provider.why}',
-      child: ExcludeSemantics(
-        child: Container(
-          margin: const EdgeInsets.only(bottom: 8),
-          padding: const EdgeInsets.all(14),
+  /// A deferred provider explains itself rather than doing nothing.
+  void _explainUnavailable(ProviderDescriptor descriptor) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        final colorScheme = Theme.of(context).colorScheme;
+        return Container(
+          padding: const EdgeInsets.fromLTRB(24, 24, 24, 40),
           decoration: BoxDecoration(
-            color: colorScheme.surfaceContainerHigh.withAlpha(102),
-            borderRadius: BorderRadius.circular(12),
+            color: colorScheme.surface,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
           ),
-          child: Row(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(
-                Icons.lock_outline,
-                size: 18,
-                color: colorScheme.onSurfaceVariant.withAlpha(153),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      provider.name,
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w500,
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      provider.why,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: colorScheme.onSurfaceVariant.withAlpha(179),
-                      ),
-                    ),
-                  ],
+              Text(
+                descriptor.name,
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                  color: colorScheme.onSurface,
                 ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                descriptor.summary,
+                style: TextStyle(
+                  fontSize: 14,
+                  height: 1.45,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'NOT AVAILABLE YET',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.8,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                descriptor.unavailableReason ??
+                    'No adapter has been written for this provider yet.',
+                style: TextStyle(
+                  fontSize: 13,
+                  height: 1.5,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Anything talks to a provider through a small adapter. '
+                'Adding one is a contained piece of work and contributions '
+                'are welcome.',
+                style: TextStyle(
+                  fontSize: 13,
+                  height: 1.5,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 20),
+              AnythingGhostButton(
+                label: 'Close',
+                onPressed: () => Navigator.pop(context),
               ),
             ],
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
-  /// IS-P05 finding 6 — removing a provider.
-  ///
-  /// Every configuration is removable: none is architecturally required, and
-  /// the app degrades honestly to `ProviderRequired` with none configured.
-  /// Deleting also removes the stored API key, so no orphaned credential is
-  /// left in the keystore.
-  Future<void> _deleteConfig(ProviderConfig config) async {
+  Future<void> _delete(ProviderConfig config) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -390,98 +197,431 @@ class _ProviderPreferencesScreenState extends State<ProviderPreferencesScreen> {
     if (confirmed != true) return;
 
     await _registry.deleteConfig(config.id);
-    await _loadConfigs();
+    await _load();
     if (!mounted) return;
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text('${config.displayName} removed')));
   }
 
-  Widget _buildProviderCard(ProviderConfig config) {
-    final colorScheme = Theme.of(context).colorScheme;
+  // ------------------------------------------------------------------- build
 
-    return AnythingCard(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: colorScheme.primaryContainer.withAlpha(51),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(Icons.psychology, size: 20, color: colorScheme.primary),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+  List<ProviderDescriptor> get _visible {
+    var list = ProviderCatalogue.search(_query);
+    if (_categoryFilter != null) {
+      list = list.where((p) => p.category == _categoryFilter).toList();
+    }
+    return list;
+  }
+
+  /// Configured providers, most recently touched first.
+  List<ProviderConfig> get _recentlyUsed {
+    final configured = _configs.where((c) => c.isConfigured).toList()
+      ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+    return configured;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final visible = _visible;
+
+    return Scaffold(
+      backgroundColor: colorScheme.surface,
+      appBar: AppBar(
+        title: const Text('AI Providers'),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : ListView(
+              padding: const EdgeInsets.all(AnythingPadding.regular),
               children: [
                 Text(
-                  config.displayName,
+                  'Bring your own key. Keys are stored in this phone’s '
+                  'keystore and are never uploaded.',
                   style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: colorScheme.onSurface,
+                    fontSize: 13,
+                    height: 1.45,
+                    color: colorScheme.onSurfaceVariant,
                   ),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  config.isConfigured ? 'Configured' : 'Not configured',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: config.isConfigured
-                        ? Colors.green
-                        : colorScheme.onSurfaceVariant,
+                const SizedBox(height: 16),
+
+                AnythingTextField(
+                  hint: 'Search providers',
+                  controller: _searchController,
+                  prefixIcon: Icons.search,
+                  onChanged: (v) => setState(() => _query = v),
+                  semanticsLabel: 'Search AI providers',
+                ),
+                const SizedBox(height: 12),
+
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      _FilterChip(
+                        label: 'All',
+                        selected: _categoryFilter == null,
+                        onSelected: () =>
+                            setState(() => _categoryFilter = null),
+                      ),
+                      for (final c in ProviderCategory.values)
+                        _FilterChip(
+                          label: c.label,
+                          selected: _categoryFilter == c,
+                          onSelected: () => setState(() => _categoryFilter = c),
+                        ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                if (_recentlyUsed.isNotEmpty && _query.isEmpty) ...[
+                  _SectionLabel('YOUR PROVIDERS'),
+                  const SizedBox(height: 8),
+                  for (final config in _recentlyUsed)
+                    _ConfiguredCard(
+                      config: config,
+                      descriptor: ProviderCatalogue.byId(config.providerType),
+                      isActive:
+                          _registry.activeProvider?.providerId ==
+                          config.providerType,
+                      onOpen: () {
+                        final d = ProviderCatalogue.byId(config.providerType);
+                        if (d != null) _open(d);
+                      },
+                      onDelete: () => _delete(config),
+                    ),
+                  const SizedBox(height: 24),
+                ],
+
+                if (visible.isEmpty)
+                  AnythingEmptyState(
+                    icon: Icons.search_off,
+                    title: 'No providers match',
+                    message: 'Try a different search or clear the filter.',
+                  )
+                else
+                  ..._grouped(visible),
+
+                const SizedBox(height: 24),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: colorScheme.surfaceContainerHigh,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    'Most of these speak the same OpenAI-compatible protocol, '
+                    'so Anything reaches them through one adapter. Groq is the '
+                    'one tested against a live account; the rest are marked '
+                    'experimental honestly rather than promised.',
+                    style: TextStyle(
+                      fontSize: 13,
+                      height: 1.5,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ),
               ],
             ),
+    );
+  }
+
+  List<Widget> _grouped(List<ProviderDescriptor> visible) {
+    final widgets = <Widget>[];
+    for (final category in ProviderCategory.values) {
+      final inCategory = visible.where((p) => p.category == category).toList();
+      if (inCategory.isEmpty) continue;
+      widgets
+        ..add(_SectionLabel(category.label.toUpperCase()))
+        ..add(const SizedBox(height: 8));
+      for (final descriptor in inCategory) {
+        widgets.add(
+          _CatalogueCard(
+            descriptor: descriptor,
+            config: _configFor(descriptor.id),
+            onTap: () => _open(descriptor),
           ),
-          if (config.isDefault)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: colorScheme.primaryContainer,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                'Default',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: colorScheme.onPrimaryContainer,
+        );
+      }
+      widgets.add(const SizedBox(height: 20));
+    }
+    return widgets;
+  }
+}
+
+class _SectionLabel extends StatelessWidget {
+  final String text;
+
+  const _SectionLabel(this.text);
+
+  @override
+  Widget build(BuildContext context) => Text(
+    text,
+    style: TextStyle(
+      fontSize: 11,
+      fontWeight: FontWeight.w700,
+      letterSpacing: 0.8,
+      color: Theme.of(context).colorScheme.onSurfaceVariant,
+    ),
+  );
+}
+
+class _FilterChip extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onSelected;
+
+  const _FilterChip({
+    required this.label,
+    required this.selected,
+    required this.onSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(right: 8),
+    child: FilterChip(
+      label: Text(label),
+      selected: selected,
+      onSelected: (_) => onSelected(),
+    ),
+  );
+}
+
+/// A provider the user has already configured.
+class _ConfiguredCard extends StatelessWidget {
+  final ProviderConfig config;
+  final ProviderDescriptor? descriptor;
+  final bool isActive;
+  final VoidCallback onOpen;
+  final VoidCallback onDelete;
+
+  const _ConfiguredCard({
+    required this.config,
+    required this.descriptor,
+    required this.isActive,
+    required this.onOpen,
+    required this.onDelete,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final model = config.preferredModel;
+
+    return AnythingCard(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(14),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        config.displayName,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: colorScheme.onSurface,
+                        ),
+                      ),
+                    ),
+                    if (isActive) ...[
+                      const SizedBox(width: 8),
+                      _Badge(text: 'Active', color: colorScheme.primary),
+                    ],
+                  ],
                 ),
-              ),
+                const SizedBox(height: 3),
+                Text(
+                  model == null || model.isEmpty
+                      ? 'No model chosen'
+                      : 'Model: $model',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                if (config.lastValidatedAt != null)
+                  Text(
+                    'Verified',
+                    style: const TextStyle(fontSize: 12, color: Colors.green),
+                  )
+                else if (config.lastFailureReason != null)
+                  Text(
+                    'Last test failed',
+                    style: TextStyle(fontSize: 12, color: colorScheme.error),
+                  ),
+              ],
             ),
-          const SizedBox(width: 8),
-          // IS-P05 finding 6: a remove action, with confirmation.
+          ),
           IconButton(
-            onPressed: () => _deleteConfig(config),
+            onPressed: onDelete,
             tooltip: 'Remove ${config.displayName}',
             icon: Icon(
               Icons.delete_outline,
-              color: colorScheme.onSurfaceVariant,
               size: 20,
+              color: colorScheme.onSurfaceVariant,
             ),
           ),
           IconButton(
-            onPressed: () => _showConfigureDialog(config),
-            // ACCESSIBILITY (IS-P03 Phase 5). An icon-only control with no
-            // tooltip has NO accessible name -- a screen reader announces
-            // "button" and nothing else. The provider name is included
-            // because several of these appear in one list.
+            onPressed: onOpen,
             tooltip: 'Configure ${config.displayName}',
             icon: Icon(
               Icons.settings,
-              color: colorScheme.onSurfaceVariant,
               size: 20,
+              color: colorScheme.onSurfaceVariant,
             ),
           ),
         ],
       ),
     );
   }
+}
+
+/// A provider from the catalogue.
+class _CatalogueCard extends StatelessWidget {
+  final ProviderDescriptor descriptor;
+  final ProviderConfig? config;
+  final VoidCallback onTap;
+
+  const _CatalogueCard({
+    required this.descriptor,
+    required this.config,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final comingSoon = !descriptor.isImplemented;
+
+    return Semantics(
+      button: true,
+      label:
+          '${descriptor.name}. ${descriptor.status.label}. '
+          '${comingSoon ? descriptor.unavailableReason ?? '' : descriptor.summary}',
+      child: ExcludeSemantics(
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              margin: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.all(14),
+              constraints: const BoxConstraints(minHeight: 48),
+              decoration: BoxDecoration(
+                color: colorScheme.surfaceContainerHigh.withAlpha(
+                  comingSoon ? 102 : 255,
+                ),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                descriptor.name,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w500,
+                                  color: colorScheme.onSurface,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            _StatusBadge(descriptor: descriptor),
+                            if (config?.isConfigured == true) ...[
+                              const SizedBox(width: 6),
+                              _Badge(text: 'Configured', color: Colors.green),
+                            ],
+                          ],
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          comingSoon
+                              ? descriptor.unavailableReason ??
+                                    descriptor.summary
+                              : descriptor.summary,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 12,
+                            height: 1.4,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(
+                    comingSoon ? Icons.info_outline : Icons.chevron_right,
+                    size: 18,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _StatusBadge extends StatelessWidget {
+  final ProviderDescriptor descriptor;
+
+  const _StatusBadge({required this.descriptor});
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final (text, color) = switch (descriptor.status) {
+      ProviderStatus.available => ('Tested', Colors.green),
+      ProviderStatus.experimental => ('Experimental', colorScheme.tertiary),
+      ProviderStatus.comingSoon => (
+        'Coming soon',
+        colorScheme.onSurfaceVariant,
+      ),
+    };
+    return _Badge(text: text, color: color);
+  }
+}
+
+class _Badge extends StatelessWidget {
+  final String text;
+  final Color color;
+
+  const _Badge({required this.text, required this.color});
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+    decoration: BoxDecoration(
+      color: color.withAlpha(31),
+      borderRadius: BorderRadius.circular(6),
+    ),
+    child: Text(
+      text,
+      style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: color),
+    ),
+  );
 }
