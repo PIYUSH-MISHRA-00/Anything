@@ -21,16 +21,12 @@ Describe what you need. Anything builds it, runs it, and keeps it.
 
 ---
 
-> **Project status: pre-release — NOT production complete (P20).**
-> Version `2.0.0+1`. Analyzer **0/0/0**. Prior CI full suite **2317** passed
-> ([run 31365005092](https://github.com/PIYUSH-MISHRA-00/Anything/actions/runs/31365005092));
-> CI release **AAB PASS**. P20 closed intent-cast + create-before-modify
-> misroute, and structural filter/sort emission for open-world collections
-> (bicycle / orchestra / ceramic automated). Device launch of the P20 release
-> APK is evidenced; full manual CRUD/WebWeaveX/Kaalka/import matrix and Play
-> Store signing remain **OPEN** — see
-> `Desktop/Anything_P20_FINAL/22_MANUAL_ACCEPTANCE_CHECKLIST.md` and
-> [ROADMAP.md](ROADMAP.md).
+> **Project status: pre-release — NOT production complete (P21).**
+> Version `2.0.0+1`. Analyzer **0/0/0**. P21 adds typed `IntentContract`
+> (stopwatch≠calculator, scientific≠basic), hardcoding probe, provider
+> independence tests, and novel-domain astronomy generation. Device matrix,
+> WebWeaveX/Kaalka/import device cert, and Play Store remain **OPEN** until
+> signed — see `Desktop/Anything_P21_FINAL/` and [ROADMAP.md](ROADMAP.md).
 
 ## What is Anything?
 

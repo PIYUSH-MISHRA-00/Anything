@@ -27,6 +27,8 @@ import 'package:anything/creation/experience_package.dart';
 import 'package:anything/creation/experience_smoke_validator.dart';
 import 'package:anything/creation/package_validator.dart';
 import 'package:anything/creation/display_naming.dart';
+import 'package:anything/creation/creation_request.dart';
+import 'package:anything/creation/intent_contract.dart';
 import 'package:anything/creation/intent_preservation.dart';
 import 'package:anything/creation/semantic_completeness.dart';
 import 'package:anything/creation/news_interface_factory.dart';
@@ -621,6 +623,34 @@ class ExperienceCreationCoordinator {
                   'Please try rephrasing.',
             );
           }
+        }
+
+        // P21: typed IntentContract — rejects scientific→basic, timing→calc, etc.
+        final contract = IntentContract.fromRequest(
+          CreationRequest.capture(rawPrompt: intent.expression),
+        );
+        final contractResult = contract.evaluate(
+          candidate,
+          inferredCapabilities: requiredCaps,
+        );
+        if (!contractResult.isSatisfied) {
+          _state = CreationState.failed;
+          _diagnostics.record(
+            CreationDiagnostic(
+              requestId: _diagnostics.nextRequestId(),
+              stage: CreationStage.validation,
+              errorType: 'IntentContractViolation',
+              errorMessage: contractResult.reason,
+              retryable: true,
+              userRecoverable: true,
+            ),
+          );
+          return CreationFailed(
+            error: contractResult.reason,
+            message:
+                'I could not create an app that satisfies your request. '
+                '${contractResult.reason}',
+          );
         }
 
         final validation = ExperiencePackageValidator.validate(candidate);

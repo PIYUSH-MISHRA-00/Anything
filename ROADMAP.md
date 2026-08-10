@@ -67,10 +67,18 @@ prior CI full suite **2317** /
 - Full device CRUD/search/filter + WebWeaveX + Kaalka + import matrix: **OPEN**
 - Manual acceptance / Play Store: **NOT READY** until checklist signed
 
-### After P20
+### P21 — IntentContract + certification hardening (in progress)
 
-Continue only while OPEN device/manual items remain, or when the owner
-supplies a new milestone prompt. Do not require deleted P18/P19 ZIPs.
+- Typed `IntentContract` on creation path: **PASS** (automated)
+- Hardcoding probe + provider independence: **PASS** (automated)
+- Novel astronomy domain: **PASS** (automated)
+- Device matrix / WebWeaveX / Kaalka / import-export on device: **OPEN**
+- Play Store / Pages: **NOT READY** / **BLOCKED** (plan)
+
+### After P21
+
+Do not require deleted milestone ZIPs. Close device matrix before claiming
+PRODUCTION COMPLETE.
 
 ## Where help is most useful
 
