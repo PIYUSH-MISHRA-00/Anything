@@ -6,7 +6,7 @@ If it is useful to you — or if you would like it to reach a Play Store release
 sooner — you can support the work:
 
 - [**GitHub Sponsors**](https://github.com/sponsors/PIYUSH-MISHRA-00)
-- [**Buy Me a Coffee**](https://buymeacoffee.com/piyushmishra)
+- [**Buy Me a Coffee**](https://www.buymeacoffee.com/piyushmishra00)
 
 ## What sponsorship does and does not do
 

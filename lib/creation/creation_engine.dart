@@ -5,6 +5,7 @@
 library;
 
 import '../application_engineering/engineering_to_blueprint.dart';
+import '../core/contracts/intent.dart';
 import '../kernel/specification/experience_spec.dart';
 import '../synthesis/app_archetype.dart';
 import '../synthesis/app_blueprint.dart';
@@ -104,7 +105,7 @@ class CreationEngine {
 
       // Build interface — use blueprint when available for richer UI
       var interface = blueprint != null
-          ? _buildInterfaceFromBlueprint(blueprint)
+          ? _buildInterfaceFromBlueprint(blueprint, intent: context.intent)
           : _buildInterface(spec);
 
       // Build behavior — use blueprint when available for richer behavior
@@ -726,7 +727,17 @@ class CreationEngine {
 
   // ── Blueprint-based builders ──────────────────────────────────────────
 
-  InterfaceDefinition _buildInterfaceFromBlueprint(AppBlueprint blueprint) {
+  InterfaceDefinition _buildInterfaceFromBlueprint(
+    AppBlueprint blueprint, {
+    Intent? intent,
+  }) {
+    final listCaps = {
+      ...blueprint.requiredCapabilities,
+      ...const AppCapabilityInferrer().infer(
+        blueprint: blueprint,
+        intent: intent,
+      ),
+    };
     final screens = <InterfaceScreen>[];
     for (final view in blueprint.views) {
       final nodes = <InterfaceNode>[];
@@ -748,33 +759,26 @@ class CreationEngine {
               },
             ),
           );
-          if (blueprint.requiredCapabilities.contains(
-                AppCapabilityIds.filter,
-              ) &&
-              entity != null &&
-              entity.fields.any((f) => f.id == 'status')) {
+          final wantsFilter = listCaps.contains(AppCapabilityIds.filter);
+          final wantsSort = listCaps.contains(AppCapabilityIds.sort);
+          final filterField = entity != null && wantsFilter
+              ? _selectFilterField(entity)
+              : null;
+          if (filterField != null) {
             nodes.add(
               InterfaceNode(
                 type: 'filterField',
                 id: '${view.id}_filter',
                 properties: {
-                  'fieldId': 'status',
-                  'hint': 'Filter by status',
+                  'fieldId': filterField.id,
+                  'hint': 'Filter by ${filterField.name}',
                   'entityId': view.sourceEntityId ?? '',
                 },
               ),
             );
           }
-          if (blueprint.requiredCapabilities.contains(AppCapabilityIds.sort) &&
-              entity != null) {
-            final sortField = entity.fields.firstWhere(
-              (f) =>
-                  f.type == BlueprintFieldType.dateTime ||
-                  f.type == BlueprintFieldType.date ||
-                  f.type == BlueprintFieldType.integer ||
-                  f.type == BlueprintFieldType.decimal,
-              orElse: () => entity.fields.first,
-            );
+          if (wantsSort && entity != null) {
+            final sortField = _selectSortField(entity);
             nodes.add(
               InterfaceNode(
                 type: 'sortField',
@@ -795,10 +799,7 @@ class CreationEngine {
                 'entityId': view.sourceEntityId ?? '',
                 'titleField': _findDisplayField(entity),
                 'subtitleField': _findSecondaryField(entity),
-                if (blueprint.requiredCapabilities.contains(
-                  AppCapabilityIds.filter,
-                ))
-                  'filterFieldId': 'status',
+                if (filterField != null) 'filterFieldId': filterField.id,
               },
             ),
           );
@@ -1156,6 +1157,41 @@ class CreationEngine {
       }
     }
     return entity.fields.length > 1 ? entity.fields[1].id : null;
+  }
+
+  /// Prefer categorical / constrained fields for list filtering.
+  /// Structural only — never keyed to a named domain or fixed field id.
+  BlueprintField? _selectFilterField(BlueprintEntity entity) {
+    for (final field in entity.fields) {
+      if (field.type == BlueprintFieldType.category ||
+          field.allowedValues.isNotEmpty) {
+        return field;
+      }
+    }
+    final displayId = _findDisplayField(entity);
+    for (final field in entity.fields) {
+      if (field.id == displayId) continue;
+      if (field.id.endsWith('_id') || field.id.endsWith('_at')) continue;
+      if (field.type == BlueprintFieldType.reference) continue;
+      if (field.type == BlueprintFieldType.boolean ||
+          field.type == BlueprintFieldType.text ||
+          field.type == BlueprintFieldType.multilineText) {
+        return field;
+      }
+    }
+    return null;
+  }
+
+  BlueprintField _selectSortField(BlueprintEntity entity) {
+    for (final field in entity.fields) {
+      if (field.type == BlueprintFieldType.dateTime ||
+          field.type == BlueprintFieldType.date ||
+          field.type == BlueprintFieldType.integer ||
+          field.type == BlueprintFieldType.decimal) {
+        return field;
+      }
+    }
+    return entity.fields.first;
   }
 
   BehaviorGraph _buildBehaviorFromBlueprint(AppBlueprint blueprint) {

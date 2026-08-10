@@ -258,9 +258,13 @@ abstract final class StructuralFieldInferrer {
     if (_has(tokens, const ['warranty', 'warranties'])) {
       add('expires_at', 'Expires At', BlueprintFieldType.date);
     }
+    // Status/category from entity tokens OR objective cues
+    // ("repair status", "filter by firing status") — not product domains.
     if (_has(tokens, const ['status']) ||
         id.endsWith('_status') ||
         id.contains('production_status') ||
+        obj.contains('status') ||
+        obj.contains('priority') ||
         _has(tokens, const [
           'order',
           'orders',

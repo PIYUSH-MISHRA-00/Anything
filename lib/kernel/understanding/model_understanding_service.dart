@@ -155,7 +155,7 @@ class ModelUnderstandingService {
     // Determine modification need
     ModificationNeed modNeed = ModificationNeed.notNeeded;
     if (category == IntentCategory.modify) {
-      modNeed = CreationNeed.likelyNeeded as ModificationNeed;
+      modNeed = ModificationNeed.likelyNeeded;
     }
 
     return IntentUnderstanding(

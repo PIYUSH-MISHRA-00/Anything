@@ -174,6 +174,10 @@ class AppCapabilityInferrer {
     if (blueprint.views.any((v) => v.viewType == BlueprintViewType.list)) {
       caps.add(AppCapabilityIds.collection);
       caps.add(AppCapabilityIds.search);
+      // Linguistic list operators requested in the objective.
+      final listExpr = intent?.expression.toLowerCase() ?? '';
+      if (listExpr.contains('filter')) caps.add(AppCapabilityIds.filter);
+      if (listExpr.contains('sort')) caps.add(AppCapabilityIds.sort);
     }
 
     if (blueprint.views.length > 1) {

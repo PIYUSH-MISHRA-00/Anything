@@ -48,6 +48,20 @@ class IntentClassifier {
   IntentCategory classify(String expression) {
     final lower = expression.toLowerCase().trim();
 
+    // Explicit creation verbs win over incidental feature words
+    // ("update repair status", "edit forms") that appear inside a create ask.
+    if (_matchesPattern(lower, [
+      'create a',
+      'create an',
+      'build a',
+      'build an',
+      'make a new',
+      'generate a',
+      'generate an',
+    ])) {
+      return IntentCategory.create;
+    }
+
     // Open patterns
     if (_matchesPattern(lower, ['open', 'show me', 'go to', 'launch'])) {
       return IntentCategory.open;

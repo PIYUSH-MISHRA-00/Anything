@@ -93,14 +93,23 @@ class LocalCollectionSemanticFallback {
       ],
       tags: const ['collection', 'local'],
       archetypes: const ['collection'],
-      requiredCapabilities: const [
-        AppCapabilityIds.crud,
-        AppCapabilityIds.collection,
-        AppCapabilityIds.persistence,
-        AppCapabilityIds.form,
-        AppCapabilityIds.input,
-        AppCapabilityIds.search,
-      ],
+      requiredCapabilities: _capabilitiesFor(objective),
     );
+  }
+
+  /// Structural list capabilities from the objective — not domain names.
+  static List<String> _capabilitiesFor(String objective) {
+    final lower = objective.toLowerCase();
+    final caps = <String>{
+      AppCapabilityIds.crud,
+      AppCapabilityIds.collection,
+      AppCapabilityIds.persistence,
+      AppCapabilityIds.form,
+      AppCapabilityIds.input,
+      AppCapabilityIds.search,
+    };
+    if (lower.contains('filter')) caps.add(AppCapabilityIds.filter);
+    if (lower.contains('sort')) caps.add(AppCapabilityIds.sort);
+    return caps.toList(growable: false);
   }
 }

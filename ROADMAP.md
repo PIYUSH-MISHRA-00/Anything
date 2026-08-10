@@ -3,10 +3,10 @@
 Honest status. Every claim here is measured, and where something is broken this
 file says so plainly.
 
-**Last verified:** P18 · local `flutter test` **2334** · CI full suite **2317**
-· analyzer **0/0/0** · version `2.0.0+1` · CI run
-[31365005092](https://github.com/PIYUSH-MISHRA-00/Anything/actions/runs/31365005092)
-· tip `cef8439`
+**Last verified:** P20 in progress · analyzer **0/0/0** · version `2.0.0+1` ·
+prior CI full suite **2317** /
+[run 31365005092](https://github.com/PIYUSH-MISHRA-00/Anything/actions/runs/31365005092)
+· prior tip `cef8439` · P20 engine fixes pending commit on `v2.0.0`
 
 ---
 
@@ -56,10 +56,21 @@ file says so plainly.
 - WebWeaveX / Kaalka / import-export device paths: **OPEN**
 - CI remote run: **PASS** `31365005092`
 
-### After P18
+### P20 — disposable-ZIP workflow + filter/intent fidelity (in progress)
 
-Stop. Only continue if an external architectural review requests another
-milestone. Do not invent P19 from this file.
+- No dependence on deleted historical milestone ZIPs: **PASS** (policy)
+- Intent classifier: create verbs before incidental "update/edit": **PASS**
+- Heuristic `CreationNeed`→`ModificationNeed` cast crash: **FIXED**
+- Structural filter/sort UI for collection apps: **PASS** (automated)
+- Unknown domains bicycle / orchestra / ceramic: **PASS** (automated)
+- Release APK build + device install (moto g31): **PASS** (launch evidenced)
+- Full device CRUD/search/filter + WebWeaveX + Kaalka + import matrix: **OPEN**
+- Manual acceptance / Play Store: **NOT READY** until checklist signed
+
+### After P20
+
+Continue only while OPEN device/manual items remain, or when the owner
+supplies a new milestone prompt. Do not require deleted P18/P19 ZIPs.
 
 ## Where help is most useful
 

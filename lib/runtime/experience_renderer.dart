@@ -592,18 +592,24 @@ class ExperienceRenderer {
                         }).toList();
                       }
                       if (filterValue.isNotEmpty) {
+                        final fromState =
+                            stateEngine.read('filterFieldId') as String?;
                         final filterFieldId =
-                            node.properties['filterFieldId'] as String? ??
-                            'status';
-                        records = records
-                            .where(
-                              (r) =>
-                                  (r[filterFieldId] ?? '')
-                                      .toString()
-                                      .toLowerCase() ==
-                                  filterValue.toLowerCase(),
-                            )
-                            .toList();
+                            (fromState != null && fromState.isNotEmpty)
+                            ? fromState
+                            : (node.properties['filterFieldId'] as String? ??
+                                  '');
+                        if (filterFieldId.isNotEmpty) {
+                          records = records
+                              .where(
+                                (r) =>
+                                    (r[filterFieldId] ?? '')
+                                        .toString()
+                                        .toLowerCase() ==
+                                    filterValue.toLowerCase(),
+                              )
+                              .toList();
+                        }
                       }
                       if (sortField.isNotEmpty) {
                         records = List<Map<String, dynamic>>.from(records)
@@ -1571,7 +1577,7 @@ class ExperienceRenderer {
     void Function(String eventId, {Map<String, dynamic>? data})? onEvent,
   }) {
     final hint = node.properties['hint'] as String? ?? 'Filter...';
-    final fieldId = node.properties['fieldId'] as String? ?? 'status';
+    final fieldId = node.properties['fieldId'] as String? ?? '';
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: TextField(
@@ -1583,7 +1589,9 @@ class ExperienceRenderer {
         ),
         onChanged: (value) {
           stateEngine.write('filterValue', value);
-          stateEngine.write('filterFieldId', fieldId);
+          if (fieldId.isNotEmpty) {
+            stateEngine.write('filterFieldId', fieldId);
+          }
           onEvent?.call(
             'filterChanged',
             data: {'fieldId': fieldId, 'value': value},

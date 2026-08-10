@@ -21,15 +21,16 @@ Describe what you need. Anything builds it, runs it, and keeps it.
 
 ---
 
-> **Project status: pre-release — NOT production complete (P18).**
-> Version `2.0.0+1`. Analyzer **0/0/0**. Local full suite **2334** passed;
-> CI full suite **2317** passed ([run 31365005092](https://github.com/PIYUSH-MISHRA-00/Anything/actions/runs/31365005092)).
-> CI release **AAB PASS**. Physical device (moto g31): same release APK
-> generated two unseen domains (venue + pet grooming) with create + force-stop
-> persistence. Still open: full device CRUD/search journeys, WebWeaveX/Kaalka
-> device recovery, import/export security matrix, Play Store signing/listing.
-> Import/export **implementation exists**; that is not production-certified.
-> [ROADMAP.md](ROADMAP.md) tracks the gaps.
+> **Project status: pre-release — NOT production complete (P20).**
+> Version `2.0.0+1`. Analyzer **0/0/0**. Prior CI full suite **2317** passed
+> ([run 31365005092](https://github.com/PIYUSH-MISHRA-00/Anything/actions/runs/31365005092));
+> CI release **AAB PASS**. P20 closed intent-cast + create-before-modify
+> misroute, and structural filter/sort emission for open-world collections
+> (bicycle / orchestra / ceramic automated). Device launch of the P20 release
+> APK is evidenced; full manual CRUD/WebWeaveX/Kaalka/import matrix and Play
+> Store signing remain **OPEN** — see
+> `Desktop/Anything_P20_FINAL/22_MANUAL_ACCEPTANCE_CHECKLIST.md` and
+> [ROADMAP.md](ROADMAP.md).
 
 ## What is Anything?
 
