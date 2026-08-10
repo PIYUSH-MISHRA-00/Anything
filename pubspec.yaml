@@ -57,7 +57,7 @@ dependencies:
   # running package rather than hardcoding it is the only way the number cannot
   # disagree with what Play shows -- and version drift in prose is a problem
   # this repository has hit in four consecutive audits.
-  package_info_plus: ^8.0.0
+  package_info_plus: ^9.0.1
 
 dev_dependencies:
   flutter_test:
