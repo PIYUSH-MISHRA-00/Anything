@@ -1481,12 +1481,19 @@ class ExperienceRenderer {
           horizontal: expand ? 8 : 24,
           vertical: expand ? 8 : 12,
         ),
+        // Expand rows (timingPad Start/Pause/Resume) share width; 22sp ellipsized
+        // "Pause"/"Resume" to "Pau"/"Res" on ~360dp phones. Scale down instead.
         textStyle: TextStyle(
-          fontSize: expand ? 22 : 16,
+          fontSize: expand ? 18 : 16,
           fontWeight: FontWeight.w600,
         ),
       ),
-      child: Text(label),
+      child: expand
+          ? FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(label, maxLines: 1, textAlign: TextAlign.center),
+            )
+          : Text(label),
     );
     if (expand) {
       return SizedBox.expand(child: button);
