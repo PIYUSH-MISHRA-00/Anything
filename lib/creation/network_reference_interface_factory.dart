@@ -159,8 +159,7 @@ class NetworkReferenceInterfaceFactory {
               type: 'text',
               id: 'result_body',
               properties: {
-                'content':
-                    'Enter a city or location above, then press Search.',
+                'content': 'Enter a city or location above, then press Search.',
               },
               stateBinding: 'resultText',
             ),
@@ -206,8 +205,7 @@ class NetworkReferenceInterfaceFactory {
         StateVariable(
           id: 'resultText',
           type: 'string',
-          defaultValue:
-              'Enter a city or location above, then press Search.',
+          defaultValue: 'Enter a city or location above, then press Search.',
           persistence: 'session',
         ),
         StateVariable(

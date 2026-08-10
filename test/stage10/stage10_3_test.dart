@@ -457,37 +457,34 @@ void main() {
   });
 
   group('Knowledge Loop Limit', () {
-    test(
-      'Kernel degrades when knowledge loop exhausts rounds',
-      () async {
-        final reasoner = _AlwaysRequireKnowledgeReasoner();
-        // Pre-seed cache so knowledge acquisition succeeds
-        final cache = KnowledgeCache();
-        await cache.store([
-          _makeResource(
-            id: 'seed-1',
-            content: 'General knowledge for testing',
-            title: 'more info about everything',
-            relevanceScore: 0.9,
-            authorityScore: 0.8,
-            freshnessScore: 0.7,
-          ),
-        ]);
-        final kernel = AnythingKernel(
-          providerRegistry: _FakeProviderRegistry(),
-          reasoner: reasoner,
-          knowledgeEngine: KnowledgeAcquisitionEngine(cache: cache),
-          capabilityRegistry: _platformCapabilityRegistry(),
-        );
-        final outcome = await kernel.processIntent(
-          Intent.create(expression: 'create a test app'),
-        );
-        // IS-P10: exhaust → installable network shell, not PlanningFailed.
-        expect(outcome, isA<ExecutionPlanReady>());
-        // Reasoner called once per round (0,1,2) = 3 times
-        expect(reasoner.callCount, equals(3));
-      },
-    );
+    test('Kernel degrades when knowledge loop exhausts rounds', () async {
+      final reasoner = _AlwaysRequireKnowledgeReasoner();
+      // Pre-seed cache so knowledge acquisition succeeds
+      final cache = KnowledgeCache();
+      await cache.store([
+        _makeResource(
+          id: 'seed-1',
+          content: 'General knowledge for testing',
+          title: 'more info about everything',
+          relevanceScore: 0.9,
+          authorityScore: 0.8,
+          freshnessScore: 0.7,
+        ),
+      ]);
+      final kernel = AnythingKernel(
+        providerRegistry: _FakeProviderRegistry(),
+        reasoner: reasoner,
+        knowledgeEngine: KnowledgeAcquisitionEngine(cache: cache),
+        capabilityRegistry: _platformCapabilityRegistry(),
+      );
+      final outcome = await kernel.processIntent(
+        Intent.create(expression: 'create a test app'),
+      );
+      // IS-P10: exhaust → installable network shell, not PlanningFailed.
+      expect(outcome, isA<ExecutionPlanReady>());
+      // Reasoner called once per round (0,1,2) = 3 times
+      expect(reasoner.callCount, equals(3));
+    });
 
     test('Kernel stops loop after successful reasoning with knowledge', () async {
       final reasoner = _KnowledgeLoopReasoner();

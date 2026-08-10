@@ -43,85 +43,92 @@ void main() {
     expect(weather.icon, Icons.wb_cloudy_outlined);
   });
 
-  test('delete via commit bumps revision and removes from repository', () async {
-    SharedPreferences.setMockInitialValues({});
-    AppComposition.resetForTesting();
-    final composition = AppComposition.freshForTesting();
-    final before = composition.experienceLibraryRevision.value;
-    final now = DateTime.now();
-    final id = 'exp-del-${now.microsecondsSinceEpoch}';
+  test(
+    'delete via commit bumps revision and removes from repository',
+    () async {
+      SharedPreferences.setMockInitialValues({});
+      AppComposition.resetForTesting();
+      final composition = AppComposition.freshForTesting();
+      final before = composition.experienceLibraryRevision.value;
+      final now = DateTime.now();
+      final id = 'exp-del-${now.microsecondsSinceEpoch}';
 
-    final package = ExperiencePackage(
-      manifest: ExperienceManifest(
-        experienceId: id,
+      final package = ExperiencePackage(
+        manifest: ExperienceManifest(
+          experienceId: id,
+          name: 'Temp Calc',
+          description: 'd',
+          createdAt: now,
+          updatedAt: now,
+        ),
+        interface: const InterfaceDefinition(
+          screens: [
+            InterfaceScreen(
+              id: 'main',
+              title: 'Main',
+              children: [
+                InterfaceNode(
+                  type: 'text',
+                  id: 't',
+                  properties: {'content': 'hi'},
+                ),
+              ],
+            ),
+          ],
+        ),
+        behavior: const BehaviorGraph(nodes: [], edges: []),
+        state: const StateSchema(variables: []),
+        provenance: const PackageProvenance(
+          creationEngineVersion: '1.0.0',
+          specVersion: 1,
+          planVersion: 1,
+        ),
+        integrity: PackageIntegrity(contentHash: 'h-$id', computedAt: now),
+      );
+      final metadata = ExperienceMetadataRecord(
+        id: id,
         name: 'Temp Calc',
         description: 'd',
+        category: 'utility',
         createdAt: now,
         updatedAt: now,
-      ),
-      interface: const InterfaceDefinition(
-        screens: [
-          InterfaceScreen(
-            id: 'main',
-            title: 'Main',
-            children: [
-              InterfaceNode(
-                type: 'text',
-                id: 't',
-                properties: {'content': 'hi'},
-              ),
-            ],
-          ),
-        ],
-      ),
-      behavior: const BehaviorGraph(nodes: [], edges: []),
-      state: const StateSchema(variables: []),
-      provenance: const PackageProvenance(
-        creationEngineVersion: '1.0.0',
-        specVersion: 1,
-        planVersion: 1,
-      ),
-      integrity: PackageIntegrity(contentHash: 'h-$id', computedAt: now),
-    );
-    final metadata = ExperienceMetadataRecord(
-      id: id,
-      name: 'Temp Calc',
-      description: 'd',
-      category: 'utility',
-      createdAt: now,
-      updatedAt: now,
-      provenance: ExperienceProvenance.createdLocally(
-        at: now,
-        fingerprint: ExperienceFingerprint('h-$id'),
-      ),
-    );
+        provenance: ExperienceProvenance.createdLocally(
+          at: now,
+          fingerprint: ExperienceFingerprint('h-$id'),
+        ),
+      );
 
-    final commit = await composition.experienceCommit.commit(
-      experienceId: id,
-      origin: CommitOrigin.creation,
-      package: package,
-      metadata: metadata,
-    );
-    expect(commit.succeeded, isTrue);
-    expect(composition.experienceLibraryRevision.value, greaterThan(before));
-    expect(
-      (await composition.experienceRepository.listAll()).any((e) => e.id == id),
-      isTrue,
-    );
+      final commit = await composition.experienceCommit.commit(
+        experienceId: id,
+        origin: CommitOrigin.creation,
+        package: package,
+        metadata: metadata,
+      );
+      expect(commit.succeeded, isTrue);
+      expect(composition.experienceLibraryRevision.value, greaterThan(before));
+      expect(
+        (await composition.experienceRepository.listAll()).any(
+          (e) => e.id == id,
+        ),
+        isTrue,
+      );
 
-    final afterCreate = composition.experienceLibraryRevision.value;
-    final removed = await composition.experienceCommit.remove(id);
-    expect(removed.succeeded, isTrue);
-    expect(
-      composition.experienceLibraryRevision.value,
-      greaterThan(afterCreate),
-    );
-    expect(
-      (await composition.experienceRepository.listAll()).any((e) => e.id == id),
-      isFalse,
-    );
-    expect(await composition.experienceRepository.getMetadata(id), isNull);
-  });
+      final afterCreate = composition.experienceLibraryRevision.value;
+      final removed = await composition.experienceCommit.remove(id);
+      expect(removed.succeeded, isTrue);
+      expect(
+        composition.experienceLibraryRevision.value,
+        greaterThan(afterCreate),
+      );
+      expect(
+        (await composition.experienceRepository.listAll()).any(
+          (e) => e.id == id,
+        ),
+        isFalse,
+      );
+      expect(await composition.experienceRepository.getMetadata(id), isNull);
+    },
+  );
 
   test('network shell exposes Search CTA bound to refreshData', () {
     final iface = const NetworkReferenceInterfaceFactory().buildInterface(

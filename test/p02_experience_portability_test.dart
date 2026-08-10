@@ -140,14 +140,17 @@ void main() {
       );
     });
 
-    test('the filename is recognisable (version lives in the package)', () async {
-      // IS-P12: human-readable Stopwatch.anything style; version is inside
-      // the .anything manifest, not duplicated in the filename.
-      expect(
-        ExperiencePortability.fileNameFor(buildPackage().manifest),
-        'Water_Tracker.anything',
-      );
-    });
+    test(
+      'the filename is recognisable (version lives in the package)',
+      () async {
+        // IS-P12: human-readable Stopwatch.anything style; version is inside
+        // the .anything manifest, not duplicated in the filename.
+        expect(
+          ExperiencePortability.fileNameFor(buildPackage().manifest),
+          'Water_Tracker.anything',
+        );
+      },
+    );
 
     test('A NAME CANNOT ESCAPE THE SANDBOX', () async {
       // An Experience name is user-supplied text and reaches a filename.

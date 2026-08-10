@@ -65,6 +65,7 @@ import '../builtin/file_capability.dart';
 class PickedFile {
   final String name;
   final String? path;
+
   /// In-memory bytes from the picker (required on Android SAF when path is null).
   final List<int>? bytes;
   final int? sizeBytes;

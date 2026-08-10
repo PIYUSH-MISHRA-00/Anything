@@ -1,5 +1,6 @@
 /// Tests for typed event system.
 library;
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:anything/core/events/events.dart';
 

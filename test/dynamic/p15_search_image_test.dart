@@ -20,12 +20,12 @@ class _RecordingNewsCapability extends PlatformCapability {
   final Map<String, dynamic> Function(Map<String, dynamic> params) handler;
 
   _RecordingNewsCapability(this.handler)
-      : super(
-          id: 'news',
-          name: 'News',
-          description: 'Test news capability',
-          supportedOperations: const ['searchArticles'],
-        );
+    : super(
+        id: 'news',
+        name: 'News',
+        description: 'Test news capability',
+        supportedOperations: const ['searchArticles'],
+      );
 
   @override
   Future<CapabilityInvocationResult> execute(
@@ -116,7 +116,10 @@ void main() {
       final block = article.toResultMap()['content'] as String;
       expect(block, contains('Headline'));
       expect(block, isNot(contains('https://')));
-      expect(article.toResultMap()['imageUrl'], 'https://cdn.example.com/pic.jpg');
+      expect(
+        article.toResultMap()['imageUrl'],
+        'https://cdn.example.com/pic.jpg',
+      );
       expect(article.toResultMap()['sourceUri'], 'https://example.com/story');
     });
   });
@@ -139,30 +142,30 @@ void main() {
       final state = ExperienceStateEngine()..initialize(package.state);
       state.write('query', 'stale');
 
-      final newsCap = _RecordingNewsCapability((params) => {
-            'results': [
-              {
-                'title': 'Lucknow today',
-                'content': 'Lucknow today\nSource: Wire',
-                'sourceType': 'structuredNews',
-                'provider': 'fake',
-                'imageUrl': 'https://cdn.example.com/news.jpg',
-                'sourceUri': 'https://example.com/a',
-              },
-            ],
-            'provenance': {
+      final newsCap = _RecordingNewsCapability(
+        (params) => {
+          'results': [
+            {
+              'title': 'Lucknow today',
+              'content': 'Lucknow today\nSource: Wire',
               'sourceType': 'structuredNews',
               'provider': 'fake',
+              'imageUrl': 'https://cdn.example.com/news.jpg',
+              'sourceUri': 'https://example.com/a',
             },
-          });
+          ],
+          'provenance': {'sourceType': 'structuredNews', 'provider': 'fake'},
+        },
+      );
 
       final platform = CapabilityPlatform()..register(newsCap);
       final resolver = ExperienceServiceResolver(capabilityPlatform: platform)
         ..resolve(
           package.services,
           experienceId: package.manifest.experienceId,
-          declaredCapabilities:
-              package.capabilityDeclarations.map((c) => c.capabilityId).toList(),
+          declaredCapabilities: package.capabilityDeclarations
+              .map((c) => c.capabilityId)
+              .toList(),
         );
 
       await BehaviorInterpreter().execute(
@@ -200,10 +203,7 @@ void main() {
                 'provider': 'fake',
               },
             ],
-            'provenance': {
-              'sourceType': 'structuredNews',
-              'provider': 'fake',
-            },
+            'provenance': {'sourceType': 'structuredNews', 'provider': 'fake'},
           };
         }
         bDone = true;
@@ -216,10 +216,7 @@ void main() {
               'provider': 'fake',
             },
           ],
-          'provenance': {
-            'sourceType': 'structuredNews',
-            'provider': 'fake',
-          },
+          'provenance': {'sourceType': 'structuredNews', 'provider': 'fake'},
         };
       });
 
@@ -231,8 +228,9 @@ void main() {
         ..resolve(
           package.services,
           experienceId: package.manifest.experienceId,
-          declaredCapabilities:
-              package.capabilityDeclarations.map((c) => c.capabilityId).toList(),
+          declaredCapabilities: package.capabilityDeclarations
+              .map((c) => c.capabilityId)
+              .toList(),
         );
 
       final ctx = _ctx(package: package, state: state, resolver: resolver);
@@ -265,13 +263,7 @@ void main() {
         DataProviderDescriptor(
           providerId: 'fake-articles',
           requirementTypes: {DataConcepts.newsArticles},
-          supportedFields: const [
-            'title',
-            'source',
-            'summary',
-            'url',
-            'image',
-          ],
+          supportedFields: const ['title', 'source', 'summary', 'url', 'image'],
           reliability: 99,
           acquire: (req, params) async {
             seenQuery = params['query']?.toString();
@@ -325,12 +317,12 @@ class _DelayedNewsCapability extends PlatformCapability {
   final _RecordingNewsCapability inner;
 
   _DelayedNewsCapability(this.inner)
-      : super(
-          id: 'news',
-          name: 'News',
-          description: 'Delayed news',
-          supportedOperations: const ['searchArticles'],
-        );
+    : super(
+        id: 'news',
+        name: 'News',
+        description: 'Delayed news',
+        supportedOperations: const ['searchArticles'],
+      );
 
   @override
   Future<CapabilityInvocationResult> execute(

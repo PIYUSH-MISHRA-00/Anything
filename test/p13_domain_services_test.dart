@@ -157,9 +157,9 @@ void main() {
           200,
         );
       });
-      final obs = await WeatherDataService(client: client).getCurrentWeather(
-        'Lucknow',
-      );
+      final obs = await WeatherDataService(
+        client: client,
+      ).getCurrentWeather('Lucknow');
       expect(obs.location, contains('Lucknow'));
       expect(obs.temperatureC, 31.2);
       expect(obs.toResultMap()['sourceType'], 'structuredWeather');
@@ -170,8 +170,7 @@ void main() {
   group('IS-P13 news service parsing', () {
     test('parses RSS items', () async {
       final client = MockClient((request) async {
-        return http.Response(
-          '''<?xml version="1.0"?>
+        return http.Response('''<?xml version="1.0"?>
 <rss><channel>
 <item>
 <title><![CDATA[Lucknow news one]]></title>
@@ -185,13 +184,11 @@ void main() {
 <link>https://example.com/b</link>
 <source>Wire</source>
 </item>
-</channel></rss>''',
-          200,
-        );
+</channel></rss>''', 200);
       });
-      final articles = await NewsDataService(client: client).searchArticles(
-        'Lucknow',
-      );
+      final articles = await NewsDataService(
+        client: client,
+      ).searchArticles('Lucknow');
       expect(articles, isNotEmpty);
       expect(articles.first.title, contains('Lucknow'));
       expect(articles.first.toResultMap()['sourceType'], 'structuredNews');

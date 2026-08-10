@@ -21,10 +21,7 @@ class TimingInterfaceFactory {
       if (!package.capabilityDeclarations.any(
         (c) => c.capabilityId == 'timers',
       ))
-        const CapabilityDeclaration(
-          capabilityId: 'timers',
-          isRequired: true,
-        ),
+        const CapabilityDeclaration(capabilityId: 'timers', isRequired: true),
     ];
 
     final required = {

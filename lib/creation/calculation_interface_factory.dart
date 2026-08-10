@@ -119,10 +119,30 @@ class CalculationInterfaceFactory {
           id: 'row_sci_1',
           properties: const {'expandChildren': true},
           children: [
-            btn('btn_sin', 'sin', CalculationSession.unary, params: {'op': 'sin'}),
-            btn('btn_cos', 'cos', CalculationSession.unary, params: {'op': 'cos'}),
-            btn('btn_tan', 'tan', CalculationSession.unary, params: {'op': 'tan'}),
-            btn('btn_sqrt', '√', CalculationSession.unary, params: {'op': 'sqrt'}),
+            btn(
+              'btn_sin',
+              'sin',
+              CalculationSession.unary,
+              params: {'op': 'sin'},
+            ),
+            btn(
+              'btn_cos',
+              'cos',
+              CalculationSession.unary,
+              params: {'op': 'cos'},
+            ),
+            btn(
+              'btn_tan',
+              'tan',
+              CalculationSession.unary,
+              params: {'op': 'tan'},
+            ),
+            btn(
+              'btn_sqrt',
+              '√',
+              CalculationSession.unary,
+              params: {'op': 'sqrt'},
+            ),
           ],
         ),
         InterfaceNode(
@@ -131,9 +151,25 @@ class CalculationInterfaceFactory {
           properties: const {'expandChildren': true},
           children: [
             btn('btn_ln', 'ln', CalculationSession.unary, params: {'op': 'ln'}),
-            btn('btn_log', 'log', CalculationSession.unary, params: {'op': 'log'}),
-            btn('btn_pow', 'xʸ', CalculationSession.operator_, params: {'op': '^'}, accent: true),
-            btn('btn_fact', 'n!', CalculationSession.unary, params: {'op': 'factorial'}),
+            btn(
+              'btn_log',
+              'log',
+              CalculationSession.unary,
+              params: {'op': 'log'},
+            ),
+            btn(
+              'btn_pow',
+              'xʸ',
+              CalculationSession.operator_,
+              params: {'op': '^'},
+              accent: true,
+            ),
+            btn(
+              'btn_fact',
+              'n!',
+              CalculationSession.unary,
+              params: {'op': 'factorial'},
+            ),
           ],
         ),
         InterfaceNode(
@@ -141,8 +177,18 @@ class CalculationInterfaceFactory {
           id: 'row_sci_3',
           properties: const {'expandChildren': true},
           children: [
-            btn('btn_pi', 'π', CalculationSession.constant, params: {'name': 'pi'}),
-            btn('btn_e', 'e', CalculationSession.constant, params: {'name': 'e'}),
+            btn(
+              'btn_pi',
+              'π',
+              CalculationSession.constant,
+              params: {'name': 'pi'},
+            ),
+            btn(
+              'btn_e',
+              'e',
+              CalculationSession.constant,
+              params: {'name': 'e'},
+            ),
             btn(
               'btn_lparen',
               '(',
@@ -162,8 +208,18 @@ class CalculationInterfaceFactory {
           id: 'row_sci_4',
           properties: const {'expandChildren': true},
           children: [
-            btn('btn_abs', '|x|', CalculationSession.unary, params: {'op': 'abs'}),
-            btn('btn_neg', '±', CalculationSession.unary, params: {'op': 'neg'}),
+            btn(
+              'btn_abs',
+              '|x|',
+              CalculationSession.unary,
+              params: {'op': 'abs'},
+            ),
+            btn(
+              'btn_neg',
+              '±',
+              CalculationSession.unary,
+              params: {'op': 'neg'},
+            ),
             btn(
               'btn_mod',
               'mod',
@@ -262,12 +318,7 @@ class CalculationInterfaceFactory {
               parameters: {'value': 0},
             ),
           ),
-          btn(
-            'btn_dot',
-            '.',
-            CalculationSession.digit,
-            params: {'value': '.'},
-          ),
+          btn('btn_dot', '.', CalculationSession.digit, params: {'value': '.'}),
           if (spec.operations.contains('percent'))
             btn(
               'btn_pct',

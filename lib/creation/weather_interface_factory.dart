@@ -23,7 +23,9 @@ class WeatherInterfaceFactory {
       ...package.capabilityDeclarations.where(
         (c) => c.capabilityId != 'knowledge',
       ),
-      if (!package.capabilityDeclarations.any((c) => c.capabilityId == 'weather'))
+      if (!package.capabilityDeclarations.any(
+        (c) => c.capabilityId == 'weather',
+      ))
         const CapabilityDeclaration(capabilityId: 'weather', isRequired: true),
     ];
     final manifest = ExperienceManifest(
@@ -170,7 +172,12 @@ class WeatherInterfaceFactory {
         defaultValue:
             'Search a city for temperature, humidity, wind, and conditions.',
       ),
-      StateVariable(id: 'lastKnownResult', type: 'string', defaultValue: '', persistence: 'persistent'),
+      StateVariable(
+        id: 'lastKnownResult',
+        type: 'string',
+        defaultValue: '',
+        persistence: 'persistent',
+      ),
       StateVariable(id: 'provenanceLabel', type: 'string', defaultValue: ''),
       StateVariable(id: 'sourceType', type: 'string', defaultValue: ''),
       StateVariable(id: 'activeRequestId', type: 'string', defaultValue: ''),

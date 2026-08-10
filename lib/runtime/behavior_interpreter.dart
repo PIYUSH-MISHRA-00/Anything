@@ -688,8 +688,8 @@ class BehaviorInterpreter {
         if (imageUrl.isEmpty) {
           for (final item in results) {
             if (item is Map) {
-              final candidate =
-                  (item['imageUrl'] ?? item['image'] ?? '').toString();
+              final candidate = (item['imageUrl'] ?? item['image'] ?? '')
+                  .toString();
               if (candidate.isNotEmpty) {
                 imageUrl = candidate;
                 break;
@@ -714,10 +714,8 @@ class BehaviorInterpreter {
       final prov = result['provenance'];
       final label = prov is Map
           ? '${prov['sourceType'] ?? sourceType} via '
-              '${prov['provider'] ?? provider}'
-          : (provider.isEmpty
-              ? sourceType
-              : '$sourceType via $provider');
+                '${prov['provider'] ?? provider}'
+          : (provider.isEmpty ? sourceType : '$sourceType via $provider');
       context.stateEngine.write(provenanceStateId, label);
     }
   }

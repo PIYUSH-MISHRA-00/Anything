@@ -91,9 +91,13 @@ class WeatherDataService {
       'language': 'en',
       'format': 'json',
     });
-    final geoRes = await _client.get(geoUri).timeout(const Duration(seconds: 20));
+    final geoRes = await _client
+        .get(geoUri)
+        .timeout(const Duration(seconds: 20));
     if (geoRes.statusCode != 200) {
-      throw StateError('Could not resolve location (HTTP ${geoRes.statusCode})');
+      throw StateError(
+        'Could not resolve location (HTTP ${geoRes.statusCode})',
+      );
     }
     final geoJson = jsonDecode(geoRes.body) as Map<String, dynamic>;
     final results = geoJson['results'] as List? ?? const [];

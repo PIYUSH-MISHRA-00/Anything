@@ -10,41 +10,49 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('DataProviderRegistry', () {
-    test('fake provider satisfies atmospheric_conditions without Kernel', () async {
-      final registry = DataProviderRegistry();
-      registry.register(
-        DataProviderDescriptor(
-          providerId: 'fake-weather',
-          requirementTypes: {DataConcepts.atmosphericConditions},
-          supportedFields: const ['temperature', 'humidity', 'wind', 'condition'],
-          reliability: 99,
-          acquire: (req, params) async => {
-            'results': [
-              {
-                'title': params['location'],
-                'content': 'temp 21',
+    test(
+      'fake provider satisfies atmospheric_conditions without Kernel',
+      () async {
+        final registry = DataProviderRegistry();
+        registry.register(
+          DataProviderDescriptor(
+            providerId: 'fake-weather',
+            requirementTypes: {DataConcepts.atmosphericConditions},
+            supportedFields: const [
+              'temperature',
+              'humidity',
+              'wind',
+              'condition',
+            ],
+            reliability: 99,
+            acquire: (req, params) async => {
+              'results': [
+                {
+                  'title': params['location'],
+                  'content': 'temp 21',
+                  'sourceType': 'structuredWeather',
+                  'provider': 'fake-weather',
+                  'temperature': 21,
+                },
+              ],
+              'provenance': {
                 'sourceType': 'structuredWeather',
                 'provider': 'fake-weather',
-                'temperature': 21,
               },
-            ],
-            'provenance': {
-              'sourceType': 'structuredWeather',
-              'provider': 'fake-weather',
             },
-          },
-        ),
-      );
+          ),
+        );
 
-      final weather = WeatherCapability(registry: registry);
-      final result = await weather.execute('getCurrentWeather', {
-        'location': 'Testville',
-      });
-      expect(result.status, CapabilityResultStatus.success);
-      final data = result.data;
-      expect(data['provenance']['selectedProvider'], 'fake-weather');
-      expect((data['results'] as List).first['temperature'], 21);
-    });
+        final weather = WeatherCapability(registry: registry);
+        final result = await weather.execute('getCurrentWeather', {
+          'location': 'Testville',
+        });
+        expect(result.status, CapabilityResultStatus.success);
+        final data = result.data;
+        expect(data['provenance']['selectedProvider'], 'fake-weather');
+        expect((data['results'] as List).first['temperature'], 21);
+      },
+    );
 
     test('failover: preferred fails, second succeeds', () async {
       final registry = DataProviderRegistry();
@@ -117,10 +125,7 @@ void main() {
                 'provider': 'high',
               },
             ],
-            'provenance': {
-              'sourceType': 'structuredNews',
-              'provider': 'high',
-            },
+            'provenance': {'sourceType': 'structuredNews', 'provider': 'high'},
           },
         ),
       );

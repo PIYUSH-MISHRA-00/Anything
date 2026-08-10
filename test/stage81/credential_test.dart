@@ -1,5 +1,6 @@
 /// Tests for Credential Vault.
 library;
+
 import 'package:flutter_test/flutter_test.dart';
 
 /// In-memory fake secure storage for testing.

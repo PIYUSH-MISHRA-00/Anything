@@ -22,14 +22,18 @@ abstract final class AppCapabilityIds {
   static const sort = 'sort';
   static const navigation = 'navigation';
   static const calculation = 'calculation';
+
   /// Calculation mode with scientific / trig / log operations.
   static const scientificCalculation = 'scientificCalculation';
   static const networkData = 'networkData';
   static const webData = 'webData';
+
   /// Structured weather observations — NOT generic web knowledge.
   static const weatherData = 'weatherData';
+
   /// Structured news articles — NOT generic web knowledge.
   static const newsData = 'newsData';
+
   /// Explicit web-knowledge / research (WebWeaveX path).
   static const webKnowledge = 'webKnowledge';
   static const refresh = 'refresh';
@@ -610,8 +614,7 @@ class PackageCapabilityProbe {
   bool get hasWeatherService =>
       package.services.any((s) => s.type == 'weatherData');
 
-  bool get hasNewsService =>
-      package.services.any((s) => s.type == 'newsData');
+  bool get hasNewsService => package.services.any((s) => s.type == 'newsData');
 
   bool get hasPersistence =>
       package.data != null && package.data!.entities.isNotEmpty;

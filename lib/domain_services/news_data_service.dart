@@ -69,7 +69,10 @@ class NewsDataService {
 
   final http.Client _client;
 
-  Future<List<NewsArticle>> searchArticles(String query, {int limit = 8}) async {
+  Future<List<NewsArticle>> searchArticles(
+    String query, {
+    int limit = 8,
+  }) async {
     final q = query.trim();
     if (q.isEmpty) throw ArgumentError('Query is required');
 

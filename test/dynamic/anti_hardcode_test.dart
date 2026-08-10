@@ -16,23 +16,23 @@ void main() {
     test('basic calculator package ≠ scientific calculator package', () {
       final now = DateTime.now();
       ExperiencePackage bare() => ExperiencePackage(
-            manifest: ExperienceManifest(
-              experienceId: 'x',
-              name: 'x',
-              description: 'x',
-              createdAt: now,
-              updatedAt: now,
-            ),
-            interface: const InterfaceDefinition(),
-            behavior: const BehaviorGraph(),
-            state: const StateSchema(),
-            provenance: const PackageProvenance(
-              creationEngineVersion: '1.0.0',
-              specVersion: 1,
-              planVersion: 1,
-            ),
-            integrity: PackageIntegrity(contentHash: '', computedAt: now),
-          );
+        manifest: ExperienceManifest(
+          experienceId: 'x',
+          name: 'x',
+          description: 'x',
+          createdAt: now,
+          updatedAt: now,
+        ),
+        interface: const InterfaceDefinition(),
+        behavior: const BehaviorGraph(),
+        state: const StateSchema(),
+        provenance: const PackageProvenance(
+          creationEngineVersion: '1.0.0',
+          specVersion: 1,
+          planVersion: 1,
+        ),
+        integrity: PackageIntegrity(contentHash: '', computedAt: now),
+      );
 
       final basic = const CalculationInterfaceFactory().applyToPackage(
         bare(),

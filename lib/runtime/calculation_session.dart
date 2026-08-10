@@ -163,10 +163,7 @@ class CalculationSession {
     }
   }
 
-  static void _onEvaluateExpression(
-    ExperienceStateEngine state,
-    String? raw,
-  ) {
+  static void _onEvaluateExpression(ExperienceStateEngine state, String? raw) {
     final angle = state.read('angleMode')?.toString() ?? 'degrees';
     final input = (raw ?? '').trim();
     if (input.isEmpty) return;
@@ -228,8 +225,8 @@ class CalculationSession {
       state.write('error', 'Invalid number');
       return;
     }
-    final degrees = (state.read('angleMode')?.toString() ?? 'degrees') !=
-        'radians';
+    final degrees =
+        (state.read('angleMode')?.toString() ?? 'degrees') != 'radians';
     final rad = degrees ? x * math.pi / 180.0 : x;
 
     late final double result;
@@ -246,21 +243,15 @@ class CalculationSession {
             state.write('error', 'asin domain [-1,1]');
             return;
           }
-          result = degrees
-              ? math.asin(x) * 180.0 / math.pi
-              : math.asin(x);
+          result = degrees ? math.asin(x) * 180.0 / math.pi : math.asin(x);
         case 'acos':
           if (x < -1 || x > 1) {
             state.write('error', 'acos domain [-1,1]');
             return;
           }
-          result = degrees
-              ? math.acos(x) * 180.0 / math.pi
-              : math.acos(x);
+          result = degrees ? math.acos(x) * 180.0 / math.pi : math.acos(x);
         case 'atan':
-          result = degrees
-              ? math.atan(x) * 180.0 / math.pi
-              : math.atan(x);
+          result = degrees ? math.atan(x) * 180.0 / math.pi : math.atan(x);
         case 'sqrt':
           if (x < 0) {
             state.write('error', 'sqrt of negative');
@@ -268,7 +259,9 @@ class CalculationSession {
           }
           result = math.sqrt(x);
         case 'cbrt':
-          result = x < 0 ? -math.pow(-x, 1 / 3).toDouble() : math.pow(x, 1 / 3).toDouble();
+          result = x < 0
+              ? -math.pow(-x, 1 / 3).toDouble()
+              : math.pow(x, 1 / 3).toDouble();
         case 'log':
           if (x <= 0) {
             state.write('error', 'log requires > 0');

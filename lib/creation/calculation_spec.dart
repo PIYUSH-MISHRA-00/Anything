@@ -5,13 +5,7 @@
 library;
 
 /// Calculation product mode (capability configuration, not an app template).
-enum CalculationMode {
-  basic,
-  scientific,
-  financial,
-  statistics,
-  custom,
-}
+enum CalculationMode { basic, scientific, financial, statistics, custom }
 
 /// Declarative calculation surface specification.
 class CalculationSpec {
@@ -74,12 +68,7 @@ class CalculationSpec {
     'mean',
   ];
 
-  static const financialOps = <String>[
-    ...basicOps,
-    'percent',
-    'pow',
-    'abs',
-  ];
+  static const financialOps = <String>[...basicOps, 'percent', 'pow', 'abs'];
 
   bool get isScientific =>
       mode == CalculationMode.scientific ||
@@ -109,7 +98,8 @@ class CalculationSpec {
     if (hintOps is List && hintOps.isNotEmpty) {
       final ops = hintOps.map((e) => e.toString()).toList();
       return CalculationSpec(
-        mode: _modeFromString(hintMode) ??
+        mode:
+            _modeFromString(hintMode) ??
             (ops.any((o) => scientificOps.contains(o) && !basicOps.contains(o))
                 ? CalculationMode.scientific
                 : CalculationMode.custom),

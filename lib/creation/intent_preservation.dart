@@ -145,12 +145,7 @@ class IntentPreservationValidator {
       'temperature',
       'humidity',
     ], (n) => weather += n);
-    hit(const [
-      'news',
-      'headline',
-      'headlines',
-      'articles',
-    ], (n) => news += n);
+    hit(const ['news', 'headline', 'headlines', 'articles'], (n) => news += n);
     hit(const [
       'dashboard',
       'live data',

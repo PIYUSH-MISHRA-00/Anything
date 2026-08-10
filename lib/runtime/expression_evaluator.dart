@@ -44,7 +44,10 @@ class ExpressionEvaluator {
   }
 
   static List<_Tok>? _tokenize(String raw) {
-    final s = raw.replaceAll('×', '*').replaceAll('÷', '/').replaceAll('−', '-');
+    final s = raw
+        .replaceAll('×', '*')
+        .replaceAll('÷', '/')
+        .replaceAll('−', '-');
     final out = <_Tok>[];
     var i = 0;
     _Tok? prev;
@@ -86,8 +89,7 @@ class ExpressionEvaluator {
         final name = s.substring(start, i).toLowerCase();
         if (name == 'pi') {
           out.add(_Tok.num(math.pi));
-        } else if (name == 'e' &&
-            (i >= s.length || s[i] != 'x')) {
+        } else if (name == 'e' && (i >= s.length || s[i] != 'x')) {
           // bare e constant; exp handled as function below
           out.add(_Tok.num(math.e));
         } else if (const {
@@ -133,7 +135,8 @@ class ExpressionEvaluator {
       }
       if ('+-*/%'.contains(c)) {
         // Unary minus
-        final unaryMinus = prev == null ||
+        final unaryMinus =
+            prev == null ||
             prev.kind == _Kind.op ||
             prev.kind == _Kind.lparen ||
             prev.kind == _Kind.func;
@@ -302,7 +305,8 @@ class ExpressionEvaluator {
     }
   }
 
-  static bool _isDigit(String c) => c.codeUnitAt(0) >= 48 && c.codeUnitAt(0) <= 57;
+  static bool _isDigit(String c) =>
+      c.codeUnitAt(0) >= 48 && c.codeUnitAt(0) <= 57;
   static bool _isLetter(String c) {
     final u = c.codeUnitAt(0);
     return (u >= 65 && u <= 90) || (u >= 97 && u <= 122);

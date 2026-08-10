@@ -88,11 +88,7 @@ void main() {
           const StateSchema(
             variables: [
               StateVariable(id: 'display', type: 'string', defaultValue: '16'),
-              StateVariable(
-                id: 'expression',
-                type: 'string',
-                defaultValue: '',
-              ),
+              StateVariable(id: 'expression', type: 'string', defaultValue: ''),
               StateVariable(
                 id: 'storedValue',
                 type: 'decimal',

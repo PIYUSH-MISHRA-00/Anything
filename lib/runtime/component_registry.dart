@@ -351,10 +351,12 @@ class RuntimeComponentRegistry {
           final maxLines = _parseInt(props['maxLines']) ?? 1;
           final stateValue = props['_stateValue']?.toString();
           final onStateChanged = props['_onStateChanged'] as Function(dynamic)?;
-          final onEvent = props['_onEvent'] as void Function(
-            String eventId, {
-            Map<String, dynamic>? data,
-          })?;
+          final onEvent =
+              props['_onEvent']
+                  as void Function(
+                    String eventId, {
+                    Map<String, dynamic>? data,
+                  })?;
           // IS-P11: bind Experience state + keyboard Search submit.
           // Do not wrap in Expanded here — parent Row decides flex.
           return TextFormField(
@@ -614,7 +616,8 @@ class RuntimeComponentRegistry {
             final width = _parseDouble(props['width']);
             final height = _parseDouble(props['height']) ?? 180;
             final fit = _parseBoxFit(props['fit']) ?? BoxFit.cover;
-            final label = props['semanticLabel']?.toString() ??
+            final label =
+                props['semanticLabel']?.toString() ??
                 props['label']?.toString() ??
                 'Image';
             final scheme = Theme.of(ctx).colorScheme;

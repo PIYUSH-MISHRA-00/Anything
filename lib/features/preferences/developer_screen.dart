@@ -68,11 +68,10 @@ class _DeveloperScreenState extends State<DeveloperScreen> {
     if (!mounted) return;
     setState(() {
       _crashes = crashes;
-      _aiLog =
-          [
-            ..._composition.logger.recentOfCategory(LogCategory.aiProvider),
-            ..._composition.logger.recentOfCategory(LogCategory.creation),
-          ]..sort((a, b) => a.timestamp.compareTo(b.timestamp));
+      _aiLog = [
+        ..._composition.logger.recentOfCategory(LogCategory.aiProvider),
+        ..._composition.logger.recentOfCategory(LogCategory.creation),
+      ]..sort((a, b) => a.timestamp.compareTo(b.timestamp));
       _experienceCount = experiences;
       _activityCount = activity;
       _loading = false;

@@ -391,8 +391,14 @@ Manage:
 ''');
     final g = _ids(grooming);
     final a = _ids(adoption);
-    expect(g.any((e) => e.contains('appointment') || e.contains('groomer')), isTrue);
-    expect(a.any((e) => e.contains('adoption') || e.contains('foster')), isTrue);
+    expect(
+      g.any((e) => e.contains('appointment') || e.contains('groomer')),
+      isTrue,
+    );
+    expect(
+      a.any((e) => e.contains('adoption') || e.contains('foster')),
+      isTrue,
+    );
     expect(g.any((e) => e.contains('foster')), isFalse);
     expect(a.any((e) => e.contains('groomer')), isFalse);
     expect(g.intersection(a), isNot(g));

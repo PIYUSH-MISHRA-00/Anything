@@ -121,8 +121,7 @@ class SemanticCompletenessValidator {
         gaps.add(
           const CapabilityGap(
             capabilityId: AppCapabilityIds.weatherData,
-            reason:
-                'generic knowledge/Wikipedia cannot satisfy weatherData',
+            reason: 'generic knowledge/Wikipedia cannot satisfy weatherData',
           ),
         );
       }

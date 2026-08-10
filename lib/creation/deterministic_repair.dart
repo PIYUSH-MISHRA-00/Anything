@@ -89,10 +89,7 @@ class DeterministicCapabilityRepair {
     if (wantsCalculation) {
       final before = PackageCapabilityProbe(current);
       final calcSpec = CalculationSpec.resolve(
-        capabilityIds: {
-          ...requiredCapabilities,
-          ...gapIds,
-        },
+        capabilityIds: {...requiredCapabilities, ...gapIds},
         intentExpression: blueprint?.name ?? current.manifest.name,
       );
       final needsSci =

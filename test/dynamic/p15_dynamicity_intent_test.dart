@@ -65,11 +65,7 @@ ExperiencePackage buildFromIntent(IntentSpec intent) {
     ),
     interface: InterfaceDefinition(
       screens: [
-        InterfaceScreen(
-          id: 'main',
-          title: intent.domain,
-          children: nodes,
-        ),
+        InterfaceScreen(id: 'main', title: intent.domain, children: nodes),
       ],
     ),
     behavior: BehaviorGraph(nodes: behaviorNodes, edges: const []),
@@ -97,34 +93,41 @@ ExperiencePackage buildFromIntent(IntentSpec intent) {
 }
 
 void main() {
-  test('two IntentSpecs yield different models/actions/UI via same builder', () {
-    const garden = IntentSpec(
-      domain: 'community_garden',
-      entities: ['plot', 'member', 'planting', 'harvest'],
-      actions: ['add_plot', 'record_watering', 'search'],
-      uiSurfaces: ['plots_list', 'members_list', 'schedule'],
-    );
-    const bakery = IntentSpec(
-      domain: 'bakery_ops',
-      entities: ['recipe', 'ingredient', 'batch', 'order'],
-      actions: ['add_recipe', 'start_batch', 'search'],
-      uiSurfaces: ['recipes', 'inventory', 'orders'],
-    );
+  test(
+    'two IntentSpecs yield different models/actions/UI via same builder',
+    () {
+      const garden = IntentSpec(
+        domain: 'community_garden',
+        entities: ['plot', 'member', 'planting', 'harvest'],
+        actions: ['add_plot', 'record_watering', 'search'],
+        uiSurfaces: ['plots_list', 'members_list', 'schedule'],
+      );
+      const bakery = IntentSpec(
+        domain: 'bakery_ops',
+        entities: ['recipe', 'ingredient', 'batch', 'order'],
+        actions: ['add_recipe', 'start_batch', 'search'],
+        uiSurfaces: ['recipes', 'inventory', 'orders'],
+      );
 
-    final a = buildFromIntent(garden);
-    final b = buildFromIntent(bakery);
+      final a = buildFromIntent(garden);
+      final b = buildFromIntent(bakery);
 
-    expect(a.manifest.experienceId, isNot(b.manifest.experienceId));
-    expect(a.data!.entities.map((e) => e.id).toSet(),
-        isNot(b.data!.entities.map((e) => e.id).toSet()));
-    expect(a.behavior.nodes.map((n) => n.id).toSet(),
-        isNot(b.behavior.nodes.map((n) => n.id).toSet()));
-    expect(
-      a.interface.screens.first.children.map((n) => n.id).toSet(),
-      isNot(b.interface.screens.first.children.map((n) => n.id).toSet()),
-    );
-    // Same generic construction path (no domain-specific factory class).
-    expect(a.runtimeType, b.runtimeType);
-    expect(identical(buildFromIntent, buildFromIntent), isTrue);
-  });
+      expect(a.manifest.experienceId, isNot(b.manifest.experienceId));
+      expect(
+        a.data!.entities.map((e) => e.id).toSet(),
+        isNot(b.data!.entities.map((e) => e.id).toSet()),
+      );
+      expect(
+        a.behavior.nodes.map((n) => n.id).toSet(),
+        isNot(b.behavior.nodes.map((n) => n.id).toSet()),
+      );
+      expect(
+        a.interface.screens.first.children.map((n) => n.id).toSet(),
+        isNot(b.interface.screens.first.children.map((n) => n.id).toSet()),
+      );
+      // Same generic construction path (no domain-specific factory class).
+      expect(a.runtimeType, b.runtimeType);
+      expect(identical(buildFromIntent, buildFromIntent), isTrue);
+    },
+  );
 }

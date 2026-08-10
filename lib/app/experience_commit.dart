@@ -203,8 +203,15 @@ class ExperienceCommitFramework {
   final SqliteExperienceRepository repository;
   final RepositoryTransactionCoordinator transactions;
 
-  ExperienceCommitFramework({required this.repository})
+  /// IS-P09: fired after any successful library mutation so My Apps can
+  /// refresh without restart. Optional — tests and secondary frameworks may
+  /// omit it.
+  final void Function()? onLibraryMutation;
+
+  ExperienceCommitFramework({required this.repository, this.onLibraryMutation})
     : transactions = RepositoryTransactionCoordinator(repository);
+
+  void _notifyLibraryMutation() => onLibraryMutation?.call();
 
   /// Reads the current state a commit would replace.
   ///
@@ -263,6 +270,7 @@ class ExperienceCommitFramework {
       );
     }
 
+    _notifyLibraryMutation();
     return CommitResult.success(
       origin: origin,
       experienceId: experienceId,
@@ -308,6 +316,7 @@ class ExperienceCommitFramework {
         error: e.toString(),
       );
     }
+    _notifyLibraryMutation();
     return CommitResult.success(
       origin: CommitOrigin.protection,
       experienceId: experienceId,
@@ -373,6 +382,7 @@ class ExperienceCommitFramework {
       );
     }
 
+    _notifyLibraryMutation();
     return CommitResult.success(
       origin: CommitOrigin.repair,
       experienceId: experienceId,
@@ -491,6 +501,7 @@ class ExperienceCommitFramework {
         error: e.toString(),
       );
     }
+    _notifyLibraryMutation();
     return CommitResult.success(
       origin: CommitOrigin.removal,
       experienceId: experienceId,
