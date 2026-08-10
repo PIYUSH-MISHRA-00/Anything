@@ -11,7 +11,7 @@ Describe what you need. Anything builds it, runs it, and keeps it.
 [![CI](https://github.com/PIYUSH-MISHRA-00/Anything/actions/workflows/ci.yml/badge.svg)](https://github.com/PIYUSH-MISHRA-00/Anything/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![Flutter](https://img.shields.io/badge/Flutter-3.44-02569B?logo=flutter)](https://flutter.dev)
-[![Tests](https://img.shields.io/badge/tests-P17%3A%202%2C325%20passing-success)](docs/audit/)
+[![Tests](https://img.shields.io/badge/tests-P18%20CI%3A%202%2C317%20passing-success)](docs/audit/)
 [![Invariants](https://img.shields.io/badge/certified%20invariants-102-blueviolet)](docs/audit/ARCHITECTURE_INVARIANT_MATRIX.md)
 [![Version](https://img.shields.io/badge/version-2.0.0%2B1-informational)](pubspec.yaml)
 
@@ -21,13 +21,14 @@ Describe what you need. Anything builds it, runs it, and keeps it.
 
 ---
 
-> **Project status: pre-release — NOT production complete (P18 in progress).**
-> Version `2.0.0+1`. P17 automated suite: **2325** passed. Open-world
-> multi-entity Experiences generate through the generic Kernel without domain
-> factories. Still open for production: full physical-device certification,
-> WebWeaveX/Kaalka end-to-end device journeys, import/export security matrix,
-> successful release AAB, Play Store publishing. Import/export **code exists**
-> and is unit-tested; that is not the same as production-certified.
+> **Project status: pre-release — NOT production complete (P18).**
+> Version `2.0.0+1`. Analyzer **0/0/0**. Local full suite **2334** passed;
+> CI full suite **2317** passed ([run 31365005092](https://github.com/PIYUSH-MISHRA-00/Anything/actions/runs/31365005092)).
+> CI release **AAB PASS**. Physical device (moto g31): same release APK
+> generated two unseen domains (venue + pet grooming) with create + force-stop
+> persistence. Still open: full device CRUD/search journeys, WebWeaveX/Kaalka
+> device recovery, import/export security matrix, Play Store signing/listing.
+> Import/export **implementation exists**; that is not production-certified.
 > [ROADMAP.md](ROADMAP.md) tracks the gaps.
 
 ## What is Anything?
@@ -69,11 +70,11 @@ time-keyed. There is no server, no account, and no sync.
 | Multiple Experiences running as a workspace | ✅ works |
 | Foreground/background scheduling and lifecycle | ✅ works |
 | Modify and evolve an existing Experience | ✅ works |
-| Protect an Experience with time-keyed encryption | ✅ works |
-| Persistent knowledge acquisition from the web | ✅ works |
-| **Import / export an Experience as a file** | ✅ works |
-| **Android release build** | ⚠️ builds and is signed; not published — see [ROADMAP](ROADMAP.md) |
-| **Verified on a physical device** | ❌ not yet — the next milestone |
+| Protect an Experience with time-keyed encryption | ⚠️ implemented; device protect/recover OPEN |
+| Persistent knowledge acquisition from the web | ⚠️ adapter exists; device WebWeaveX journey OPEN |
+| **Import / export an Experience as a file** | ⚠️ implemented + unit-tested; device security matrix OPEN |
+| **Android release build** | ⚠️ APK PASS; CI AAB PASS; debug/local signing ≠ Play publishable |
+| **Verified on a physical device** | ⚠️ PARTIAL — unknown-domain generate/create/persist proven; full journeys OPEN |
 | Marketplace, cloud sync, accounts | ❌ explicitly out of scope |
 
 ## Architecture at a glance

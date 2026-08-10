@@ -3,8 +3,10 @@
 Honest status. Every claim here is measured, and where something is broken this
 file says so plainly.
 
-**Last verified:** P18 in progress · P17 `flutter test` **2325** passing ·
-version `2.0.0+1` · analyzer target: absolute 0 issues (P18)
+**Last verified:** P18 · local `flutter test` **2334** · CI full suite **2317**
+· analyzer **0/0/0** · version `2.0.0+1` · CI run
+[31365005092](https://github.com/PIYUSH-MISHRA-00/Anything/actions/runs/31365005092)
+· tip `cef8439`
 
 ---
 
@@ -13,14 +15,14 @@ version `2.0.0+1` · analyzer target: absolute 0 issues (P18)
 | Area | Complete | Note |
 |---|---|---|
 | Architecture | ~90% | 102 certified invariants, single ownership throughout |
-| Testing rigour | ~85% | 2325 tests at P17; P18 adding unknown-domain battery |
+| Testing rigour | ~90% | 2334 local / 2317 CI; P18 unknown-domain battery included |
 | Experience system (design) | ~85% | every stage exists and is certified |
-| **Experience system (reachable)** | **~80%** | open-world multi-entity generation (P16/P17); import/export code exists |
+| **Experience system (reachable)** | **~85%** | open-world generation + device same-APK multi-domain |
 | AI / knowledge | ~60% | WebWeaveX adapter exists; **device acquisition OPEN** |
-| UI / UX | ~50% | generic entity list/form from semantics |
-| **Android release** | **~40%** | APK builds; **AAB strip/NDK issue OPEN**; not Play-published |
+| UI / UX | ~55% | generic list/form on device for generated domains |
+| **Android release** | **~70%** | APK PASS; **CI AAB PASS**; local strip CLI still noisy; not Play-published |
 | OSS readiness | ~85% | license, guides, templates, website |
-| **Play Store readiness** | **~40%** | needs release-signed AAB, listing, privacy, device cert |
+| **Play Store readiness** | **~45%** | needs release-signed AAB, listing, privacy, fuller device cert |
 
 ## What works today (automated / package level)
 
@@ -35,30 +37,29 @@ version `2.0.0+1` · analyzer target: absolute 0 issues (P18)
 
 | Gap | Why it matters |
 |---|---|
-| **Full physical-device matrix** | Attached devices exist; P17/P18 device journeys still OPEN |
+| **Full physical-device matrix** | Venue/grooming generate+create+persist proven; search/filter/edit/delete still OPEN |
 | **WebWeaveX real acquisition on device** | Adapter + unit tests ≠ production path proof |
-| **Kaalka protect → force-stop → recover on device** | Integration tests exist; device process restart OPEN |
-| **Import/export security matrix on device** | Code + unit tests ≠ end-to-end production cert |
-| **Release AAB** | P17 failed stripping native debug symbols / NDK 28 incomplete |
+| **Kaalka protect → force-stop → recover on device** | Settings shows Kaalka; full protect/recover OPEN |
+| **Import/export security matrix on device** | Code + unit/CI tests ≠ end-to-end production cert |
+| **Local AAB strip CLI** | CI AAB already PASS; Windows strip check still exits non-zero |
 | **Play Store** | No published build; signing/privacy/listing incomplete |
-| **Documentation drift (being fixed in P18)** | README historically claimed 2141 tests / device never run |
 
 ## Current milestone
 
-### P18 — Production closure + semantic generalization
+### P18 — Production closure + semantic generalization (executed; NOT production complete)
 
-- Absolute analyzer cleanliness (or documented exceptions)
-- Version / docs / website truth
-- AAB success or proven CI equivalence
-- Stronger unknown-domain battery without domain-noun accumulation
-- Device release APK: generate + CRUD + persistence
-- WebWeaveX / Kaalka / import-export real paths
-- CI remote run recorded
+- Absolute analyzer cleanliness: **PASS (0/0/0)**
+- Version / docs truth: **PASS** (`2.0.0+1`); website deep sync still OPEN
+- AAB: **CI PASS**; local strip CLI PARTIAL
+- Unknown-domain battery without domain factories: **PASS**
+- Device release APK generate + create + force-stop persist: **PARTIAL PASS**
+- WebWeaveX / Kaalka / import-export device paths: **OPEN**
+- CI remote run: **PASS** `31365005092`
 
 ### After P18
 
-Only if an external architectural review requests it. Do not invent P19 from
-this file.
+Stop. Only continue if an external architectural review requests another
+milestone. Do not invent P19 from this file.
 
 ## Where help is most useful
 
