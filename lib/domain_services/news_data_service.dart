@@ -174,9 +174,17 @@ class NewsDataService {
   }
 
   static String _stripHtml(String raw) {
-    return raw
+    var s = raw
         .replaceAll(RegExp(r'<[^>]+>'), ' ')
-        .replaceAll(RegExp(r'\s+'), ' ')
-        .trim();
+        .replaceAll('&nbsp;', ' ')
+        .replaceAll('&amp;', '&')
+        .replaceAll('&lt;', '<')
+        .replaceAll('&gt;', '>')
+        .replaceAll('&quot;', '"')
+        .replaceAll('&#39;', "'")
+        .replaceAll(RegExp(r'&#\d+;'), ' ');
+    // Second pass after entity decode (feeds often double-encode markup).
+    s = s.replaceAll(RegExp(r'<[^>]+>'), ' ');
+    return s.replaceAll(RegExp(r'\s+'), ' ').trim();
   }
 }

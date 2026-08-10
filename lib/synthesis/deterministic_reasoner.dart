@@ -5,6 +5,7 @@
 library;
 
 import '../creation/app_capabilities.dart';
+import '../creation/intent_preservation.dart';
 import 'app_blueprint.dart';
 import 'application_reasoner.dart';
 import 'structural_entity_extractor.dart';
@@ -29,16 +30,104 @@ class DeterministicReasoner implements ApplicationReasoner {
       return ReasoningReady(semanticApp: collectionResult);
     }
 
+    // Capability shells (timing/calc/weather/news) — not domain factories.
+    // Without this, stopwatch/calculator falsely require an AI provider on device.
+    final shell = _tryCapabilityShellReasoning(objective);
+    if (shell != null) {
+      return ReasoningReady(semanticApp: shell);
+    }
+
     return const ReasoningProviderRequired();
   }
 
-  /// Multi-entity durable apps from structural noun lists (manage / bullets).
+  /// Build a capability-declared SemanticApp for utility/network shells.
   ///
-  /// Requires ≥2 extractable entities so vague "track habits" / "planner"
-  /// prompts still escalate to the model (Stage 10 contract).
+  /// Uses [IntentPreservationValidator] purpose vocabulary (validation-side
+  /// linguistics) to select capability IDs. CreationEngine + interface
+  /// factories materialize the UI — no named application templates here.
+  SemanticApp? _tryCapabilityShellReasoning(String objective) {
+    final purpose = const IntentPreservationValidator().purposeFromPrompt(
+      objective,
+    );
+    final lower = objective.toLowerCase();
+    final caps = <String>{};
+    final archetypes = <String>['utility'];
+    final tags = <String>['utility', 'capability-shell'];
+
+    switch (purpose) {
+      case IntentPurpose.timing:
+        caps.addAll({
+          AppCapabilityIds.timers,
+          AppCapabilityIds.input,
+          AppCapabilityIds.resultDisplay,
+        });
+      case IntentPurpose.calculation:
+        caps.addAll({
+          AppCapabilityIds.calculation,
+          AppCapabilityIds.input,
+          AppCapabilityIds.resultDisplay,
+        });
+        if (lower.contains('scientific') ||
+            lower.contains('trig') ||
+            lower.contains('engineering')) {
+          caps.add(AppCapabilityIds.scientificCalculation);
+        }
+      case IntentPurpose.weather:
+        caps.addAll({
+          AppCapabilityIds.weatherData,
+          AppCapabilityIds.input,
+          AppCapabilityIds.refresh,
+          AppCapabilityIds.loadingState,
+          AppCapabilityIds.errorState,
+          AppCapabilityIds.resultDisplay,
+        });
+        tags.add('weatherData');
+      case IntentPurpose.news:
+        caps.addAll({
+          AppCapabilityIds.newsData,
+          AppCapabilityIds.input,
+          AppCapabilityIds.refresh,
+          AppCapabilityIds.loadingState,
+          AppCapabilityIds.errorState,
+          AppCapabilityIds.resultDisplay,
+        });
+        tags.add('newsData');
+      case IntentPurpose.networkReference:
+        // Still escalate to model/knowledge when only generic network is asked —
+        // avoid forcing a Wikipedia shell from this path.
+        return null;
+      case IntentPurpose.collection:
+      case IntentPurpose.unknown:
+        return null;
+    }
+
+    if (caps.isEmpty) return null;
+    return SemanticApp(
+      name: _deriveName(objective),
+      purpose: objective,
+      entities: const [],
+      actions: const [],
+      views: const [],
+      archetypes: List<String>.from(archetypes),
+      tags: List<String>.from(tags),
+      requiredCapabilities: caps.toList(growable: false),
+    );
+  }
+
+  /// Durable managed-record apps from structural noun lists (manage / bullets)
+  /// or a single structural manager/tracker head noun.
+  ///
+  /// Multi-entity lists (≥2) remain preferred. Single-entity manager/tracker
+  /// prompts (e.g. "task manager", "expense tracker") are handled here so
+  /// device creation does not falsely require an AI provider. Vague prompts
+  /// without a derivable entity still escalate (Stage 10 contract).
   SemanticApp? _tryManagedRecordsReasoning(String objective) {
-    final entities = StructuralEntityExtractor.extract(objective);
-    if (entities.length < 2) return null;
+    var entities = StructuralEntityExtractor.extract(objective);
+    if (entities.length < 2) {
+      final single = _extractManagerEntity(objective);
+      if (single == null) return null;
+      entities = [single];
+    }
 
     final semanticEntities = <SemanticEntity>[
       for (final e in entities)
@@ -223,6 +312,45 @@ class DeterministicReasoner implements ApplicationReasoner {
       }
     }
     return null;
+  }
+
+  /// Head noun before manager/tracker/planner/log — structural, not domain-coded.
+  StructuralEntityName? _extractManagerEntity(String objective) {
+    if (!StructuralEntityExtractor.looksLikeManagedRecords(objective)) {
+      return null;
+    }
+    final m = RegExp(
+      r'\b(?:a|an|the|my|our|your|professional|personal|simple)?\s*'
+      r'([A-Za-z][\w-]{1,40}(?:\s+[A-Za-z][\w-]{1,40}){0,3})\s+'
+      r'(?:manager|tracker|planner|log)\b',
+      caseSensitive: false,
+    ).firstMatch(objective);
+    if (m == null) return null;
+    final raw = m.group(1)!.trim();
+    const stop = {
+      'a',
+      'an',
+      'the',
+      'my',
+      'our',
+      'your',
+      'professional',
+      'personal',
+      'simple',
+      'app',
+      'application',
+    };
+    final words = raw
+        .split(RegExp(r'\s+'))
+        .where((w) => !stop.contains(w.toLowerCase()))
+        .toList();
+    if (words.isEmpty) return null;
+    final name = words.map((w) {
+      final lower = w.toLowerCase();
+      return lower[0].toUpperCase() + lower.substring(1);
+    }).join(' ');
+    if (name.length < 2) return null;
+    return StructuralEntityName(id: _toEntityId(name), name: name);
   }
 
   String _deriveName(String objective) {

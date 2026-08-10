@@ -626,20 +626,24 @@ class HomeScreenState extends State<HomeScreen> {
     if (option == null || !mounted) return;
 
     if (option == 'current') {
+      // Minute precision + previous-minute fallback (protect/reopen across
+      // a minute boundary is the common device path).
       final now = DateTime.now();
-      final timeSeed = TimeSeed(
-        hours: now.hour,
-        minutes: now.minute,
-        seconds: now.second,
-      );
-      // Implementation Specification IS-R45: routed through the unified
-      // entry pipeline — real workspace-session registration + activation,
-      // same real contract as `_openViaCoordinator`'s own `OpenReady` case.
-      final openResult = await _entryPipeline.activateProtectedExperience(
-        Navigator.of(context),
-        experienceId: experienceId,
-        timeSeed: timeSeed,
-      );
+      OpenResult? openResult;
+      for (final offsetMinutes in const [0, -1]) {
+        final t = now.add(Duration(minutes: offsetMinutes));
+        final timeSeed = TimeSeed(
+          hours: t.hour,
+          minutes: t.minute,
+          seconds: 0,
+        );
+        openResult = await _entryPipeline.activateProtectedExperience(
+          Navigator.of(context),
+          experienceId: experienceId,
+          timeSeed: timeSeed,
+        );
+        if (openResult is OpenReady) break;
+      }
       if (openResult is OpenReady && mounted) {
         _loadRecent();
       } else if (openResult is OpenFailed && mounted) {

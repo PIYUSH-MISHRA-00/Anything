@@ -221,18 +221,21 @@ class _ExperiencesScreenState extends State<ExperiencesScreen> {
 
     if (option == 'current') {
       final now = DateTime.now();
-      final timeSeed = TimeSeed(
-        hours: now.hour,
-        minutes: now.minute,
-        seconds: now.second,
-      );
-      // Implementation Specification IS-R45: same real pipeline routing as
-      // `_openExperience` above.
-      final openResult = await _entryPipeline.activateProtectedExperience(
-        Navigator.of(context),
-        experienceId: experienceId,
-        timeSeed: timeSeed,
-      );
+      OpenResult? openResult;
+      for (final offsetMinutes in const [0, -1]) {
+        final t = now.add(Duration(minutes: offsetMinutes));
+        final timeSeed = TimeSeed(
+          hours: t.hour,
+          minutes: t.minute,
+          seconds: 0,
+        );
+        openResult = await _entryPipeline.activateProtectedExperience(
+          Navigator.of(context),
+          experienceId: experienceId,
+          timeSeed: timeSeed,
+        );
+        if (openResult is OpenReady) break;
+      }
       if (openResult is OpenReady && mounted) {
         _loadExperiences();
       } else if (openResult is OpenFailed && mounted) {

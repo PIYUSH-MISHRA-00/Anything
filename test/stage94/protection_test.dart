@@ -71,6 +71,7 @@ void main() {
       final succeeded = result as ProtectionSucceeded;
       expect(succeeded.envelope.ciphertext, isNotEmpty);
       expect(succeeded.envelope.seed, isA<TimeSeed>());
+      expect(succeeded.envelope.seed.seconds, equals(0));
       expect(succeeded.envelope.originalContentHash, isNotEmpty);
 
       final metadata = await repository.getMetadata(experienceId);
@@ -82,6 +83,13 @@ void main() {
 
       final envelope = await repository.getProtectedEnvelope(experienceId);
       expect(envelope, isNotNull);
+
+      // Device "Use current time" unlock uses the same minute-precision seed.
+      final unlock = await service.unprotect(
+        experienceId: experienceId,
+        timeSeed: succeeded.envelope.seed,
+      );
+      expect(unlock, isA<UnprotectionSucceeded>());
     });
 
     test('custom-time Protect executes real Kaalka encryption', () async {

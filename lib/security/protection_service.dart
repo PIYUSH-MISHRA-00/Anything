@@ -156,11 +156,20 @@ class ExperienceProtectionService {
   ProtectionProvider get provider => _provider;
 
   /// Protect a package using the current system time.
+  ///
+  /// Minute precision (seconds = 0): matches the date/time picker UX and makes
+  /// "Use current time" recover viable on device. Second-precision seeds made
+  /// protect-then-reopen fail unless performed in the same clock second.
   Future<ProtectionResult> protectWithCurrentTime({
     required ExperiencePackage package,
     required String experienceId,
   }) async {
-    final seed = _provider.getCurrentSeed();
+    final live = _provider.getCurrentSeed();
+    final seed = TimeSeed(
+      hours: live.hours,
+      minutes: live.minutes,
+      seconds: 0,
+    );
     return _protect(package: package, experienceId: experienceId, seed: seed);
   }
 

@@ -529,16 +529,29 @@ void main() {
       expect(result, isA<ReasoningReady>());
     });
 
-    test('Returns provider required for tracker pattern', () async {
+    test('Handles single-entity tracker as deterministic CRUD', () async {
+      // FINAL: "X tracker/manager" is structural CRUD without AI (device path).
+      // Vague "track my habits" (no head-noun suffix) still escalates — see
+      // stage10_2 tightened tracker/planner verb tests.
       final reasoner = DeterministicReasoner();
       final result = await reasoner.reason(_context('Build a habit tracker'));
-      expect(result, isA<ReasoningProviderRequired>());
+      expect(result, isA<ReasoningReady>());
+      final ready = result as ReasoningReady;
+      expect(
+        ready.semanticApp.entities.any((e) => e.id.contains('habit')),
+        isTrue,
+      );
     });
 
-    test('Returns provider required for planner pattern', () async {
+    test('Handles single-entity planner as deterministic CRUD', () async {
       final reasoner = DeterministicReasoner();
       final result = await reasoner.reason(_context('Create a study planner'));
-      expect(result, isA<ReasoningProviderRequired>());
+      expect(result, isA<ReasoningReady>());
+      final ready = result as ReasoningReady;
+      expect(
+        ready.semanticApp.entities.any((e) => e.id.contains('study')),
+        isTrue,
+      );
     });
 
     test('Returns provider required for dashboard pattern', () async {
@@ -779,8 +792,9 @@ void main() {
       'Deterministic reasoner returns ProviderRequired for non-collection',
       () async {
         final reasoner = DeterministicReasoner();
+        // No manager/tracker/list structure — must escalate.
         final result = await reasoner.reason(
-          _context('Build a habit tracker with analytics'),
+          _context('Explain quantum entanglement with diagrams'),
         );
         expect(result, isA<ReasoningProviderRequired>());
       },
@@ -793,7 +807,10 @@ void main() {
           providerRegistry: _FakeProviderRegistry(),
         );
         final outcome = await kernel.processIntent(
-          Intent.create(expression: 'Build a habit tracker'),
+          Intent.create(
+            expression:
+                'Create a personalized astrology coaching companion that learns my chart',
+          ),
         );
         expect(outcome, isA<ProviderRequired>());
       },
