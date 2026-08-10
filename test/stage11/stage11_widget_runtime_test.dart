@@ -1,4 +1,4 @@
-/// Stage 11 — Widget Runtime Tests
+/// Stage 11 â€” Widget Runtime Tests
 ///
 /// Tests ExperienceRenderer with ExperienceStateEngine via widget pumping.
 /// Tests multi-screen creation, navigation, rendering, interaction, reactivity.
@@ -21,7 +21,7 @@ void main() {
   });
 
   // =========================================================================
-  // ExperienceRenderer — Widget-level rendering
+  // ExperienceRenderer â€” Widget-level rendering
   // =========================================================================
   group('ExperienceRenderer', () {
     late ExperienceRenderer renderer;
@@ -32,11 +32,13 @@ void main() {
       stateEngine = ExperienceStateEngine();
     });
 
-    Widget _wrap(Widget Function(BuildContext ctx) builder) {
-      return MaterialApp(home: Builder(builder: builder));
+    Widget wrap(Widget Function(BuildContext ctx) builder) {
+      return MaterialApp(
+        home: Scaffold(body: Builder(builder: builder)),
+      );
     }
 
-    InterfaceNode _node(
+    InterfaceNode node(
       String id,
       String type, {
       Map<String, dynamic>? properties,
@@ -52,7 +54,7 @@ void main() {
       );
     }
 
-    InterfaceScreen _screen(String title, {List<InterfaceNode>? children}) {
+    InterfaceScreen screen(String title, {List<InterfaceNode>? children}) {
       return InterfaceScreen(
         id: 'screen_1',
         title: title,
@@ -63,17 +65,17 @@ void main() {
     testWidgets('Renders text node', (tester) async {
       final interface = InterfaceDefinition(
         screens: [
-          _screen(
+          screen(
             'Test',
             children: [
-              _node('t1', 'text', properties: {'content': 'Hello World'}),
+              node('t1', 'text', properties: {'content': 'Hello World'}),
             ],
           ),
         ],
       );
 
       await tester.pumpWidget(
-        _wrap((ctx) => renderer.render(ctx, interface, stateEngine)),
+        wrap((ctx) => renderer.render(ctx, interface, stateEngine)),
       );
       await tester.pumpAndSettle();
 
@@ -83,17 +85,17 @@ void main() {
     testWidgets('Renders button with label', (tester) async {
       final interface = InterfaceDefinition(
         screens: [
-          _screen(
+          screen(
             'Test',
             children: [
-              _node('b1', 'button', properties: {'label': 'Press Me'}),
+              node('b1', 'button', properties: {'label': 'Press Me'}),
             ],
           ),
         ],
       );
 
       await tester.pumpWidget(
-        _wrap((ctx) => renderer.render(ctx, interface, stateEngine)),
+        wrap((ctx) => renderer.render(ctx, interface, stateEngine)),
       );
       await tester.pumpAndSettle();
 
@@ -104,17 +106,17 @@ void main() {
     testWidgets('Renders input with hint', (tester) async {
       final interface = InterfaceDefinition(
         screens: [
-          _screen(
+          screen(
             'Test',
             children: [
-              _node('i1', 'input', properties: {'hint': 'Enter name'}),
+              node('i1', 'input', properties: {'hint': 'Enter name'}),
             ],
           ),
         ],
       );
 
       await tester.pumpWidget(
-        _wrap((ctx) => renderer.render(ctx, interface, stateEngine)),
+        wrap((ctx) => renderer.render(ctx, interface, stateEngine)),
       );
       await tester.pumpAndSettle();
 
@@ -124,16 +126,16 @@ void main() {
     testWidgets('Renders column with children', (tester) async {
       final interface = InterfaceDefinition(
         screens: [
-          _screen(
+          screen(
             'Test',
             children: [
-              _node(
+              node(
                 'col',
                 'column',
                 children: [
-                  _node('t1', 'text', properties: {'content': 'Line 1'}),
-                  _node('t2', 'text', properties: {'content': 'Line 2'}),
-                  _node('t3', 'text', properties: {'content': 'Line 3'}),
+                  node('t1', 'text', properties: {'content': 'Line 1'}),
+                  node('t2', 'text', properties: {'content': 'Line 2'}),
+                  node('t3', 'text', properties: {'content': 'Line 3'}),
                 ],
               ),
             ],
@@ -142,7 +144,7 @@ void main() {
       );
 
       await tester.pumpWidget(
-        _wrap((ctx) => renderer.render(ctx, interface, stateEngine)),
+        wrap((ctx) => renderer.render(ctx, interface, stateEngine)),
       );
       await tester.pumpAndSettle();
 
@@ -155,14 +157,14 @@ void main() {
     testWidgets('Renders card with children', (tester) async {
       final interface = InterfaceDefinition(
         screens: [
-          _screen(
+          screen(
             'Test',
             children: [
-              _node(
+              node(
                 'card',
                 'card',
                 children: [
-                  _node('t1', 'text', properties: {'content': 'Card Title'}),
+                  node('t1', 'text', properties: {'content': 'Card Title'}),
                 ],
               ),
             ],
@@ -171,7 +173,7 @@ void main() {
       );
 
       await tester.pumpWidget(
-        _wrap((ctx) => renderer.render(ctx, interface, stateEngine)),
+        wrap((ctx) => renderer.render(ctx, interface, stateEngine)),
       );
       await tester.pumpAndSettle();
 
@@ -182,15 +184,15 @@ void main() {
     testWidgets('Renders divider and spacer', (tester) async {
       final interface = InterfaceDefinition(
         screens: [
-          _screen(
+          screen(
             'Test',
-            children: [_node('d1', 'divider'), _node('s1', 'spacer')],
+            children: [node('d1', 'divider'), node('s1', 'spacer')],
           ),
         ],
       );
 
       await tester.pumpWidget(
-        _wrap((ctx) => renderer.render(ctx, interface, stateEngine)),
+        wrap((ctx) => renderer.render(ctx, interface, stateEngine)),
       );
       await tester.pumpAndSettle();
 
@@ -209,15 +211,15 @@ void main() {
 
       final interface = InterfaceDefinition(
         screens: [
-          _screen(
+          screen(
             'Test',
-            children: [_node('sw1', 'switch', stateBinding: 'darkMode')],
+            children: [node('sw1', 'switch', stateBinding: 'darkMode')],
           ),
         ],
       );
 
       await tester.pumpWidget(
-        _wrap((ctx) => renderer.render(ctx, interface, stateEngine)),
+        wrap((ctx) => renderer.render(ctx, interface, stateEngine)),
       );
       await tester.pumpAndSettle();
 
@@ -240,15 +242,15 @@ void main() {
 
       final interface = InterfaceDefinition(
         screens: [
-          _screen(
+          screen(
             'Test',
-            children: [_node('t1', 'text', stateBinding: 'greeting')],
+            children: [node('t1', 'text', stateBinding: 'greeting')],
           ),
         ],
       );
 
       await tester.pumpWidget(
-        _wrap((ctx) => renderer.render(ctx, interface, stateEngine)),
+        wrap((ctx) => renderer.render(ctx, interface, stateEngine)),
       );
       await tester.pumpAndSettle();
 
@@ -261,17 +263,17 @@ void main() {
     testWidgets('Renders unknown type safely', (tester) async {
       final interface = InterfaceDefinition(
         screens: [
-          _screen(
+          screen(
             'Test',
             children: [
-              _node('u1', 'customWidget', properties: {'value': 'test'}),
+              node('u1', 'customWidget', properties: {'value': 'test'}),
             ],
           ),
         ],
       );
 
       await tester.pumpWidget(
-        _wrap((ctx) => renderer.render(ctx, interface, stateEngine)),
+        wrap((ctx) => renderer.render(ctx, interface, stateEngine)),
       );
       await tester.pumpAndSettle();
 
@@ -282,7 +284,7 @@ void main() {
       String? firedEvent;
       final interface = InterfaceDefinition(
         screens: [
-          _screen(
+          screen(
             'Test',
             children: [
               InterfaceNode(
@@ -297,7 +299,7 @@ void main() {
       );
 
       await tester.pumpWidget(
-        _wrap(
+        wrap(
           (ctx) => renderer.render(
             ctx,
             interface,
@@ -312,31 +314,37 @@ void main() {
       expect(firedEvent, 'submit_pressed');
     });
 
-    testWidgets('Renders app bar with screen title', (tester) async {
+    // IS-P08: hosted screens use renderScreen (no AppBar). The standalone
+    // render() entry still owns one AppBar because it has no host.
+    testWidgets('renderScreen draws content without an AppBar', (tester) async {
       final interface = InterfaceDefinition(
         screens: [
-          _screen(
+          screen(
             'My Experience',
             children: [
-              _node('t1', 'text', properties: {'content': 'Content'}),
+              node('t1', 'text', properties: {'content': 'Content'}),
             ],
           ),
         ],
       );
 
       await tester.pumpWidget(
-        _wrap((ctx) => renderer.render(ctx, interface, stateEngine)),
+        wrap(
+          (ctx) =>
+              renderer.renderScreen(ctx, 'screen_1', interface, stateEngine),
+        ),
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('My Experience'), findsOneWidget);
+      expect(find.text('Content'), findsOneWidget);
+      expect(find.byType(AppBar), findsNothing);
     });
 
     testWidgets('Empty screens shows placeholder', (tester) async {
       final interface = InterfaceDefinition(screens: []);
 
       await tester.pumpWidget(
-        _wrap((ctx) => renderer.render(ctx, interface, stateEngine)),
+        wrap((ctx) => renderer.render(ctx, interface, stateEngine)),
       );
       await tester.pumpAndSettle();
 
@@ -346,15 +354,15 @@ void main() {
     testWidgets('Row renders horizontally', (tester) async {
       final interface = InterfaceDefinition(
         screens: [
-          _screen(
+          screen(
             'Test',
             children: [
-              _node(
+              node(
                 'row',
                 'row',
                 children: [
-                  _node('t1', 'text', properties: {'content': 'Left'}),
-                  _node('t2', 'text', properties: {'content': 'Right'}),
+                  node('t1', 'text', properties: {'content': 'Left'}),
+                  node('t2', 'text', properties: {'content': 'Right'}),
                 ],
               ),
             ],
@@ -363,7 +371,7 @@ void main() {
       );
 
       await tester.pumpWidget(
-        _wrap((ctx) => renderer.render(ctx, interface, stateEngine)),
+        wrap((ctx) => renderer.render(ctx, interface, stateEngine)),
       );
       await tester.pumpAndSettle();
 
@@ -374,7 +382,7 @@ void main() {
   });
 
   // =========================================================================
-  // State Engine — Reactive updates
+  // State Engine â€” Reactive updates
   // =========================================================================
   group('StateEngine reactivity', () {
     late ExperienceStateEngine stateEngine;
@@ -429,9 +437,9 @@ void main() {
   });
 
   // =========================================================================
-  // Golden Path — Full Experience rendering
+  // Golden Path â€” Full Experience rendering
   // =========================================================================
-  group('Golden Path — Experience rendering', () {
+  group('Golden Path â€” Experience rendering', () {
     late ExperienceRenderer renderer;
     late ExperienceStateEngine stateEngine;
 
@@ -440,8 +448,10 @@ void main() {
       stateEngine = ExperienceStateEngine();
     });
 
-    Widget _wrap(Widget Function(BuildContext ctx) builder) {
-      return MaterialApp(home: Builder(builder: builder));
+    Widget wrap(Widget Function(BuildContext ctx) builder) {
+      return MaterialApp(
+        home: Scaffold(body: Builder(builder: builder)),
+      );
     }
 
     testWidgets('People Tracker: list screen renders', (tester) async {
@@ -505,7 +515,7 @@ void main() {
       );
 
       await tester.pumpWidget(
-        _wrap((ctx) => renderer.render(ctx, interface, stateEngine)),
+        wrap((ctx) => renderer.render(ctx, interface, stateEngine)),
       );
       await tester.pumpAndSettle();
 
@@ -554,7 +564,7 @@ void main() {
       );
 
       await tester.pumpWidget(
-        _wrap((ctx) => renderer.render(ctx, interface, stateEngine)),
+        wrap((ctx) => renderer.render(ctx, interface, stateEngine)),
       );
       await tester.pumpAndSettle();
 
@@ -636,7 +646,7 @@ void main() {
       );
 
       await tester.pumpWidget(
-        _wrap((ctx) => renderer.render(ctx, interface, stateEngine)),
+        wrap((ctx) => renderer.render(ctx, interface, stateEngine)),
       );
       await tester.pumpAndSettle();
 
@@ -703,7 +713,7 @@ void main() {
       );
 
       await tester.pumpWidget(
-        _wrap((ctx) => renderer.render(ctx, interface, stateEngine)),
+        wrap((ctx) => renderer.render(ctx, interface, stateEngine)),
       );
       await tester.pumpAndSettle();
 
@@ -762,7 +772,7 @@ void main() {
       );
 
       await tester.pumpWidget(
-        _wrap((ctx) => renderer.render(ctx, interface, stateEngine)),
+        wrap((ctx) => renderer.render(ctx, interface, stateEngine)),
       );
       await tester.pumpAndSettle();
 

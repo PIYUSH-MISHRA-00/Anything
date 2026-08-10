@@ -17,7 +17,7 @@ class IntentComposer extends ChangeNotifier {
   final AnythingKernel _kernel;
   String _expression = '';
   core.InputModality _modality = core.InputModality.text;
-  List<core.IntentAttachment> _attachments = [];
+  final List<core.IntentAttachment> _attachments = [];
   bool _isSubmitting = false;
   String? _error;
   KernelOutcome? _lastOutcome;
@@ -92,7 +92,8 @@ class IntentComposer extends ChangeNotifier {
       _lastOutcome = outcome;
 
       if (outcome is PlanningFailed) {
-        _error = outcome.message;
+        // IS-P10: prefer the structured error (real cause) over a shrug message.
+        _error = outcome.error.isNotEmpty ? outcome.error : outcome.message;
       } else if (outcome is UnsupportedIntent) {
         _error = outcome.message;
       }

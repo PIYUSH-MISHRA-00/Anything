@@ -46,6 +46,45 @@ import 'package:anything/capabilities/registry/capability_descriptor.dart';
 // Test helpers
 // ---------------------------------------------------------------------------
 
+/// Platform caps production maps app-level networkData onto (IS-P10).
+CapabilityRegistry _platformCapabilityRegistry() {
+  final registry = CapabilityRegistry();
+  for (final d in const [
+    CapabilityDescriptor(
+      id: 'storage',
+      version: '1.0.0',
+      name: 'Storage',
+      description: 'Local storage capability',
+      category: CapabilityCategory.storage,
+      inputContract: 'data',
+      outputContract: 'stored_data',
+    ),
+    CapabilityDescriptor(
+      id: 'http',
+      version: '1.0.0',
+      name: 'HTTP',
+      description: 'HTTPS',
+      category: CapabilityCategory.integration,
+      inputContract: 'request',
+      outputContract: 'response',
+      networkRequired: true,
+    ),
+    CapabilityDescriptor(
+      id: 'knowledge',
+      version: '1.0.0',
+      name: 'Knowledge',
+      description: 'Reference lookups',
+      category: CapabilityCategory.knowledge,
+      inputContract: 'query',
+      outputContract: 'resources',
+      networkRequired: true,
+    ),
+  ]) {
+    registry.register(d);
+  }
+  return registry;
+}
+
 IntentUnderstanding _understand(String objective) {
   return IntentUnderstanding(
     intentId: 'test-${DateTime.now().microsecondsSinceEpoch}',
@@ -550,7 +589,7 @@ void main() {
   // ==========================================================================
   group('Knowledge B: Required Knowledge Failure', () {
     test(
-      'Kernel returns PlanningFailed when required knowledge cannot be acquired',
+      'Kernel degrades to installable network shell when required knowledge cannot be acquired',
       () async {
         final reasoner = _AlwaysFailReasoner();
         final cache = KnowledgeCache();
@@ -568,12 +607,13 @@ void main() {
           providerRegistry: _FakeProviderRegistry(),
           reasoner: reasoner,
           knowledgeEngine: KnowledgeAcquisitionEngine(cache: cache),
+          capabilityRegistry: _platformCapabilityRegistry(),
         );
         final outcome = await kernel.processIntent(
           Intent.create(expression: 'create a test app'),
         );
-        expect(outcome, isA<PlanningFailed>());
-        // Reasoner called once per round (0,1,2) = 3 times
+        // IS-P10: knowledge at plan time is not a generation gate.
+        expect(outcome, isA<ExecutionPlanReady>());
         expect(reasoner.callCount, equals(3));
       },
     );
@@ -707,7 +747,7 @@ void main() {
   // E. Round Limit
   // ==========================================================================
   group('Knowledge E: Round Limit', () {
-    test('Kernel enforces max 2 rounds (3 calls) then fails', () async {
+    test('Kernel enforces max 2 rounds (3 calls) then degrades', () async {
       final reasoner = _AlwaysFailReasoner();
       final cache = KnowledgeCache();
       await cache.store([
@@ -724,11 +764,12 @@ void main() {
         providerRegistry: _FakeProviderRegistry(),
         reasoner: reasoner,
         knowledgeEngine: KnowledgeAcquisitionEngine(cache: cache),
+        capabilityRegistry: _platformCapabilityRegistry(),
       );
       final outcome = await kernel.processIntent(
         Intent.create(expression: 'create a test app'),
       );
-      expect(outcome, isA<PlanningFailed>());
+      expect(outcome, isA<ExecutionPlanReady>());
       expect(reasoner.callCount, equals(3));
     });
   });
@@ -738,19 +779,20 @@ void main() {
   // ==========================================================================
   group('Knowledge F: Optional Failure No Escape', () {
     test(
-      'Optional-only ReasoningKnowledgeRequired resolves to failure',
+      'Optional-only ReasoningKnowledgeRequired degrades without leaking',
       () async {
         final reasoner = _OptionalOnlyReasoner();
         final kernel = AnythingKernel(
           providerRegistry: _FakeProviderRegistry(),
           reasoner: reasoner,
           knowledgeEngine: KnowledgeAcquisitionEngine(),
+          capabilityRegistry: _platformCapabilityRegistry(),
         );
         final outcome = await kernel.processIntent(
           Intent.create(expression: 'create a test app'),
         );
         // Must NOT be ReasoningKnowledgeRequired leaking out
-        expect(outcome, isA<PlanningFailed>());
+        expect(outcome, isA<ExecutionPlanReady>());
         expect(reasoner.callCount, equals(3));
       },
     );
@@ -768,12 +810,13 @@ void main() {
           providerRegistry: _FakeProviderRegistry(),
           reasoner: reasoner,
           knowledgeEngine: KnowledgeAcquisitionEngine(),
+          capabilityRegistry: _platformCapabilityRegistry(),
         );
         final outcome = await kernel.processIntent(
           Intent.create(expression: 'create a test app'),
         );
         // KernelOutcome is sealed — ReasoningKnowledgeRequired should never appear
-        expect(outcome, isA<PlanningFailed>());
+        expect(outcome, isA<ExecutionPlanReady>());
       },
     );
   });
@@ -1252,24 +1295,11 @@ void main() {
           ),
         ]);
 
-        final capabilityRegistry = CapabilityRegistry();
-        capabilityRegistry.register(
-          const CapabilityDescriptor(
-            id: 'storage',
-            version: '1.0.0',
-            name: 'Storage',
-            description: 'Local storage capability',
-            category: CapabilityCategory.storage,
-            inputContract: 'data',
-            outputContract: 'stored_data',
-          ),
-        );
-
         final kernel = AnythingKernel(
           providerRegistry: _FakeProviderRegistry(),
           reasoner: reasoner,
           knowledgeEngine: KnowledgeAcquisitionEngine(cache: cache),
-          capabilityRegistry: capabilityRegistry,
+          capabilityRegistry: _platformCapabilityRegistry(),
         );
 
         final outcome = await kernel.processIntent(
@@ -1331,24 +1361,11 @@ void main() {
         ),
       ]);
 
-      final capabilityRegistry = CapabilityRegistry();
-      capabilityRegistry.register(
-        const CapabilityDescriptor(
-          id: 'storage',
-          version: '1.0.0',
-          name: 'Storage',
-          description: 'Local storage capability',
-          category: CapabilityCategory.storage,
-          inputContract: 'data',
-          outputContract: 'stored_data',
-        ),
-      );
-
       final kernel = AnythingKernel(
         providerRegistry: _FakeProviderRegistry(),
         reasoner: reasoner,
         knowledgeEngine: KnowledgeAcquisitionEngine(cache: cache),
-        capabilityRegistry: capabilityRegistry,
+        capabilityRegistry: _platformCapabilityRegistry(),
       );
 
       final outcome = await kernel.processIntent(
@@ -1446,7 +1463,7 @@ void main() {
   // 17. Security — Malicious Model
   // ==========================================================================
   group('Security: Malicious Model', () {
-    test('Model reasoner rejects unknown field types', () async {
+    test('Model reasoner coerces unknown field types to text', () async {
       final provider = _FakeModelProvider(
         responseText: '''
 {
@@ -1461,10 +1478,14 @@ void main() {
       final result = await ModelApplicationReasoner(
         provider,
       ).reason(_context('create app'));
-      expect(result, isA<ReasoningFailed>());
+      // IS-P09: coercion is the security posture — unknown types become text,
+      // they never become executable primitives.
+      expect(result, isA<ReasoningReady>());
+      final ready = result as ReasoningReady;
+      expect(ready.semanticApp.entities.first.fields.first.type.name, 'text');
     });
 
-    test('Model reasoner rejects unknown action types', () async {
+    test('Model reasoner coerces unknown action types to setValue', () async {
       final provider = _FakeModelProvider(
         responseText: '''
 {
@@ -1479,7 +1500,9 @@ void main() {
       final result = await ModelApplicationReasoner(
         provider,
       ).reason(_context('create app'));
-      expect(result, isA<ReasoningFailed>());
+      expect(result, isA<ReasoningReady>());
+      final ready = result as ReasoningReady;
+      expect(ready.semanticApp.actions.first.actionType.name, 'setValue');
     });
 
     test('Malicious reasoner produces valid semantic app structure', () async {

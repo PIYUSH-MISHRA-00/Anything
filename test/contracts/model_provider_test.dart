@@ -1,4 +1,5 @@
 /// Tests for ModelProvider boundary.
+library;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:anything/core/contracts/contracts.dart';
 

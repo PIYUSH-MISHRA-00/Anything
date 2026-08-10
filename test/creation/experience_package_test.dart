@@ -1,4 +1,5 @@
 /// Tests for ExperiencePackage and Creation Engine.
+library;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:anything/creation/experience_package.dart';
 import 'package:anything/creation/creation_engine.dart';

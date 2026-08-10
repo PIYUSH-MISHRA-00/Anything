@@ -1,8 +1,8 @@
-/// Vision V10 RC — Accessibility Audit follow-up: ExperienceRenderer's
+/// Vision V10 RC â€” Accessibility Audit follow-up: ExperienceRenderer's
 /// Switch and Icon nodes now carry real Flutter Semantics. Confirmed by
 /// repository audit that these two node types previously had zero
 /// screen-reader-facing label (a bare Switch announces only "on"/"off",
-/// a bare Icon announces nothing) — proven fixed here with real widget
+/// a bare Icon announces nothing) â€” proven fixed here with real widget
 /// semantics assertions, not just "it renders."
 library;
 
@@ -31,8 +31,9 @@ void main() {
     stateEngine = ExperienceStateEngine();
   });
 
-  Widget wrap(Widget Function(BuildContext ctx) builder) =>
-      MaterialApp(home: Builder(builder: builder));
+  Widget wrap(Widget Function(BuildContext ctx) builder) => MaterialApp(
+    home: Scaffold(body: Builder(builder: builder)),
+  );
 
   testWidgets(
     'a labeled Switch node exposes a real Semantics label a screen reader can announce',

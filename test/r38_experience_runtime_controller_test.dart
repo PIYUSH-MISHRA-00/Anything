@@ -538,10 +538,10 @@ void main() {
         await tester.pump();
 
         expect(
-          find.text('Home'),
+          find.text('Test'),
           findsWidgets,
           reason:
-              'the screen loaded successfully with no injected runtimeController (the default, accept-and-store path)',
+              'host AppBar shows the Experience name at the root (IS-P08: screen title is no longer a nested AppBar)',
         );
         expect(tester.takeException(), isNull);
       },

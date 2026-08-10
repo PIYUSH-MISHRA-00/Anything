@@ -1883,8 +1883,9 @@ final x = 1;
                 )
                 .toList()
               ..sort();
-        // SIX identity types, each identifying a different KIND of thing:
+        // SEVEN identity types, each identifying a different KIND of thing:
         //   ExperienceIdentity (R52)   an Experience itself      -> provenance
+        //   ExperienceVisualIdentity (IS-P08) curated icon/colour for lists
         //   Screen/ActionIdentity(R22) parts INSIDE an Experience -> compiler
         //                              equivalence comparison
         //   Entity/RelationshipIdentity world-model graph nodes
@@ -1896,6 +1897,7 @@ final x = 1;
           identityTypes,
           [
             'lib/app/experience_provenance.dart:ExperienceIdentity',
+            'lib/design_system/experience_icon.dart:ExperienceVisualIdentity',
             'lib/experience_identity/experience_identity.dart:ActionIdentity',
             'lib/experience_identity/experience_identity.dart:ScreenIdentity',
             'lib/software_cognition/software_identity.dart:SoftwareIdentity',

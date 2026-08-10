@@ -356,13 +356,15 @@ void main() {
             compilerPackage.interface.screens.map((s) => s.id),
             containsAll(['entry_list', 'entry_form', 'entry_detail']),
           );
-          // Legacy's single blueprint view ('entries_list') is entirely absent
-          // from the compiler side, and every compiler screen id is absent
-          // from legacy — proves the comparator is doing a real set diff.
+          // Legacy's blueprint view id ('entries_list') is absent from the
+          // compiler side. IS-P08 also makes the legacy CreationEngine emit
+          // canonical `<entityId>_form` (and detail) screens so Add is never
+          // a dead control — those ids now appear on BOTH sides and are not
+          // "extra". The remaining compiler-only ids prove a real set diff.
           expect(report.missingComponents, ['entries_list']);
           expect(
             report.extraComponents,
-            unorderedEquals(['entry_detail', 'entry_form', 'entry_list']),
+            unorderedEquals(['entry_detail', 'entry_list']),
           );
         },
       );

@@ -438,7 +438,7 @@ void main() {
   // --------------------------------------------------------------- streaming
 
   group('IS-P07 streaming — the adapter speaks real SSE', () {
-    ProviderException? _classifyOf(dynamic e) =>
+    ProviderException? classifyOf(dynamic e) =>
         e is ProviderException ? e : null;
 
     test('yields each delta as it arrives and stops at [DONE]', () async {
@@ -598,7 +598,7 @@ void main() {
           .toList()
           .then<Object?>((_) => null, onError: (Object e) => e);
 
-      final classified = _classifyOf(error);
+      final classified = classifyOf(error);
       expect(classified, isNotNull, reason: 'got $error');
       expect(classified!.failure, ProviderFailure.modelDecommissioned);
       expect(classified.message, isNot(contains('400')));

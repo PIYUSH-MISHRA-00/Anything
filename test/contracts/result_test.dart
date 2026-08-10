@@ -1,4 +1,5 @@
 /// Tests for Result type.
+library;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:anything/core/errors/errors.dart';
 

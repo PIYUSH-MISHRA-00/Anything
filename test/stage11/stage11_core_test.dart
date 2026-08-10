@@ -444,7 +444,7 @@ void main() {
     });
 
     test('Invalid screen ID is rejected', () {
-      final event = router.navigate(
+      router.navigate(
         const NavigationRequest(
           action: NavigationAction.push,
           targetScreenId: 'nonexistent',
@@ -795,7 +795,7 @@ void main() {
 
     test('Router: unknown screen IDs rejected', () {
       final router = ExperienceRouter(validScreenIds: {'list', 'detail'});
-      final event = router.navigate(
+      router.navigate(
         const NavigationRequest(
           action: NavigationAction.push,
           targetScreenId: 'malicious_screen',

@@ -34,7 +34,7 @@ void main() {
   late ExperienceStateEngine stateEngine;
   late ExperienceDataRuntime dataRuntime;
 
-  ExperiencePackage _minimalPackage(BehaviorGraph behavior) {
+  ExperiencePackage minimalPackage(BehaviorGraph behavior) {
     return ExperiencePackage(
       manifest: ExperienceManifest(
         experienceId: 'cycle-test',
@@ -67,8 +67,8 @@ void main() {
     );
   }
 
-  Future<void> _run(BehaviorGraph graph, String eventId) async {
-    final pkg = _minimalPackage(graph);
+  Future<void> run(BehaviorGraph graph, String eventId) async {
+    final pkg = minimalPackage(graph);
     stateEngine = ExperienceStateEngine();
     stateEngine.initialize(pkg.state);
     dataRuntime = ExperienceDataRuntime();
@@ -103,7 +103,7 @@ void main() {
 
   /// A calculation node that increments 'counter' by 1 — used purely as an
   /// observable "this node actually ran" marker.
-  BehaviorNode _incNode(String id) => BehaviorNode(
+  BehaviorNode incNode(String id) => BehaviorNode(
     id: id,
     type: 'calculation',
     config: const {'operation': 'add', 'stateId': 'counter', 'operand': 1},
@@ -114,7 +114,7 @@ void main() {
       final graph = BehaviorGraph(
         nodes: [
           const BehaviorNode(id: 'evt', type: 'event'),
-          _incNode('a'),
+          incNode('a'),
         ],
         edges: const [
           BehaviorEdge(from: 'evt', to: 'a'),
@@ -122,7 +122,7 @@ void main() {
         ],
       );
 
-      await _run(graph, 'evt').timeout(const Duration(seconds: 5));
+      await run(graph, 'evt').timeout(const Duration(seconds: 5));
 
       expect(stateEngine.read('counter'), 1);
     });
@@ -131,8 +131,8 @@ void main() {
       final graph = BehaviorGraph(
         nodes: [
           const BehaviorNode(id: 'evt', type: 'event'),
-          _incNode('a'),
-          _incNode('b'),
+          incNode('a'),
+          incNode('b'),
         ],
         edges: const [
           BehaviorEdge(from: 'evt', to: 'a'),
@@ -141,7 +141,7 @@ void main() {
         ],
       );
 
-      await _run(graph, 'evt').timeout(const Duration(seconds: 5));
+      await run(graph, 'evt').timeout(const Duration(seconds: 5));
 
       expect(stateEngine.read('counter'), 2);
     });
@@ -150,9 +150,9 @@ void main() {
       final graph = BehaviorGraph(
         nodes: [
           const BehaviorNode(id: 'evt', type: 'event'),
-          _incNode('a'),
-          _incNode('b'),
-          _incNode('c'),
+          incNode('a'),
+          incNode('b'),
+          incNode('c'),
         ],
         edges: const [
           BehaviorEdge(from: 'evt', to: 'a'),
@@ -162,7 +162,7 @@ void main() {
         ],
       );
 
-      await _run(graph, 'evt').timeout(const Duration(seconds: 5));
+      await run(graph, 'evt').timeout(const Duration(seconds: 5));
 
       expect(stateEngine.read('counter'), 3);
     });
@@ -173,8 +173,8 @@ void main() {
         final graph = BehaviorGraph(
           nodes: [
             const BehaviorNode(id: 'evt', type: 'event'),
-            _incNode('a'),
-            _incNode('b'),
+            incNode('a'),
+            incNode('b'),
           ],
           edges: const [
             BehaviorEdge(from: 'evt', to: 'a'),
@@ -187,7 +187,7 @@ void main() {
           ],
         );
 
-        await _run(graph, 'evt').timeout(const Duration(seconds: 5));
+        await run(graph, 'evt').timeout(const Duration(seconds: 5));
 
         expect(stateEngine.read('counter'), 2);
       },
@@ -195,7 +195,7 @@ void main() {
   });
 
   group('Per-event execution budget', () {
-    Future<num> _chainCounterAfter(int calcNodeCount) async {
+    Future<num> chainCounterAfter(int calcNodeCount) async {
       final nodes = <BehaviorNode>[
         const BehaviorNode(id: 'evt', type: 'event'),
       ];
@@ -203,12 +203,12 @@ void main() {
       String prev = 'evt';
       for (var i = 0; i < calcNodeCount; i++) {
         final id = 'n$i';
-        nodes.add(_incNode(id));
+        nodes.add(incNode(id));
         edges.add(BehaviorEdge(from: prev, to: id));
         prev = id;
       }
       final graph = BehaviorGraph(nodes: nodes, edges: edges);
-      await _run(graph, 'evt').timeout(const Duration(seconds: 5));
+      await run(graph, 'evt').timeout(const Duration(seconds: 5));
       return stateEngine.read('counter') as num;
     }
 
@@ -216,14 +216,14 @@ void main() {
       'chain of budget-2 calc nodes (limit - 1 total) executes fully',
       () async {
         // event(1) + (budget-2) calc nodes = budget-1 total nodes visited.
-        final counter = await _chainCounterAfter(_kBudget - 2);
+        final counter = await chainCounterAfter(_kBudget - 2);
         expect(counter, _kBudget - 2);
       },
     );
 
     test('chain hitting the budget exactly executes fully', () async {
       // event(1) + (budget-1) calc nodes = budget total nodes visited.
-      final counter = await _chainCounterAfter(_kBudget - 1);
+      final counter = await chainCounterAfter(_kBudget - 1);
       expect(counter, _kBudget - 1);
     });
 
@@ -233,7 +233,7 @@ void main() {
         // event(1) + budget calc nodes = budget+1 total nodes requested;
         // only (budget-1) calc nodes may run before the shared budget (which
         // also counts the event node) is exhausted.
-        final counter = await _chainCounterAfter(_kBudget);
+        final counter = await chainCounterAfter(_kBudget);
         expect(counter, _kBudget - 1);
       },
     );
@@ -241,7 +241,7 @@ void main() {
     test(
       'large malicious graph (5000 nodes) is bounded, not exhaustive',
       () async {
-        final counter = await _chainCounterAfter(5000);
+        final counter = await chainCounterAfter(5000);
         expect(counter, lessThan(5000));
         expect(counter, _kBudget - 1);
       },
@@ -257,7 +257,7 @@ void main() {
       String prev = 'evt';
       for (var i = 0; i < _kBudget; i++) {
         final id = 'n$i';
-        nodes.add(_incNode(id));
+        nodes.add(incNode(id));
         edges.add(BehaviorEdge(from: prev, to: id));
         prev = id;
       }
@@ -272,7 +272,7 @@ void main() {
       edges.add(BehaviorEdge(from: prev, to: 'evil_delete'));
       final graph = BehaviorGraph(nodes: nodes, edges: edges);
 
-      final pkg = _minimalPackage(graph);
+      final pkg = minimalPackage(graph);
       stateEngine = ExperienceStateEngine();
       stateEngine.initialize(pkg.state);
       dataRuntime = ExperienceDataRuntime();
@@ -335,7 +335,7 @@ void main() {
         final graph = BehaviorGraph(
           nodes: [
             const BehaviorNode(id: 'evt', type: 'event'),
-            _incNode('a'),
+            incNode('a'),
             const BehaviorNode(
               id: 'b',
               type: 'stateWrite',
@@ -348,7 +348,7 @@ void main() {
           ],
         );
 
-        await _run(graph, 'evt').timeout(const Duration(seconds: 5));
+        await run(graph, 'evt').timeout(const Duration(seconds: 5));
 
         // 'b' overwrites counter to 999 exactly once; if state writes could
         // re-trigger event dispatch, repeated increments would drive this

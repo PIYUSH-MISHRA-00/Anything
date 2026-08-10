@@ -28,6 +28,46 @@ import 'package:anything/creation/experience_package.dart';
 import 'package:anything/knowledge/knowledge_bundle.dart';
 import 'package:anything/knowledge/knowledge_resource.dart';
 import 'package:anything/knowledge/knowledge_acquisition_engine.dart';
+import 'package:anything/capabilities/registry/capability_registry.dart';
+import 'package:anything/capabilities/registry/capability_descriptor.dart';
+
+CapabilityRegistry _platformCapabilityRegistry() {
+  final registry = CapabilityRegistry();
+  for (final d in const [
+    CapabilityDescriptor(
+      id: 'storage',
+      version: '1.0.0',
+      name: 'Storage',
+      description: 'Local storage',
+      category: CapabilityCategory.storage,
+      inputContract: 'data',
+      outputContract: 'stored_data',
+    ),
+    CapabilityDescriptor(
+      id: 'http',
+      version: '1.0.0',
+      name: 'HTTP',
+      description: 'HTTPS',
+      category: CapabilityCategory.integration,
+      inputContract: 'request',
+      outputContract: 'response',
+      networkRequired: true,
+    ),
+    CapabilityDescriptor(
+      id: 'knowledge',
+      version: '1.0.0',
+      name: 'Knowledge',
+      description: 'Knowledge',
+      category: CapabilityCategory.knowledge,
+      inputContract: 'query',
+      outputContract: 'resources',
+      networkRequired: true,
+    ),
+  ]) {
+    registry.register(d);
+  }
+  return registry;
+}
 
 // ---------------------------------------------------------------------------
 // Test doubles
@@ -305,7 +345,7 @@ void main() {
   });
 
   group('Malicious Model Output', () {
-    test('Model reasoner rejects JSON with unknown field types', () async {
+    test('Model reasoner coerces JSON with unknown field types', () async {
       final provider = _FakeModelProvider(
         responseText: '''
 {
@@ -326,7 +366,10 @@ void main() {
       );
       final reasoner = ModelApplicationReasoner(provider);
       final result = await reasoner.reason(_context('create an app'));
-      expect(result, isA<ReasoningFailed>());
+      // IS-P09: coerce to text — "exec_code" never becomes executable code.
+      expect(result, isA<ReasoningReady>());
+      final ready = result as ReasoningReady;
+      expect(ready.semanticApp.entities.first.fields.first.type.name, 'text');
     });
 
     test('Model reasoner rejects malformed JSON response', () async {
@@ -338,7 +381,7 @@ void main() {
       expect(result, isA<ReasoningFailed>());
     });
 
-    test('Model reasoner rejects JSON with unknown action types', () async {
+    test('Model reasoner coerces JSON with unknown action types', () async {
       final provider = _FakeModelProvider(
         responseText: '''
 {
@@ -361,7 +404,10 @@ void main() {
       );
       final reasoner = ModelApplicationReasoner(provider);
       final result = await reasoner.reason(_context('create an app'));
-      expect(result, isA<ReasoningFailed>());
+      // IS-P09: coerce to setValue — never invents a drop_table primitive.
+      expect(result, isA<ReasoningReady>());
+      final ready = result as ReasoningReady;
+      expect(ready.semanticApp.actions.first.actionType.name, 'setValue');
     });
   });
 
@@ -412,7 +458,7 @@ void main() {
 
   group('Knowledge Loop Limit', () {
     test(
-      'Kernel returns failure when knowledge loop exhausts rounds',
+      'Kernel degrades when knowledge loop exhausts rounds',
       () async {
         final reasoner = _AlwaysRequireKnowledgeReasoner();
         // Pre-seed cache so knowledge acquisition succeeds
@@ -431,11 +477,13 @@ void main() {
           providerRegistry: _FakeProviderRegistry(),
           reasoner: reasoner,
           knowledgeEngine: KnowledgeAcquisitionEngine(cache: cache),
+          capabilityRegistry: _platformCapabilityRegistry(),
         );
         final outcome = await kernel.processIntent(
           Intent.create(expression: 'create a test app'),
         );
-        expect(outcome, isA<PlanningFailed>());
+        // IS-P10: exhaust → installable network shell, not PlanningFailed.
+        expect(outcome, isA<ExecutionPlanReady>());
         // Reasoner called once per round (0,1,2) = 3 times
         expect(reasoner.callCount, equals(3));
       },

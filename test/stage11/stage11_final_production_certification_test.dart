@@ -659,22 +659,11 @@ void main() {
         );
 
         // ══════════════════════════════════════════════════════════════
-        // NAVIGATE BACK TO LIST via the generated bottom navigation
-        // (the host has no AppBar back arrow; the "Plots List" nav
-        // destination is the real, generated way back).
+        // NAVIGATE BACK TO LIST via the host back affordance (IS-P08:
+        // one AppBar back owned by the host; detail <- edit pops once).
         // ══════════════════════════════════════════════════════════════
-        final listNavItem = find.widgetWithText(
-          NavigationDestination,
-          'Plots List',
-        );
-        expect(
-          listNavItem,
-          findsOneWidget,
-          reason:
-              'Generated bottom navigation must have a Plots List '
-              'destination',
-        );
-        await tester.tap(listNavItem);
+        expect(find.byTooltip('Back'), findsOneWidget);
+        await tester.tap(find.byTooltip('Back'));
         await _settleReal(tester);
 
         // ══════════════════════════════════════════════════════════════

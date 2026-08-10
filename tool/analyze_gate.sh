@@ -26,12 +26,11 @@ set -uo pipefail
 # message explaining why, and is exactly the review moment this gate exists to
 # create.
 BASELINE_ERRORS=0
-# Remeasured 2026-08-09 (P17): working tree already exceeded the prior 27/41
-# counts (mostly pre-existing test unused-import / override warnings). P17 did
-# not add lib/ errors; gate tracks the measured ceiling so CI still fails on
-# regressions above these numbers.
-BASELINE_WARNINGS=29
-BASELINE_INFOS=48
+# P18: reduced from 29 warnings / 48 infos to absolute cleanliness after
+# fixing test/tool/lib style diagnostics. Lower only; never raise without
+# a commit that explains why.
+BASELINE_WARNINGS=0
+BASELINE_INFOS=0
 
 FLUTTER="${FLUTTER:-flutter}"
 OUT="$(mktemp)"

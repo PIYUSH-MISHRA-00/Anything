@@ -21,7 +21,6 @@ import 'package:anything/runtime/data_query.dart';
 import 'package:anything/runtime/form_controller.dart';
 import 'package:anything/runtime/experience_router.dart';
 import 'package:anything/runtime/component_registry.dart';
-import 'package:anything/runtime/runtime_context.dart';
 import 'package:anything/runtime/experience_renderer.dart';
 import 'package:anything/runtime/state_engine.dart';
 import 'package:anything/runtime/behavior_interpreter.dart';
@@ -421,7 +420,6 @@ void main() {
   group('Malicious Query', () {
     test('SQL injection in field identifier is handled safely', () async {
       // Seed legitimate data
-      final pipeline = _buildTestPipeline();
       final dr = ExperienceDataRuntime();
       dr.initialize(
         DataSchema(
@@ -457,6 +455,7 @@ void main() {
       final result = eng.query(maliciousQuery, records);
 
       // Query completes without crashing; original data unaffected
+      expect(result, isEmpty);
       expect(records.length, 1);
       expect(records.first['name'], 'Alice');
 
@@ -729,12 +728,4 @@ void main() {
       expect(widget, isNull);
     });
   });
-}
-
-// ═══════════════════════════════════════════════════════════════════════
-// HELPERS
-// ═══════════════════════════════════════════════════════════════════════
-
-ExperienceDataRuntime _buildTestPipeline() {
-  return ExperienceDataRuntime();
 }

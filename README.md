@@ -11,8 +11,9 @@ Describe what you need. Anything builds it, runs it, and keeps it.
 [![CI](https://github.com/PIYUSH-MISHRA-00/Anything/actions/workflows/ci.yml/badge.svg)](https://github.com/PIYUSH-MISHRA-00/Anything/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![Flutter](https://img.shields.io/badge/Flutter-3.44-02569B?logo=flutter)](https://flutter.dev)
-[![Tests](https://img.shields.io/badge/tests-2%2C141%20passing-success)](docs/audit/)
+[![Tests](https://img.shields.io/badge/tests-P17%3A%202%2C325%20passing-success)](docs/audit/)
 [![Invariants](https://img.shields.io/badge/certified%20invariants-102-blueviolet)](docs/audit/ARCHITECTURE_INVARIANT_MATRIX.md)
+[![Version](https://img.shields.io/badge/version-2.0.0%2B1-informational)](pubspec.yaml)
 
 [**Website**](https://piyush-mishra-00.github.io/Anything/) · [Quick Start](#quick-start) · [Architecture](ARCHITECTURE.md) · [Vision](VISION.md) · [Roadmap](ROADMAP.md) · [Contributing](CONTRIBUTING.md) · [FAQ](docs/FAQ.md)
 
@@ -20,12 +21,14 @@ Describe what you need. Anything builds it, runs it, and keeps it.
 
 ---
 
-> **Project status: pre-release.** The architecture is mature and heavily
-> certified, and Experiences can now be exported and imported. What is missing
-> is the last mile: there is no Play Store build, and **nobody has yet run
-> Anything on a physical device**. [ROADMAP.md](ROADMAP.md) is specific about
-> what works and what does not. If you are evaluating whether to contribute,
-> start there.
+> **Project status: pre-release — NOT production complete (P18 in progress).**
+> Version `2.0.0+1`. P17 automated suite: **2325** passed. Open-world
+> multi-entity Experiences generate through the generic Kernel without domain
+> factories. Still open for production: full physical-device certification,
+> WebWeaveX/Kaalka end-to-end device journeys, import/export security matrix,
+> successful release AAB, Play Store publishing. Import/export **code exists**
+> and is unit-tested; that is not the same as production-certified.
+> [ROADMAP.md](ROADMAP.md) tracks the gaps.
 
 ## What is Anything?
 
@@ -136,12 +139,13 @@ home screen.
 ### Verify your checkout
 
 ```bash
-flutter test                                                  # 2,141 tests
+flutter test                                                  # P17 baseline: 2325; P18 may add more
 flutter test test/r46_architectural_integrity_certification_test.dart   # 102 invariants
-bash tool/analyze_gate.sh                                     # analyzer baseline
+bash tool/analyze_gate.sh                                     # analyzer regression gate
 ```
 
-A green run of those three is exactly what CI enforces.
+A green run of those three is what CI enforces. Prefer the latest certification
+artifacts over badges if they disagree.
 
 ## Examples
 
@@ -176,8 +180,8 @@ lib/
   solution_reasoning/ design_review/ evolution/
   runtime_intelligence/ world_model/         the nine intelligence engines
 
-test/             2,141 tests, 0 skipped, test LOC > source LOC
-docs/             172 documents — architecture, audits, ADRs, guides
+test/             2325+ tests (P17 baseline), 0 skipped
+docs/             architecture, audits, ADRs, guides
 tool/             analyze gate, reachability analysis
 examples/         runnable examples
 ```
@@ -202,7 +206,7 @@ Detail per directory: [ARCHITECTURE.md](ARCHITECTURE.md).
 ## Contributing
 
 Contributions are genuinely welcome, and the project is unusually easy to
-contribute to safely: **102 certified invariants and 2,141 tests will tell you
+contribute to safely: **102 certified invariants and 2325+ tests will tell you
 immediately if a change breaks an architectural rule**, so you do not need to
 hold the whole system in your head.
 

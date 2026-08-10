@@ -13,12 +13,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:anything/core/contracts/intent.dart';
 import 'package:anything/core/contracts/model_provider.dart';
 import 'package:anything/kernel/anything_kernel.dart';
-import 'package:anything/kernel/outcomes/kernel_outcome.dart';
-import 'package:anything/creation/creation_engine.dart' as engine;
-import 'package:anything/creation/creation_context.dart';
 import 'package:anything/creation/experience_package.dart';
 import 'package:anything/creation/package_validator.dart' as validator;
 import 'package:anything/app/creation_coordinator.dart';
@@ -32,7 +28,6 @@ import 'package:anything/runtime/experience_renderer.dart';
 import 'package:anything/runtime/state_engine.dart';
 import 'package:anything/runtime/runtime_context.dart';
 import 'package:anything/runtime/form_controller.dart';
-import 'package:anything/runtime/component_registry.dart';
 import 'package:anything/runtime/query_controller.dart';
 import 'package:anything/capabilities/registry/capability_registry.dart';
 import 'package:anything/capabilities/registry/capability_descriptor.dart';
@@ -143,9 +138,6 @@ class _PeopleTrackerModelProvider implements ModelProvider {
 
   @override
   bool get isConfigured => true;
-
-  @override
-  Future<bool> isAvailable() async => true;
 
   @override
   Future<List<ModelInfo>> listModels() async => [];
@@ -262,9 +254,6 @@ class _EquipmentLendingModelProvider implements ModelProvider {
   bool get isConfigured => true;
 
   @override
-  Future<bool> isAvailable() async => true;
-
-  @override
   Future<List<ModelInfo>> listModels() async => [];
 
   @override
@@ -355,9 +344,6 @@ class _FossilCatalogModelProvider implements ModelProvider {
   bool get isConfigured => true;
 
   @override
-  Future<bool> isAvailable() async => true;
-
-  @override
   Future<List<ModelInfo>> listModels() async => [];
 
   @override
@@ -440,9 +426,6 @@ class _OrbitMetricsModelProvider implements ModelProvider {
 
   @override
   bool get isConfigured => true;
-
-  @override
-  Future<bool> isAvailable() async => true;
 
   @override
   Future<List<ModelInfo>> listModels() async => [];

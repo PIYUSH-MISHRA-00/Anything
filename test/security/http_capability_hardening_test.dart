@@ -18,7 +18,7 @@ import 'package:anything/security/runtime_security_limits.dart';
 
 void main() {
   group('IPv6 / literal address coverage', () {
-    Future<CapabilityInvocationResult> _request(String url) {
+    Future<CapabilityInvocationResult> request(String url) {
       final cap = HttpCapability(
         transport: FakeHttpTransport(),
         allowedHosts: [Uri.parse(url).host],
@@ -27,27 +27,27 @@ void main() {
     }
 
     test('IPv6 loopback ::1 denied', () async {
-      final result = await _request('https://[::1]/x');
+      final result = await request('https://[::1]/x');
       expect(result.status, CapabilityResultStatus.policyDenied);
     });
 
     test('IPv6 unique-local (fc00::/7) denied', () async {
-      final result = await _request('https://[fd00::1]/x');
+      final result = await request('https://[fd00::1]/x');
       expect(result.status, CapabilityResultStatus.policyDenied);
     });
 
     test('IPv6 link-local (fe80::/10) denied', () async {
-      final result = await _request('https://[fe80::1]/x');
+      final result = await request('https://[fe80::1]/x');
       expect(result.status, CapabilityResultStatus.policyDenied);
     });
 
     test('IPv4-mapped IPv6 loopback (::ffff:127.0.0.1) denied', () async {
-      final result = await _request('https://[::ffff:127.0.0.1]/x');
+      final result = await request('https://[::ffff:127.0.0.1]/x');
       expect(result.status, CapabilityResultStatus.policyDenied);
     });
 
     test('IPv4-mapped IPv6 private (::ffff:10.0.0.5) denied', () async {
-      final result = await _request('https://[::ffff:10.0.0.5]/x');
+      final result = await request('https://[::ffff:10.0.0.5]/x');
       expect(result.status, CapabilityResultStatus.policyDenied);
     });
   });

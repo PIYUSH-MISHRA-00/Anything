@@ -1,4 +1,5 @@
 /// Stage 8.3 final gate tests — security hardening and verification.
+library;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:anything/capabilities/builtin/file_capability.dart';

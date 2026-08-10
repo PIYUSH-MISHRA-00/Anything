@@ -41,7 +41,7 @@ void main() {
         'location': 'Testville',
       });
       expect(result.status, CapabilityResultStatus.success);
-      final data = result.data!;
+      final data = result.data;
       expect(data['provenance']['selectedProvider'], 'fake-weather');
       expect((data['results'] as List).first['temperature'], 21);
     });

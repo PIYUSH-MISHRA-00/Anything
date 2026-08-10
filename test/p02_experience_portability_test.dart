@@ -140,10 +140,12 @@ void main() {
       );
     });
 
-    test('the filename is recognisable and carries the version', () async {
+    test('the filename is recognisable (version lives in the package)', () async {
+      // IS-P12: human-readable Stopwatch.anything style; version is inside
+      // the .anything manifest, not duplicated in the filename.
       expect(
         ExperiencePortability.fileNameFor(buildPackage().manifest),
-        'water-tracker-v1.0.0.anything',
+        'Water_Tracker.anything',
       );
     });
 

@@ -3,7 +3,8 @@
 Honest status. Every claim here is measured, and where something is broken this
 file says so plainly.
 
-**Last verified:** IS-P02 · `flutter test` 2,141 passing · 102 invariants
+**Last verified:** P18 in progress · P17 `flutter test` **2325** passing ·
+version `2.0.0+1` · analyzer target: absolute 0 issues (P18)
 
 ---
 
@@ -12,74 +13,63 @@ file says so plainly.
 | Area | Complete | Note |
 |---|---|---|
 | Architecture | ~90% | 102 certified invariants, single ownership throughout |
-| Testing rigour | ~80% | 2,141 tests, 0 skipped; no golden tests yet |
+| Testing rigour | ~85% | 2325 tests at P17; P18 adding unknown-domain battery |
 | Experience system (design) | ~85% | every stage exists and is certified |
-| **Experience system (reachable)** | **~75%** | import/export wired and reachable (IS-P02) |
-| AI / knowledge | ~60% | nine engines; one provider; needs a key |
-| UI / UX | ~45% | 7 reachable screens |
-| **Android release** | **~35%** | signing, permissions and R8 fixed in IS-P01; not yet published |
-| OSS readiness | ~85% | license, guides, templates, website, NOTICE, Dependabot |
-| **Play Store readiness** | **~50%** | see [PLAYSTORE_READINESS](docs/audit/) |
+| **Experience system (reachable)** | **~80%** | open-world multi-entity generation (P16/P17); import/export code exists |
+| AI / knowledge | ~60% | WebWeaveX adapter exists; **device acquisition OPEN** |
+| UI / UX | ~50% | generic entity list/form from semantics |
+| **Android release** | **~40%** | APK builds; **AAB strip/NDK issue OPEN**; not Play-published |
+| OSS readiness | ~85% | license, guides, templates, website |
+| **Play Store readiness** | **~40%** | needs release-signed AAB, listing, privacy, device cert |
 
-## What works today
+## What works today (automated / package level)
 
-Describe an intent → get a validated Experience → run it natively → run several
-as a workspace → modify and evolve it → protect it with time-keyed encryption →
-persistent local knowledge acquisition.
+- Describe a structured multi-entity intent → SemanticApp → Blueprint →
+  ExperiencePackage → SQLite CRUD (no domain factories)
+- Typed fields / references / filter-sort capabilities on the deterministic path
+- Capability shells for news / weather / calculation / timing / network-reference
+- Kaalka protection APIs and WebWeaveX adapter (unit/integration evidence)
+- Import/export codec and distribution framework (implementation exists)
 
-## What does not work yet
+## What is not production-certified yet
 
 | Gap | Why it matters |
 |---|---|
-| **Never run on a physical device** | A signed release App Bundle builds, but nobody has installed it. Whether R8 broke anything at runtime is unknown. |
-| **No published Android build** | IS-P01 fixed release signing, permissions and R8. Publishing still needs a keystore, a privacy policy and a store listing. |
-| **One AI provider, and you must bring a key** | Without a Groq key the app runs and reports `ProviderRequired`. |
-| **Accessibility is minimal** | 5 `Semantics` widgets across the whole codebase. |
-| **No localisation** | Every string is English and hard-coded. |
-| **Test flakiness (G-40)** | The full suite occasionally fails one test under contention and passes on re-run. Unresolved across four milestones. |
-| **~50 unreachable v1 files** | A parallel application that cannot run. Kept pending a disposition decision. |
+| **Full physical-device matrix** | Attached devices exist; P17/P18 device journeys still OPEN |
+| **WebWeaveX real acquisition on device** | Adapter + unit tests ≠ production path proof |
+| **Kaalka protect → force-stop → recover on device** | Integration tests exist; device process restart OPEN |
+| **Import/export security matrix on device** | Code + unit tests ≠ end-to-end production cert |
+| **Release AAB** | P17 failed stripping native debug symbols / NDK 28 incomplete |
+| **Play Store** | No published build; signing/privacy/listing incomplete |
+| **Documentation drift (being fixed in P18)** | README historically claimed 2141 tests / device never run |
 
-## Next
+## Current milestone
 
-### P03 — Device Verification & First Run *(recommended)*
+### P18 — Production closure + semantic generalization
 
-Install the App Bundle on a real device, verify R8 broke nothing, then
-onboarding and the no-provider path.
+- Absolute analyzer cleanliness (or documented exceptions)
+- Version / docs / website truth
+- AAB success or proven CI equivalence
+- Stronger unknown-domain battery without domain-noun accumulation
+- Device release APK: generate + CRUD + persistence
+- WebWeaveX / Kaalka / import-export real paths
+- CI remote run recorded
 
-### P04 — Accessibility & Localisation
+### After P18
 
-Onboarding, the no-provider path, empty and error states, an accessibility pass
-over the seven reachable screens, localisation scaffolding.
-
-### P05 — Test Integrity
-
-Diagnose and fix G-40. Golden tests for the reachable screens and the renderer.
-One end-to-end journey test from `main()`.
-
-### P06 — Launch
-
-Privacy policy, Data Safety, store listing, telemetry, closed testing.
-
-**Estimate: 4–6 milestones to a production-quality Play Store release**, of
-which at most one is architectural.
+Only if an external architectural review requests it. Do not invent P19 from
+this file.
 
 ## Where help is most useful
 
-Highest value first — and note that none of the top items require understanding
-the whole architecture:
-
-1. **Accessibility** — semantics, contrast, font scaling on 7 screens
-2. **Localisation scaffolding** — `l10n.yaml`, ARB files, externalising strings
-3. **Golden tests** — no rendering regression protection exists at all
-4. **A second AI provider** — implement `ModelProvider`, register it; the
-   abstraction exists and has never had a second implementation
-5. **G-40 diagnosis** — reproducible test-database contention
-6. **Examples** — see [`examples/`](examples/)
+1. **Device certification** — release APK journeys with evidence
+2. **AAB / NDK toolchain** — clean NDK 28 install + strip pipeline
+3. **Accessibility** — semantics, contrast, font scaling
+4. **Localisation scaffolding**
+5. **Golden tests** for the generic renderer
 
 ## Not planned
 
-Marketplace · cloud sync · accounts · multi-device sync · autonomous execution.
-
-Each conflicts with a stated principle in [VISION.md](VISION.md). If you want
-one of these, open a Discussion rather than a PR — it is a product conversation,
-not a code one.
+- Domain-specific application factories (`BakeryFactory`, `VenueFactory`, …)
+- Model-emitted Dart / Flutter source for ordinary Experiences
+- A second WebWeaveX or Kaalka boundary

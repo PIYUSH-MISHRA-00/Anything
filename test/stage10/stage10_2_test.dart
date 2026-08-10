@@ -43,7 +43,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class _FakeModelProvider implements ModelProvider {
   int invocationCount = 0;
-  String _responseText;
+  final String _responseText;
 
   _FakeModelProvider({required String responseText})
     : _responseText = responseText;
@@ -331,7 +331,7 @@ void main() {
   // Model Reasoner — Strict Validation
   // =========================================================================
   group('ModelApplicationReasoner — strict validation', () {
-    test('rejects unknown field type', () async {
+    test('coerces unknown field type (open-world)', () async {
       final badJson = '''
 {
   "name": "Test",
@@ -352,10 +352,13 @@ void main() {
       final provider = _FakeModelProvider(responseText: badJson);
       final reasoner = ModelApplicationReasoner(provider);
       final result = await reasoner.reason(_context('Create a blob store'));
-      expect(result, isA<ReasoningFailed>());
+      // IS-P09: unknown field types coerce to text so novel domains plan.
+      expect(result, isA<ReasoningReady>());
+      final ready = result as ReasoningReady;
+      expect(ready.semanticApp.entities.first.fields.first.type.name, 'text');
     });
 
-    test('rejects unknown action type', () async {
+    test('coerces unknown action type (open-world)', () async {
       final badJson = '''
 {
   "name": "Test",
@@ -376,7 +379,10 @@ void main() {
       final provider = _FakeModelProvider(responseText: badJson);
       final reasoner = ModelApplicationReasoner(provider);
       final result = await reasoner.reason(_context('Clone items'));
-      expect(result, isA<ReasoningFailed>());
+      // IS-P09: unknown action types coerce to setValue rather than aborting.
+      expect(result, isA<ReasoningReady>());
+      final ready = result as ReasoningReady;
+      expect(ready.semanticApp.actions.first.actionType.name, 'setValue');
     });
 
     test('rejects malformed JSON', () async {

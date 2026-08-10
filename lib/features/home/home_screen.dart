@@ -23,7 +23,9 @@ import 'package:anything/design_system/components/birth_sequence.dart';
 import 'package:anything/design_system/components/anything_chip.dart';
 import 'package:anything/design_system/components/anything_empty_state.dart';
 import 'package:anything/design_system/components/anything_section_header.dart';
+import 'package:anything/design_system/experience_icon.dart';
 import 'package:anything/design_system/tokens/spacing.dart';
+import 'package:anything/creation/creation_request.dart';
 import 'package:anything/features/home/intent_composer.dart';
 import 'package:anything/services/voice_service.dart';
 import 'package:anything/storage/sqlite_experience_repository.dart';
@@ -344,11 +346,20 @@ class HomeScreenState extends State<HomeScreen> {
     _composer = IntentComposer(_composition.kernel);
     _voiceService = VoiceInputService();
     _voiceService.addListener(_onVoiceStateChanged);
+    // IS-P11: Home must observe the same library revision My Apps does.
+    // Delete/create/import mutate via ExperienceCommitFramework → revision;
+    // without this listener Recent stayed stale after My Apps delete.
+    _composition.experienceLibraryRevision.addListener(_onLibraryRevision);
     _loadRecent();
+  }
+
+  void _onLibraryRevision() {
+    if (mounted) _loadRecent();
   }
 
   @override
   void dispose() {
+    _composition.experienceLibraryRevision.removeListener(_onLibraryRevision);
     _voiceService.removeListener(_onVoiceStateChanged);
     _voiceService.dispose();
     _textController.dispose();
@@ -375,14 +386,43 @@ class HomeScreenState extends State<HomeScreen> {
     if (mounted) setState(() => _recentExperiences = experiences);
   }
 
+  /// IS-P08: guards re-entry. The submit BUTTON was disabled while
+  /// `_showBirth` was true, but `TextField.onSubmitted` reaches this method
+  /// with no such check, so a keyboard "send" during an in-flight creation
+  /// started a second one against the same coordinator — which carries a
+  /// single mutable `_state`. A dedicated flag, not `_showBirth`, because
+  /// `_showBirth` is animation state and is cleared before the work is done.
+  bool _isCreating = false;
+
   void _handleSubmit(String text) {
-    if (text.trim().isEmpty) return;
-    _createExperience(text.trim());
+    final expression = text.trim();
+    if (expression.isEmpty || _isCreating) return;
+    _createExperience(expression);
   }
 
   Future<void> _createExperience(String expression) async {
-    _composer.setExpression(expression);
-    final intent = _composer.createIntent();
+    _isCreating = true;
+    // IS-P12: freeze the prompt at submit so mutable composer state cannot
+    // change the meaning of this request after submission.
+    final creationRequest = CreationRequest.capture(rawPrompt: expression);
+    _composer.setExpression(creationRequest.normalizedPrompt);
+    final drafted = _composer.createIntent();
+    final intent = drafted.copyWith(
+      context: {
+        ...drafted.context,
+        'requestId': creationRequest.requestId,
+        'normalizedPrompt': creationRequest.normalizedPrompt,
+      },
+    );
+
+    // IS-P08: clear NOW, not on completion. Leaving the text in place was
+    // reported as a defect and it is worse than untidy — the next prompt is
+    // appended to this one, so "a calculator" followed by "a weather
+    // dashboard" is submitted as "a calculatora weather dashboard", which
+    // bills the user for a request that describes nothing. The text is put
+    // back if creation fails, so a failed attempt is still editable.
+    _textController.clear();
+    _composer.clear();
 
     await _intentRepository.save(IntentRecord.fromIntent(intent));
     await _intentRepository.updateStatus(
@@ -392,7 +432,7 @@ class HomeScreenState extends State<HomeScreen> {
 
     setState(() {
       _showBirth = true;
-      _birthName = expression;
+      _birthName = creationRequest.normalizedPrompt;
       _creationReady.value = false;
       _createdExperienceId = null;
       _createdExperienceName = null;
@@ -405,10 +445,15 @@ class HomeScreenState extends State<HomeScreen> {
     // independently creates a new experience; there is no "continue" UI
     // affordance on Home), while genuinely registering the resulting
     // session in `ExperienceWorkspaceManager` for the first time.
-    final routingResult = await _pipeline.execute(
-      intent,
-      target: const RouteTarget.newExperience(),
-    );
+    final RoutingResult routingResult;
+    try {
+      routingResult = await _pipeline.execute(
+        intent,
+        target: const RouteTarget.newExperience(),
+      );
+    } finally {
+      _isCreating = false;
+    }
     final result = routingResult.creationResult!;
 
     if (!mounted) return;
@@ -434,14 +479,23 @@ class HomeScreenState extends State<HomeScreen> {
       await _openViaCoordinator(result.experienceId, result.experienceName);
     } else if (result is CreationFailed) {
       await _intentRepository.updateStatus(intent.id, core.IntentStatus.failed);
+      _restoreComposer(creationRequest.rawPrompt);
       setState(() => _showBirth = false);
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(result.message)));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result.message),
+            duration: const Duration(seconds: 10),
+            action: SnackBarAction(
+              label: 'Retry',
+              onPressed: () => _handleSubmit(creationRequest.rawPrompt),
+            ),
+          ),
+        );
       }
     } else if (result is CreationProviderRequired) {
       await _intentRepository.updateStatus(intent.id, core.IntentStatus.failed);
+      _restoreComposer(creationRequest.rawPrompt);
       setState(() => _showBirth = false);
       if (mounted) {
         // IS-P07: the refusal names the destination, so the snackbar goes
@@ -461,6 +515,14 @@ class HomeScreenState extends State<HomeScreen> {
         );
       }
     }
+  }
+
+  /// Puts a failed prompt back so the user can edit and retry it instead of
+  /// retyping it from memory.
+  void _restoreComposer(String expression) {
+    if (!mounted || _textController.text.isNotEmpty) return;
+    _textController.text = expression;
+    _composer.setExpression(expression);
   }
 
   void _onBirthComplete() {
@@ -897,18 +959,11 @@ class HomeScreenState extends State<HomeScreen> {
               delegate: SliverChildBuilderDelegate((context, index) {
                 final exp = _recentExperiences[index];
                 return ListTile(
-                  leading: Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: colorScheme.primaryContainer.withAlpha(51),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(
-                      Icons.auto_awesome,
-                      color: colorScheme.primary,
-                      size: 20,
-                    ),
+                  leading: ExperienceIcon(
+                    experienceId: exp.id,
+                    name: exp.name,
+                    category: exp.category,
+                    size: 40,
                   ),
                   title: Text(exp.name),
                   subtitle: Text(

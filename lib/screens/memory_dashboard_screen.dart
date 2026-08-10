@@ -56,7 +56,7 @@ class _MemoryDashboardScreenState extends ConsumerState<MemoryDashboardScreen> {
           : ListView.builder(
               padding: const EdgeInsets.all(16),
               itemCount: _memories.length,
-              itemBuilder: (context, index) {
+              itemBuilder: (itemContext, index) {
                 final item = _memories[index];
                 final date = DateTime.fromMillisecondsSinceEpoch(
                   item['timestamp'] as int,
@@ -85,8 +85,8 @@ class _MemoryDashboardScreenState extends ConsumerState<MemoryDashboardScreen> {
                       ),
                       onPressed: () async {
                         final success = await showDialog<bool>(
-                          context: context,
-                          builder: (context) => AlertDialog(
+                          context: itemContext,
+                          builder: (dialogContext) => AlertDialog(
                             backgroundColor: const Color(0xFF1E293B),
                             title: const Text(
                               'Delete Memory',
@@ -98,14 +98,16 @@ class _MemoryDashboardScreenState extends ConsumerState<MemoryDashboardScreen> {
                             ),
                             actions: [
                               TextButton(
-                                onPressed: () => Navigator.pop(context, false),
+                                onPressed: () =>
+                                    Navigator.pop(dialogContext, false),
                                 child: const Text(
                                   'Cancel',
                                   style: TextStyle(color: Colors.white54),
                                 ),
                               ),
                               TextButton(
-                                onPressed: () => Navigator.pop(context, true),
+                                onPressed: () =>
+                                    Navigator.pop(dialogContext, true),
                                 child: const Text(
                                   'Delete',
                                   style: TextStyle(color: Colors.redAccent),
@@ -115,19 +117,17 @@ class _MemoryDashboardScreenState extends ConsumerState<MemoryDashboardScreen> {
                           ),
                         );
 
-                        if (success == true) {
-                          if (!mounted) return;
-                          final manager = ref.read(memoryManagerProvider);
-                          await manager.deleteConversation(item['id'] as int);
-                          if (mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Memory deleted'),
-                                backgroundColor: Colors.redAccent,
-                              ),
-                            );
-                          }
-                        }
+                        if (success != true) return;
+                        if (!mounted) return;
+                        final manager = ref.read(memoryManagerProvider);
+                        await manager.deleteConversation(item['id'] as int);
+                        if (!mounted) return;
+                        ScaffoldMessenger.of(this.context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Memory deleted'),
+                            backgroundColor: Colors.redAccent,
+                          ),
+                        );
                       },
                     ),
                   ),

@@ -67,8 +67,8 @@ jobs:
       - name: Architectural certification (102 invariants)
         run: flutter test test/r46_architectural_integrity_certification_test.dart
 
-      # P16/P17: open-world semantic generation must stay factory-free.
-      - name: P16/P17 dynamicity + semantic open-world certification
+      # P16–P18: open-world semantic generation must stay factory-free.
+      - name: P16/P17/P18 dynamicity + semantic open-world certification
         run: |
           flutter test \
             test/dynamic/p16_architecture_mutation_test.dart \
@@ -81,7 +81,9 @@ jobs:
             test/dynamic/p17_unknown_domain_expanded_test.dart \
             test/dynamic/p17_dynamicity_mutation_test.dart \
             test/dynamic/p17_action_binding_test.dart \
-            test/dynamic/p17_capability_resolution_test.dart
+            test/dynamic/p17_capability_resolution_test.dart \
+            test/dynamic/p18_unknown_domain_battery_test.dart \
+            test/dynamic/p18_semantic_boundary_test.dart
 
       # The milestone suites carry the mutation-proven behavioural guarantees
       # for commit, installation, distribution, trust, governance, retention

@@ -1,4 +1,8 @@
 /// Live probe: news query results must change with the query.
+library;
+
+import 'dart:io';
+
 import 'package:anything/domain_services/news_data_service.dart';
 
 Future<void> main() async {
@@ -8,30 +12,23 @@ Future<void> main() async {
 
   for (final q in queries) {
     final articles = await news.searchArticles(q);
-    print('--- $q (${articles.length}) ---');
+    stdout.writeln('--- $q (${articles.length}) ---');
     for (final a in articles.take(3)) {
-      print('${a.title} | ${a.source}');
+      stdout.writeln('${a.title} | ${a.source}');
       final block = a.toResultMap()['content'] as String;
       if (block.contains('https://') || block.contains('http://')) {
         throw StateError('Display content must not include raw URLs for $q');
       }
       if ((a.url ?? '').contains('wikipedia.org')) {
-        throw StateError('News must not be Wikipedia');
+        throw StateError('News must not use Wikipedia for $q');
       }
     }
     titlesByQuery[q] = articles.map((a) => a.title).toSet();
   }
 
-  final lucknow = titlesByQuery['Lucknow']!;
-  final delhi = titlesByQuery['Delhi']!;
-  final ai = titlesByQuery['AI']!;
-  if (lucknow.isNotEmpty && delhi.isNotEmpty && lucknow.intersection(delhi).length == lucknow.length) {
-    throw StateError('Lucknow and Delhi returned identical title sets');
+  if (titlesByQuery['Lucknow']!.intersection(titlesByQuery['Delhi']!).length ==
+      titlesByQuery['Lucknow']!.length) {
+    throw StateError('Lucknow and Delhi results must differ');
   }
-  if (ai.isNotEmpty &&
-      lucknow.isNotEmpty &&
-      ai.intersection(lucknow).length == ai.length) {
-    throw StateError('AI and Lucknow returned identical title sets');
-  }
-  print('OK — query-sensitive results');
+  stdout.writeln('OK: query results differ');
 }

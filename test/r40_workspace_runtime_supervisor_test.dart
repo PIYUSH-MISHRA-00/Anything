@@ -544,7 +544,7 @@ void main() {
         );
         await tester.pump();
 
-        expect(find.text('Home'), findsWidgets);
+        expect(find.text('Test'), findsWidgets);
         expect(tester.takeException(), isNull);
 
         await tester.pumpWidget(const SizedBox());

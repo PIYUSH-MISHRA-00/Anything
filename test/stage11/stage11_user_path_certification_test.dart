@@ -1187,7 +1187,7 @@ void main() {
       stateEngine = ExperienceStateEngine();
     });
 
-    Widget _wrapForm(
+    Widget wrapForm(
       List<Map<String, dynamic>> fields, {
       String mode = 'create',
     }) {
@@ -1220,7 +1220,7 @@ void main() {
 
     testWidgets('String field renders TextFormField', (tester) async {
       await tester.pumpWidget(
-        _wrapForm([
+        wrapForm([
           {'id': 'name', 'name': 'Name', 'type': 'string', 'required': true},
         ]),
       );
@@ -1232,7 +1232,7 @@ void main() {
 
     testWidgets('Boolean field renders SwitchListTile', (tester) async {
       await tester.pumpWidget(
-        _wrapForm([
+        wrapForm([
           {'id': 'active', 'name': 'Active', 'type': 'boolean'},
         ]),
       );
@@ -1244,7 +1244,7 @@ void main() {
 
     testWidgets('Edit mode shows Save button', (tester) async {
       await tester.pumpWidget(
-        _wrapForm([
+        wrapForm([
           {'id': 'name', 'name': 'Name', 'type': 'string'},
         ], mode: 'edit'),
       );
@@ -1256,7 +1256,7 @@ void main() {
 
     testWidgets('Create mode shows Create button', (tester) async {
       await tester.pumpWidget(
-        _wrapForm([
+        wrapForm([
           {'id': 'name', 'name': 'Name', 'type': 'string'},
         ]),
       );

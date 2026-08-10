@@ -1,6 +1,5 @@
 /// Tests for typed event system.
-import 'dart:async';
-
+library;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:anything/core/events/events.dart';
 

@@ -19,11 +19,7 @@ import 'package:anything/runtime/data_query.dart';
 import 'package:anything/runtime/experience_router.dart';
 import 'package:anything/runtime/data_runtime.dart';
 import 'package:anything/runtime/form_controller.dart';
-import 'package:anything/runtime/experience_host_screen.dart';
-import 'package:anything/runtime/anything_runtime.dart';
 import 'package:anything/synthesis/app_blueprint.dart';
-import 'package:anything/synthesis/application_reasoner.dart';
-import 'package:anything/core/contracts/intent.dart';
 import 'package:anything/core/contracts/model_provider.dart';
 import 'package:anything/kernel/anything_kernel.dart';
 import 'package:anything/app/creation_coordinator.dart';
@@ -32,7 +28,6 @@ import 'package:anything/storage/sqlite_experience_repository.dart';
 import 'package:anything/storage/activity_repository.dart';
 import 'package:anything/capabilities/registry/capability_registry.dart';
 import 'package:anything/capabilities/registry/capability_descriptor.dart';
-import 'package:anything/features/home/intent_composer.dart';
 
 ExperiencePackage _testPackage(List<InterfaceNode> nodes) {
   return ExperiencePackage(
@@ -80,7 +75,7 @@ void main() {
   // A. COMPONENT TREE BUDGET ENFORCEMENT
   // =========================================================================
   group('Component Tree Budget Enforcement', () {
-    InterfaceNode _node(String id, {List<InterfaceNode>? children}) {
+    InterfaceNode node(String id, {List<InterfaceNode>? children}) {
       return InterfaceNode(
         id: id,
         type: 'text',
@@ -89,49 +84,49 @@ void main() {
       );
     }
 
-    InterfaceScreen _screen(List<InterfaceNode> nodes) {
+    InterfaceScreen screen(List<InterfaceNode> nodes) {
       return InterfaceScreen(id: 'test_screen', title: 'Test', children: nodes);
     }
 
     test('Depth 20 (legal max) passes validation', () {
       // Build a chain of 21 nodes (root at depth 0, leaf at depth 20)
-      InterfaceNode leaf = _node('d20');
+      InterfaceNode leaf = node('d20');
       for (var i = 19; i >= 0; i--) {
-        leaf = _node('d$i', children: [leaf]);
+        leaf = node('d$i', children: [leaf]);
       }
-      final result = ComponentTreeValidator.validateScreen(_screen([leaf]));
+      final result = ComponentTreeValidator.validateScreen(screen([leaf]));
       expect(result, isEmpty);
     });
 
     test('Depth 21 (one beyond max) fails with ui_depth_exceeded', () {
-      InterfaceNode leaf = _node('d21');
+      InterfaceNode leaf = node('d21');
       for (var i = 20; i >= 0; i--) {
-        leaf = _node('d$i', children: [leaf]);
+        leaf = node('d$i', children: [leaf]);
       }
-      final result = ComponentTreeValidator.validateScreen(_screen([leaf]));
+      final result = ComponentTreeValidator.validateScreen(screen([leaf]));
       expect(result, isNotEmpty);
       expect(result.any((e) => e.contains('ui_depth_exceeded')), isTrue);
     });
 
     test('50 children (legal max) passes validation', () {
-      final children = List.generate(50, (i) => _node('child_$i'));
-      final root = _node('root', children: children);
-      final result = ComponentTreeValidator.validateScreen(_screen([root]));
+      final children = List.generate(50, (i) => node('child_$i'));
+      final root = node('root', children: children);
+      final result = ComponentTreeValidator.validateScreen(screen([root]));
       expect(result, isEmpty);
     });
 
     test('51 children (one beyond max) fails with ui_children_exceeded', () {
-      final children = List.generate(51, (i) => _node('child_$i'));
-      final root = _node('root', children: children);
-      final result = ComponentTreeValidator.validateScreen(_screen([root]));
+      final children = List.generate(51, (i) => node('child_$i'));
+      final root = node('root', children: children);
+      final result = ComponentTreeValidator.validateScreen(screen([root]));
       expect(result, isNotEmpty);
       expect(result.any((e) => e.contains('ui_children_exceeded')), isTrue);
     });
 
     test('501 total nodes fails with ui_component_count_exceeded', () {
-      final children = List.generate(500, (i) => _node('leaf_$i'));
-      final root = _node('root', children: children);
-      final result = ComponentTreeValidator.validateScreen(_screen([root]));
+      final children = List.generate(500, (i) => node('leaf_$i'));
+      final root = node('root', children: children);
+      final result = ComponentTreeValidator.validateScreen(screen([root]));
       expect(result, isNotEmpty);
       expect(
         result.any((e) => e.contains('ui_component_count_exceeded')),
@@ -142,9 +137,9 @@ void main() {
     test('Package cannot override trusted budget limits', () {
       // Build a tree that exceeds limits — even if package metadata claims
       // higher limits, the validator uses RuntimeComponentRegistry constants
-      final children = List.generate(51, (i) => _node('child_$i'));
-      final root = _node('root', children: children);
-      final result = ComponentTreeValidator.validateScreen(_screen([root]));
+      final children = List.generate(51, (i) => node('child_$i'));
+      final root = node('root', children: children);
+      final result = ComponentTreeValidator.validateScreen(screen([root]));
       expect(result, isNotEmpty);
       expect(result.any((e) => e.contains('ui_children_exceeded')), isTrue);
     });
@@ -494,6 +489,7 @@ void main() {
       final pkg = _testPackage([
         InterfaceNode(id: 'n1', type: 'javascript', properties: {}),
       ]);
+      expect(pkg.interface.screens.single.children.single.type, 'javascript');
       final registry = RuntimeComponentRegistry.defaults();
       expect(registry.isRegistered('javascript'), isFalse);
     });
@@ -502,6 +498,7 @@ void main() {
       final pkg = _testPackage([
         InterfaceNode(id: 'n1', type: 'dartCode', properties: {}),
       ]);
+      expect(pkg.interface.screens.single.children.single.type, 'dartCode');
       final registry = RuntimeComponentRegistry.defaults();
       expect(registry.isRegistered('dartCode'), isFalse);
     });
@@ -852,7 +849,7 @@ void main() {
   // L. STATE ENGINE REACTIVITY
   // =========================================================================
   group('StateEngine Reactivity', () {
-    ExperienceStateEngine _initEngine() {
+    ExperienceStateEngine initEngine() {
       final engine = ExperienceStateEngine();
       engine.initialize(
         StateSchema(
@@ -866,7 +863,7 @@ void main() {
     }
 
     test('Write triggers stream update', () async {
-      final engine = _initEngine();
+      final engine = initEngine();
       final completer = Completer<String?>();
 
       engine.watch('name').listen((_) {
@@ -881,13 +878,13 @@ void main() {
     });
 
     test('Read returns current value', () {
-      final engine = _initEngine();
+      final engine = initEngine();
       engine.write('name', 'Alice');
       expect(engine.read('name'), equals('Alice'));
     });
 
     test('Read returns null for missing key', () {
-      final engine = _initEngine();
+      final engine = initEngine();
       expect(engine.read('nonexistent'), isNull);
     });
   });
@@ -900,7 +897,7 @@ void main() {
     late SqliteExperienceRepository repository;
     late ExperienceCreationCoordinator creationCoordinator;
     late ExperienceOpeningCoordinator openingCoordinator;
-    ExperiencePackage? _generatedPackage;
+    ExperiencePackage? generatedPackage;
 
     setUp(() async {
       registry = _FakeProviderRegistry();
@@ -942,12 +939,12 @@ void main() {
       );
 
       // Generate package once for all tests in this group
-      if (_generatedPackage == null) {
+      if (generatedPackage == null) {
         final result = await creationCoordinator.createFromExpression(
           'Make me an app to keep track of people I meet.',
         );
         if (result is CreationCreated) {
-          _generatedPackage = result.package;
+          generatedPackage = result.package;
         }
       }
     });
@@ -959,7 +956,7 @@ void main() {
     test(
       'IntentComposer → Kernel → CreationCoordinator → Validate → Persist',
       () async {
-        final pkg = _generatedPackage!;
+        final pkg = generatedPackage!;
         expect(pkg.manifest.name, isNotEmpty);
         expect(pkg.interface.screens, isNotEmpty);
         expect(pkg.data, isNotNull);
@@ -986,7 +983,7 @@ void main() {
     testWidgets('Generated package renders through ExperienceRenderer', (
       tester,
     ) async {
-      final pkg = _generatedPackage!;
+      final pkg = generatedPackage!;
       expect(pkg, isNotNull);
 
       final validation = ExperiencePackageValidator.validate(pkg);
@@ -1012,7 +1009,7 @@ void main() {
     });
 
     test('Generated package has Person entity with expected fields', () async {
-      final pkg = _generatedPackage!;
+      final pkg = generatedPackage!;
       expect(pkg.data, isNotNull);
       final personEntity = pkg.data!.entities.firstWhere(
         (e) => e.name.toLowerCase() == 'person',
@@ -1022,7 +1019,7 @@ void main() {
     });
 
     test('Generated package has list and form screens', () async {
-      final pkg = _generatedPackage!;
+      final pkg = generatedPackage!;
       expect(pkg.interface.screens, isNotEmpty);
 
       final hasEntityList = pkg.interface.screens.any(
@@ -1037,7 +1034,7 @@ void main() {
     });
 
     test('Generated package has create/delete actions wired', () async {
-      final pkg = _generatedPackage!;
+      final pkg = generatedPackage!;
       expect(pkg.behavior.nodes, isNotEmpty);
 
       final listScreen = pkg.interface.screens.firstWhere(
@@ -1053,7 +1050,7 @@ void main() {
     test(
       'Form fields have validation metadata wired through creation engine',
       () async {
-        final pkg = _generatedPackage!;
+        final pkg = generatedPackage!;
 
         InterfaceNode? formNode;
         for (final screen in pkg.interface.screens) {
@@ -1175,9 +1172,6 @@ class _PeopleTrackerProvider implements ModelProvider {
 
   @override
   bool get isConfigured => true;
-
-  @override
-  Future<bool> isAvailable() async => true;
 
   @override
   Future<List<ModelInfo>> listModels() async => [];

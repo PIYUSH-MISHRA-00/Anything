@@ -275,8 +275,8 @@ void main() {
         registry.register(_OrbitMetricsModelProvider());
         registry.setActive(_OrbitMetricsModelProvider().providerId);
         final capabilityRegistry = CapabilityRegistry();
-        capabilityRegistry.register(
-          const CapabilityDescriptor(
+        for (final d in const [
+          CapabilityDescriptor(
             id: 'storage',
             version: '1.0.0',
             name: 'Storage',
@@ -285,7 +285,29 @@ void main() {
             inputContract: 'data',
             outputContract: 'stored_data',
           ),
-        );
+          CapabilityDescriptor(
+            id: 'http',
+            version: '1.0.0',
+            name: 'HTTP',
+            description: 'HTTPS',
+            category: CapabilityCategory.integration,
+            inputContract: 'request',
+            outputContract: 'response',
+            networkRequired: true,
+          ),
+          CapabilityDescriptor(
+            id: 'knowledge',
+            version: '1.0.0',
+            name: 'Knowledge',
+            description: 'Knowledge',
+            category: CapabilityCategory.knowledge,
+            inputContract: 'query',
+            outputContract: 'resources',
+            networkRequired: true,
+          ),
+        ]) {
+          capabilityRegistry.register(d);
+        }
         kernel = AnythingKernel(
           providerRegistry: registry,
           capabilityRegistry: capabilityRegistry,
@@ -465,9 +487,13 @@ void main() {
         expect(fields[2].name, 'Active');
         expect(fields[2].type, 'boolean');
 
-        expect(pkg.interface.screens.length, 2);
-        expect(pkg.interface.screens[0].title, 'Items');
-        expect(pkg.interface.screens[1].title, 'Add Item');
+        // IS-P08: canonical create/edit form screens are added when missing,
+        // so the count is no longer a fixed 2.
+        expect(pkg.interface.screens.length, greaterThanOrEqualTo(2));
+        expect(
+          pkg.interface.screens.map((s) => s.title),
+          containsAll(['Items', 'Add Item']),
+        );
 
         expect(pkg.behavior.nodes, isNotEmpty);
 
@@ -530,7 +556,6 @@ void main() {
 
 ExperienceSpec _makeSpec({
   String name = 'Test',
-  List<AppArchetype> archetypes = const [AppArchetype.collection],
 }) {
   return ExperienceSpec(
     id: 'test-spec',
@@ -608,8 +633,6 @@ class _FakeProviderRegistry implements ModelProviderRegistry {
 // ── Lending Model Provider ─────────────────────────────────────────────
 
 class _LendingModelProvider implements ModelProvider {
-  int _callCount = 0;
-
   static const _responseText = '''{
     "name": "Equipment Lending Tracker",
     "purpose": "Manage equipment I lend to people",
@@ -689,14 +712,10 @@ class _LendingModelProvider implements ModelProvider {
   bool get isConfigured => true;
 
   @override
-  Future<bool> isAvailable() async => true;
-
-  @override
   Future<List<ModelInfo>> listModels() async => [];
 
   @override
   Future<ModelResponse> generate(ModelRequest request) async {
-    _callCount++;
     return ModelResponse(
       text: _responseText,
       usage: const ModelUsage(
@@ -728,8 +747,6 @@ class _LendingModelProvider implements ModelProvider {
 // ── OrbitMetrics Model Provider ────────────────────────────────────────
 
 class _OrbitMetricsModelProvider implements ModelProvider {
-  int _callCount = 0;
-
   static const _responseText = '''{
     "name": "OrbitMetrics Dashboard",
     "purpose": "Dashboard for OrbitMetrics project data",
@@ -771,14 +788,10 @@ class _OrbitMetricsModelProvider implements ModelProvider {
   bool get isConfigured => true;
 
   @override
-  Future<bool> isAvailable() async => true;
-
-  @override
   Future<List<ModelInfo>> listModels() async => [];
 
   @override
   Future<ModelResponse> generate(ModelRequest request) async {
-    _callCount++;
     return ModelResponse(
       text: _responseText,
       usage: const ModelUsage(

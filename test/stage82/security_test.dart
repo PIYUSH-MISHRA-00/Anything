@@ -1,4 +1,5 @@
 /// Stage 8.2 security and hardening tests.
+library;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:anything/capabilities/builtin/file_capability.dart';

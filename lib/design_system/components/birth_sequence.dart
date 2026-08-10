@@ -97,7 +97,7 @@ class _BirthSequenceState extends State<BirthSequence>
       builder: (context, child) {
         final progress = _mainController.value;
         return Container(
-          color: Colors.black.withOpacity(progress * 0.3),
+          color: Colors.black.withValues(alpha: progress * 0.3),
           child: Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -114,8 +114,8 @@ class _BirthSequenceState extends State<BirthSequence>
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: colorScheme.primary.withOpacity(
-                              0.3 * progress,
+                            color: colorScheme.primary.withValues(
+                              alpha: 0.3 * progress,
                             ),
                             blurRadius: 40,
                             spreadRadius: 10,
