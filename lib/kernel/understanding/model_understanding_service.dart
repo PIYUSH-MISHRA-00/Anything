@@ -130,14 +130,25 @@ class ModelUnderstandingService {
       creationNeed = CreationNeed.notNeeded;
     }
 
-    // Determine network need
+    // Determine network need from structural cues — not product domain names.
+    // (IS-P10: removed weather/news/stock keyword allow-list.)
     NetworkNeed networkNeed = NetworkNeed.none;
-    if (expression.contains('weather') ||
-        expression.contains('news') ||
-        expression.contains('stock') ||
-        expression.contains('api')) {
+    final looksLive =
+        expression.contains('live') ||
+        expression.contains('online') ||
+        expression.contains('dashboard') ||
+        expression.contains('api') ||
+        expression.contains('fetch') ||
+        expression.contains('realtime') ||
+        expression.contains('real-time');
+    final looksLookup =
+        expression.contains('search') ||
+        expression.contains('web') ||
+        expression.contains('lookup') ||
+        expression.contains('reference');
+    if (looksLive) {
       networkNeed = NetworkNeed.required;
-    } else if (expression.contains('search') || expression.contains('web')) {
+    } else if (looksLookup) {
       networkNeed = NetworkNeed.optional;
     }
 

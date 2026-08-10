@@ -112,9 +112,11 @@ class PortabilityResult {
   /// the UI, so both entry points say the same thing about the same failure.
   String get description {
     if (succeeded) {
-      return path == null
-          ? 'Imported "${manifest?.name ?? 'Experience'}".'
-          : 'Exported "${manifest?.name ?? 'Experience'}".';
+      if (path == null) {
+        return 'Imported "${manifest?.name ?? 'Experience'}".';
+      }
+      final displayPath = _friendlyExportPath(path!);
+      return 'Export successful\nSaved: $displayPath';
     }
     switch (failure!) {
       case PortabilityFailure.notFound:
@@ -145,6 +147,31 @@ class PortabilityResult {
       case PortabilityFailure.writeFailed:
         return 'The Experience could not be saved to a file.';
     }
+  }
+
+  /// Prefer a short user-facing path (Downloads/Anything/…) when possible.
+  static String _friendlyExportPath(String absolute) {
+    final normalized = absolute.replaceAll('\\', '/');
+    final markers = const [
+      '/Download/Anything/',
+      '/Downloads/Anything/',
+      '/download/Anything/',
+    ];
+    for (final m in markers) {
+      final i = normalized.indexOf(m);
+      if (i >= 0) {
+        final tail = normalized.substring(i + 1); // drop leading slash
+        // Capitalize Downloads for display consistency.
+        if (tail.startsWith('download/')) {
+          return 'Downloads/${tail.substring('download/'.length)}';
+        }
+        if (tail.startsWith('Download/')) {
+          return 'Downloads/${tail.substring('Download/'.length)}';
+        }
+        return tail[0].toUpperCase() + tail.substring(1);
+      }
+    }
+    return absolute;
   }
 }
 
@@ -178,11 +205,11 @@ class ExperiencePortability {
   /// relying on something downstream to refuse it.
   static String fileNameFor(ExperienceManifest manifest) {
     final slug = manifest.name
-        .toLowerCase()
-        .replaceAll(RegExp(r'[^a-z0-9]+'), '-')
-        .replaceAll(RegExp(r'^-+|-+$'), '');
-    final safe = slug.isEmpty ? manifest.experienceId : slug;
-    return '$safe-v${manifest.version}${ExperiencePackageFormat.extension}';
+        .replaceAll(RegExp(r'[^A-Za-z0-9]+'), '_')
+        .replaceAll(RegExp(r'^_+|_+$'), '');
+    final safe = slug.isEmpty ? 'Experience' : slug;
+    // Human-readable: Stopwatch.anything (version lives inside the package).
+    return '$safe${ExperiencePackageFormat.extension}';
   }
 
   /// EXPORT — a stored Experience becomes a shareable file.

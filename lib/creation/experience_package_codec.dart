@@ -183,11 +183,17 @@ class ExperiencePackageWriter {
     Map<String, dynamic>? extensions,
   }) {
     final payload = _canonical(package.toJson());
+    // IS-P12: checksum MUST match what the reader recomputes after
+    // fromJson(payload). Hashing the pre-canonical model failed round-trip
+    // whenever map key order in nested properties differed.
+    final forChecksum = ExperiencePackage.fromJson(
+      Map<String, dynamic>.from(payload as Map),
+    );
     final container = <String, dynamic>{
       ExperiencePackageFormat.magicKey: ExperiencePackageFormat.magic,
       ExperiencePackageFormat.versionKey: ExperiencePackageFormat.version,
       ExperiencePackageFormat.checksumKey:
-          ExperiencePackage.computeIntegrityHash(package),
+          ExperiencePackage.computeIntegrityHash(forChecksum),
       ExperiencePackageFormat.payloadKey: payload,
       if (signature != null)
         ExperiencePackageFormat.signatureKey: _canonical(signature),

@@ -92,7 +92,11 @@ class CreationContext {
     this.availableCapabilities = const [],
     required this.platformContext,
     required this.securityPolicy,
-    this.isOffline = true,
+    // IS-P09: default online. The previous default of `true` rejected every
+    // `externalApi` / network experience before generation could run, which
+    // surfaced as "Unable to create this type of app" for open-world
+    // reference apps. Callers that are genuinely offline pass `true`.
+    this.isOffline = false,
     this.generationMetadata = const {},
   });
 }

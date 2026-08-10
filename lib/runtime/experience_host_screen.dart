@@ -1,7 +1,7 @@
 /// Experience Host Screen — loads and displays a running Experience.
 library;
 
-import 'dart:async' show unawaited;
+import 'dart:async' show Timer, unawaited;
 import 'package:flutter/material.dart';
 
 import '../app/autonomous_workspace_runtime.dart';
@@ -24,6 +24,7 @@ import 'experience_renderer.dart';
 import 'experience_router.dart';
 import 'experience_runtime_controller.dart';
 import 'experience_session.dart';
+import 'timing_session.dart';
 
 /// Hosts a running Experience inside Anything.
 class ExperienceHostScreen extends StatefulWidget {
@@ -218,8 +219,28 @@ class _ExperienceHostScreenState extends State<ExperienceHostScreen>
   /// never a fabricated multi-level history stack.
   ExperiencePackage? _lastPreviousPackage;
 
+  /// Wall-clock ticker for `timers` Experiences (IS-P12).
+  Timer? _timingTicker;
+
   List<NavigationItem> get _navigationItems =>
       _currentPackage.interface.navigation?.items ?? [];
+
+  bool get _packageUsesTiming {
+    for (final screen in _currentPackage.interface.screens) {
+      for (final node in _walkNodes(screen.children)) {
+        final id = node.actionBinding?.actionId ?? '';
+        if (TimingSession.handles(id)) return true;
+      }
+    }
+    return _currentPackage.manifest.requiredCapabilities.contains('timers');
+  }
+
+  Iterable<InterfaceNode> _walkNodes(List<InterfaceNode> roots) sync* {
+    for (final n in roots) {
+      yield n;
+      yield* _walkNodes(n.children);
+    }
+  }
 
   @override
   void initState() {
@@ -289,6 +310,7 @@ class _ExperienceHostScreenState extends State<ExperienceHostScreen>
           _router = _runtime.router;
         });
         _seedDefaultScreen();
+        _startTimingTickerIfNeeded();
         _reportRuntimeStateToWorkspace();
         _publishRuntimeLoadedEvent();
         _registerWithSupervisor();
@@ -455,8 +477,21 @@ class _ExperienceHostScreenState extends State<ExperienceHostScreen>
     unawaited(_policyEngine.apply(decision, _runtimeController));
   }
 
+  void _startTimingTickerIfNeeded() {
+    _timingTicker?.cancel();
+    if (!_packageUsesTiming) return;
+    _timingTicker = Timer.periodic(const Duration(milliseconds: 50), (_) {
+      if (!mounted) return;
+      if (_runtime.getState('running') == true) {
+        unawaited(_runtime.dispatchEvent(TimingSession.tick));
+        setState(() {});
+      }
+    });
+  }
+
   @override
   void dispose() {
+    _timingTicker?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     // Implementation Specification IS-R40: unregister THIS screen's own
     // registration (if any) — independent of the runtime-ownership check
@@ -975,25 +1010,85 @@ class _ExperienceHostScreenState extends State<ExperienceHostScreen>
     }
   }
 
-  /// Finds the form screen for a create action event.
+  /// Finds the form screen that an "Add"/"Edit" tap should navigate to.
   ///
-  /// When the user taps an "Add" button on a list screen, we should navigate
-  /// to the entity's form screen rather than dispatching the action event
-  /// (which would try to create with no data).
-  String? _findFormScreenForAction(String eventId) {
-    // Check if any screen has a form matching the entity from the event
+  /// IS-P08: this used to match on `screen.id.endsWith('_form')` and then ask
+  /// whether the event id CONTAINED the leading part of that id. Two string
+  /// heuristics stacked on names the language model chose freely — a form
+  /// view called "Add Task" became screen `add_task`, failed the suffix test,
+  /// and the Add button became a control that did nothing.
+  ///
+  /// Resolution is now structural: find the screen that actually contains an
+  /// `entityForm` for this entity in this mode. The entity id travels with
+  /// the tap, in the action binding's parameters, so nothing has to be
+  /// inferred from spelling. The id heuristic is kept only as a fallback for
+  /// Experiences generated before this change, which are already installed
+  /// and cannot be re-generated in place.
+  String? _findFormScreenForAction(
+    String eventId, {
+    String? entityId,
+    String mode = 'create',
+  }) {
     final screens = _currentPackage.interface.screens;
-    for (final screen in screens) {
-      // Match form screens: screen ID ends with '_form'
-      if (screen.id.endsWith('_form')) {
-        final entityId = screen.id.replaceAll('_form', '');
-        // Match: action ID contains the entity ID (e.g., 'add_person' → 'person')
-        if (eventId.contains(entityId)) {
-          return screen.id;
+
+    if (entityId != null && entityId.isNotEmpty) {
+      for (final screen in screens) {
+        for (final node in screen.children) {
+          if (node.type == 'entityForm' &&
+              node.properties['entityId'] == entityId &&
+              node.properties['mode'] == mode) {
+            return screen.id;
+          }
         }
       }
     }
+
+    for (final screen in screens) {
+      if (screen.id.endsWith('_form')) {
+        final derived = screen.id.replaceAll('_form', '');
+        if (eventId.contains(derived)) return screen.id;
+      }
+    }
     return null;
+  }
+
+  /// Events the runtime's own widgets raise, as opposed to actions declared
+  /// by a generated Experience. These are handled by the host directly and
+  /// must never be mistaken for a blueprint action.
+  static const _runtimeControlEvents = {
+    'submitForm',
+    'cancelForm',
+    'deleteRecord',
+    'searchChanged',
+    // openDetail must not hit create-form resolution: its event id carries
+    // an entityId and would otherwise open Add instead of detail.
+    'openDetail',
+  };
+
+  /// Whether [eventId] names a create action in the package's behaviour.
+  ///
+  /// Used to tell "this tap had no destination" apart from "this tap was
+  /// never a create action", so only the former is reported as a fault.
+  bool _isCreateAction(String eventId) => _currentPackage.behavior.nodes.any(
+    (n) =>
+        n.type == 'dataMutation' &&
+        n.id.startsWith('${eventId}_') &&
+        (n.config['operation'] == 'create' ||
+            n.config['operation'] == 'insert'),
+  );
+
+  /// Create vs edit form selection from the action id.
+  ///
+  /// Defaulting everything to `create` made Edit open the Add form: the
+  /// structural lookup then matched the create `entityForm`, Save became
+  /// Create, and the detail screen's Delete control vanished from the stack
+  /// the user thought they were on.
+  String _formModeForAction(String eventId) {
+    final id = eventId.toLowerCase();
+    if (id.contains('update') || id.contains('edit') || id.contains('modify')) {
+      return 'edit';
+    }
+    return 'create';
   }
 
   String _getScreenIdForTab(int index) {
@@ -1122,131 +1217,235 @@ class _ExperienceHostScreenState extends State<ExperienceHostScreen>
       _detailRecordData = null;
     }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.experienceName ?? 'Experience'),
-        backgroundColor: Theme.of(context).colorScheme.surface,
-        elevation: 0,
-        actions: [
-          PopupMenuButton<String>(
-            onSelected: (value) {
-              switch (value) {
-                case 'change':
-                  _showModificationIntent();
-                  break;
-                case 'history':
-                  _showEvolutionHistory();
-                  break;
-                case 'protect':
-                  _showProtectOptions();
-                  break;
-              }
-            },
-            itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: 'change',
-                child: Text('Change this app'),
-              ),
-              const PopupMenuItem(
-                value: 'history',
-                child: Text('Evolution history'),
-              ),
-              const PopupMenuItem(value: 'protect', child: Text('Protect')),
-            ],
+    final screen = screens.where((s) => s.id == screenId).firstOrNull;
+    // Prefer the caller's label, then the package's own display name — never
+    // a hard-coded "Experience" that hides what was generated.
+    final experienceName =
+        widget.experienceName ?? _currentPackage.manifest.name;
+    final screenTitle = screen?.appBarTitle ?? screen?.title;
+    final canGoBackInside = (_router?.history.length ?? 0) > 1;
+
+    // IS-P08: `canPop: false` so Android's back gesture reaches this handler
+    // instead of tearing down the route. Back now means "one step", and only
+    // leaves the Experience once there is nothing left to step back through
+    // — which is what a single back affordance has to mean if it is going to
+    // be the only one.
+    return PopScope(
+      canPop: !canGoBackInside,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop || !canGoBackInside) return;
+        _goBackOneScreen();
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          // One title line. At the root the Experience names itself; once the
+          // user has stepped inside, the title says where they are, which is
+          // the only thing the back arrow beside it can refer to.
+          title: Text(
+            canGoBackInside ? (screenTitle ?? experienceName) : experienceName,
+            overflow: TextOverflow.ellipsis,
           ),
-        ],
-      ),
-      body: renderer.renderScreen(
-        context,
-        screenId,
-        _currentPackage.interface,
-        _runtime.stateEngine,
-        onEvent: (eventId, {data}) async {
-          // Handle "Add" buttons: navigate to the create form screen
-          // instead of dispatching a create event directly.
-          final formScreen = _findFormScreenForAction(eventId);
-          if (formScreen != null) {
-            _router?.navigate(
-              NavigationRequest(
-                action: NavigationAction.push,
-                targetScreenId: formScreen,
-              ),
-            );
-            if (mounted) setState(() {});
-            return;
-          }
+          leading: canGoBackInside
+              ? IconButton(
+                  icon: const Icon(Icons.arrow_back),
+                  tooltip: 'Back',
+                  onPressed: _goBackOneScreen,
+                )
+              : null,
+          backgroundColor: Theme.of(context).colorScheme.surface,
+          elevation: 0,
+          actions: [
+            PopupMenuButton<String>(
+              onSelected: (value) {
+                switch (value) {
+                  case 'change':
+                    _showModificationIntent();
+                    break;
+                  case 'history':
+                    _showEvolutionHistory();
+                    break;
+                  case 'protect':
+                    _showProtectOptions();
+                    break;
+                }
+              },
+              itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: 'change',
+                  child: Text('Change this app'),
+                ),
+                const PopupMenuItem(
+                  value: 'history',
+                  child: Text('Evolution history'),
+                ),
+                const PopupMenuItem(value: 'protect', child: Text('Protect')),
+              ],
+            ),
+          ],
+        ),
+        body: renderer.renderScreen(
+          context,
+          screenId,
+          _currentPackage.interface,
+          _runtime.stateEngine,
+          onEvent: (eventId, {data}) async {
+            // Handle "Add" buttons: navigate to the create form screen
+            // instead of dispatching a create event directly.
+            //
+            // `_runtimeControlEvents` is excluded first because those come FROM
+            // the form, and they carry the same `entityId` that identifies it.
+            // Without this guard, submitting a form resolves right back to the
+            // form and the record is never written.
+            final formScreen = _runtimeControlEvents.contains(eventId)
+                ? null
+                : _findFormScreenForAction(
+                    eventId,
+                    entityId: data?['entityId'] as String?,
+                    mode: _formModeForAction(eventId),
+                  );
+            if (formScreen != null) {
+              _router?.navigate(
+                NavigationRequest(
+                  action: NavigationAction.push,
+                  targetScreenId: formScreen,
+                  arguments: {
+                    if (data?['recordId'] != null)
+                      'recordId': data!['recordId'],
+                  },
+                ),
+              );
+              if (mounted) setState(() {});
+              return;
+            }
 
-          // Handle submitForm: dispatch then pop back to the list screen
-          if (eventId == 'submitForm') {
-            await _runtime.dispatchEvent(eventId, data: data);
-            if (mounted) {
-              // Pop back to the entity list (pop the form screen)
-              if (_router?.history.isNotEmpty == true) {
-                _router?.navigate(
-                  const NavigationRequest(action: NavigationAction.pop),
+            // IS-P08: a create action with no form to send the user to used to
+            // fall through to `dispatchEvent`, where the interpreter skipped
+            // the mutation because no field values came with the tap — a
+            // control that looked live and did nothing. Newly generated
+            // Experiences always have a destination (the quality gate rejects
+            // them otherwise), but Experiences created before that gate existed
+            // are already installed, and a button that reports a fault is
+            // honest where a button that ignores you is not.
+            if (!_runtimeControlEvents.contains(eventId) &&
+                _isCreateAction(eventId)) {
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      'This app has no form for adding items. Re-create it to '
+                      'get a working version.',
+                    ),
+                  ),
                 );
               }
-              setState(() {});
+              return;
             }
-            return;
-          }
 
-          // Handle deleteRecord: dispatch then navigate back to the list
-          if (eventId == 'deleteRecord') {
-            await _runtime.dispatchEvent(eventId, data: data);
-            if (mounted) {
-              // Navigate back to the parent list after deletion
-              if (_router?.history.isNotEmpty == true) {
-                _router?.navigate(
-                  const NavigationRequest(action: NavigationAction.pop),
-                );
-              }
-              setState(() {});
-            }
-            return;
-          }
-
-          // Handle searchChanged: update search term state
-          if (eventId == 'searchChanged') {
-            final term = data?['term'] as String? ?? '';
-            _runtime.stateEngine.write('searchTerm', term);
-            await _runtime.dispatchEvent(eventId, data: data);
-            if (mounted) setState(() {});
-            return;
-          }
-
-          await _runtime.dispatchEvent(eventId, data: data);
-          if (mounted) setState(() {});
-        },
-        runtimeContext: runtimeContext,
-        data: renderData,
-      ),
-      bottomNavigationBar: _navigationItems.isNotEmpty
-          ? NavigationBar(
-              selectedIndex: _currentTabIndex,
-              onDestinationSelected: (index) {
-                setState(() => _currentTabIndex = index);
-                final targetScreenId = _getScreenIdForTab(index);
+            // List → detail. Must carry recordId so the detail body can load.
+            if (eventId == 'openDetail') {
+              final entityId = data?['entityId'] as String?;
+              final recordId = data?['recordId'];
+              if (entityId != null && entityId.isNotEmpty) {
                 _router?.navigate(
                   NavigationRequest(
                     action: NavigationAction.push,
-                    targetScreenId: targetScreenId,
+                    targetScreenId: '${entityId}_detail',
+                    arguments: {if (recordId != null) 'recordId': recordId},
                   ),
                 );
+                if (mounted) setState(() {});
+              }
+              return;
+            }
+
+            // Handle submitForm: dispatch then pop back to the list screen
+            if (eventId == 'submitForm') {
+              await _runtime.dispatchEvent(eventId, data: data);
+              if (mounted) {
+                // Pop back to the entity list (pop the form screen)
+                if (_router?.history.isNotEmpty == true) {
+                  _router?.navigate(
+                    const NavigationRequest(action: NavigationAction.pop),
+                  );
+                }
                 setState(() {});
-              },
-              destinations: _navigationItems
-                  .take(5)
-                  .map(
-                    (item) => NavigationDestination(
-                      icon: Icon(_iconFromString(item.icon)),
-                      label: item.label,
+              }
+              return;
+            }
+
+            // Handle deleteRecord: dispatch then navigate back to the list
+            if (eventId == 'deleteRecord') {
+              await _runtime.dispatchEvent(eventId, data: data);
+              if (mounted) {
+                // Navigate back to the parent list after deletion
+                if (_router?.history.isNotEmpty == true) {
+                  _router?.navigate(
+                    const NavigationRequest(action: NavigationAction.pop),
+                  );
+                }
+                setState(() {});
+              }
+              return;
+            }
+
+            // Handle searchChanged: update search term state
+            if (eventId == 'searchChanged') {
+              final term = data?['term'] as String? ?? '';
+              _runtime.stateEngine.write('searchTerm', term);
+              await _runtime.dispatchEvent(eventId, data: data);
+              if (mounted) setState(() {});
+              return;
+            }
+
+            await _runtime.dispatchEvent(eventId, data: data);
+            if (mounted) setState(() {});
+          },
+          runtimeContext: runtimeContext,
+          data: renderData,
+        ),
+        bottomNavigationBar: _navigationItems.isNotEmpty
+            ? NavigationBar(
+                selectedIndex: _currentTabIndex,
+                onDestinationSelected: (index) {
+                  final targetScreenId = _getScreenIdForTab(index);
+                  // IS-P08: tabs are peer roots, not a stack. Collapse any
+                  // pushed detail/form history first, then replace the root
+                  // with the selected tab — otherwise `replace` alone turns
+                  // `[list, detail]` into `[list, list]` and Back walks a
+                  // ghost of the previous root.
+                  _router?.navigate(
+                    const NavigationRequest(action: NavigationAction.popToRoot),
+                  );
+                  _router?.navigate(
+                    NavigationRequest(
+                      action: NavigationAction.replace,
+                      targetScreenId: targetScreenId,
                     ),
-                  )
-                  .toList(),
-            )
-          : null,
+                  );
+                  setState(() => _currentTabIndex = index);
+                },
+                destinations: _navigationItems
+                    .take(5)
+                    .map(
+                      (item) => NavigationDestination(
+                        icon: Icon(_iconFromString(item.icon)),
+                        label: item.label,
+                      ),
+                    )
+                    .toList(),
+              )
+            : null,
+      ),
     );
+  }
+
+  /// One step back inside the Experience.
+  ///
+  /// Only reached when the router actually has somewhere to go; otherwise
+  /// `PopScope` lets the pop through and the route closes normally.
+  void _goBackOneScreen() {
+    _router?.navigate(const NavigationRequest(action: NavigationAction.pop));
+    if (mounted) setState(() {});
   }
 
   IconData _iconFromString(String iconName) {

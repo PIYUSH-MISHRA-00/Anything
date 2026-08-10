@@ -12,6 +12,8 @@ import 'experience_session.dart';
 import 'experience_renderer.dart';
 import 'experience_router.dart';
 import 'behavior_interpreter.dart';
+import 'calculation_session.dart';
+import 'timing_session.dart';
 import 'state_engine.dart';
 import 'data_runtime.dart';
 import 'service_resolver.dart';
@@ -156,6 +158,19 @@ class AnythingRuntime {
     Map<String, dynamic>? data,
   }) async {
     if (_currentSession == null) return;
+
+    // Generic calculation protocol (IS-P09) — capability runtime, not a
+    // product-specific Calculator module. Handles `calc.*` and legacy aliases.
+    if (CalculationSession.handles(eventId)) {
+      CalculationSession.apply(_stateEngine, eventId: eventId, data: data);
+      return;
+    }
+
+    // Generic timing protocol (IS-P12) — capability runtime for `timer.*`.
+    if (TimingSession.handles(eventId)) {
+      TimingSession.apply(_stateEngine, eventId: eventId, data: data);
+      return;
+    }
 
     final context = BehaviorExecutionContext(
       session: _currentSession!,

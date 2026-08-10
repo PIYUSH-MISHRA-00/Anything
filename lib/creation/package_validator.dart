@@ -136,11 +136,77 @@ class ExperiencePackageValidator {
       warnings.add('Package missing integrity hash');
     }
 
+    // IS-P08 quality gate: every visible create/update control must resolve
+    // to a form that can collect values. A button that dispatches create with
+    // no destination is the exact "Add task does nothing" defect — reject it
+    // before install rather than shipping a dead control.
+    errors.addAll(_validateActionDestinations(package));
+
     return PackageValidationResult(
       isValid: errors.isEmpty,
       errors: errors,
       warnings: warnings,
     );
+  }
+
+  /// Create/update actions bound to UI must have a resolvable entityForm.
+  static List<String> _validateActionDestinations(ExperiencePackage package) {
+    final errors = <String>[];
+
+    bool hasForm(String entityId, String mode) {
+      for (final screen in package.interface.screens) {
+        for (final node in _walk(screen.children)) {
+          if (node.type == 'entityForm' &&
+              node.properties['entityId'] == entityId &&
+              node.properties['mode'] == mode) {
+            return true;
+          }
+        }
+      }
+      return false;
+    }
+
+    for (final screen in package.interface.screens) {
+      for (final node in _walk(screen.children)) {
+        final binding = node.actionBinding;
+        if (binding == null) continue;
+        final entityId = binding.parameters['entityId']?.toString();
+        if (entityId == null || entityId.isEmpty) continue;
+
+        final actionId = binding.actionId.toLowerCase();
+        final looksCreate =
+            actionId.contains('create') ||
+            actionId.contains('add') ||
+            actionId.startsWith('new');
+        final looksUpdate =
+            actionId.contains('update') ||
+            actionId.contains('edit') ||
+            actionId.contains('modify');
+
+        if (looksCreate && !hasForm(entityId, 'create')) {
+          errors.add(
+            'dead_create_action: control "${node.id}" binds '
+            '"${binding.actionId}" for entity "$entityId" but no create '
+            'form exists',
+          );
+        }
+        if (looksUpdate && !hasForm(entityId, 'edit')) {
+          errors.add(
+            'dead_update_action: control "${node.id}" binds '
+            '"${binding.actionId}" for entity "$entityId" but no edit '
+            'form exists',
+          );
+        }
+      }
+    }
+    return errors;
+  }
+
+  static Iterable<InterfaceNode> _walk(List<InterfaceNode> roots) sync* {
+    for (final node in roots) {
+      yield node;
+      yield* _walk(node.children);
+    }
   }
 }
 
