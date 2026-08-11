@@ -71,8 +71,10 @@ abstract final class StructuralEntityExtractor {
   }
 
   static List<String> _fromManageClause(String objective) {
+    // Word boundaries matter: bare `track` must not match inside `tracker`
+    // (that previously produced a garbage entity named "Er").
     final m = RegExp(
-      r'(?:manage|managing|track|tracking|include|including|support|supporting)\s*:?\s*(.+)$',
+      r'\b(?:manage|managing|track|tracking|include|including|support|supporting)\b\s*:?\s*(.+)$',
       caseSensitive: false,
       multiLine: true,
     ).firstMatch(objective);

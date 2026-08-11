@@ -122,11 +122,19 @@ class DeterministicReasoner implements ApplicationReasoner {
   /// device creation does not falsely require an AI provider. Vague prompts
   /// without a derivable entity still escalate (Stage 10 contract).
   SemanticApp? _tryManagedRecordsReasoning(String objective) {
+    // Prefer the head noun of "... manager/tracker/planner/log" when present.
+    // A trailing "with A and B" clause must not erase that primary record type
+    // (and must not win via accidental substring matches like track⊂tracker).
+    final head = _extractManagerEntity(objective);
     var entities = StructuralEntityExtractor.extract(objective);
-    if (entities.length < 2) {
-      final single = _extractManagerEntity(objective);
-      if (single == null) return null;
-      entities = [single];
+    if (head != null) {
+      final extras = [
+        for (final e in entities)
+          if (e.id != head.id) e,
+      ];
+      entities = [head, ...extras];
+    } else if (entities.length < 2) {
+      return null;
     }
 
     final semanticEntities = <SemanticEntity>[

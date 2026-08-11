@@ -119,6 +119,25 @@ class _ProviderConfigurationSheetState
     });
 
     final draft = _draftConfig();
+    // Persist the key before testing so a successful test cannot be lost if
+    // the user leaves the sheet without tapping Save (common BYOK path).
+    try {
+      await _saveKeyOnly();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isTesting = false;
+        _testResult = ProviderTestResult(
+          success: false,
+          message: e is StateError
+              ? e.message
+              : 'Could not store the API key securely on this device.',
+          failure: ProviderFailure.unknown,
+        );
+      });
+      return;
+    }
+
     final result = await widget.registry.testProvider(
       _config.providerType,
       _keyController.text,
@@ -127,7 +146,10 @@ class _ProviderConfigurationSheetState
 
     // Recorded so the list and a later visit can still show when this key last
     // worked, and why it last failed.
-    final updated = await widget.registry.recordTestResult(draft, result);
+    final updated = await widget.registry.recordTestResult(
+      draft.copyWith(isConfigured: result.success),
+      result,
+    );
 
     if (!mounted) return;
     setState(() {
@@ -187,7 +209,10 @@ class _ProviderConfigurationSheetState
     final key = _keyController.text.trim();
     if (key.isEmpty || !widget.descriptor.requiresApiKey) return;
     final provider = widget.registry.providerForConfig(_draftConfig());
-    await provider?.saveApiKey(key);
+    if (provider == null) {
+      throw StateError('That provider is not available yet.');
+    }
+    await provider.saveApiKey(key);
   }
 
   Future<void> _save() async {
@@ -216,16 +241,57 @@ class _ProviderConfigurationSheetState
       return;
     }
 
-    await _saveKeyOnly();
-    await widget.registry.saveConfig(
-      _draftConfig().copyWith(isConfigured: true),
-    );
+    try {
+      await _saveKeyOnly();
+    } catch (e) {
+      if (!mounted) return;
+      setState(
+        () => _testResult = ProviderTestResult(
+          success: false,
+          message: e is StateError
+              ? e.message
+              : 'Could not store the API key securely on this device.',
+          failure: ProviderFailure.unknown,
+        ),
+      );
+      return;
+    }
+
+    final saved = _draftConfig().copyWith(isConfigured: true);
+    await widget.registry.saveConfig(saved);
+    // Always make a successfully saved provider the active one — not only
+    // when none was active (replacing a stale active id after reconfigure).
+    await widget.registry.setActiveProvider(saved.providerType);
     widget.onChanged();
     if (mounted) Navigator.pop(context);
   }
 
+  Future<void> _pasteKey() async {
+    final data = await Clipboard.getData(Clipboard.kTextPlain);
+    final text = data?.text?.trim() ?? '';
+    if (text.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Clipboard is empty — copy your key first')),
+      );
+      return;
+    }
+    // Never log clipboard contents.
+    setState(() {
+      _keyController.text = text;
+      _keyController.selection = TextSelection.collapsed(offset: text.length);
+      _revealKey = false;
+    });
+    if (!mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('API key pasted')));
+  }
+
   Future<void> _copyKey() async {
-    await Clipboard.setData(ClipboardData(text: _keyController.text));
+    final text = _keyController.text;
+    if (text.isEmpty) return;
+    await Clipboard.setData(ClipboardData(text: text));
     if (!mounted) return;
     ScaffoldMessenger.of(
       context,
@@ -332,6 +398,10 @@ class _ProviderConfigurationSheetState
                   hint: d.keyHint ?? 'Paste your key',
                   controller: _keyController,
                   obscureText: !_revealKey,
+                  autocorrect: false,
+                  enableSuggestions: false,
+                  keyboardType: TextInputType.visiblePassword,
+                  textInputAction: TextInputAction.done,
                   suffixIcon: _revealKey
                       ? Icons.visibility_off_outlined
                       : Icons.visibility_outlined,
@@ -343,6 +413,11 @@ class _ProviderConfigurationSheetState
                 const SizedBox(height: 8),
                 Row(
                   children: [
+                    TextButton.icon(
+                      onPressed: _pasteKey,
+                      icon: const Icon(Icons.content_paste_outlined, size: 16),
+                      label: const Text('Paste'),
+                    ),
                     TextButton.icon(
                       onPressed: _keyController.text.isEmpty ? null : _copyKey,
                       icon: const Icon(Icons.copy_all_outlined, size: 16),

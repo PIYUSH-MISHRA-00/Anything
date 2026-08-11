@@ -20,6 +20,10 @@ class AnythingTextField extends StatelessWidget {
   final int maxLines;
   final TextInputType? keyboardType;
   final String? semanticsLabel;
+  final bool enableInteractiveSelection;
+  final bool autocorrect;
+  final bool enableSuggestions;
+  final TextInputAction? textInputAction;
 
   const AnythingTextField({
     super.key,
@@ -35,6 +39,10 @@ class AnythingTextField extends StatelessWidget {
     this.maxLines = 1,
     this.keyboardType,
     this.semanticsLabel,
+    this.enableInteractiveSelection = true,
+    this.autocorrect = true,
+    this.enableSuggestions = true,
+    this.textInputAction,
   });
 
   @override
@@ -52,6 +60,18 @@ class AnythingTextField extends StatelessWidget {
         obscureText: obscureText,
         maxLines: maxLines,
         keyboardType: keyboardType,
+        enableInteractiveSelection: enableInteractiveSelection,
+        autocorrect: autocorrect,
+        enableSuggestions: enableSuggestions,
+        textInputAction: textInputAction,
+        // Keep the platform paste/select-all menu available even when obscured
+        // (API keys). Some Android OEM long-press menus are flaky; callers also
+        // expose an explicit Paste action.
+        contextMenuBuilder: (context, editableTextState) {
+          return AdaptiveTextSelectionToolbar.editableText(
+            editableTextState: editableTextState,
+          );
+        },
         style: TextStyle(fontSize: 16, color: colorScheme.onSurface),
         decoration: InputDecoration(
           hintText: hint,
