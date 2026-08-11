@@ -544,9 +544,11 @@ class OpenAiCompatibleProvider implements ModelProvider {
 
   @override
   Future<void> saveApiKey(String apiKey) async {
-    await _vault.save(_keyPurpose, apiKey);
+    // Cache first so Test / model refresh can use the key even when the
+    // Android keystore is wedged (vault save would otherwise block BYOK).
     _cachedApiKey = apiKey;
     _priming = Future<void>.value();
+    await _vault.save(_keyPurpose, apiKey);
   }
 
   @override
