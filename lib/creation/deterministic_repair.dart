@@ -13,10 +13,8 @@ import 'calculation_interface_factory.dart';
 import 'calculation_spec.dart';
 import 'experience_package.dart';
 import 'network_reference_interface_factory.dart';
-import 'news_interface_factory.dart';
 import 'semantic_completeness.dart';
 import 'timing_interface_factory.dart';
-import 'weather_interface_factory.dart';
 
 /// Outcome of a deterministic repair attempt.
 class DeterministicRepairResult {
@@ -115,30 +113,43 @@ class DeterministicCapabilityRepair {
       }
     }
 
-    final wantsWeather =
+    // Generic external data shell: weather, news, stocks, etc. all route
+    // through NetworkReferenceInterfaceFactory (WebWeaveX via knowledgeRetrieval).
+    final needsExternalData =
         requiredCapabilities.contains(AppCapabilityIds.weatherData) ||
-        gapIds.contains(AppCapabilityIds.weatherData);
-    final wantsNews =
         requiredCapabilities.contains(AppCapabilityIds.newsData) ||
-        gapIds.contains(AppCapabilityIds.newsData);
+        requiredCapabilities.contains(AppCapabilityIds.networkData) ||
+        requiredCapabilities.contains(AppCapabilityIds.webData) ||
+        requiredCapabilities.contains(AppCapabilityIds.webKnowledge) ||
+        gapIds.contains(AppCapabilityIds.weatherData) ||
+        gapIds.contains(AppCapabilityIds.newsData) ||
+        gapIds.contains(AppCapabilityIds.networkData) ||
+        gapIds.contains(AppCapabilityIds.webData);
 
-    if (wantsWeather) {
+    if (needsExternalData) {
+      final needsNetworkShell =
+          requiredCapabilities.contains(AppCapabilityIds.networkData) ||
+          requiredCapabilities.contains(AppCapabilityIds.webData) ||
+          requiredCapabilities.contains(AppCapabilityIds.webKnowledge) ||
+          requiredCapabilities.contains(AppCapabilityIds.weatherData) ||
+          requiredCapabilities.contains(AppCapabilityIds.newsData) ||
+          blueprint?.networkConfig != null;
+      final networkGaps =
+          gapIds.contains(AppCapabilityIds.networkData) ||
+          gapIds.contains(AppCapabilityIds.webData) ||
+          gapIds.contains(AppCapabilityIds.weatherData) ||
+          gapIds.contains(AppCapabilityIds.newsData) ||
+          gapIds.contains(AppCapabilityIds.refresh) ||
+          gapIds.contains(AppCapabilityIds.loadingState) ||
+          gapIds.contains(AppCapabilityIds.errorState);
       final probe = PackageCapabilityProbe(current);
-      if (!probe.hasWeatherService) {
-        current = const WeatherInterfaceFactory().applyToPackage(
+      if (needsNetworkShell && (networkGaps || !probe.hasKnowledgeService)) {
+        current = const NetworkReferenceInterfaceFactory().applyToPackage(
           current,
           name: blueprint?.name ?? current.manifest.name,
+          purpose: blueprint?.description ?? current.manifest.description,
         );
-        fixes.add('injected_weather_data_surface');
-      }
-    } else if (wantsNews) {
-      final probe = PackageCapabilityProbe(current);
-      if (!probe.hasNewsService) {
-        current = const NewsInterfaceFactory().applyToPackage(
-          current,
-          name: blueprint?.name ?? current.manifest.name,
-        );
-        fixes.add('injected_news_data_surface');
+        fixes.add('injected_network_reference_shell');
       }
     } else {
       final needsNetworkShell =

@@ -32,6 +32,7 @@ import 'package:anything/storage/sqlite_experience_repository.dart';
 import 'package:anything/storage/intent_repository.dart';
 import 'package:anything/core/contracts/intent.dart' as core;
 import 'package:anything/core/contracts/protection_provider.dart';
+import 'package:anything/ai/provider_error.dart';
 import 'package:anything/features/workspace/workspace_switcher.dart';
 
 /// Home screen with production creation pipeline.
@@ -445,16 +446,37 @@ class HomeScreenState extends State<HomeScreen> {
     // independently creates a new experience; there is no "continue" UI
     // affordance on Home), while genuinely registering the resulting
     // session in `ExperienceWorkspaceManager` for the first time.
-    final RoutingResult routingResult;
+    RoutingResult? routingResult;
     try {
       routingResult = await _pipeline.execute(
         intent,
         target: const RouteTarget.newExperience(),
       );
+    } catch (e) {
+      // IS-P22: pipeline exceptions must NEVER trap the user in the birth
+      // animation. Restore usable Home state and show a meaningful error.
+      await _intentRepository.updateStatus(intent.id, core.IntentStatus.failed);
+      _restoreComposer(creationRequest.rawPrompt);
+      if (mounted) {
+        setState(() => _showBirth = false);
+        final safe = e is ProviderException ? e.message : null;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(safe ?? 'Something went wrong creating this app.'),
+            duration: const Duration(seconds: 10),
+            action: SnackBarAction(
+              label: 'Retry',
+              onPressed: () => _handleSubmit(creationRequest.rawPrompt),
+            ),
+          ),
+        );
+      }
+      return;
     } finally {
       _isCreating = false;
     }
-    final result = routingResult.creationResult!;
+
+    final result = routingResult.creationResult;
 
     if (!mounted) return;
 
@@ -632,11 +654,7 @@ class HomeScreenState extends State<HomeScreen> {
       OpenResult? openResult;
       for (final offsetMinutes in const [0, -1]) {
         final t = now.add(Duration(minutes: offsetMinutes));
-        final timeSeed = TimeSeed(
-          hours: t.hour,
-          minutes: t.minute,
-          seconds: 0,
-        );
+        final timeSeed = TimeSeed(hours: t.hour, minutes: t.minute, seconds: 0);
         openResult = await _entryPipeline.activateProtectedExperience(
           Navigator.of(context),
           experienceId: experienceId,

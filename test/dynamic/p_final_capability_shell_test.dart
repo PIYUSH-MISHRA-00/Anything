@@ -138,19 +138,15 @@ void main() {
     expect(probe.hasTimingControls, isFalse);
   });
 
-  test('weather without AI → weatherData service not Wikipedia', () async {
+  test('weather without AI → knowledgeRetrieval service', () async {
     final created = await _create('Create a professional weather dashboard.');
     expect(
-      created.package.services.any((s) => s.type == 'weatherData'),
+      created.package.services.any((s) => s.type == 'knowledgeRetrieval'),
       isTrue,
     );
     expect(
-      created.package.services.any((s) => s.type == 'knowledgeRetrieval'),
-      isFalse,
-    );
-    expect(
       created.package.capabilityDeclarations.any(
-        (c) => c.capabilityId == 'weather',
+        (c) => c.capabilityId == 'knowledge',
       ),
       isTrue,
     );
@@ -164,7 +160,8 @@ void main() {
     expect(created.package.interface.screens, isNotEmpty);
     expect(
       created.package.behavior.nodes.any(
-        (n) => n.type.toLowerCase().contains('create') ||
+        (n) =>
+            n.type.toLowerCase().contains('create') ||
             n.id.toLowerCase().contains('create'),
       ),
       isTrue,

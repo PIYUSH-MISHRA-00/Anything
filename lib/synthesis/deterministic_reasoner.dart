@@ -353,10 +353,12 @@ class DeterministicReasoner implements ApplicationReasoner {
         .where((w) => !stop.contains(w.toLowerCase()))
         .toList();
     if (words.isEmpty) return null;
-    final name = words.map((w) {
-      final lower = w.toLowerCase();
-      return lower[0].toUpperCase() + lower.substring(1);
-    }).join(' ');
+    final name = words
+        .map((w) {
+          final lower = w.toLowerCase();
+          return lower[0].toUpperCase() + lower.substring(1);
+        })
+        .join(' ');
     if (name.length < 2) return null;
     return StructuralEntityName(id: _toEntityId(name), name: name);
   }

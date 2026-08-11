@@ -224,11 +224,7 @@ class _ExperiencesScreenState extends State<ExperiencesScreen> {
       OpenResult? openResult;
       for (final offsetMinutes in const [0, -1]) {
         final t = now.add(Duration(minutes: offsetMinutes));
-        final timeSeed = TimeSeed(
-          hours: t.hour,
-          minutes: t.minute,
-          seconds: 0,
-        );
+        final timeSeed = TimeSeed(hours: t.hour, minutes: t.minute, seconds: 0);
         openResult = await _entryPipeline.activateProtectedExperience(
           Navigator.of(context),
           experienceId: experienceId,

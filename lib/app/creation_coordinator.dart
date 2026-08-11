@@ -31,9 +31,8 @@ import 'package:anything/creation/creation_request.dart';
 import 'package:anything/creation/intent_contract.dart';
 import 'package:anything/creation/intent_preservation.dart';
 import 'package:anything/creation/semantic_completeness.dart';
-import 'package:anything/creation/news_interface_factory.dart';
+import 'package:anything/creation/network_reference_interface_factory.dart';
 import 'package:anything/creation/timing_interface_factory.dart';
-import 'package:anything/creation/weather_interface_factory.dart';
 import 'package:anything/kernel/planning/execution_plan.dart';
 import 'package:anything/app/experience_commit.dart';
 import 'package:anything/storage/sqlite_experience_repository.dart';
@@ -540,34 +539,20 @@ class ExperienceCreationCoordinator {
                 userIntent: intent.expression,
               ),
             );
-          } else if (compat.requested == IntentPurpose.weather) {
+          } else if (compat.requested == IntentPurpose.weather ||
+              compat.requested == IntentPurpose.news ||
+              compat.requested == IntentPurpose.networkReference) {
+            // Generic external data shell: weather, news, stocks, etc.
             requiredCaps = {
-              AppCapabilityIds.weatherData,
+              AppCapabilityIds.networkData,
               AppCapabilityIds.input,
               AppCapabilityIds.refresh,
               AppCapabilityIds.loadingState,
               AppCapabilityIds.errorState,
               AppCapabilityIds.resultDisplay,
             };
-            candidate = const WeatherInterfaceFactory().applyToPackage(
-              candidate,
-              name: experienceDisplayName(
-                generatedName: candidate.manifest.name,
-                userIntent: intent.expression,
-              ),
-            );
-          } else if (compat.requested == IntentPurpose.news) {
-            // Replace — do not union with leftover CRUD/collection caps from
-            // a mis-planned blueprint (that caused "news app" → missing form).
-            requiredCaps = {
-              AppCapabilityIds.newsData,
-              AppCapabilityIds.input,
-              AppCapabilityIds.refresh,
-              AppCapabilityIds.loadingState,
-              AppCapabilityIds.errorState,
-              AppCapabilityIds.resultDisplay,
-            };
-            candidate = const NewsInterfaceFactory().applyToPackage(
+            candidate = const NetworkReferenceInterfaceFactory()
+                .applyToPackage(
               candidate,
               name: experienceDisplayName(
                 generatedName: candidate.manifest.name,
@@ -577,7 +562,8 @@ class ExperienceCreationCoordinator {
           }
           if (compat.requested == IntentPurpose.timing ||
               compat.requested == IntentPurpose.weather ||
-              compat.requested == IntentPurpose.news) {
+              compat.requested == IntentPurpose.news ||
+              compat.requested == IntentPurpose.networkReference) {
             final hash = ExperiencePackage.computeIntegrityHash(candidate);
             candidate = ExperiencePackage(
               packageVersion: candidate.packageVersion,

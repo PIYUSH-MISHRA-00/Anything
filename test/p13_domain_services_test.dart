@@ -1,23 +1,21 @@
-/// IS-P13 — domain services vs generic knowledge + stopwatch controls.
+/// IS-P13 — capability inference, semantic preservation + stopwatch controls.
+///
+/// Domain services (WeatherDataService, NewsDataService) have been removed.
+/// All external data acquisition now flows through WebWeaveX via
+/// DataProviderRegistry -> WebWeaveXDataProvider.
 library;
 
 import 'package:anything/core/contracts/intent.dart';
 import 'package:anything/creation/app_capabilities.dart';
 import 'package:anything/creation/intent_preservation.dart';
 import 'package:anything/creation/network_reference_interface_factory.dart';
-import 'package:anything/creation/news_interface_factory.dart';
 import 'package:anything/creation/timing_interface_factory.dart';
-import 'package:anything/creation/weather_interface_factory.dart';
 import 'package:anything/creation/experience_package.dart';
-import 'package:anything/domain_services/news_data_service.dart';
-import 'package:anything/domain_services/weather_data_service.dart';
 import 'package:anything/runtime/timing_session.dart';
 import 'package:anything/runtime/state_engine.dart';
 import 'package:anything/synthesis/app_archetype.dart';
 import 'package:anything/synthesis/app_blueprint.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:http/http.dart' as http;
-import 'package:http/testing.dart';
 
 void main() {
   ExperiencePackage bare(String name) {
@@ -92,35 +90,36 @@ void main() {
       expect(result.requested, IntentPurpose.weather);
     });
 
-    test('weather package is compatible', () {
-      final wx = const WeatherInterfaceFactory().applyToPackage(
-        bare('Weather'),
-        name: 'Weather',
+    test('external data package is compatible', () {
+      final net = const NetworkReferenceInterfaceFactory().applyToPackage(
+        bare('External Data'),
+        name: 'External Data',
+        purpose: 'Fetch external data',
       );
       final result = const IntentPreservationValidator().validate(
-        rawPrompt: 'weather dashboard',
-        package: wx,
+        rawPrompt: 'dashboard for live data',
+        package: net,
       );
       expect(result.isCompatible, isTrue);
-      expect(PackageCapabilityProbe(wx).hasWeatherService, isTrue);
-      expect(PackageCapabilityProbe(wx).hasKnowledgeService, isFalse);
-      final input = wx.interface.screens.first.children
+      expect(PackageCapabilityProbe(net).hasKnowledgeService, isTrue);
+      final input = net.interface.screens.first.children
           .expand((n) => [n, ...n.children])
           .firstWhere((n) => n.id == 'query_input');
       expect(input.properties['width'], 'expand');
     });
 
     test('news package is compatible', () {
-      final news = const NewsInterfaceFactory().applyToPackage(
+      final net = const NetworkReferenceInterfaceFactory().applyToPackage(
         bare('News'),
         name: 'News',
+        purpose: 'Fetch news articles',
       );
       final result = const IntentPreservationValidator().validate(
-        rawPrompt: 'news app',
-        package: news,
+        rawPrompt: 'dashboard for live data',
+        package: net,
       );
       expect(result.isCompatible, isTrue);
-      expect(PackageCapabilityProbe(news).hasNewsService, isTrue);
+      expect(PackageCapabilityProbe(net).hasKnowledgeService, isTrue);
     });
   });
 
@@ -138,60 +137,6 @@ void main() {
       final state = ExperienceStateEngine()..initialize(pkg.state);
       TimingSession.apply(state, eventId: TimingSession.start);
       expect(state.read('running'), isTrue);
-    });
-  });
-
-  group('IS-P13 weather service parsing', () {
-    test('parses Open-Meteo style responses', () async {
-      final client = MockClient((request) async {
-        if (request.url.host.contains('geocoding')) {
-          return http.Response(
-            '{"results":[{"name":"Lucknow","latitude":26.85,'
-            '"longitude":80.95,"country":"India","admin1":"UP"}]}',
-            200,
-          );
-        }
-        return http.Response(
-          '{"current":{"temperature_2m":31.2,"apparent_temperature":33.0,'
-          '"relative_humidity_2m":55,"weather_code":1,"wind_speed_10m":8.5}}',
-          200,
-        );
-      });
-      final obs = await WeatherDataService(
-        client: client,
-      ).getCurrentWeather('Lucknow');
-      expect(obs.location, contains('Lucknow'));
-      expect(obs.temperatureC, 31.2);
-      expect(obs.toResultMap()['sourceType'], 'structuredWeather');
-      expect(obs.displayBlock.toLowerCase(), isNot(contains('wikipedia')));
-    });
-  });
-
-  group('IS-P13 news service parsing', () {
-    test('parses RSS items', () async {
-      final client = MockClient((request) async {
-        return http.Response('''<?xml version="1.0"?>
-<rss><channel>
-<item>
-<title><![CDATA[Lucknow news one]]></title>
-<link>https://example.com/a</link>
-<source>Example</source>
-<pubDate>Sun, 09 Aug 2026 10:00:00 GMT</pubDate>
-<description><![CDATA[Summary one]]></description>
-</item>
-<item>
-<title>Second headline</title>
-<link>https://example.com/b</link>
-<source>Wire</source>
-</item>
-</channel></rss>''', 200);
-      });
-      final articles = await NewsDataService(
-        client: client,
-      ).searchArticles('Lucknow');
-      expect(articles, isNotEmpty);
-      expect(articles.first.title, contains('Lucknow'));
-      expect(articles.first.toResultMap()['sourceType'], 'structuredNews');
     });
   });
 }

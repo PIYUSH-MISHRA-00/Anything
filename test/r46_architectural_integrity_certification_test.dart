@@ -2614,6 +2614,10 @@ final x = 1;
             // no collection, and has nothing to serialise — routing it through a
             // collection store would be ceremony. Recorded as G-39.
             'lib/design_system/theme/theme_provider.dart',
+            // PINNED: the credential vault stores ONE scalar key (the API key)
+            // as a fallback when flutter_secure_storage keystore fails.
+            // Not a collection store. Recorded as G-40.
+            'lib/security/credential_vault.dart',
           ]..sort(),
           reason: 'a new direct SharedPreferences user appeared: $users',
         );

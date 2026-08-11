@@ -16,9 +16,7 @@ import 'creation_context.dart';
 import 'display_naming.dart';
 import 'experience_package.dart';
 import 'network_reference_interface_factory.dart';
-import 'news_interface_factory.dart';
 import 'timing_interface_factory.dart';
-import 'weather_interface_factory.dart';
 
 /// Result of creation.
 sealed class CreationResult {
@@ -278,62 +276,18 @@ class CreationEngine {
         }
       }
 
-      // IS-P13: structured domain services before generic knowledge shell.
-      final wantsWeather = inferredCaps.contains(AppCapabilityIds.weatherData);
-      final wantsNews = inferredCaps.contains(AppCapabilityIds.newsData);
-      final wantsWebKnowledge =
+      // Generic knowledge shell: ANY external data requirement uses
+      // NetworkReferenceInterfaceFactory (WebWeaveX via knowledgeRetrieval).
+      // No domain-specific factories (weather, news, etc.) — the semantic
+      // requirement determines the search query, not a domain switch.
+      final needsExternalData =
           inferredCaps.contains(AppCapabilityIds.webKnowledge) ||
-          ((inferredCaps.contains(AppCapabilityIds.networkData) ||
-                  inferredCaps.contains(AppCapabilityIds.webData)) &&
-              !wantsWeather &&
-              !wantsNews);
+          inferredCaps.contains(AppCapabilityIds.networkData) ||
+          inferredCaps.contains(AppCapabilityIds.webData) ||
+          inferredCaps.contains(AppCapabilityIds.weatherData) ||
+          inferredCaps.contains(AppCapabilityIds.newsData);
 
-      if (wantsWeather) {
-        final wx = const WeatherInterfaceFactory();
-        interface = wx.buildInterface(
-          title: experienceDisplayName(
-            generatedName: spec.name,
-            userIntent: context.intent.expression,
-          ),
-        );
-        state = _mergeStatePreferOverlay(state, wx.buildState());
-        behavior = wx.buildBehavior();
-        services = [
-          ...services.where((s) => s.type != 'knowledgeRetrieval'),
-          if (!services.any((s) => s.type == 'weatherData'))
-            const ServiceDefinition(id: 'weather', type: 'weatherData'),
-        ];
-        if (!capabilities.any((c) => c.capabilityId == 'weather')) {
-          capabilities = [
-            ...capabilities.where((c) => c.capabilityId != 'knowledge'),
-            const CapabilityDeclaration(
-              capabilityId: 'weather',
-              isRequired: true,
-            ),
-          ];
-        }
-      } else if (wantsNews) {
-        final news = const NewsInterfaceFactory();
-        interface = news.buildInterface(
-          title: experienceDisplayName(
-            generatedName: spec.name,
-            userIntent: context.intent.expression,
-          ),
-        );
-        state = _mergeStatePreferOverlay(state, news.buildState());
-        behavior = news.buildBehavior();
-        services = [
-          ...services.where((s) => s.type != 'knowledgeRetrieval'),
-          if (!services.any((s) => s.type == 'newsData'))
-            const ServiceDefinition(id: 'news', type: 'newsData'),
-        ];
-        if (!capabilities.any((c) => c.capabilityId == 'news')) {
-          capabilities = [
-            ...capabilities.where((c) => c.capabilityId != 'knowledge'),
-            const CapabilityDeclaration(capabilityId: 'news', isRequired: true),
-          ];
-        }
-      } else if (wantsWebKnowledge) {
+      if (needsExternalData) {
         final net = const NetworkReferenceInterfaceFactory();
         final probePackage = ExperiencePackage(
           manifest: ExperienceManifest(

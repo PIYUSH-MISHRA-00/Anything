@@ -48,16 +48,14 @@ void main() {
         factories.add(name);
       }
     }
-    factories.sort();
+      factories.sort();
     // Allowed capability shells only — not product domains.
     expect(
       factories,
       unorderedEquals(const [
         'calculation_interface_factory.dart',
         'network_reference_interface_factory.dart',
-        'news_interface_factory.dart',
         'timing_interface_factory.dart',
-        'weather_interface_factory.dart',
       ]),
     );
   });

@@ -1,29 +1,32 @@
 /// Live probe: news query results must change with the query.
+/// Uses WebWeaveX via KnowledgeAcquisitionEngine.
 library;
 
 import 'dart:io';
 
-import 'package:anything/domain_services/news_data_service.dart';
+import 'package:anything/knowledge/knowledge_acquisition_engine.dart';
+import 'package:anything/knowledge/webweavex_adapter.dart';
+import 'package:anything/ai/ai_provider.dart';
 
 Future<void> main() async {
-  final news = NewsDataService();
+  final engine = KnowledgeAcquisitionEngine(
+    adapter: WebWeaveXAdapter(),
+    aiProvider: AiProviderResolver.current,
+  );
   final queries = ['Lucknow', 'Delhi', 'AI'];
   final titlesByQuery = <String, Set<String>>{};
 
   for (final q in queries) {
-    final articles = await news.searchArticles(q);
-    stdout.writeln('--- $q (${articles.length}) ---');
-    for (final a in articles.take(3)) {
-      stdout.writeln('${a.title} | ${a.source}');
-      final block = a.toResultMap()['content'] as String;
-      if (block.contains('https://') || block.contains('http://')) {
-        throw StateError('Display content must not include raw URLs for $q');
-      }
-      if ((a.url ?? '').contains('wikipedia.org')) {
-        throw StateError('News must not use Wikipedia for $q');
-      }
+    final result = await engine.acquire(
+      semanticRequirement: 'news articles about $q',
+      domainHint: 'news',
+    );
+    final titles = result.data.map((e) => e.title).toSet();
+    stdout.writeln('--- $q (${titles.length}) ---');
+    for (final item in result.data.take(3)) {
+      stdout.writeln('${item.title} | ${item.source}');
     }
-    titlesByQuery[q] = articles.map((a) => a.title).toSet();
+    titlesByQuery[q] = titles;
   }
 
   if (titlesByQuery['Lucknow']!.intersection(titlesByQuery['Delhi']!).length ==

@@ -1,23 +1,41 @@
+/// Live probe: weather and news queries via WebWeaveX.
+library;
+
 import 'dart:io';
-import 'package:anything/domain_services/news_data_service.dart';
-import 'package:anything/domain_services/weather_data_service.dart';
+
+import 'package:anything/knowledge/knowledge_acquisition_engine.dart';
+import 'package:anything/knowledge/webweavex_adapter.dart';
+import 'package:anything/ai/ai_provider.dart';
 
 Future<void> main() async {
-  final weather = WeatherDataService();
-  final obs = await weather.getCurrentWeather('Lucknow');
+  final engine = KnowledgeAcquisitionEngine(
+    adapter: WebWeaveXAdapter(),
+    aiProvider: AiProviderResolver.current,
+  );
+
+  // Weather probe
+  final weatherResult = await engine.acquire(
+    semanticRequirement: 'current weather conditions in Lucknow',
+    domainHint: 'weather',
+  );
   stdout.writeln('--- WEATHER ---');
-  stdout.writeln(obs.displayBlock);
-  if (obs.displayBlock.toLowerCase().contains('wikipedia')) {
-    throw StateError('Weather must not contain Wikipedia');
+  for (final item in weatherResult.data.take(1)) {
+    stdout.writeln('${item.title}: ${item.summary}');
+    if (item.summary.toLowerCase().contains('wikipedia')) {
+      throw StateError('Weather must not contain Wikipedia');
+    }
   }
 
-  final news = NewsDataService();
-  final articles = await news.searchArticles('Lucknow');
-  stdout.writeln('--- NEWS (${articles.length}) ---');
-  for (final a in articles.take(3)) {
-    stdout.writeln('${a.title} | ${a.source} | ${a.publishedAt}');
-    if (a.title.toLowerCase().contains('wikipedia') ||
-        (a.url ?? '').contains('wikipedia.org')) {
+  // News probe
+  final newsResult = await engine.acquire(
+    semanticRequirement: 'latest news about Lucknow',
+    domainHint: 'news',
+  );
+  stdout.writeln('--- NEWS (${newsResult.data.length}) ---');
+  for (final item in newsResult.data.take(3)) {
+    stdout.writeln('${item.title} | ${item.source}');
+    if (item.title.toLowerCase().contains('wikipedia') ||
+        item.url.contains('wikipedia.org')) {
       throw StateError('News must not be Wikipedia');
     }
   }

@@ -47,7 +47,8 @@ void main() {
     // test does not mock `flutter_secure_storage`, and an unmocked channel
     // never answers, so the launch gate deliberately gives up after its
     // timeout and starts the app anyway. That is the behaviour under test.
-    for (var i = 0; i < 40; i++) {
+    // The CredentialVault timeout is 5s; pump 7s to let it complete.
+    for (var i = 0; i < 70; i++) {
       await tester.pump(const Duration(milliseconds: 100));
     }
   }

@@ -165,11 +165,7 @@ class ExperienceProtectionService {
     required String experienceId,
   }) async {
     final live = _provider.getCurrentSeed();
-    final seed = TimeSeed(
-      hours: live.hours,
-      minutes: live.minutes,
-      seconds: 0,
-    );
+    final seed = TimeSeed(hours: live.hours, minutes: live.minutes, seconds: 0);
     return _protect(package: package, experienceId: experienceId, seed: seed);
   }
 

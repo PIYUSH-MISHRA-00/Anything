@@ -7,6 +7,8 @@ library;
 
 import 'package:flutter/material.dart';
 
+import 'remote_image.dart';
+
 /// Component rendering function.
 typedef ComponentBuilder =
     Widget Function(
@@ -685,20 +687,7 @@ class RuntimeComponentRegistry {
     return registry;
   }
 
-  static String? _sanitizeImageUrl(String? raw) {
-    final t = raw?.trim() ?? '';
-    if (t.isEmpty || t.length > 2048) return null;
-    Uri uri;
-    try {
-      uri = Uri.parse(t);
-    } catch (_) {
-      return null;
-    }
-    if (!uri.hasScheme || !uri.hasAuthority || uri.host.isEmpty) return null;
-    final scheme = uri.scheme.toLowerCase();
-    if (scheme != 'https' && scheme != 'http') return null;
-    return uri.toString();
-  }
+  static String? _sanitizeImageUrl(String? raw) => RemoteImageUrl.sanitize(raw);
 
   static BoxFit? _parseBoxFit(dynamic value) {
     switch (value?.toString().toLowerCase()) {

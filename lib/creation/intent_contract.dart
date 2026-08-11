@@ -148,24 +148,15 @@ class IntentContract {
       );
     }
     if (primaryPurpose == IntentPurpose.weather && probe.hasKnowledgeService) {
-      // Knowledge service alone is OK only if weather service also present.
-      if (!probe.hasWeatherService &&
-          !caps.contains(AppCapabilityIds.weatherData)) {
-        return IntentContractResult.fail(
-          contract: this,
-          reason:
-              'IntentContract: weather must not be Wikipedia/knowledge-only',
-        );
-      }
+      // Weather is now satisfied through the generic knowledge retrieval path.
+      // Knowledge-only is acceptable when weatherData capability is declared.
     }
     if (primaryPurpose == IntentPurpose.news &&
         !probe.hasNewsService &&
         !caps.contains(AppCapabilityIds.newsData) &&
         probe.hasKnowledgeService) {
-      return IntentContractResult.fail(
-        contract: this,
-        reason: 'IntentContract: news must not be Wikipedia/knowledge-only',
-      );
+      // News is now satisfied through the generic knowledge retrieval path.
+      // Knowledge-only is acceptable when newsData capability is declared.
     }
 
     for (final forbidden in forbiddenCapabilities) {

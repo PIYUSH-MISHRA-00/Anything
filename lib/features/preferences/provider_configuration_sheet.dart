@@ -14,6 +14,8 @@
 /// a message that blamed the key.
 library;
 
+import 'dart:async' show unawaited;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -59,6 +61,7 @@ class _ProviderConfigurationSheetState
   /// never persisted.
   bool _revealKey = false;
   bool _isTesting = false;
+  bool _isSaving = false;
   bool _isLoadingModels = false;
   ProviderTestResult? _testResult;
   List<String> _models = const [];
@@ -133,15 +136,14 @@ class _ProviderConfigurationSheetState
     final draft = _draftConfig();
     String? persistWarning;
     try {
-      // Best-effort persist. Never block the live connection test on a wedged
-      // Android keystore — saveApiKey caches the key in memory first.
-      try {
-        await _saveKeyOnly();
-      } catch (e) {
-        persistWarning = e is StateError
-            ? e.message
-            : 'Could not store the API key securely on this device.';
-      }
+      // Fire-and-forget: cache key for the live test, but don't block on it.
+      unawaited(
+        _saveKeyOnly().catchError((e) {
+          persistWarning = e is StateError
+              ? e.message
+              : 'Could not store the API key securely on this device.';
+        }),
+      );
 
       final result = await widget.registry.testProvider(
         _config.providerType,
@@ -149,15 +151,13 @@ class _ProviderConfigurationSheetState
         config: draft,
       );
 
-      final message = persistWarning == null
-          ? result.message
-          : '${result.message}\n\nNote: $persistWarning';
-
       final updated = await widget.registry.recordTestResult(
         draft.copyWith(isConfigured: result.success),
         ProviderTestResult(
           success: result.success,
-          message: message,
+          message: persistWarning == null
+              ? result.message
+              : '${result.message}\n\nNote: $persistWarning',
           failure: result.failure,
         ),
       );
@@ -166,7 +166,9 @@ class _ProviderConfigurationSheetState
       setState(() {
         _testResult = ProviderTestResult(
           success: result.success,
-          message: message,
+          message: persistWarning == null
+              ? result.message
+              : '${result.message}\n\nNote: $persistWarning',
           failure: result.failure,
         );
         _config = updated;
@@ -189,7 +191,9 @@ class _ProviderConfigurationSheetState
   Future<void> _refreshModels() async {
     final key = _keyController.text.trim();
     if (widget.descriptor.requiresApiKey && key.isEmpty) {
-      setState(() => _modelError = 'Enter an API key before refreshing models.');
+      setState(
+        () => _modelError = 'Enter an API key before refreshing models.',
+      );
       return;
     }
 
@@ -262,35 +266,38 @@ class _ProviderConfigurationSheetState
       return;
     }
 
+    setState(() => _isSaving = true);
+
+    // Fire-and-forget key persist — don't block the save on a wedged keystore.
     String? persistWarning;
-    try {
-      await _saveKeyOnly();
-    } catch (e) {
-      // Still activate the provider for this session — cache is set before
-      // the vault write — but tell the user persistence may not survive
-      // process death.
-      persistWarning = e is StateError
-          ? e.message
-          : 'Could not store the API key securely on this device.';
-    }
+    unawaited(
+      _saveKeyOnly().catchError((e) {
+        persistWarning = e is StateError
+            ? e.message
+            : 'Could not store the API key securely on this device.';
+      }),
+    );
 
     final saved = _draftConfig().copyWith(isConfigured: true);
-    await widget.registry.saveConfig(saved);
-    // Always make a successfully saved provider the active one — not only
-    // when none was active (replacing a stale active id after reconfigure).
-    await widget.registry.setActiveProvider(saved.providerType);
+    // Save config and set active in parallel — both are fast SQLite writes.
+    await Future.wait([
+      widget.registry.saveConfig(saved),
+      widget.registry.setActiveProvider(saved.providerType),
+    ]);
     widget.onChanged();
     if (!mounted) return;
+    setState(() => _isSaving = false);
     if (persistWarning != null) {
-      setState(
-        () => _testResult = ProviderTestResult(
-          success: true,
-          message:
-              'Saved for this session. $persistWarning',
-          failure: ProviderFailure.unknown,
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Saved for this session. $persistWarning')),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Provider saved'),
+          duration: Duration(seconds: 2),
         ),
       );
-      return;
     }
     Navigator.pop(context);
   }
@@ -301,7 +308,9 @@ class _ProviderConfigurationSheetState
     if (text.isEmpty) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Clipboard is empty — copy your key first')),
+        const SnackBar(
+          content: Text('Clipboard is empty — copy your key first'),
+        ),
       );
       return;
     }
@@ -334,7 +343,6 @@ class _ProviderConfigurationSheetState
     final colorScheme = Theme.of(context).colorScheme;
     final d = widget.descriptor;
 
-    final bottomPad = MediaQuery.viewPaddingOf(context).bottom + 16;
     final keyboardPad = MediaQuery.viewInsetsOf(context).bottom;
 
     return Padding(
@@ -348,166 +356,172 @@ class _ProviderConfigurationSheetState
             color: colorScheme.surface,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
           ),
-          // Pin Test/Save outside the scroll body so a tall form / OEM nav
-          // bar cannot bury the only actions that complete BYOK.
-          child: Column(
+          child: ListView(
+            controller: controller,
+            padding: EdgeInsets.fromLTRB(
+              24,
+              12,
+              24,
+              MediaQuery.viewPaddingOf(context).bottom + 32,
+            ),
             children: [
-              Expanded(
-                child: ListView(
-                  controller: controller,
-                  padding: const EdgeInsets.fromLTRB(24, 12, 24, 16),
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 20),
+                  decoration: BoxDecoration(
+                    color: colorScheme.onSurfaceVariant.withAlpha(77),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              Text(
+                d.name,
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w600,
+                  color: colorScheme.onSurface,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                d.summary,
+                style: TextStyle(
+                  fontSize: 14,
+                  height: 1.45,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 20),
+              _RequirementsPanel(descriptor: d),
+              if (_config.lastValidatedAt != null ||
+                  _config.lastFailureReason != null) ...[
+                const SizedBox(height: 16),
+                _ValidationHistory(config: _config),
+              ],
+              if (d.requiresEndpoint || d.baseUrl != null) ...[
+                const SizedBox(height: 24),
+                AnythingTextField(
+                  label: d.requiresEndpoint
+                      ? 'Endpoint address (required)'
+                      : 'Endpoint address',
+                  hint: 'https://192.168.1.10:11434/v1',
+                  controller: _endpointController,
+                  keyboardType: TextInputType.url,
+                ),
+                if (d.category == ProviderCategory.local) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    "Use your computer's address on the network, not "
+                    'localhost — localhost from a phone means the phone.',
+                    style: TextStyle(
+                      fontSize: 12,
+                      height: 1.4,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ],
+              if (d.requiresApiKey) ...[
+                const SizedBox(height: 20),
+                AnythingTextField(
+                  label: 'API key',
+                  hint: d.keyHint ?? 'Paste your key',
+                  controller: _keyController,
+                  obscureText: !_revealKey,
+                  autocorrect: false,
+                  enableSuggestions: false,
+                  keyboardType: TextInputType.visiblePassword,
+                  textInputAction: TextInputAction.done,
+                  suffixIcon: _revealKey
+                      ? Icons.visibility_off_outlined
+                      : Icons.visibility_outlined,
+                  onSuffixTap: () => setState(() => _revealKey = !_revealKey),
+                  semanticsLabel: _revealKey
+                      ? 'API key, visible. Tap the icon to hide it.'
+                      : 'API key, hidden. Tap the icon to reveal it.',
+                ),
+                const SizedBox(height: 8),
+                Row(
                   children: [
-                    Center(
-                      child: Container(
-                        width: 36,
-                        height: 4,
-                        margin: const EdgeInsets.only(bottom: 20),
-                        decoration: BoxDecoration(
-                          color: colorScheme.onSurfaceVariant.withAlpha(77),
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
+                    TextButton.icon(
+                      onPressed: _pasteKey,
+                      icon: const Icon(Icons.content_paste_outlined, size: 16),
+                      label: const Text('Paste'),
                     ),
-                    Text(
-                      d.name,
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w600,
-                        color: colorScheme.onSurface,
-                      ),
+                    TextButton.icon(
+                      onPressed: _keyController.text.isEmpty ? null : _copyKey,
+                      icon: const Icon(Icons.copy_all_outlined, size: 16),
+                      label: const Text('Copy'),
                     ),
-                    const SizedBox(height: 6),
-                    Text(
-                      d.summary,
-                      style: TextStyle(
-                        fontSize: 14,
-                        height: 1.45,
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    _RequirementsPanel(descriptor: d),
-                    if (_config.lastValidatedAt != null ||
-                        _config.lastFailureReason != null) ...[
-                      const SizedBox(height: 16),
-                      _ValidationHistory(config: _config),
-                    ],
-                    if (d.requiresEndpoint || d.baseUrl != null) ...[
-                      const SizedBox(height: 24),
-                      AnythingTextField(
-                        label: d.requiresEndpoint
-                            ? 'Endpoint address (required)'
-                            : 'Endpoint address',
-                        hint: 'https://192.168.1.10:11434/v1',
-                        controller: _endpointController,
-                        keyboardType: TextInputType.url,
-                      ),
-                      if (d.category == ProviderCategory.local) ...[
-                        const SizedBox(height: 8),
-                        Text(
-                          'Use your computer’s address on the network, not '
-                          'localhost — localhost from a phone means the phone.',
+                    const Spacer(),
+                    if (d.consoleUrl != null)
+                      Flexible(
+                        child: Text(
+                          d.consoleUrl!,
+                          textAlign: TextAlign.right,
+                          overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             fontSize: 12,
-                            height: 1.4,
                             color: colorScheme.onSurfaceVariant,
                           ),
                         ),
-                      ],
-                    ],
-                    if (d.requiresApiKey) ...[
-                      const SizedBox(height: 20),
-                      AnythingTextField(
-                        label: 'API key',
-                        hint: d.keyHint ?? 'Paste your key',
-                        controller: _keyController,
-                        obscureText: !_revealKey,
-                        autocorrect: false,
-                        enableSuggestions: false,
-                        keyboardType: TextInputType.visiblePassword,
-                        textInputAction: TextInputAction.done,
-                        suffixIcon: _revealKey
-                            ? Icons.visibility_off_outlined
-                            : Icons.visibility_outlined,
-                        onSuffixTap: () =>
-                            setState(() => _revealKey = !_revealKey),
-                        semanticsLabel: _revealKey
-                            ? 'API key, visible. Tap the icon to hide it.'
-                            : 'API key, hidden. Tap the icon to reveal it.',
                       ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          TextButton.icon(
-                            onPressed: _pasteKey,
-                            icon: const Icon(
-                              Icons.content_paste_outlined,
-                              size: 16,
-                            ),
-                            label: const Text('Paste'),
-                          ),
-                          TextButton.icon(
-                            onPressed:
-                                _keyController.text.isEmpty ? null : _copyKey,
-                            icon: const Icon(Icons.copy_all_outlined, size: 16),
-                            label: const Text('Copy'),
-                          ),
-                          const Spacer(),
-                          if (d.consoleUrl != null)
-                            Flexible(
-                              child: Text(
-                                d.consoleUrl!,
-                                textAlign: TextAlign.right,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: colorScheme.onSurfaceVariant,
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ],
-                    if (_testResult != null) ...[
-                      const SizedBox(height: 12),
-                      _TestResultPanel(result: _testResult!),
-                    ],
-                    const SizedBox(height: 24),
-                    _ModelSection(
-                      controller: _modelController,
-                      models: _models,
-                      isLoading: _isLoadingModels,
-                      error: _modelError,
-                      supportsDiscovery: d.capabilities.modelDiscovery,
-                      onRefresh: _isLoadingModels ? null : _refreshModels,
-                      onPick: (m) =>
-                          setState(() => _modelController.text = m),
-                    ),
                   ],
                 ),
+              ],
+              if (_testResult != null) ...[
+                const SizedBox(height: 12),
+                _TestResultPanel(result: _testResult!),
+              ],
+              const SizedBox(height: 24),
+              _ModelSection(
+                controller: _modelController,
+                models: _models,
+                isLoading: _isLoadingModels,
+                error: _modelError,
+                supportsDiscovery: d.capabilities.modelDiscovery,
+                onRefresh: _isLoadingModels ? null : _refreshModels,
+                onPick: (m) => setState(() => _modelController.text = m),
               ),
-              Material(
-                elevation: 6,
-                color: colorScheme.surface,
-                child: Padding(
-                  padding: EdgeInsets.fromLTRB(24, 12, 24, bottomPad),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      AnythingButton(
-                        label: _isTesting ? 'Testing…' : 'Test connection',
-                        isLoading: _isTesting,
-                        onPressed: _isTesting ? null : _test,
-                      ),
-                      const SizedBox(height: 8),
-                      AnythingButton(label: 'Save', onPressed: _save),
-                      const SizedBox(height: 8),
-                      AnythingGhostButton(
-                        label: 'Cancel',
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                    ],
+              const SizedBox(height: 28),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton.icon(
+                      onPressed: _isTesting ? null : _test,
+                      icon: _isTesting
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.wifi_find, size: 18),
+                      label: Text(_isTesting ? 'Testing…' : 'Test connection'),
+                    ),
                   ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: TextButton.icon(
+                      onPressed: _isSaving ? null : _save,
+                      icon: _isSaving
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.check_circle_outline, size: 18),
+                      label: Text(_isSaving ? 'Saving…' : 'Save'),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Center(
+                child: TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancel'),
                 ),
               ),
             ],

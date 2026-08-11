@@ -109,19 +109,13 @@ class SemanticCompletenessValidator {
     }
 
     if (requiredCapabilities.contains(AppCapabilityIds.weatherData)) {
-      if (!probe.hasWeatherService) {
+      // Weather data is now satisfied through the generic knowledge retrieval
+      // path (WebWeaveX). Accept knowledgeRetrieval as valid.
+      if (!probe.hasWeatherService && !probe.hasKnowledgeService) {
         gaps.add(
           const CapabilityGap(
             capabilityId: AppCapabilityIds.weatherData,
-            reason: 'weather requires a weatherData service, not knowledge',
-          ),
-        );
-      }
-      if (probe.hasKnowledgeService && !probe.hasWeatherService) {
-        gaps.add(
-          const CapabilityGap(
-            capabilityId: AppCapabilityIds.weatherData,
-            reason: 'generic knowledge/Wikipedia cannot satisfy weatherData',
+            reason: 'weather requires a weatherData or knowledgeRetrieval service',
           ),
         );
       }
@@ -144,19 +138,13 @@ class SemanticCompletenessValidator {
     }
 
     if (requiredCapabilities.contains(AppCapabilityIds.newsData)) {
-      if (!probe.hasNewsService) {
+      // News data is now satisfied through the generic knowledge retrieval
+      // path (WebWeaveX). Accept knowledgeRetrieval as valid.
+      if (!probe.hasNewsService && !probe.hasKnowledgeService) {
         gaps.add(
           const CapabilityGap(
             capabilityId: AppCapabilityIds.newsData,
-            reason: 'news requires a newsData service, not knowledge',
-          ),
-        );
-      }
-      if (probe.hasKnowledgeService && !probe.hasNewsService) {
-        gaps.add(
-          const CapabilityGap(
-            capabilityId: AppCapabilityIds.newsData,
-            reason: 'generic knowledge/Wikipedia cannot satisfy newsData',
+            reason: 'news requires a newsData or knowledgeRetrieval service',
           ),
         );
       }
