@@ -16,6 +16,7 @@ import '../../design_system/tokens/spacing.dart';
 import '../../security/protection_service.dart';
 import '../../storage/sqlite_experience_repository.dart';
 import '../../storage/activity_repository.dart';
+import '../preferences/protection_preferences.dart';
 
 /// My Apps screen showing real persisted Experiences.
 class ExperiencesScreen extends StatefulWidget {
@@ -557,13 +558,23 @@ class _ExperiencesScreenState extends State<ExperiencesScreen> {
     );
   }
 
-  void _showProtectOptions(ExperienceMetadataRecord exp) {
+  Future<void> _showProtectOptions(ExperienceMetadataRecord exp) async {
+    // IS-P26: honor the persisted default protection time. When a fixed
+    // default is set, it is offered first and protects with that seed.
+    final pref = await const ProtectionPreferences().load();
+    if (!mounted) return;
     showModalBottomSheet(
       context: context,
       builder: (context) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            if (!pref.useCurrentTime)
+              ListTile(
+                leading: const Icon(Icons.schedule),
+                title: Text('Use default protection time (${pref.label})'),
+                onTap: () => _protectWithDefaultTime(exp, pref),
+              ),
             ListTile(
               leading: const Icon(Icons.access_time),
               title: const Text('Use current time'),
@@ -583,6 +594,35 @@ class _ExperiencesScreenState extends State<ExperiencesScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _protectWithDefaultTime(
+    ExperienceMetadataRecord exp,
+    ProtectionTimePreference pref,
+  ) async {
+    Navigator.pop(context);
+    final package = await _repo.getPackage(exp.id);
+    if (!mounted) return;
+    if (package == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not protect this app')),
+      );
+      return;
+    }
+    final now = DateTime.now();
+    final result = await _protectionService.protectWithCustomTime(
+      package: package,
+      experienceId: exp.id,
+      customTime: DateTime(
+        now.year,
+        now.month,
+        now.day,
+        pref.hour,
+        pref.minute,
+      ),
+    );
+    if (!mounted) return;
+    await _handleProtectResult(result, exp);
   }
 
   Future<void> _protectWithCurrentTime(ExperienceMetadataRecord exp) async {

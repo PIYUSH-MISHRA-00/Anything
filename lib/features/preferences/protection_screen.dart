@@ -1,35 +1,143 @@
-/// Kaalka Protection — Implementation Specification IS-P05 findings 7 and 8.
+/// Kaalka Protection settings (IS-P05 findings 7/8; IS-P26 time control).
 ///
-/// The Settings tile was `onTap: () {}`. Manual testing reported it as doing
-/// nothing, which was true.
+/// Protection in Anything is PER-EXPERIENCE, not an app-wide switch: an
+/// Experience is protected from My Apps and resumed by supplying its time
+/// seed. This screen explains that model and — new in IS-P26 — exposes a
+/// real, persisted DEFAULT protection time that the per-Experience Protect
+/// action uses, so a user who always wants the same protection time does not
+/// re-pick it each time.
 ///
-/// WHAT THIS SCREEN IS. Protection in Anything is PER-EXPERIENCE, not an app
-/// setting: an Experience is protected from My Apps, and resumed by supplying
-/// its time seed. There is no global "turn protection on" switch to expose,
-/// because none exists in the architecture and inventing one here would be a
-/// second owner of a decision `ExperienceProtectionService` already owns.
-///
-/// So this screen explains the model, sends the user to where protection is
-/// actually applied, and states plainly what is not built. That is the honest
-/// alternative to a dead button — and to a fake switch, which would be worse.
-///
-/// FINDING 8 — MANUAL TIME CONFIGURATION. Answered rather than implemented,
-/// with the reason, below. `TimeSeed` is supplied per protect/resume operation
-/// and there is no app-wide clock setting to configure; a global time control
-/// would change the seed for Experiences already protected under a different
-/// one, and make them unrecoverable.
+/// It is a DEFAULT for NEW protections, never a global clock override: each
+/// protected Experience stores its own seed, so changing this can never make
+/// an already-protected app unrecoverable (the hazard the earlier screen
+/// correctly refused to create).
 library;
 
 import 'package:flutter/material.dart';
 
 import '../../design_system/tokens/spacing.dart';
+import 'protection_preferences.dart';
 
-class ProtectionScreen extends StatelessWidget {
+class ProtectionScreen extends StatefulWidget {
   /// Invoked when the user chooses to go and protect something. Optional so
   /// the screen is testable and usable outside the shell.
   final VoidCallback? onOpenExperiences;
 
-  const ProtectionScreen({super.key, this.onOpenExperiences});
+  /// Injectable for tests; production uses the SharedPreferences-backed store.
+  final ProtectionPreferences preferences;
+
+  const ProtectionScreen({
+    super.key,
+    this.onOpenExperiences,
+    this.preferences = const ProtectionPreferences(),
+  });
+
+  @override
+  State<ProtectionScreen> createState() => _ProtectionScreenState();
+}
+
+class _ProtectionScreenState extends State<ProtectionScreen> {
+  ProtectionTimePreference _pref = const ProtectionTimePreference(
+    useCurrentTime: true,
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final pref = await widget.preferences.load();
+    if (mounted) setState(() => _pref = pref);
+  }
+
+  Future<void> _edit() async {
+    final choice = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        final colorScheme = Theme.of(sheetContext).colorScheme;
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
+                child: Text(
+                  'Default protection time',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: colorScheme.onSurface,
+                  ),
+                ),
+              ),
+              ListTile(
+                leading: const Icon(Icons.access_time),
+                title: const Text('Use current time'),
+                subtitle: const Text(
+                  'Protect using the clock at the moment you protect an app',
+                ),
+                trailing: Icon(
+                  _pref.useCurrentTime
+                      ? Icons.radio_button_checked
+                      : Icons.radio_button_unchecked,
+                  color: _pref.useCurrentTime
+                      ? colorScheme.primary
+                      : colorScheme.onSurfaceVariant,
+                ),
+                onTap: () => Navigator.pop(sheetContext, 'current'),
+              ),
+              ListTile(
+                leading: const Icon(Icons.schedule),
+                title: const Text('Custom time'),
+                subtitle: Text(
+                  _pref.useCurrentTime
+                      ? 'Pick a fixed protection time'
+                      : 'Fixed at ${_pref.label}',
+                ),
+                trailing: Icon(
+                  _pref.useCurrentTime
+                      ? Icons.radio_button_unchecked
+                      : Icons.radio_button_checked,
+                  color: _pref.useCurrentTime
+                      ? colorScheme.onSurfaceVariant
+                      : colorScheme.primary,
+                ),
+                onTap: () => Navigator.pop(sheetContext, 'custom'),
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (!mounted || choice == null) return;
+
+    if (choice == 'current') {
+      await widget.preferences.setUseCurrentTime();
+    } else {
+      final initial = _pref.useCurrentTime
+          ? TimeOfDay.now()
+          : TimeOfDay(hour: _pref.hour, minute: _pref.minute);
+      if (!mounted) return;
+      final picked = await showTimePicker(
+        context: context,
+        initialTime: initial,
+      );
+      if (picked == null) return;
+      await widget.preferences.setCustomTime(picked.hour, picked.minute);
+    }
+    await _load();
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Default protection time: ${_pref.label}')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -87,6 +195,47 @@ class ProtectionScreen extends StatelessWidget {
             ),
           ),
 
+          // IS-P26 — the real, persisted default protection-time control.
+          const _Heading('PROTECTION TIME'),
+          Container(
+            decoration: BoxDecoration(
+              color: colorScheme.surfaceContainer,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: ListTile(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                leading: Icon(Icons.schedule, color: colorScheme.primary),
+                title: const Text('Default protection time'),
+                subtitle: Text(
+                  _pref.useCurrentTime
+                      ? 'Use current time'
+                      : 'Fixed at ${_pref.label}',
+                ),
+                trailing: Icon(
+                  Icons.chevron_right,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+                onTap: _edit,
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(4, 8, 4, 0),
+            child: Text(
+              'Used as the default when you protect an app. It never changes '
+              'apps you have already protected — each keeps its own time.',
+              style: TextStyle(
+                fontSize: 12,
+                height: 1.4,
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+
           const _Heading('HOW IT WORKS'),
           const _Step(
             n: '1',
@@ -100,7 +249,8 @@ class ProtectionScreen extends StatelessWidget {
             title: 'A time seed is used',
             body:
                 'Encryption is derived from a time seed rather than a password '
-                'you have to remember and reuse.',
+                'you have to remember and reuse. The default above is offered '
+                'first; you can still choose a different time per app.',
           ),
           const _Step(
             n: '3',
@@ -115,12 +265,8 @@ class ProtectionScreen extends StatelessWidget {
             padding: const EdgeInsets.symmetric(vertical: 20),
             child: FilledButton.icon(
               onPressed: () {
-                if (onOpenExperiences != null) {
-                  Navigator.of(context).pop();
-                  onOpenExperiences!();
-                } else {
-                  Navigator.of(context).pop();
-                }
+                Navigator.of(context).pop();
+                widget.onOpenExperiences?.call();
               },
               icon: const Icon(Icons.apps),
               label: const Text('Go to My Apps'),
@@ -135,17 +281,6 @@ class ProtectionScreen extends StatelessWidget {
                 'device-wide toggle would be misleading: it could not describe '
                 'what is protected and what is not. Each app carries its own '
                 'state, and My Apps is where you can see it.',
-          ),
-
-          const _Heading('MANUAL TIME CONFIGURATION'),
-          _Note(
-            colorScheme: colorScheme,
-            text:
-                'A time seed is chosen when an app is protected, and the same '
-                'seed is required to reopen it. There is deliberately no '
-                'app-wide time setting: changing it centrally would alter the '
-                'seed for apps already protected under a different one, and '
-                'they could not be recovered.',
           ),
 
           const _Heading('NOT BUILT YET'),

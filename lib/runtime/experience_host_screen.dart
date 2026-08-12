@@ -5,6 +5,7 @@ import 'dart:async' show Timer, unawaited;
 import 'package:flutter/material.dart';
 
 import '../app/autonomous_workspace_runtime.dart';
+import '../features/preferences/protection_preferences.dart';
 import '../app/experience_orchestrator.dart';
 import '../app/experience_modification_coordinator.dart';
 import '../app/experience_workspace_manager.dart';
@@ -878,13 +879,22 @@ class _ExperienceHostScreenState extends State<ExperienceHostScreen>
     );
   }
 
-  void _showProtectOptions() {
+  Future<void> _showProtectOptions() async {
+    // IS-P26: offer the persisted default protection time first when set.
+    final pref = await const ProtectionPreferences().load();
+    if (!mounted) return;
     showModalBottomSheet(
       context: context,
       builder: (context) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            if (!pref.useCurrentTime)
+              ListTile(
+                leading: const Icon(Icons.schedule),
+                title: Text('Use default protection time (${pref.label})'),
+                onTap: () => _protectWithDefaultTime(pref),
+              ),
             ListTile(
               leading: const Icon(Icons.access_time),
               title: const Text('Use current time'),
@@ -904,6 +914,33 @@ class _ExperienceHostScreenState extends State<ExperienceHostScreen>
         ),
       ),
     );
+  }
+
+  Future<void> _protectWithDefaultTime(ProtectionTimePreference pref) async {
+    Navigator.pop(context);
+    if (widget.experienceId == null) return;
+    final now = DateTime.now();
+    final result = await _protectionService.protectWithCustomTime(
+      package: _currentPackage,
+      experienceId: widget.experienceId!,
+      customTime: DateTime(
+        now.year,
+        now.month,
+        now.day,
+        pref.hour,
+        pref.minute,
+      ),
+    );
+    if (!mounted) return;
+    if (result is ProtectionSucceeded) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('App protected')));
+    } else if (result is ProtectionFailed) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not protect this app')),
+      );
+    }
   }
 
   Future<void> _protectWithCurrentTime() async {
