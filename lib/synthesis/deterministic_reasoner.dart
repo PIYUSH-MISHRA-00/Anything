@@ -291,8 +291,8 @@ class DeterministicReasoner implements ApplicationReasoner {
     var t = objective.split(RegExp(r'[\r\n]+')).first.toLowerCase();
     t = t.replaceAll(
       RegExp(
-        r'^\s*(please\s+)?(create|build|make|design|generate)\s+(me\s+)?'
-        r'(a|an|the)?\s*',
+        r'^\s*(please\s+)?(create|build|make|design|develop|generate|give\s+me|'
+        r'i\s+want|i\s+need|want|need)\s+(me\s+)?(a|an|the)?\s*',
         caseSensitive: false,
       ),
       '',
@@ -544,7 +544,8 @@ class DeterministicReasoner implements ApplicationReasoner {
     final cleaned = firstLine
         .replaceAll(
           RegExp(
-            r'^(create|build|make)\s+(a|an|me\s+a|me\s+an)?\s*',
+            r'^(create|build|make|design|develop|generate)\s+'
+            r'(a|an|me\s+a|me\s+an)?\s*',
             caseSensitive: false,
           ),
           '',
