@@ -85,9 +85,17 @@ class IntentPreservationValidator {
       );
     }
 
-    // Network dashboards may also have forms; allow collection under network.
-    if (requested == IntentPurpose.networkReference &&
-        generated == IntentPurpose.collection) {
+    // Collection ↔ networkReference are both DATA apps and their boundary is
+    // genuinely ambiguous for domains like "restaurant booking" (a local
+    // reservation manager AND/OR external restaurant discovery). Allow either
+    // realization to satisfy the other — a records app that also fetches
+    // reference data, or a network dashboard that also has forms, both honor
+    // the user's intent. This does NOT relax the guards that matter
+    // (timing↔calculation, weather↔news, stopwatch→calculator).
+    if ((requested == IntentPurpose.networkReference &&
+            generated == IntentPurpose.collection) ||
+        (requested == IntentPurpose.collection &&
+            generated == IntentPurpose.networkReference)) {
       return IntentPreservationResult.ok(
         requested: requested,
         generated: generated,

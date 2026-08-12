@@ -11,6 +11,9 @@
 /// domain-specific factory (the subject entity is derived structurally).
 library;
 
+import 'package:anything/app/app_composition.dart';
+import 'package:anything/app/creation_coordinator.dart';
+import 'package:anything/core/contracts/intent.dart';
 import 'package:anything/kernel/classification/intent_category.dart';
 import 'package:anything/kernel/specification/experience_spec.dart';
 import 'package:anything/kernel/understanding/intent_understanding.dart';
@@ -18,6 +21,8 @@ import 'package:anything/synthesis/application_reasoner.dart';
 import 'package:anything/synthesis/composite_reasoner.dart';
 import 'package:anything/synthesis/deterministic_reasoner.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 ApplicationReasoningContext _ctx(String objective) {
   return ApplicationReasoningContext(
@@ -109,6 +114,34 @@ void main() {
         _ctx('Build a real-time collaborative whiteboard'),
       );
       expect(result, isA<ReasoningProviderRequired>());
+    });
+  });
+
+  group('IS-P27 end-to-end: the ground-truth restaurant-booking case', () {
+    setUpAll(() {
+      TestWidgetsFlutterBinding.ensureInitialized();
+      sqfliteFfiInit();
+      databaseFactory = databaseFactoryFfi;
+    });
+    setUp(() => SharedPreferences.setMockInitialValues({}));
+
+    test('restaurant booking application CREATES an Experience (no provider), '
+        'not "Could not plan this app"', () async {
+      final composition = AppComposition.freshForTesting();
+      addTearDown(() => composition.experienceRepository.close());
+
+      final result = await composition.intentRouter.route(
+        Intent.create(
+          expression: 'professional restaurant booking application',
+        ),
+      );
+
+      // The defect was CreationFailed("Could not plan this app").
+      expect(
+        result.creationResult,
+        isA<CreationCreated>(),
+        reason: 'an unfamiliar record-shaped domain must not hard-fail',
+      );
     });
   });
 }
