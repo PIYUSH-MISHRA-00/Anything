@@ -1054,26 +1054,14 @@ class ExperienceRenderer {
         );
 
       case 'date':
-        return TextFormField(
-          initialValue: initialValue?.toString() ?? '',
-          decoration: InputDecoration(
-            labelText: '$fieldName${required ? ' *' : ''}',
-            hintText: hintText ?? 'YYYY-MM-DD',
-          ),
-          readOnly: true,
-          onTap: () async {
-            final date = await showDatePicker(
-              context: context,
-              initialDate: DateTime.now(),
-              firstDate: DateTime(2000),
-              lastDate: DateTime(2100),
-            );
-            if (date != null) {
-              final dateStr = date.toIso8601String().split('T').first;
-              runtimeContext?.updateFormField(fieldId, dateStr);
-              runtimeContext?.updateState(stateId, dateStr);
-            }
-          },
+        return _DateField(
+          fieldId: fieldId,
+          fieldName: fieldName,
+          required: required,
+          hintText: hintText,
+          stateId: stateId,
+          initialValue: initialValue?.toString(),
+          runtimeContext: runtimeContext,
         );
 
       case 'multiline':
@@ -1956,6 +1944,68 @@ class _LineChartPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+}
+
+/// Read-only date field backed by a controller so the picked value is shown
+/// (a plain TextFormField.initialValue never reflects the picked date).
+class _DateField extends StatefulWidget {
+  const _DateField({
+    required this.fieldId,
+    required this.fieldName,
+    required this.required,
+    required this.stateId,
+    this.hintText,
+    this.initialValue,
+    this.runtimeContext,
+  });
+
+  final String fieldId;
+  final String fieldName;
+  final bool required;
+  final String stateId;
+  final String? hintText;
+  final String? initialValue;
+  final RuntimeComponentContext? runtimeContext;
+
+  @override
+  State<_DateField> createState() => _DateFieldState();
+}
+
+class _DateFieldState extends State<_DateField> {
+  late final TextEditingController _controller =
+      TextEditingController(text: widget.initialValue ?? '');
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return TextFormField(
+      controller: _controller,
+      decoration: InputDecoration(
+        labelText: '${widget.fieldName}${widget.required ? ' *' : ''}',
+        hintText: widget.hintText ?? 'YYYY-MM-DD',
+      ),
+      readOnly: true,
+      onTap: () async {
+        final date = await showDatePicker(
+          context: context,
+          initialDate: DateTime.now(),
+          firstDate: DateTime(2000),
+          lastDate: DateTime(2100),
+        );
+        if (date != null) {
+          final dateStr = date.toIso8601String().split('T').first;
+          _controller.text = dateStr;
+          widget.runtimeContext?.updateFormField(widget.fieldId, dateStr);
+          widget.runtimeContext?.updateState(widget.stateId, dateStr);
+        }
+      },
+    );
+  }
 }
 
 /// StatefulWidget for entity forms with validation.

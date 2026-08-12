@@ -95,32 +95,59 @@ class BehaviorInterpreter {
     }
     if (actionType == null) return null;
 
-    // Find event node that targets this entity with matching action type
+    // Primary: resolve by the event's downstream dataMutation binding. The
+    // mutation's `entity` is the authoritative link to the record entity —
+    // the event id's spelling can diverge (e.g. entity `workout_log` but
+    // event `add_workout`), which the substring heuristic below would miss.
     for (final node in graph.nodes) {
       if (node.type != 'event') continue;
-      final config = node.config;
-      final configEventId = config['eventId'] as String?;
+      final configEventId = node.config['eventId'] as String?;
       if (configEventId == null) continue;
+      if (!_eventPrefixMatches(configEventId, actionType)) continue;
+      if (_eventTargetsEntity(graph, node, entityId, actionType)) return node;
+    }
 
-      // Match by entity ID in the action ID
-      if (!configEventId.contains(entityId)) continue;
-
-      // Also match by action type prefix
-      if (actionType == 'create' &&
-          (configEventId.startsWith('create_') ||
-              configEventId.startsWith('add_'))) {
-        return node;
-      } else if (actionType == 'update' &&
-          (configEventId.startsWith('update_') ||
-              configEventId.startsWith('edit_'))) {
-        return node;
-      } else if (actionType == 'delete' &&
-          (configEventId.startsWith('delete_') ||
-              configEventId.startsWith('remove_'))) {
-        return node;
-      }
+    // Fallback: legacy noun-substring match for graphs whose event id spells
+    // out the entity id (no divergence).
+    for (final node in graph.nodes) {
+      if (node.type != 'event') continue;
+      final configEventId = node.config['eventId'] as String?;
+      if (configEventId == null) continue;
+      if (!_eventPrefixMatches(configEventId, actionType)) continue;
+      if (configEventId.contains(entityId)) return node;
     }
     return null;
+  }
+
+  bool _eventPrefixMatches(String eventId, String actionType) {
+    switch (actionType) {
+      case 'create':
+        return eventId.startsWith('create_') || eventId.startsWith('add_');
+      case 'update':
+        return eventId.startsWith('update_') || eventId.startsWith('edit_');
+      case 'delete':
+        return eventId.startsWith('delete_') || eventId.startsWith('remove_');
+      default:
+        return false;
+    }
+  }
+
+  bool _eventTargetsEntity(
+    BehaviorGraph graph,
+    BehaviorNode event,
+    String entityId,
+    String actionType,
+  ) {
+    for (final edge in graph.edges.where((e) => e.from == event.id)) {
+      final target = graph.nodes.where((n) => n.id == edge.to).firstOrNull;
+      if (target != null &&
+          target.type == 'dataMutation' &&
+          target.config['entity'] == entityId &&
+          target.config['operation'] == actionType) {
+        return true;
+      }
+    }
+    return false;
   }
 
   Future<void> _executeNode(
