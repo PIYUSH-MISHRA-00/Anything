@@ -6,6 +6,43 @@ library;
 
 import 'experience_package.dart';
 
+/// Semantic subject of an Experience, derived generically from the user's
+/// own words (intent expression or blueprint description). Construction
+/// language ("build me a professional … app") is filtered out; what remains
+/// is the topic the Experience is about — e.g. "weather" for a weather
+/// dashboard, "news" for a news app, "fermentation" for a fermentation
+/// tracker. Never a domain table: the words come from the request itself.
+List<String> deriveTopicTerms(String text, {int max = 3}) {
+  const constructionWords = {
+    // request framing
+    'build', 'make', 'create', 'give', 'want', 'need', 'please', 'can',
+    'you', 'i', 'me', 'my', 'a', 'an', 'the', 'that', 'this', 'lets', 'let',
+    'and', 'or', 'of', 'in', 'on', 'for', 'with', 'to', 'is', 'it', 'be',
+    'have', 'has', 'will', 'would', 'should',
+    // app-form nouns and qualifiers (what KIND of software, not its subject)
+    'app', 'application', 'apps', 'dashboard', 'tracker', 'tool', 'planner',
+    'manager', 'organizer', 'viewer', 'browser', 'experience', 'professional',
+    'simple', 'basic', 'advanced', 'polished', 'nice', 'modern', 'good',
+    // generic interaction verbs the shell already provides
+    'search', 'searches', 'refresh', 'show', 'shows', 'display', 'displays',
+    'view', 'views', 'list', 'lists', 'get', 'gets', 'find', 'finds',
+    'check', 'checks', 'track', 'tracks', 'see', 'lookup', 'look', 'up',
+    'locations', 'location', 'city', 'cities', 'place', 'places',
+    // freshness words — carried by the freshness semantic, not the topic
+    'current', 'live', 'latest', 'real', 'time', 'realtime', 'today', 'now',
+    'daily', 'updated',
+  };
+  final counts = <String, int>{};
+  final order = <String>[];
+  for (final raw in text.toLowerCase().split(RegExp(r'[^a-z0-9]+'))) {
+    if (raw.length < 3 || constructionWords.contains(raw)) continue;
+    counts[raw] = (counts[raw] ?? 0) + 1;
+    if (!order.contains(raw)) order.add(raw);
+  }
+  order.sort((a, b) => counts[b]!.compareTo(counts[a]!));
+  return order.take(max).toList();
+}
+
 /// Query → refresh → loading/error/result surface for external data apps.
 class NetworkReferenceInterfaceFactory {
   const NetworkReferenceInterfaceFactory();
@@ -14,10 +51,15 @@ class NetworkReferenceInterfaceFactory {
     ExperiencePackage package, {
     required String name,
     String purpose = '',
+    String topic = '',
+    String freshness = '',
   }) {
     final interface = buildInterface(title: name, purpose: purpose);
     final state = _mergeState(package.state, buildState());
-    final behavior = _mergeBehavior(package.behavior, buildBehavior());
+    final behavior = _mergeBehavior(
+      package.behavior,
+      buildBehavior(topic: topic, freshness: freshness),
+    );
     final services = [
       ...package.services,
       if (!package.services.any((s) => s.type == 'knowledgeRetrieval'))
@@ -155,6 +197,12 @@ class NetworkReferenceInterfaceFactory {
               properties: {'content': '', 'fontSize': 28},
               stateBinding: 'resultTitle',
             ),
+            const InterfaceNode(
+              type: 'remoteImage',
+              id: 'result_image',
+              properties: {'semanticLabel': 'Result image'},
+              stateBinding: 'resultImage',
+            ),
             InterfaceNode(
               type: 'text',
               id: 'result_body',
@@ -162,6 +210,12 @@ class NetworkReferenceInterfaceFactory {
                 'content': 'Enter a city or location above, then press Search.',
               },
               stateBinding: 'resultText',
+            ),
+            const InterfaceNode(
+              type: 'text',
+              id: 'source_label',
+              properties: {'content': '', 'color': 'secondary'},
+              stateBinding: 'sourceLabel',
             ),
           ],
         ),
@@ -214,14 +268,31 @@ class NetworkReferenceInterfaceFactory {
           defaultValue: '',
           persistence: 'persistent',
         ),
+        StateVariable(
+          id: 'resultImage',
+          type: 'string',
+          defaultValue: '',
+          persistence: 'session',
+        ),
+        StateVariable(
+          id: 'sourceLabel',
+          type: 'string',
+          defaultValue: '',
+          persistence: 'session',
+        ),
       ],
     );
   }
 
-  BehaviorGraph buildBehavior() {
-    return const BehaviorGraph(
+  /// [topic] is the Experience's semantic subject (requirement
+  /// preservation — see [deriveTopicTerms]); [freshness] is 'current' when
+  /// the Experience's data requirement is for live/current external data,
+  /// or '' for reference material. Both are semantics carried from the
+  /// creation intent, never a domain switch.
+  BehaviorGraph buildBehavior({String topic = '', String freshness = ''}) {
+    return BehaviorGraph(
       nodes: [
-        BehaviorNode(
+        const BehaviorNode(
           id: 'refreshData',
           type: 'event',
           config: {'description': 'Search or refresh external data'},
@@ -239,20 +310,19 @@ class NetworkReferenceInterfaceFactory {
             'loadingLabelStateId': 'loadingLabel',
             'errorStateId': 'error',
             'cacheStateId': 'lastKnownResult',
-            // Freshness drives query enhancement: when 'current', the
-            // knowledge adapter appends 'current latest real-time' to the
-            // search query so DuckDuckGo returns recent results instead of
-            // encyclopedia articles. Generic — no domain-specific routing.
-            'freshness': 'current',
-            // IS-P13: reject Wikipedia/generic knowledge as primary result.
-            // The adapter sets sourceType to 'currentData' when freshness is
-            // 'current'; this expectedSourceType ensures the behavior
-            // interpreter rejects encyclopedia fallbacks.
-            'expectedSourceType': 'currentData',
+            'imageStateId': 'resultImage',
+            'provenanceStateId': 'sourceLabel',
+            // IS-P25 requirement preservation: the acquisition layer
+            // composes queries as "<search term> <topic> [current]" and
+            // judges evidence against these same semantics.
+            'topic': topic,
+            'freshness': freshness,
           },
         ),
       ],
-      edges: [BehaviorEdge(from: 'refreshData', to: 'refreshData_invoke')],
+      edges: const [
+        BehaviorEdge(from: 'refreshData', to: 'refreshData_invoke'),
+      ],
     );
   }
 

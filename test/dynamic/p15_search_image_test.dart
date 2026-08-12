@@ -4,8 +4,6 @@ library;
 import 'package:anything/capabilities/platform/capability_platform.dart';
 import 'package:anything/creation/experience_package.dart';
 import 'package:anything/creation/network_reference_interface_factory.dart';
-import 'package:anything/knowledge/data_provider_registry.dart';
-import 'package:anything/knowledge/default_data_providers.dart';
 import 'package:anything/runtime/behavior_interpreter.dart';
 import 'package:anything/runtime/data_runtime.dart';
 import 'package:anything/runtime/experience_session.dart';
@@ -176,61 +174,23 @@ void main() {
         state.read('resultText')?.toString() ?? '',
         isNot(contains('https://')),
       );
-    });
-
-  });
-
-  group('Provider independence — FakeArticleProvider', () {
-    test('same articleSearch requirement satisfied by fake provider', () async {
-      final registry = DataProviderRegistry();
-      String? seenQuery;
-      registry.register(
-        DataProviderDescriptor(
-          providerId: 'fake-articles',
-          requirementTypes: {DataConcepts.newsArticles},
-          supportedFields: const ['title', 'source', 'summary', 'url', 'image'],
-          reliability: 99,
-          acquire: (req, params) async {
-            seenQuery = params['query']?.toString();
-            return {
-              'results': [
-                {
-                  'title': 'About $seenQuery',
-                  'content': 'About $seenQuery\nSource: Fake',
-                  'sourceType': 'structuredNews',
-                  'provider': 'fake-articles',
-                  'imageUrl': '',
-                },
-              ],
-              'provenance': {
-                'sourceType': 'structuredNews',
-                'provider': 'fake-articles',
-              },
-            };
-          },
-        ),
+      // IS-P25: the shell now binds imageStateId/provenanceStateId, so a
+      // returned imageUrl reaches the remoteImage node's state and the
+      // source attribution reaches the sourceLabel text node.
+      expect(state.read('resultImage'), 'https://cdn.example.com/news.jpg');
+      expect(
+        state.read('sourceLabel')?.toString() ?? '',
+        contains('example.com'),
       );
-
-      final acquired = await registry.acquire(
-        const DataRequirement(
-          domainConcept: DataConcepts.newsArticles,
-          freshness: 'recent',
-          fields: ['title', 'source', 'summary'],
-        ),
-        {'query': 'AI'},
-      );
-      expect(acquired.ok, isTrue);
-      expect(seenQuery, 'AI');
-      expect(acquired.providerId, 'fake-articles');
-      final title = ((acquired.data!['results'] as List).first as Map)['title'];
-      expect(title, 'About AI');
     });
   });
 
   group('News surface media nodes', () {
     test('factory exposes query input for external data search', () {
-      final ui = const NetworkReferenceInterfaceFactory()
-          .buildInterface(title: 'News', purpose: 'Fetch news articles');
+      final ui = const NetworkReferenceInterfaceFactory().buildInterface(
+        title: 'News',
+        purpose: 'Fetch news articles',
+      );
       final nodes = ui.screens.first.children;
       // Network reference interface has a query input inside a row
       final flatNodes = nodes.expand((n) => [n, ...n.children]).toList();

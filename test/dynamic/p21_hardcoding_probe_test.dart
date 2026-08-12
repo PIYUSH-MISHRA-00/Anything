@@ -18,7 +18,6 @@ final _forbidden = <RegExp>[
 
 /// Files allowed to mention product words (capability shells / providers).
 const _allowPathFragments = <String>[
-  'knowledge/default_data_providers.dart',
   'creation/timing_interface_factory.dart',
   'creation/calculation_interface_factory.dart',
   'creation/network_reference_interface_factory.dart',

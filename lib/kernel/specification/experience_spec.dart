@@ -176,12 +176,20 @@ class KnowledgeRequirement {
   final List<String> queryHints;
   final bool networkRequired;
   final String freshness;
+
+  /// Semantic subject of the requirement, preserved from the Experience's
+  /// own intent (e.g. `['weather']` for a weather dashboard). Generic —
+  /// derived from the user's words, never from a domain table. Used for
+  /// query composition and requirement-satisfaction scoring.
+  final List<String> topicTerms;
+
   const KnowledgeRequirement({
     required this.objective,
     required this.resourceType,
     this.queryHints = const [],
     this.networkRequired = true,
     this.freshness = '',
+    this.topicTerms = const [],
   });
 }
 

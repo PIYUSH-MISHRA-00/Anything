@@ -8,6 +8,7 @@ abstract class KnowledgeProvider {
   Future<List<Map<String, dynamic>>> retrieve(
     String query, {
     String freshness,
+    String topic,
   });
 }
 
@@ -22,6 +23,7 @@ class FakeKnowledgeProvider implements KnowledgeProvider {
   Future<List<Map<String, dynamic>>> retrieve(
     String query, {
     String freshness = '',
+    String topic = '',
   }) async {
     return _results;
   }
@@ -60,14 +62,19 @@ class KnowledgeCapability extends PlatformCapability {
       );
     }
 
-    // Extract freshness from params — passed through from the behavior graph
-    // config by BehaviorInterpreter._executeServiceCall(). When 'current',
-    // the adapter enhances the query to fetch real-time data instead of
-    // encyclopedia articles.
+    // Freshness and topic travel from the behavior graph config through
+    // BehaviorInterpreter._executeServiceCall(). Topic is the Experience's
+    // own semantic subject (requirement preservation); freshness declares
+    // whether the requirement is for current data or reference material.
     final freshness = params['freshness'] as String? ?? '';
+    final topic = params['topic'] as String? ?? '';
 
     try {
-      final results = await _provider.retrieve(query, freshness: freshness);
+      final results = await _provider.retrieve(
+        query,
+        freshness: freshness,
+        topic: topic,
+      );
       return CapabilityInvocationResult.success(data: {'results': results});
     } catch (e) {
       return CapabilityInvocationResult.failure(e.toString());

@@ -1,8 +1,9 @@
 /// IS-P13 — capability inference, semantic preservation + stopwatch controls.
 ///
 /// Domain services (WeatherDataService, NewsDataService) have been removed.
-/// All external data acquisition now flows through WebWeaveX via
-/// DataProviderRegistry -> WebWeaveXDataProvider.
+/// All external data acquisition now flows through WebWeaveX via the ONE
+/// generic knowledge capability (KnowledgeAcquisitionEngine), with topic +
+/// freshness semantics carried in the requirement (IS-P25).
 library;
 
 import 'package:anything/core/contracts/intent.dart';

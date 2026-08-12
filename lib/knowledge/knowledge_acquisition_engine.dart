@@ -21,6 +21,8 @@ library;
 import 'package:uuid/uuid.dart';
 
 import 'package:anything/app/retention_policy_engine.dart';
+import 'package:anything/diagnostics/log_entry.dart';
+import 'package:anything/diagnostics/structured_logger.dart';
 import 'package:anything/kernel/specification/experience_spec.dart';
 import 'package:anything/storage/knowledge_repository.dart';
 import 'knowledge_resource.dart';
@@ -61,22 +63,43 @@ class KnowledgeCacheKey {
   int get hashCode => toStableString().hashCode;
 }
 
+/// A query planned from one requirement, carrying that requirement's
+/// semantics (freshness, objective/topic terms) so cache policy and
+/// requirement-satisfaction scoring can act per requirement rather than on
+/// a flat string. Generic — the terms are the user's own words.
+class PlannedKnowledgeQuery {
+  final String query;
+  final String freshness;
+  final List<String> objectiveTerms;
+  final List<String> topicTerms;
+
+  const PlannedKnowledgeQuery({
+    required this.query,
+    this.freshness = '',
+    this.objectiveTerms = const [],
+    this.topicTerms = const [],
+  });
+}
+
 /// The Knowledge Acquisition Engine.
 class KnowledgeAcquisitionEngine {
   final SearchProvider? _searchProvider;
   final WebWeaveXAdapter? _webweavexAdapter;
   final KnowledgeCache _cache;
   final int _maxResultsPerQuery;
+  final StructuredLogger? _logger;
 
   KnowledgeAcquisitionEngine({
     SearchProvider? searchProvider,
     WebWeaveXAdapter? webweavexAdapter,
     KnowledgeCache? cache,
     int maxResultsPerQuery = 5,
+    StructuredLogger? logger,
   }) : _searchProvider = searchProvider,
        _webweavexAdapter = webweavexAdapter,
        _cache = cache ?? KnowledgeCache(),
-       _maxResultsPerQuery = maxResultsPerQuery;
+       _maxResultsPerQuery = maxResultsPerQuery,
+       _logger = logger;
 
   /// Exposes the shared `SearchProvider` (Implementation Milestone R16) —
   /// same pattern as `SoftwareCognitionCoordinator.engine`/`.reasoner`
@@ -107,22 +130,35 @@ class KnowledgeAcquisitionEngine {
     var anyFreshlyFetched = false;
     var anyQueryResolved = false;
 
-    for (final query in queries) {
-      // Cache is always consulted first, independent of whether a live
-      // provider is configured — this is what makes "offline: reuse
-      // cached knowledge" and "network unavailable: still usable if
-      // already cached" actually true rather than aspirational.
+    for (final planned in queries) {
+      final query = planned.query;
       final key = KnowledgeCacheKey(
         query: _canonicalQuery(query),
         language: language,
       );
-      var found = await _cache.get(key);
-      found ??= _cache.findRelevant(query);
+
+      // Freshness-aware cache policy: a 'current' requirement must
+      // re-acquire (the cache has no TTL, so a cache-first read would pin
+      // the first-ever result forever). The cache is still written and is
+      // used as an explicit offline fallback below. Everything else keeps
+      // the cache-first behavior that makes offline reuse real.
+      List<KnowledgeResource>? found;
+      if (planned.freshness != 'current') {
+        found = await _cache.get(key);
+        found ??= _cache.findRelevant(query);
+      }
       if (found != null && found.isNotEmpty) {
-        resources.addAll(found);
-        anyFromCache = true;
-        anyQueryResolved = true;
-        continue;
+        final judged = _judge(planned, found);
+        if (judged.isNotEmpty) {
+          resources.addAll(judged);
+          anyFromCache = true;
+          anyQueryResolved = true;
+          _logger?.info(
+            LogCategory.knowledge,
+            'acquire "$query" → ${judged.length} resource(s) from cache',
+          );
+          continue;
+        }
       }
 
       if (_searchProvider == null || _webweavexAdapter == null) {
@@ -138,16 +174,44 @@ class KnowledgeAcquisitionEngine {
         final urls = results.map((r) => r.url).toList();
         final extracted = await _webweavexAdapter.extractAll(urls);
         final validated = _validate(extracted);
-        if (validated.isNotEmpty) {
-          await _cache.put(key, validated);
-          resources.addAll(validated);
+        final judged = _judge(planned, validated);
+        if (judged.isNotEmpty) {
+          await _cache.put(key, judged);
+          resources.addAll(judged);
           anyFreshlyFetched = true;
           anyQueryResolved = true;
+          _logger?.info(
+            LogCategory.knowledge,
+            'WebWeaveX acquire "$query" → ${judged.length}/${urls.length} '
+            'satisfying resource(s), top=${judged.first.sourceDomain}',
+          );
         } else {
-          warnings.add('No usable results for: $query');
+          warnings.add(
+            validated.isEmpty
+                ? 'No usable results for: $query'
+                : 'No results satisfied the requirement for: $query',
+          );
+          _logger?.warning(
+            LogCategory.knowledge,
+            'WebWeaveX acquire "$query" → 0 satisfying of '
+            '${validated.length} extracted',
+          );
         }
       } catch (e) {
         warnings.add('Retrieval failed for: $query');
+        _logger?.warning(
+          LogCategory.knowledge,
+          'WebWeaveX acquire failed for "$query"',
+        );
+        // Offline/network failure: fall back to cached knowledge even for
+        // 'current' requirements — explicitly marked as cached rather than
+        // silently presented as fresh.
+        final cached = await _cache.get(key);
+        if (cached != null && cached.isNotEmpty) {
+          resources.addAll(cached);
+          anyFromCache = true;
+          anyQueryResolved = true;
+        }
       }
     }
 
@@ -206,28 +270,179 @@ class KnowledgeAcquisitionEngine {
   String _canonicalQuery(String query) =>
       _webweavexAdapter?.normalizeText(query) ?? query;
 
-  List<String> _planQueries(
+  List<PlannedKnowledgeQuery> _planQueries(
     List<KnowledgeRequirement> requirements,
     List<String> queryHints,
   ) {
-    final queries = <String>[];
+    final queries = <PlannedKnowledgeQuery>[];
+    final seen = <String>{};
+
+    void add(PlannedKnowledgeQuery planned) {
+      if (planned.query.trim().isEmpty) return;
+      if (!seen.add(planned.query.trim().toLowerCase())) return;
+      queries.add(planned);
+    }
+
     for (final req in requirements) {
-      // Enhance the objective with freshness hints so the search engine
-      // returns current/real-time results instead of encyclopedia articles.
-      // This is generic — no domain-specific routing, just query enrichment.
-      var objective = req.objective;
-      if (req.freshness == 'current' && objective.isNotEmpty) {
-        objective = '$objective current latest real-time';
+      // Requirement preservation: compose the search text from the user's
+      // literal objective PLUS the requirement's own topic terms PLUS a
+      // freshness cue. Generic — every part comes from the requirement, no
+      // domain switch. This is what turns "Lucknow" typed into a weather
+      // Experience into the query "Lucknow weather current".
+      final objectiveTerms = significantTerms(req.objective);
+      final parts = <String>[req.objective.trim()];
+      final present = req.objective.toLowerCase();
+      for (final term in req.topicTerms) {
+        if (!present.contains(term.toLowerCase())) parts.add(term);
       }
-      queries.add(objective);
+      if (req.freshness == 'current') parts.add('current');
+      add(
+        PlannedKnowledgeQuery(
+          query: parts.where((p) => p.isNotEmpty).join(' '),
+          freshness: req.freshness,
+          objectiveTerms: objectiveTerms,
+          topicTerms: req.topicTerms,
+        ),
+      );
       for (final hint in req.queryHints) {
         if (hint != req.objective) {
-          queries.add(hint);
+          add(
+            PlannedKnowledgeQuery(
+              query: hint,
+              freshness: req.freshness,
+              objectiveTerms: significantTerms(hint),
+              topicTerms: req.topicTerms,
+            ),
+          );
         }
       }
     }
-    queries.addAll(queryHints.where((h) => !queries.contains(h)));
+    for (final hint in queryHints) {
+      add(
+        PlannedKnowledgeQuery(
+          query: hint,
+          objectiveTerms: significantTerms(hint),
+        ),
+      );
+    }
     return queries;
+  }
+
+  /// Content words of a phrase: lowercase, punctuation-split, with a small
+  /// closed-class English stopword set removed. Generic language handling,
+  /// never a domain table.
+  static List<String> significantTerms(String text) {
+    const stopwords = {
+      'the', 'a', 'an', 'and', 'or', 'of', 'in', 'on', 'at', 'to', 'for',
+      'with', 'about', 'is', 'are', 'was', 'were', 'be', 'me', 'my', 'that',
+      'this', 'it', 'its', 'what', 'who', 'how', 'when', 'where', 'which',
+      'please', 'right', 'now', // "right now" is freshness, not topic
+    };
+    return text
+        .toLowerCase()
+        .split(RegExp(r'[^a-z0-9]+'))
+        .where((w) => w.length >= 2 && !stopwords.contains(w))
+        .toList();
+  }
+
+  /// Temporal-proximity markers used to score how "current" a page reads.
+  /// Generic vocabulary of recency, not domain words.
+  static final RegExp _temporalMarkers = RegExp(
+    r'\b(today|tonight|now|live|latest|breaking|updated?|current(ly)?|'
+    r'hourly|minutes? ago|hours? ago|as of|this (morning|afternoon|evening|'
+    r'week))\b',
+    caseSensitive: false,
+  );
+
+  /// Generic requirement satisfaction (the IS-P25 core).
+  ///
+  /// Judges each candidate resource against the planned query's semantics:
+  ///
+  /// - relevance: coverage of objective terms (weight 2) and topic terms
+  ///   (weight 1) across title + content. A resource mentioning none of the
+  ///   requirement's terms cannot satisfy it and is dropped.
+  /// - freshness: for `freshness == 'current'`, density of temporal-recency
+  ///   markers plus presence of the current year. An encyclopedia article
+  ///   is not rejected by name — it simply scores low on recency and loses
+  ///   to genuinely current sources. No URL or source-name blacklists.
+  ///
+  /// Returns satisfying resources re-ranked by their judged score,
+  /// replacing the previous constant-score ranking (which preserved raw
+  /// search-engine order).
+  List<KnowledgeResource> _judge(
+    PlannedKnowledgeQuery planned,
+    List<KnowledgeResource> candidates,
+  ) {
+    if (candidates.isEmpty) return candidates;
+    final judged = <KnowledgeResource>[];
+    for (final resource in candidates) {
+      final haystackTitle = resource.title.toLowerCase();
+      final haystackBody = (resource.content ?? '').toLowerCase();
+
+      double coverage(List<String> terms) {
+        if (terms.isEmpty) return 0;
+        var hits = 0.0;
+        for (final term in terms) {
+          if (haystackTitle.contains(term)) {
+            hits += 1;
+          } else if (haystackBody.contains(term)) {
+            hits += 0.7;
+          }
+        }
+        return hits / terms.length;
+      }
+
+      final objectiveCoverage = coverage(planned.objectiveTerms);
+      final topicCoverage = coverage(planned.topicTerms);
+      final hasAnyTerms =
+          planned.objectiveTerms.isNotEmpty || planned.topicTerms.isNotEmpty;
+      final relevance = hasAnyTerms
+          ? ((objectiveCoverage * 2) + topicCoverage) /
+                ((planned.objectiveTerms.isEmpty ? 0 : 2) +
+                        (planned.topicTerms.isEmpty ? 0 : 1))
+                    .clamp(1, 3)
+          : 0.5;
+
+      // Satisfaction floor — CURRENT-data requirements only: evidence that
+      // mentions none of the requirement's terms cannot satisfy a request
+      // for current data about those terms. Reference requirements keep
+      // permissive retain-and-rank behavior (creation-time knowledge must
+      // not be starved by literal term matching).
+      if (planned.freshness == 'current' &&
+          hasAnyTerms &&
+          objectiveCoverage == 0 &&
+          topicCoverage == 0) {
+        continue;
+      }
+
+      double freshnessScore = 0.5;
+      if (planned.freshness == 'current') {
+        final markers = _temporalMarkers
+            .allMatches(
+              haystackBody.length > 4000
+                  ? haystackBody.substring(0, 4000)
+                  : haystackBody,
+            )
+            .length;
+        final hasYear = haystackBody.contains(DateTime.now().year.toString());
+        freshnessScore =
+            ((markers / 4).clamp(0.0, 0.8)) + (hasYear ? 0.2 : 0.0);
+      }
+
+      judged.add(
+        resource.withRanking(
+          RankingMetadata(
+            relevanceScore: relevance.clamp(0.0, 1.0),
+            authorityScore: 0.5,
+            freshnessScore: freshnessScore,
+          ),
+        ),
+      );
+    }
+    judged.sort(
+      (a, b) => b.ranking.overallScore.compareTo(a.ranking.overallScore),
+    );
+    return judged;
   }
 
   /// Reject empty, malformed, or oversized resources before they enter the

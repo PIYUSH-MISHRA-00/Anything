@@ -45,6 +45,11 @@ class KnowledgeResource {
   final String? contentHash;
   final String language;
   final String format;
+
+  /// Representative image extracted from the source page (og:image /
+  /// twitter:image), when present. Presentation metadata — deliberately
+  /// excluded from the canonical representation and identity.
+  final String? imageUrl;
   final ResourceProvenance provenance;
   final LicenseMetadata license;
   final TrustMetadata trust;
@@ -62,12 +67,36 @@ class KnowledgeResource {
     this.contentHash,
     this.language = 'en',
     this.format = 'text/html',
+    this.imageUrl,
     required this.provenance,
     required this.license,
     required this.trust,
     required this.freshness,
     required this.ranking,
   });
+
+  /// Copy with re-judged ranking metadata (requirement-satisfaction scoring
+  /// happens in the acquisition engine, after extraction).
+  KnowledgeResource withRanking(RankingMetadata newRanking) {
+    return KnowledgeResource(
+      id: id,
+      type: type,
+      title: title,
+      sourceUri: sourceUri,
+      sourceDomain: sourceDomain,
+      retrievedAt: retrievedAt,
+      content: content,
+      contentHash: contentHash,
+      language: language,
+      format: format,
+      imageUrl: imageUrl,
+      provenance: provenance,
+      license: license,
+      trust: trust,
+      freshness: freshness,
+      ranking: newRanking,
+    );
+  }
 
   /// Compute content hash from content string.
   static String computeHash(String content) {
@@ -101,6 +130,7 @@ class KnowledgeResource {
     'contentHash': contentHash,
     'language': language,
     'format': format,
+    'imageUrl': imageUrl,
     'provenance': provenance.toJson(),
     'license': license.toJson(),
     'trust': trust.toJson(),
@@ -123,6 +153,7 @@ class KnowledgeResource {
       contentHash: json['contentHash'] as String?,
       language: json['language'] as String? ?? 'en',
       format: json['format'] as String? ?? 'text/html',
+      imageUrl: json['imageUrl'] as String?,
       provenance: ResourceProvenance.fromJson(
         json['provenance'] as Map<String, dynamic>,
       ),

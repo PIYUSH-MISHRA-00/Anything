@@ -48,7 +48,7 @@ void main() {
         factories.add(name);
       }
     }
-      factories.sort();
+    factories.sort();
     // Allowed capability shells only — not product domains.
     expect(
       factories,

@@ -51,8 +51,6 @@ import 'package:anything/capabilities/builtin/clock_capability.dart';
 import 'package:anything/capabilities/builtin/file_capability.dart';
 import 'package:anything/capabilities/builtin/http_capability.dart';
 import 'package:anything/capabilities/builtin/knowledge_capability.dart';
-import 'package:anything/capabilities/builtin/news_capability.dart';
-import 'package:anything/capabilities/builtin/weather_capability.dart';
 import 'package:anything/capabilities/builtin/notification_capability.dart';
 import 'package:anything/capabilities/platform/capability_platform.dart';
 import 'package:anything/capabilities/registry/capability_descriptor.dart';
@@ -60,7 +58,6 @@ import 'package:anything/capabilities/registry/capability_registry.dart';
 import 'package:anything/core/events/events.dart';
 import 'package:anything/diagnostics/structured_logger.dart';
 import 'package:anything/kernel/anything_kernel.dart';
-import 'package:anything/knowledge/default_data_providers.dart';
 import 'package:anything/knowledge/knowledge_acquisition_engine.dart';
 import 'package:anything/knowledge/search_provider.dart';
 import 'package:anything/knowledge/webweavex_adapter.dart';
@@ -158,26 +155,6 @@ const List<CapabilityDescriptor> _platformCapabilityDescriptors = [
     category: CapabilityCategory.knowledge,
     inputContract: 'query',
     outputContract: 'resources',
-    networkRequired: true,
-  ),
-  CapabilityDescriptor(
-    id: 'weather',
-    version: '1.0.0',
-    name: 'Weather',
-    description: 'Structured weather observations (not web knowledge).',
-    category: CapabilityCategory.integration,
-    inputContract: 'location',
-    outputContract: 'weather observation',
-    networkRequired: true,
-  ),
-  CapabilityDescriptor(
-    id: 'news',
-    version: '1.0.0',
-    name: 'News',
-    description: 'Structured news articles (not web knowledge).',
-    category: CapabilityCategory.integration,
-    inputContract: 'query',
-    outputContract: 'articles',
     networkRequired: true,
   ),
   CapabilityDescriptor(
@@ -491,10 +468,8 @@ class AppComposition {
         repository: KnowledgeRepository(),
         canonicalizer: webweavexAdapter,
       ),
+      logger: logger,
     );
-
-    // Data providers (weather/news/…) — selectable by DataRequirement.
-    final dataProviderRegistry = buildDefaultDataProviderRegistry();
 
     // IS-R49: constructed here rather than further down, because the real
     // notification presenter registered below delivers through it. Exactly
@@ -583,10 +558,13 @@ class AppComposition {
               provider: KnowledgeAcquisitionProviderAdapter(knowledgeEngine),
             ),
           )
-          // Shared data-provider registry: weather/news select by
-          // DataRequirement compatibility, not Kernel domain routing.
-          ..register(WeatherCapability(registry: dataProviderRegistry))
-          ..register(NewsCapability(registry: dataProviderRegistry))
+          // IS-P25: WeatherCapability/NewsCapability are gone. They were
+          // domain-named 65-line near-duplicates that delegated to the same
+          // WebWeaveX provider as `knowledge`, and no factory ever emitted
+          // the service types that reached them. External data — weather,
+          // news, anything else — flows through the ONE generic knowledge
+          // capability, whose requirement carries topic + freshness
+          // semantics instead of a domain name.
           // Implementation Specification IS-R49: the last two production Fake*
           // registrations are gone. Both now resolve to real services, each
           // constructed exactly once here â€” there is no alternate composition

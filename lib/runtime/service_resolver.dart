@@ -16,8 +16,11 @@ const Map<String, String> _serviceTypeToCapabilityId = {
   'notifications': 'notifications',
   'fileAccess': 'files',
   'knowledgeRetrieval': 'knowledge',
-  'weatherData': 'weather',
-  'newsData': 'news',
+  // IS-P25: legacy semantic service types resolve to the ONE generic
+  // knowledge capability. Weather/news are topics, not capabilities —
+  // topic + freshness semantics travel in the service config instead.
+  'weatherData': 'knowledge',
+  'newsData': 'knowledge',
   'aiInference': 'ai',
 };
 

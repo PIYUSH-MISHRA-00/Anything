@@ -317,6 +317,18 @@ class CreationEngine {
             !probe.hasKnowledgeService ||
             !probe.hasLoadingState ||
             !probe.hasErrorState;
+        // IS-P25 requirement preservation: the Experience's semantic subject
+        // (from the user's own words) and its freshness need (current data
+        // vs. reference material, from the semantic capability vocabulary)
+        // are baked into the shell's data requirement so every runtime
+        // query still means what the Experience is about.
+        final topic = deriveTopicTerms(context.intent.expression).join(' ');
+        final freshness =
+            inferredCaps
+                .intersection(AppCapabilityIds.currentDataCapabilities)
+                .isNotEmpty
+            ? 'current'
+            : '';
         // Prefer network shell when reference/network-first; keep CRUD when
         // the blueprint is a durable collection with network as optional.
         final prefersNetworkShell =
@@ -334,12 +346,18 @@ class CreationEngine {
                 : spec.description,
           );
           state = _mergeStateSchema(state, net.buildState());
-          behavior = _mergeBehaviorGraph(behavior, net.buildBehavior());
+          behavior = _mergeBehaviorGraph(
+            behavior,
+            net.buildBehavior(topic: topic, freshness: freshness),
+          );
         } else if (needsNetworkShell) {
           // Augment without replacing CRUD UI: ensure service + states + refresh
           // behavior exist for optional network enrichment.
           state = _mergeStateSchema(state, net.buildState());
-          behavior = _mergeBehaviorGraph(behavior, net.buildBehavior());
+          behavior = _mergeBehaviorGraph(
+            behavior,
+            net.buildBehavior(topic: topic, freshness: freshness),
+          );
         }
         if (!services.any((s) => s.type == 'knowledgeRetrieval')) {
           services = [

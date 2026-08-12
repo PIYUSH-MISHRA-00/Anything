@@ -563,12 +563,18 @@ class BehaviorInterpreter {
       'requestId': requestId,
     };
 
-    // Pass freshness from behavior graph config through to the capability.
-    // When freshness == 'current', the knowledge adapter enhances the query
-    // to fetch real-time data instead of encyclopedia articles.
+    // Requirement preservation (IS-P25): the Experience's semantic subject
+    // (topic) and data-freshness need travel from the behavior graph config
+    // to the capability, so the acquisition layer can compose a query that
+    // still means what the Experience is about — not just the raw search
+    // term the user typed.
     final freshness = node.config['freshness'] as String?;
     if (freshness != null && freshness.isNotEmpty) {
       params['freshness'] = freshness;
+    }
+    final topic = node.config['topic'] as String?;
+    if (topic != null && topic.isNotEmpty) {
+      params['topic'] = topic;
     }
 
     final result = await context.serviceResolver.execute(
@@ -611,8 +617,17 @@ class BehaviorInterpreter {
 
     final results = result['results'] as List? ?? const [];
     if (results.isEmpty) {
+      // Generic requirement-satisfaction outcome (IS-P25): when no source
+      // satisfied the requirement, say so honestly instead of showing
+      // whatever unrelated page a search engine ranked first.
       if (resultStateId != null) {
-        context.stateEngine.write(resultStateId, 'No data found for "$query".');
+        context.stateEngine.write(
+          resultStateId,
+          freshness == 'current'
+              ? 'No current results found for "$query". '
+                    'Check your connection, then press Refresh to retry.'
+              : 'No data found for "$query".',
+        );
       }
       if (titleStateId != null) {
         context.stateEngine.write(titleStateId, query);
@@ -620,8 +635,6 @@ class BehaviorInterpreter {
       return;
     }
 
-    final expectedSourceType =
-        node.config['expectedSourceType']?.toString() ?? '';
     final provenanceStateId = node.config['provenanceStateId'] as String?;
     final sourceTypeStateId = node.config['sourceTypeStateId'] as String?;
     final aggregate = node.config['aggregateResults'] == true;
@@ -657,28 +670,10 @@ class BehaviorInterpreter {
       body = first.toString();
     }
 
-    // IS-P13: never accept Wikipedia/generic knowledge as weather/news.
-    if (expectedSourceType.isNotEmpty) {
-      final uri = first is Map ? (first['sourceUri'] ?? '').toString() : '';
-      final looksWiki =
-          uri.contains('wikipedia.org') ||
-          body.toLowerCase().contains('wikipedia') ||
-          sourceType == 'genericKnowledge' ||
-          sourceType.isEmpty &&
-              (expectedSourceType == 'structuredWeather' ||
-                  expectedSourceType == 'structuredNews');
-      if (sourceType != expectedSourceType || looksWiki) {
-        if (errorStateId != null) {
-          context.stateEngine.write(
-            errorStateId,
-            'Expected $expectedSourceType data, but received '
-            '${sourceType.isEmpty ? 'generic knowledge' : sourceType}. '
-            'Retry or re-create this app.',
-          );
-        }
-        return;
-      }
-    }
+    // IS-P25: requirement satisfaction is judged generically in
+    // KnowledgeAcquisitionEngine (evidence vs. requirement terms and
+    // freshness) — results arriving here have already satisfied the
+    // requirement. The previous source-name blacklist is gone by design.
 
     if (titleStateId != null) {
       context.stateEngine.write(titleStateId, title);
@@ -719,13 +714,29 @@ class BehaviorInterpreter {
     if (sourceTypeStateId != null && sourceType.isNotEmpty) {
       context.stateEngine.write(sourceTypeStateId, sourceType);
     }
-    if (provenanceStateId != null) {
-      final prov = result['provenance'];
-      final label = prov is Map
-          ? '${prov['sourceType'] ?? sourceType} via '
-                '${prov['provider'] ?? provider}'
-          : (provider.isEmpty ? sourceType : '$sourceType via $provider');
+    if (provenanceStateId != null && first is Map) {
+      // Honest source attribution: where the evidence came from, when it
+      // was retrieved, and whether it is a cached copy (IS-P25, data
+      // freshness must never masquerade as current).
+      final domain = (first['sourceDomain'] ?? '').toString();
+      final uri = (first['sourceUri'] ?? '').toString();
+      final host = domain.isNotEmpty ? domain : (Uri.tryParse(uri)?.host ?? '');
+      final retrievedAt = (first['retrievedAt'] ?? '').toString();
+      final cached = (first['cacheStatus'] ?? '').toString().isNotEmpty;
+      final when = retrievedAt.length >= 16
+          ? retrievedAt.substring(0, 16).replaceFirst('T', ' ')
+          : retrievedAt;
+      final label = [
+        if (cached) 'Cached copy',
+        if (host.isNotEmpty) 'Source: $host',
+        if (when.isNotEmpty) 'Retrieved $when',
+      ].join(' · ');
       context.stateEngine.write(provenanceStateId, label);
+    } else if (provenanceStateId != null) {
+      context.stateEngine.write(
+        provenanceStateId,
+        provider.isEmpty ? sourceType : '$sourceType via $provider',
+      );
     }
   }
 }

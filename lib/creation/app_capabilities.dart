@@ -58,6 +58,13 @@ abstract final class AppCapabilityIds {
   static const errorState = 'errorState';
   static const resultDisplay = 'resultDisplay';
 
+  /// Capability ids whose external-data requirement is for CURRENT data
+  /// (live observations, headlines, prices — things that go stale), as
+  /// opposed to reference/encyclopedic material. This is semantic
+  /// vocabulary consumed as a `freshness` requirement by the ONE generic
+  /// acquisition path — never a construction switch.
+  static const Set<String> currentDataCapabilities = {weatherData, newsData};
+
   /// Vocabulary advertised to the model reasoner (open-world, not app names).
   static const List<String> vocabulary = [
     input,

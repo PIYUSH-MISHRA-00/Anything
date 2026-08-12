@@ -115,6 +115,7 @@ class WebWeaveXAdapter {
 
     final now = DateTime.now();
     final contentHash = KnowledgeResource.computeHash(content);
+    final imageUrl = _extractImageUrl(html, uri);
 
     return KnowledgeResource(
       // IS-R47: identity derived from the canonical serialization of the
@@ -135,6 +136,7 @@ class WebWeaveXAdapter {
       retrievedAt: now,
       content: content,
       contentHash: contentHash,
+      imageUrl: imageUrl,
       provenance: ResourceProvenance(
         sourceUrl: url,
         sourceDomain: uri.host,
@@ -161,6 +163,37 @@ class WebWeaveXAdapter {
         freshnessScore: 0.5,
       ),
     );
+  }
+
+  /// Representative page image from og:image / twitter:image meta tags,
+  /// resolved to an absolute http(s) URL. Presentation metadata only —
+  /// excluded from identity and canonical representation. Scans only the
+  /// document head region, where these tags live.
+  static String? _extractImageUrl(String html, Uri pageUri) {
+    final head = html.length > 20000 ? html.substring(0, 20000) : html;
+    final patterns = [
+      RegExp(
+        '<meta[^>]+(?:property|name)=["\'](?:og:image|twitter:image)["\']'
+        '[^>]*content=["\']([^"\']+)["\']',
+        caseSensitive: false,
+      ),
+      RegExp(
+        '<meta[^>]+content=["\']([^"\']+)["\']'
+        '[^>]*(?:property|name)=["\'](?:og:image|twitter:image)["\']',
+        caseSensitive: false,
+      ),
+    ];
+    for (final pattern in patterns) {
+      final match = pattern.firstMatch(head);
+      if (match == null) continue;
+      final parsed = Uri.tryParse(match.group(1)!.trim());
+      if (parsed == null) continue;
+      final absolute = parsed.hasScheme ? parsed : pageUri.resolveUri(parsed);
+      if (absolute.scheme == 'http' || absolute.scheme == 'https') {
+        return absolute.toString();
+      }
+    }
+    return null;
   }
 
   /// Extract multiple candidate URLs, dropping any that fail individually.

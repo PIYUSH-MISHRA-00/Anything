@@ -17,26 +17,32 @@ class KnowledgeAcquisitionProviderAdapter implements KnowledgeProvider {
   Future<List<Map<String, dynamic>>> retrieve(
     String query, {
     String freshness = '',
+    String topic = '',
   }) async {
     final bundle = await _engine.acquire(
       requirements: [
         KnowledgeRequirement(
           objective: query,
           resourceType: freshness == 'current' ? 'webDocument' : 'reference',
-          queryHints: [query],
           freshness: freshness,
+          // Requirement preservation: the Experience's own semantic subject
+          // (from its creation intent) travels with every runtime query.
+          topicTerms: KnowledgeAcquisitionEngine.significantTerms(topic),
         ),
       ],
-      queryHints: [query],
+      queryHints: const [],
     );
     return bundle.resources
         .map(
           (r) => {
             'title': r.title,
             'sourceUri': r.sourceUri,
+            'sourceDomain': r.sourceDomain,
             'content': r.content ?? '',
             'retrievedAt': r.retrievedAt.toIso8601String(),
-            'sourceType': freshness == 'current' ? 'currentData' : 'reference',
+            'imageUrl': r.imageUrl ?? '',
+            'provider': r.provenance.provider,
+            if (bundle.cacheStatus != null) 'cacheStatus': bundle.cacheStatus,
           },
         )
         .toList();

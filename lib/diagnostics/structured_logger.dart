@@ -7,6 +7,8 @@ library;
 
 import 'dart:developer' as developer;
 
+import 'package:flutter/foundation.dart';
+
 import 'log_entry.dart';
 
 class StructuredLogger {
@@ -56,6 +58,15 @@ class StructuredLogger {
       level: _levelFor(severity),
       time: entry.timestamp,
     );
+
+    // `dart:developer`'s log() is invisible in `adb logcat` on release
+    // builds, which made runtime subsystem activity (knowledge acquisition,
+    // protection) unprovable on a real device. Mirror info+ entries through
+    // debugPrint — same redacted message, same `[anything:<category>]`
+    // convention main.dart already uses for crash reporting.
+    if (severity != LogSeverity.debug) {
+      debugPrint('[anything:${category.name}] ${entry.message}');
+    }
   }
 
   void debug(LogCategory category, String message, {String? requestId}) =>

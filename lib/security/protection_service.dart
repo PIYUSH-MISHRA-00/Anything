@@ -16,6 +16,8 @@ import 'package:crypto/crypto.dart';
 import '../core/contracts/protection_provider.dart';
 import '../creation/experience_package.dart';
 import '../creation/package_validator.dart';
+import '../diagnostics/log_entry.dart';
+import '../diagnostics/structured_logger.dart';
 import '../legacy/kaalka_adapter.dart';
 import '../app/experience_commit.dart';
 import '../storage/sqlite_experience_repository.dart';
@@ -135,6 +137,12 @@ class ExperienceProtectionService {
   final ProtectionProvider _provider;
   final SqliteExperienceRepository _repository;
 
+  /// Security-category observability (IS-P25): protection/recovery events
+  /// were previously invisible at runtime, making Kaalka involvement
+  /// unprovable on a device. Logs operation + experienceId only — never
+  /// seeds, ciphertext, or package content.
+  static final StructuredLogger _logger = StructuredLogger();
+
   /// The ONE commit owner (IS-R55 Task 5). Protection still owns the crypto —
   /// it is the only thing in this system that encrypts — but it no longer owns
   /// persistence. It hands finished ciphertext over to be written.
@@ -237,6 +245,10 @@ class ExperienceProtectionService {
         );
       }
 
+      _logger.info(
+        LogCategory.security,
+        'Kaalka protection committed for experience $experienceId',
+      );
       return ProtectionSucceeded(envelope: envelope);
     } catch (e) {
       // Protection failed — original package remains untouched.
@@ -319,6 +331,10 @@ class ExperienceProtectionService {
         package: candidatePackage,
       );
 
+      _logger.info(
+        LogCategory.security,
+        'Kaalka recovery succeeded for experience $experienceId',
+      );
       return UnprotectionSucceeded(
         package: candidatePackage,
         experienceId: experienceId,

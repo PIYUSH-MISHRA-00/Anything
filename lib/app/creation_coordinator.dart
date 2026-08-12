@@ -551,13 +551,20 @@ class ExperienceCreationCoordinator {
               AppCapabilityIds.errorState,
               AppCapabilityIds.resultDisplay,
             };
-            candidate = const NetworkReferenceInterfaceFactory()
-                .applyToPackage(
+            candidate = const NetworkReferenceInterfaceFactory().applyToPackage(
               candidate,
               name: experienceDisplayName(
                 generatedName: candidate.manifest.name,
                 userIntent: intent.expression,
               ),
+              // IS-P25: preserve the Experience's semantic subject and
+              // freshness need in the shell's data requirement.
+              topic: deriveTopicTerms(intent.expression).join(' '),
+              freshness:
+                  compat.requested == IntentPurpose.weather ||
+                      compat.requested == IntentPurpose.news
+                  ? 'current'
+                  : '',
             );
           }
           if (compat.requested == IntentPurpose.timing ||

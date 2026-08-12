@@ -148,6 +148,17 @@ class DeterministicCapabilityRepair {
           current,
           name: blueprint?.name ?? current.manifest.name,
           purpose: blueprint?.description ?? current.manifest.description,
+          // IS-P25: preserve semantic subject + freshness in the shell.
+          topic: deriveTopicTerms(
+            '${blueprint?.name ?? current.manifest.name} '
+            '${blueprint?.description ?? current.manifest.description}',
+          ).join(' '),
+          freshness:
+              {...requiredCapabilities, ...gapIds}
+                  .intersection(AppCapabilityIds.currentDataCapabilities)
+                  .isNotEmpty
+              ? 'current'
+              : '',
         );
         fixes.add('injected_network_reference_shell');
       }
@@ -169,6 +180,10 @@ class DeterministicCapabilityRepair {
           current,
           name: blueprint?.name ?? current.manifest.name,
           purpose: blueprint?.description ?? current.manifest.description,
+          topic: deriveTopicTerms(
+            '${blueprint?.name ?? current.manifest.name} '
+            '${blueprint?.description ?? current.manifest.description}',
+          ).join(' '),
         );
         fixes.add('injected_network_reference_shell');
       }

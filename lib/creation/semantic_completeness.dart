@@ -115,7 +115,8 @@ class SemanticCompletenessValidator {
         gaps.add(
           const CapabilityGap(
             capabilityId: AppCapabilityIds.weatherData,
-            reason: 'weather requires a weatherData or knowledgeRetrieval service',
+            reason:
+                'weather requires a weatherData or knowledgeRetrieval service',
           ),
         );
       }
