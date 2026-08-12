@@ -69,6 +69,14 @@ class CompositeApplicationReasoner implements ApplicationReasoner {
     // Step 2: Deterministic returned ReasoningProviderRequired — try model
     final provider = _providerRegistry?.activeProvider;
     if (provider == null || !provider.isConfigured) {
+      // IS-P27: no working provider. Rather than hard-fail an unfamiliar but
+      // record-shaped domain ("restaurant booking application") with
+      // "Could not plan this app", build an honest, usable single-entity
+      // records/reservation manager. Genuinely vague prompts still escalate.
+      final fallback = _deterministic.tryBestEffortPrimaryEntity(
+        context.understanding.objective,
+      );
+      if (fallback != null) return ReasoningReady(semanticApp: fallback);
       return const ReasoningProviderRequired();
     }
 
@@ -80,6 +88,18 @@ class CompositeApplicationReasoner implements ApplicationReasoner {
     // at the only place raw exception text exists, and returns a curated
     // sentence for classified provider failures. Overwriting again here
     // discards the one thing the user needed to know.
-    return ModelApplicationReasoner(provider).reason(context);
+    final modelResult = await ModelApplicationReasoner(
+      provider,
+    ).reason(context);
+    // IS-P27: a configured-but-failing provider (e.g. HTTP 401) must not leave
+    // a record-shaped request with nothing. Fall back to the honest best-effort
+    // app; only genuinely vague prompts keep the provider-failure message.
+    if (modelResult is ReasoningFailed) {
+      final fallback = _deterministic.tryBestEffortPrimaryEntity(
+        context.understanding.objective,
+      );
+      if (fallback != null) return ReasoningReady(semanticApp: fallback);
+    }
+    return modelResult;
   }
 }

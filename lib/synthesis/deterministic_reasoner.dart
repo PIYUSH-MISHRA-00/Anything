@@ -172,6 +172,168 @@ class DeterministicReasoner implements ApplicationReasoner {
     );
   }
 
+  /// Best-effort single-entity collection app for an otherwise-unclassified
+  /// request (IS-P27). Used ONLY as a fallback by [CompositeApplicationReasoner]
+  /// when the model path is unavailable or fails — never preempting a working
+  /// AI provider. Generic: it derives the app's SUBJECT noun phrase and manages
+  /// records of it, so an unfamiliar domain ("restaurant booking application")
+  /// becomes an honest, usable reservation/records manager instead of a hard
+  /// "Could not plan this app" failure.
+  ///
+  /// Returns null for genuinely vague prompts ("create an app"), which should
+  /// still ask for a provider / more detail rather than fabricate an entity.
+  SemanticApp? tryBestEffortPrimaryEntity(String objective) {
+    if (!_looksRecordShaped(objective)) return null;
+    final subject = _derivePrimarySubject(objective);
+    if (subject == null) return null;
+    final entity = StructuralEntityName(
+      id: _toEntityId(subject),
+      name: subject,
+    );
+    return SemanticApp(
+      name: _deriveName(objective),
+      purpose: objective,
+      entities: [
+        _entityFromStructural(entity, objective: objective, peers: [entity]),
+      ],
+      actions: _crudActions(entity),
+      views: _views(entity, true),
+      archetypes: const ['collection'],
+      tags: const ['collection', 'local', 'best-effort'],
+      requiredCapabilities: const [
+        AppCapabilityIds.crud,
+        AppCapabilityIds.collection,
+        AppCapabilityIds.persistence,
+        AppCapabilityIds.form,
+        AppCapabilityIds.input,
+        AppCapabilityIds.search,
+      ],
+    );
+  }
+
+  /// Generic record-management vocabulary (semantic descriptors, NOT domain
+  /// construction). The best-effort fallback fires only for record-shaped
+  /// intents — a "restaurant booking" or "veterinary clinic" becomes a CRUD
+  /// manager, while a genuinely non-records novel request (a "collaborative
+  /// whiteboard", a "real-time editor") still escalates to the AI reasoner.
+  static const Set<String> _recordSignals = {
+    'book',
+    'booking',
+    'bookings',
+    'reserve',
+    'reservation',
+    'reservations',
+    'appointment',
+    'appointments',
+    'schedule',
+    'scheduling',
+    'manage',
+    'management',
+    'manager',
+    'track',
+    'tracker',
+    'tracking',
+    'organize',
+    'organizer',
+    'catalog',
+    'catalogue',
+    'inventory',
+    'register',
+    'registry',
+    'records',
+    'record',
+    'log',
+    'roster',
+    'directory',
+    'crm',
+    'membership',
+    'members',
+    'attendance',
+    'clinic',
+    'gallery',
+    'exhibition',
+    'patients',
+    'patient',
+    'customers',
+    'clients',
+    'orders',
+    'invoices',
+    'tickets',
+    'listings',
+    'listing',
+  };
+
+  bool _looksRecordShaped(String objective) {
+    if (StructuralEntityExtractor.looksLikeManagedRecords(objective)) {
+      return true;
+    }
+    final words = objective.toLowerCase().split(RegExp(r'[^a-z0-9]+')).toSet();
+    return words.any(_recordSignals.contains);
+  }
+
+  /// The app's subject noun phrase: strip construction framing, cut at the
+  /// first type-word/clause boundary, drop qualifier adjectives. Purely
+  /// syntactic — no domain vocabulary.
+  String? _derivePrimarySubject(String objective) {
+    var t = objective.split(RegExp(r'[\r\n]+')).first.toLowerCase();
+    t = t.replaceAll(
+      RegExp(
+        r'^\s*(please\s+)?(create|build|make|design|generate)\s+(me\s+)?'
+        r'(a|an|the)?\s*',
+        caseSensitive: false,
+      ),
+      '',
+    );
+    final cut = RegExp(
+      r'\b(application|app|apps|system|tool|platform|software|that|which|'
+      r'for|to|where|so)\b|[,.:;]',
+      caseSensitive: false,
+    ).firstMatch(t);
+    if (cut != null) t = t.substring(0, cut.start);
+    const drop = {
+      'professional',
+      'personal',
+      'simple',
+      'basic',
+      'advanced',
+      'modern',
+      'my',
+      'our',
+      'your',
+      'complete',
+      'full',
+      'stack',
+      'nice',
+      'polished',
+      'good',
+      'a',
+      'an',
+      'the',
+    };
+    const generic = {
+      'app',
+      'application',
+      'tool',
+      'thing',
+      'something',
+      'stuff',
+      'system',
+      'software',
+      'platform',
+    };
+    final words = t
+        .split(RegExp(r'[^a-z0-9]+'))
+        .where((w) => w.isNotEmpty && !drop.contains(w) && !generic.contains(w))
+        .toList();
+    if (words.isEmpty) return null;
+    final phrase = words.take(4).join(' ');
+    if (phrase.length < 2 || !RegExp(r'[a-z]').hasMatch(phrase)) return null;
+    return phrase
+        .split(' ')
+        .map((w) => w[0].toUpperCase() + w.substring(1))
+        .join(' ');
+  }
+
   /// Simple "list of X" collection.
   SemanticApp? _tryCollectionReasoning(String objective) {
     final lower = objective.toLowerCase();
