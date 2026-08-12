@@ -2618,6 +2618,11 @@ final x = 1;
             // as a fallback when flutter_secure_storage keystore fails.
             // Not a collection store. Recorded as G-40.
             'lib/security/credential_vault.dart',
+            // PINNED (IS-P26): the default protection-time preference stores
+            // three scalar keys (mode/hour/minute). No collection, no
+            // read-modify-write — the same scalar-preference case as the theme
+            // provider above.
+            'lib/features/preferences/protection_preferences.dart',
           ]..sort(),
           reason: 'a new direct SharedPreferences user appeared: $users',
         );

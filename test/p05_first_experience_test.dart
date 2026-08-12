@@ -97,16 +97,14 @@ void main() {
       expect(find.text('Kaalka Protection'), findsOneWidget);
       expect(find.textContaining('Time-keyed encryption'), findsOneWidget);
 
-      // Below the fold: a ListView only builds what is visible, so these have
-      // to be scrolled to rather than merely existing in the source.
+      // IS-P26: Finding 8 is now ANSWERED with a real control — the default
+      // protection-time setting — rather than a "not implemented" note.
       await t.scrollUntilVisible(
-        find.text('MANUAL TIME CONFIGURATION'),
+        find.text('Default protection time'),
         300,
         scrollable: find.byType(Scrollable).first,
       );
-      // Finding 8 is answered on screen rather than implemented, so the answer
-      // has to actually be present.
-      expect(find.text('MANUAL TIME CONFIGURATION'), findsOneWidget);
+      expect(find.text('Default protection time'), findsOneWidget);
 
       await t.scrollUntilVisible(
         find.text('NOT BUILT YET'),
@@ -128,6 +126,13 @@ void main() {
       );
       await t.pumpAndSettle();
 
+      // IS-P26 added a section above it, so it may be below the fold in the
+      // lazily-built ListView — scroll it into view before tapping.
+      await t.scrollUntilVisible(
+        find.text('Go to My Apps'),
+        300,
+        scrollable: find.byType(Scrollable).first,
+      );
       await t.tap(find.text('Go to My Apps'));
       await t.pumpAndSettle();
       expect(opened, isTrue);
