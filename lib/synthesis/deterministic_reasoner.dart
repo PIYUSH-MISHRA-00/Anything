@@ -183,9 +183,18 @@ class DeterministicReasoner implements ApplicationReasoner {
   /// Returns null for genuinely vague prompts ("create an app"), which should
   /// still ask for a provider / more detail rather than fabricate an entity.
   SemanticApp? tryBestEffortPrimaryEntity(String objective) {
-    if (!_looksRecordShaped(objective)) return null;
+    // Two gates keep this narrow and honest:
+    // 1. PRODUCT FRAMING — the request must ask for an application/app/system,
+    //    not a casual "track my camping trips" (which the Stage-10/P07 contract
+    //    deliberately escalates to the AI reasoner for a better single-entity
+    //    design).
+    // 2. RECORD-SHAPED SUBJECT — the app's subject noun must be a records
+    //    domain ("restaurant booking", "veterinary clinic"), not a game or
+    //    real-time tool whose record signal is incidental.
+    if (!_isProductFramed(objective)) return null;
     final subject = _derivePrimarySubject(objective);
     if (subject == null) return null;
+    if (!_subjectLooksRecordShaped(subject)) return null;
     final entity = StructuralEntityName(
       id: _toEntityId(subject),
       name: subject,
@@ -263,11 +272,15 @@ class DeterministicReasoner implements ApplicationReasoner {
     'listing',
   };
 
-  bool _looksRecordShaped(String objective) {
-    if (StructuralEntityExtractor.looksLikeManagedRecords(objective)) {
-      return true;
-    }
-    final words = objective.toLowerCase().split(RegExp(r'[^a-z0-9]+')).toSet();
+  bool _isProductFramed(String objective) {
+    return RegExp(
+      r'\b(application|app|apps|system|platform|software)\b',
+      caseSensitive: false,
+    ).hasMatch(objective);
+  }
+
+  bool _subjectLooksRecordShaped(String subject) {
+    final words = subject.toLowerCase().split(RegExp(r'[^a-z0-9]+')).toSet();
     return words.any(_recordSignals.contains);
   }
 
