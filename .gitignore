@@ -66,3 +66,6 @@ website/docs/.vitepress/cache/
 
 # ── Local reports (kept on Desktop, not committed) ──────────────────────────
 Desktop/
+
+# Stray artifact archives (regenerable)
+/*.zip
