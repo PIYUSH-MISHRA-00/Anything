@@ -212,10 +212,21 @@ class KnowledgeAcquisitionEngine {
   ) {
     final queries = <String>[];
     for (final req in requirements) {
-      queries.add(req.objective);
-      queries.addAll(req.queryHints);
+      // Enhance the objective with freshness hints so the search engine
+      // returns current/real-time results instead of encyclopedia articles.
+      // This is generic — no domain-specific routing, just query enrichment.
+      var objective = req.objective;
+      if (req.freshness == 'current' && objective.isNotEmpty) {
+        objective = '$objective current latest real-time';
+      }
+      queries.add(objective);
+      for (final hint in req.queryHints) {
+        if (hint != req.objective) {
+          queries.add(hint);
+        }
+      }
     }
-    queries.addAll(queryHints);
+    queries.addAll(queryHints.where((h) => !queries.contains(h)));
     return queries;
   }
 

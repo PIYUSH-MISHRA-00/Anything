@@ -562,6 +562,15 @@ class BehaviorInterpreter {
       'location': query,
       'requestId': requestId,
     };
+
+    // Pass freshness from behavior graph config through to the capability.
+    // When freshness == 'current', the knowledge adapter enhances the query
+    // to fetch real-time data instead of encyclopedia articles.
+    final freshness = node.config['freshness'] as String?;
+    if (freshness != null && freshness.isNotEmpty) {
+      params['freshness'] = freshness;
+    }
+
     final result = await context.serviceResolver.execute(
       serviceId,
       operation,

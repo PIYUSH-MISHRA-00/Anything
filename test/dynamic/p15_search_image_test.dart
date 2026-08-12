@@ -142,13 +142,13 @@ void main() {
             {
               'title': 'Lucknow today',
               'content': 'Lucknow today\nSource: Wire',
-              'sourceType': 'structuredNews',
+              'sourceType': 'currentData',
               'provider': 'fake',
               'imageUrl': 'https://cdn.example.com/news.jpg',
               'sourceUri': 'https://example.com/a',
             },
           ],
-          'provenance': {'sourceType': 'structuredNews', 'provider': 'fake'},
+          'provenance': {'sourceType': 'currentData', 'provider': 'fake'},
         },
       );
 

@@ -5,7 +5,10 @@ import '../platform/capability_platform.dart';
 
 /// Knowledge provider abstraction.
 abstract class KnowledgeProvider {
-  Future<List<Map<String, dynamic>>> retrieve(String query);
+  Future<List<Map<String, dynamic>>> retrieve(
+    String query, {
+    String freshness,
+  });
 }
 
 /// Fake knowledge provider for testing.
@@ -16,7 +19,10 @@ class FakeKnowledgeProvider implements KnowledgeProvider {
     : _results = List.from(results);
 
   @override
-  Future<List<Map<String, dynamic>>> retrieve(String query) async {
+  Future<List<Map<String, dynamic>>> retrieve(
+    String query, {
+    String freshness = '',
+  }) async {
     return _results;
   }
 }
@@ -54,8 +60,14 @@ class KnowledgeCapability extends PlatformCapability {
       );
     }
 
+    // Extract freshness from params — passed through from the behavior graph
+    // config by BehaviorInterpreter._executeServiceCall(). When 'current',
+    // the adapter enhances the query to fetch real-time data instead of
+    // encyclopedia articles.
+    final freshness = params['freshness'] as String? ?? '';
+
     try {
-      final results = await _provider.retrieve(query);
+      final results = await _provider.retrieve(query, freshness: freshness);
       return CapabilityInvocationResult.success(data: {'results': results});
     } catch (e) {
       return CapabilityInvocationResult.failure(e.toString());

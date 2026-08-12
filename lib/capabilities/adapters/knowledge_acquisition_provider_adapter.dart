@@ -14,13 +14,17 @@ class KnowledgeAcquisitionProviderAdapter implements KnowledgeProvider {
   const KnowledgeAcquisitionProviderAdapter(this._engine);
 
   @override
-  Future<List<Map<String, dynamic>>> retrieve(String query) async {
+  Future<List<Map<String, dynamic>>> retrieve(
+    String query, {
+    String freshness = '',
+  }) async {
     final bundle = await _engine.acquire(
       requirements: [
         KnowledgeRequirement(
           objective: query,
-          resourceType: 'reference',
+          resourceType: freshness == 'current' ? 'webDocument' : 'reference',
           queryHints: [query],
+          freshness: freshness,
         ),
       ],
       queryHints: [query],
@@ -32,6 +36,7 @@ class KnowledgeAcquisitionProviderAdapter implements KnowledgeProvider {
             'sourceUri': r.sourceUri,
             'content': r.content ?? '',
             'retrievedAt': r.retrievedAt.toIso8601String(),
+            'sourceType': freshness == 'current' ? 'currentData' : 'reference',
           },
         )
         .toList();

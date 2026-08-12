@@ -175,11 +175,13 @@ class KnowledgeRequirement {
   final String resourceType;
   final List<String> queryHints;
   final bool networkRequired;
+  final String freshness;
   const KnowledgeRequirement({
     required this.objective,
     required this.resourceType,
     this.queryHints = const [],
     this.networkRequired = true,
+    this.freshness = '',
   });
 }
 

@@ -239,6 +239,16 @@ class NetworkReferenceInterfaceFactory {
             'loadingLabelStateId': 'loadingLabel',
             'errorStateId': 'error',
             'cacheStateId': 'lastKnownResult',
+            // Freshness drives query enhancement: when 'current', the
+            // knowledge adapter appends 'current latest real-time' to the
+            // search query so DuckDuckGo returns recent results instead of
+            // encyclopedia articles. Generic — no domain-specific routing.
+            'freshness': 'current',
+            // IS-P13: reject Wikipedia/generic knowledge as primary result.
+            // The adapter sets sourceType to 'currentData' when freshness is
+            // 'current'; this expectedSourceType ensures the behavior
+            // interpreter rejects encyclopedia fallbacks.
+            'expectedSourceType': 'currentData',
           },
         ),
       ],
