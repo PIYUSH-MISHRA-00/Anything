@@ -1,0 +1,92 @@
+# P22 — Provider (Groq 401) root cause + AI-required policy
+
+HEAD after `openai_compatible_provider` trim fix. Reproduced from source; the
+Groq credential itself was never inspected, scraped, or logged.
+
+## 1. The Groq 401 — root cause FOUND and FIXED
+
+Owner report: the Groq key is independently verified to work, yet Anything fails
+generation with HTTP 401.
+
+**Cause (in Anything, not the credential):** an asymmetry between how the key is
+*validated* and how it is *stored/used*, in `lib/ai/openai_compatible_provider.dart`.
+
+| Path | Code | Behaviour |
+|---|---|---|
+| Validate | `testConnection(apiKey)` line 153 | `apiKey.trim()` → validates the **trimmed** key via `GET /models` → **reports success** |
+| Save | `saveApiKey(apiKey)` line 546 (before) | stored the key **raw** |
+| Read | `_readStoredKey()` line 131 (before) | returned the key **raw** |
+| Use | `_headers()` line 137 | builds `'Authorization': 'Bearer $apiKey'` |
+
+A key pasted with a trailing newline/space (the common case on Android paste)
+therefore **passes the Test button** (which trims) but generation sends
+`Authorization: Bearer <key>\n` — a corrupted header Groq answers with **401**.
+The credential is valid; the request was malformed. This exactly matches
+"the key works but the app says it's invalid."
+
+**Fix:** normalise (trim) the key at both cache boundaries —
+`saveApiKey` and `_readStoredKey`. Reading also repairs an **already-stored**
+key on the next launch, so the owner needs no re-entry. Regression test
+`test/p07_ai_runtime_integration_test.dart` → *"a pasted key is trimmed so
+generation does not 401"* asserts the on-wire `Authorization` header is
+`Bearer <key>` with no trailing whitespace after saving `"...\n "`.
+
+**Verification the owner must do (I cannot):** I cannot read or re-enter the
+owner's key (no scraping), and I cannot apply this Dart change to the *existing
+release install* without either reinstalling — which clears the credential vault
+(different signing key) — or a `flutter run` hot-reload session. So the owner
+verifies by either (a) `flutter run` hot-restart against the dev machine
+(preserves the vault, applies the fix, re-test generation), or (b) rebuild +
+reinstall + re-enter the key once. On next launch the stored key is trimmed and
+generation should no longer 401. If a 401 persists after this, it is a *second*
+cause (stale registry, wrong model, endpoint) and needs the sanitized
+request-time fingerprint diagnostic (see §3).
+
+## 2. The AI-required policy — ANALYSIS, not yet enforced (by design)
+
+Owner mandate: an application-generation request ("train ticket booking",
+"messaging", "weather", "marine rental", …) must **require AI**; the deterministic
+CRUD/best-effort path must not silently substitute when AI is unavailable.
+Trivial local computation (calculator, stopwatch, timer) and system operations
+may remain deterministic.
+
+Current behaviour (`lib/synthesis/composite_reasoner.dart`): when no provider is
+configured (or the model fails), `tryBestEffortPrimaryEntity` fabricates a
+single/multi-entity records app (the `best-effort` / `managed-records` tags).
+That is precisely the "silent substitution" the owner is banning for
+app-generation.
+
+**Why this is NOT flipped in the same commit as the 401 fix:** removing the
+deterministic fallback while AI is still returning 401 would leave
+app-generation with **nothing** — a bricked create flow — and I cannot verify
+the 401 fix against the owner's real key from here. The owner's own phase order
+(Part 51: fix provider → verify AI works → then test no-key behaviour) is the
+safe sequence. Blast radius is also real: 16 test files encode the current
+deterministic-creation contract and must be migrated to the new honest policy
+(app-generation without AI → `ProviderRequired`, prompt preserved, Settings +
+Retry), not weakened.
+
+**Recommended next step (once the owner confirms AI generates with their key):**
+gate `tryBestEffortPrimaryEntity` (and the managed-records/collection deterministic
+app-generation paths) behind "no working provider ⇒ `ReasoningProviderRequired`",
+keeping only the calc/timer capability shells deterministic. Then migrate the 16
+affected tests to assert the honest failure. This is a focused, mechanical change
+once AI is confirmed working — but doing it blind would be reckless.
+
+## 3. Honest blockers
+
+- **AI generation still unverified end-to-end from here.** The 401 root cause is
+  fixed with high confidence and a regression test, but proving a live Groq
+  round-trip requires the owner's key on a build that has this fix — which only
+  the owner can exercise without me scraping/destroying the credential.
+- **AI-required policy not yet enforced** — sequenced after AI is confirmed, to
+  avoid bricking generation (see §2).
+- No secret entered source, logs, screenshots, reports, or Git.
+
+## Verdict
+- Groq 401: **root-caused and fixed** (trim asymmetry) with a regression test.
+- AI-required policy: **understood and specified**, deliberately sequenced after
+  the owner confirms AI works with their key — not enforced blind.
+- **NOT production complete**: AI generation is unverified against a live key
+  from this environment, and the no-silent-fallback policy is pending that
+  confirmation.
