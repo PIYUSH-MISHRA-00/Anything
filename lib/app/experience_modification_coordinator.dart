@@ -108,6 +108,7 @@ class ExperienceModificationCoordinator {
   Future<ModificationCoordinatorResult> modifyExperience({
     required String experienceId,
     required String modificationExpression,
+    String? activeScreenId,
   }) async {
     // 1. Load current metadata + package
     final metadata = await _repository.getMetadata(experienceId);
@@ -142,7 +143,11 @@ class ExperienceModificationCoordinator {
       targetExperienceId: experienceId,
       basePackageVersion: currentPackage.manifest.version,
       objective: modificationExpression,
-      operations: await _planOperations(currentPackage, modificationExpression),
+      operations: await _planOperations(
+        currentPackage,
+        modificationExpression,
+        activeScreenId,
+      ),
     );
 
     // 3. Execute ModificationEngine
@@ -247,6 +252,7 @@ class ExperienceModificationCoordinator {
   Future<EvolutionDiffPlan?> planEvolution({
     required String experienceId,
     required String modificationExpression,
+    String? activeScreenId,
   }) async {
     final currentPackage = await _repository.getPackage(experienceId);
     if (currentPackage == null) return null;
@@ -255,7 +261,11 @@ class ExperienceModificationCoordinator {
       targetExperienceId: experienceId,
       basePackageVersion: currentPackage.manifest.version,
       objective: modificationExpression,
-      operations: await _planOperations(currentPackage, modificationExpression),
+      operations: await _planOperations(
+        currentPackage,
+        modificationExpression,
+        activeScreenId,
+      ),
     );
 
     final result = await _engine.modify(currentPackage, spec);
@@ -491,12 +501,25 @@ class ExperienceModificationCoordinator {
   Future<List<ModificationOperation>> _planOperations(
     ExperiencePackage package,
     String expression,
+    String? activeScreenId,
   ) async {
+    // Screen scoping: by default a change targets ONLY the screen the user is
+    // currently viewing; it spans the whole app only when the request says so
+    // ("the entire app", "all screens", …). `activeScreenId` is null for
+    // callers/tests that don't track a current screen → whole-app behavior,
+    // exactly as before.
+    final wholeApp = _isWholeAppRequest(expression);
     final ai = _aiProvider;
-    if (ai == null) return _parseOperations(expression);
+    if (ai == null) {
+      return _scopeToScreen(
+        _parseOperations(expression),
+        activeScreenId,
+        wholeApp,
+      );
+    }
     try {
       final raw = await ai.generate(
-        _modificationPrompt(package, expression),
+        _modificationPrompt(package, expression, activeScreenId, wholeApp),
         systemPrompt:
             'You edit an existing app by emitting a JSON array of operations. '
             'Reply with ONLY the JSON array, no prose, no markdown fences.',
@@ -506,10 +529,64 @@ class ExperienceModificationCoordinator {
       // unparseable) must not silently no-op the user's request — fall back
       // to the deterministic parser so "add a percentage button" etc. still
       // work even when the model misbehaves.
-      return ops.isEmpty ? _parseOperations(expression) : ops;
+      final chosen = ops.isEmpty ? _parseOperations(expression) : ops;
+      return _scopeToScreen(chosen, activeScreenId, wholeApp);
     } catch (_) {
-      return _parseOperations(expression);
+      return _scopeToScreen(
+        _parseOperations(expression),
+        activeScreenId,
+        wholeApp,
+      );
     }
+  }
+
+  /// True when the request asks to change the WHOLE app rather than just the
+  /// current screen — the only case in which changes are allowed to span
+  /// screens by default.
+  static bool _isWholeAppRequest(String expression) {
+    final l = expression.toLowerCase();
+    const phrases = [
+      'entire app',
+      'entire application',
+      'whole app',
+      'whole application',
+      'complete app',
+      'all screens',
+      'every screen',
+      'all pages',
+      'every page',
+      'all tabs',
+      'every tab',
+      'across the app',
+      'across all',
+      'everywhere',
+      'whole thing',
+    ];
+    return phrases.any(l.contains);
+  }
+
+  /// Pin any screen-adding operation to the current screen unless the request
+  /// was whole-app. `addUiNode` is the only operation whose target screen is
+  /// ambiguous (the engine otherwise defaults it to the FIRST screen, which is
+  /// why "add a button" used to always land on the home screen); modify/remove
+  /// target a node by id wherever it lives, and add-entity/state/webBrowse are
+  /// inherently app-wide. Only fills a MISSING screenId — an explicit one the
+  /// model chose (e.g. the user named another screen) is respected.
+  List<ModificationOperation> _scopeToScreen(
+    List<ModificationOperation> ops,
+    String? activeScreenId,
+    bool wholeApp,
+  ) {
+    if (wholeApp || activeScreenId == null) return ops;
+    return ops.map((op) {
+      if (op.type != ModificationType.addUiNode) return op;
+      final existing = op.params['screenId'];
+      if (existing is String && existing.trim().isNotEmpty) return op;
+      return ModificationOperation(
+        type: op.type,
+        params: {...op.params, 'screenId': activeScreenId},
+      );
+    }).toList();
   }
 
   /// Apply any `addWebBrowse` operation the planner requested by composing a
@@ -544,7 +621,12 @@ class ExperienceModificationCoordinator {
   /// Compact, current structure of [package] the model edits against — screen
   /// + node ids are what `modifyUiNode`/`removeUiNode` target, so they must be
   /// real ids from the live package, never invented.
-  String _modificationPrompt(ExperiencePackage package, String expression) {
+  String _modificationPrompt(
+    ExperiencePackage package,
+    String expression,
+    String? activeScreenId,
+    bool wholeApp,
+  ) {
     final screens = package.interface.screens
         .map(
           (s) => {
@@ -571,6 +653,8 @@ class ExperienceModificationCoordinator {
 
     return jsonEncode({
       'request': expression,
+      'currentScreenId': activeScreenId,
+      'wholeAppRequest': wholeApp,
       'currentApp': {
         'screens': screens,
         'state': state,
@@ -589,9 +673,13 @@ class ExperienceModificationCoordinator {
           'Return a JSON array of {"type": <opName>, "params": {...}} using ONLY '
           'the operations above and ONLY nodeIds/screenIds that appear in '
           'currentApp. Emit the minimal set of operations that satisfies the '
-          'request. Use addWebBrowse when the user wants to search/browse/find '
-          'real-world or live data from the web (adds a Discover tab powered by '
-          'live web search).',
+          'request. SCOPE: unless wholeAppRequest is true (or the user names a '
+          'specific other screen), apply the change ONLY to currentScreenId — '
+          'set addUiNode.screenId to currentScreenId and touch only that '
+          "screen's nodes. When wholeAppRequest is true, you may change any or "
+          'all screens. Use addWebBrowse when the user wants to search/browse/'
+          'find real-world or live data from the web (adds a Discover tab '
+          'powered by live web search).',
     });
   }
 

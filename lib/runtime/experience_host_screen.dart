@@ -527,6 +527,18 @@ class _ExperienceHostScreenState extends State<ExperienceHostScreen>
 
   void _showModificationIntent() {
     final controller = TextEditingController();
+    // The screen the change will target by default (matches what
+    // `_runModification` passes to `planEvolution`), so the sheet can tell the
+    // user the scope up front.
+    final activeId = _activeScreenId();
+    final activeTitle = _currentPackage.interface.screens
+        .where((s) => s.id == activeId)
+        .map((s) => s.title)
+        .cast<String?>()
+        .firstWhere((t) => t != null && t.trim().isNotEmpty, orElse: () => null);
+    final scopeHint = activeTitle != null
+        ? 'Applies to "$activeTitle". Say "the whole app" to change everything.'
+        : 'Describe what you want to change';
     // Voice input for the "describe what you want to change" field — the same
     // dictation the Home composer offers. Recognized speech flows straight into
     // the controller (the TextField is bound to it, so it updates live).
@@ -559,7 +571,7 @@ class _ExperienceHostScreenState extends State<ExperienceHostScreen>
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Describe what you want to change',
+                  scopeHint,
                   style: TextStyle(
                     color: Theme.of(sheetContext).colorScheme.onSurfaceVariant,
                   ),
@@ -704,6 +716,7 @@ class _ExperienceHostScreenState extends State<ExperienceHostScreen>
     final plan = await _modificationCoordinator.planEvolution(
       experienceId: widget.experienceId!,
       modificationExpression: expression.trim(),
+      activeScreenId: _activeScreenId(),
     );
 
     if (plan == null) {
@@ -1185,6 +1198,23 @@ class _ExperienceHostScreenState extends State<ExperienceHostScreen>
     }
     final screens = _currentPackage.interface.screens;
     return screens.isNotEmpty ? screens.first.id : 'main';
+  }
+
+  /// The real top-level screen the user is currently viewing — passed to
+  /// modification so "Change this app" edits THIS screen by default (not always
+  /// the home screen). Deliberately resolves to a package top-level screen
+  /// (never a transient `_edit`/`_detail` overlay, which isn't a real screen
+  /// the engine's addUiNode could target — that would silently drop the edit).
+  String? _activeScreenId() {
+    final screens = _currentPackage.interface.screens;
+    bool isReal(String? id) => id != null && screens.any((s) => s.id == id);
+    final tab = _navigationItems.isNotEmpty
+        ? _getScreenIdForTab(_currentTabIndex)
+        : null;
+    if (isReal(tab)) return tab;
+    final routerId = _router?.currentScreenId;
+    if (isReal(routerId)) return routerId;
+    return screens.isNotEmpty ? screens.first.id : null;
   }
 
   @override
