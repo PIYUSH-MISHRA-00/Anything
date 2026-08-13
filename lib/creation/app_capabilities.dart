@@ -237,8 +237,12 @@ class AppCapabilityInferrer {
             expression.contains('fetch') ||
             expression.contains('realtime') ||
             expression.contains('real-time');
+        // NOTE: bare "search" is NOT a network signal — records apps have a
+        // list-search box. Only genuine external-knowledge words qualify.
         final looksLookup =
-            expression.contains('search') ||
+            expression.contains('web search') ||
+            expression.contains('search the web') ||
+            expression.contains('search online') ||
             expression.contains('web') ||
             expression.contains('lookup') ||
             expression.contains('reference');

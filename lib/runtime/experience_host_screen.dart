@@ -1440,7 +1440,9 @@ class _ExperienceHostScreenState extends State<ExperienceHostScreen>
           runtimeContext: runtimeContext,
           data: renderData,
         ),
-        bottomNavigationBar: _navigationItems.isNotEmpty
+        // Material's NavigationBar asserts destinations.length >= 2; a single
+        // destination needs no bottom bar (it would crash the whole screen).
+        bottomNavigationBar: _navigationItems.length >= 2
             ? NavigationBar(
                 selectedIndex: _currentTabIndex,
                 onDestinationSelected: (index) {

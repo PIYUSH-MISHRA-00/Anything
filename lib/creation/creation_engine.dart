@@ -15,6 +15,7 @@ import 'calculation_spec.dart';
 import 'creation_context.dart';
 import 'display_naming.dart';
 import 'experience_package.dart';
+import 'intent_preservation.dart';
 import 'network_reference_interface_factory.dart';
 import 'timing_interface_factory.dart';
 
@@ -329,10 +330,23 @@ class CreationEngine {
                 .isNotEmpty
             ? 'current'
             : '';
+        // The user's own words decide the interaction model. A durable
+        // collection/management intent ("book", "manage", "tracker",
+        // "reservation", …) is a records app and must NEVER be replaced by the
+        // reference search shell — even if planning produced a reference-shaped
+        // blueprint (a booking app has a search STEP, it is not a search app).
+        // Weather/news/lookup intents are not collection-purposed and still get
+        // the shell.
+        final intentIsCollection =
+            const IntentPreservationValidator().purposeFromPrompt(
+                  context.intent.expression,
+                ) ==
+                IntentPurpose.collection;
         // Prefer network shell when reference/network-first; keep CRUD when
         // the blueprint is a durable collection with network as optional.
         final prefersNetworkShell =
             blueprint != null &&
+            !intentIsCollection &&
             (blueprint.archetypes.contains(AppArchetype.reference) ||
                 !inferredCaps.contains(AppCapabilityIds.crud));
         if (needsNetworkShell && prefersNetworkShell) {
