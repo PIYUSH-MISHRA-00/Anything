@@ -13,6 +13,7 @@
 library;
 
 import 'dart:convert';
+import 'dart:developer' as developer;
 
 import '../ai/provider_error.dart';
 import '../core/contracts/model_provider.dart';
@@ -180,8 +181,9 @@ class ModelApplicationReasoner implements ApplicationReasoner {
       }
 
       // Check if model is requesting knowledge
-      final knowledgeNeeds = (json['knowledgeNeeds'] as List? ?? []).map((k) {
-        final kr = k as Map<String, dynamic>;
+      final knowledgeNeeds = _asList(json['knowledgeNeeds']).map((k) {
+        if (k is! Map) return null;
+        final kr = k.cast<String, dynamic>();
         return SynthesisKnowledgeRequirement(
           id:
               kr['id'] as String? ??
@@ -192,9 +194,10 @@ class ModelApplicationReasoner implements ApplicationReasoner {
           // made every network/reference plan abort when acquisition was empty.
           required: kr['required'] as bool? ?? false,
           resourceType: kr['resourceType'] as String? ?? 'domainKnowledge',
-          queryHints: (kr['queryHints'] as List?)?.cast<String>() ?? [],
+          queryHints:
+              _asList(kr['queryHints']).whereType<String>().toList(),
         );
-      }).toList();
+      }).whereType<SynthesisKnowledgeRequirement>().toList();
 
       // If model says knowledge is needed and there are required requirements
       final requiredKnowledge = knowledgeNeeds
@@ -209,12 +212,32 @@ class ModelApplicationReasoner implements ApplicationReasoner {
       return ReasoningFailed(
         error: 'Model returned unsupported types: ${e.message}',
       );
-    } catch (e) {
+    } catch (e, st) {
+      // Diagnostic (visible in `adb logcat`): the exact throw that made a
+      // model response unparseable — without this, "Could not understand" is
+      // undebuggable on a real device. Carries no credentials (the model plan
+      // is app structure, not secrets).
+      developer.log(
+        '[anything:reasoner] parse failed: ${e.runtimeType}: $e',
+        name: 'reasoner',
+        error: e,
+        stackTrace: st,
+      );
       return const ReasoningFailed(
         error: 'Could not understand the model response. Please try again.',
       );
     }
   }
+
+  /// A value coerced to a List, or empty when the model sent something else
+  /// (an object, a string) where an array was expected. `as List?` THROWS on a
+  /// type mismatch — this never does.
+  static List<dynamic> _asList(dynamic v) => v is List ? v : const [];
+
+  /// A value coerced to a num (parsing numeric strings), or null. `as num?`
+  /// throws on a String; this tolerates `"5"`.
+  static num? _asNum(dynamic v) =>
+      v is num ? v : (v is String ? num.tryParse(v) : null);
 
   Map<String, dynamic>? _extractJson(String text) {
     // Try direct JSON parse first
@@ -253,145 +276,161 @@ class ModelApplicationReasoner implements ApplicationReasoner {
     // SKIPPED rather than thrown on. A capable model still varies its key names
     // and omits optional fields; one such variance must not abort the whole
     // plan (it used to surface as "Could not understand the model response").
-    final entities = (json['entities'] as List? ?? []).map((e) {
-      if (e is! Map) return null;
-      final entity = e.cast<String, dynamic>();
-      final entityName =
-          entity['name'] as String? ?? entity['id'] as String?;
-      if (entityName == null) return null;
-      final fields = (entity['fields'] as List? ?? []).map((f) {
-        if (f is! Map) return null;
-        final field = f.cast<String, dynamic>();
-        final fieldName = field['name'] as String? ?? field['id'] as String?;
-        if (fieldName == null) return null;
-        return SemanticField(
-          id: _normalizeId(field['id'] as String? ?? fieldName),
-          name: fieldName,
-          type: _parseFieldType(field['type'] as String? ?? 'text'),
-          required: field['required'] as bool? ?? false,
-          defaultValue: field['defaultValue'] as String?,
-          minimum: field['minimum'] as num?,
-          maximum: field['maximum'] as num?,
-          allowedValues:
-              (field['allowedValues'] as List?)?.cast<String>() ?? [],
-          referenceEntityId: field['referenceEntityId'] as String?,
-          description: field['description'] as String? ?? '',
-        );
-      }).whereType<SemanticField>().toList();
+    String? str(dynamic v) => v is String ? v : null;
 
-      return SemanticEntity(
-        id: _normalizeId(entity['id'] as String? ?? entityName),
-        name: entityName,
-        description: entity['description'] as String? ?? '',
-        fields: fields,
-        displayField: entity['displayField'] as String? ?? '',
-      );
+    final entities = _asList(json['entities']).map((e) {
+      try {
+        if (e is! Map) return null;
+        final entity = e.cast<String, dynamic>();
+        final entityName = str(entity['name']) ?? str(entity['id']);
+        if (entityName == null) return null;
+        final fields = _asList(entity['fields']).map((f) {
+          try {
+            if (f is! Map) return null;
+            final field = f.cast<String, dynamic>();
+            final fieldName = str(field['name']) ?? str(field['id']);
+            if (fieldName == null) return null;
+            return SemanticField(
+              id: _normalizeId(str(field['id']) ?? fieldName),
+              name: fieldName,
+              type: _parseFieldType(str(field['type']) ?? 'text'),
+              required: field['required'] as bool? ?? false,
+              defaultValue: str(field['defaultValue']),
+              minimum: _asNum(field['minimum']),
+              maximum: _asNum(field['maximum']),
+              allowedValues:
+                  _asList(field['allowedValues']).whereType<String>().toList(),
+              referenceEntityId: str(field['referenceEntityId']),
+              description: str(field['description']) ?? '',
+            );
+          } catch (_) {
+            return null;
+          }
+        }).whereType<SemanticField>().toList();
+
+        return SemanticEntity(
+          id: _normalizeId(str(entity['id']) ?? entityName),
+          name: entityName,
+          description: str(entity['description']) ?? '',
+          fields: fields,
+          displayField: str(entity['displayField']) ?? '',
+        );
+      } catch (_) {
+        return null;
+      }
     }).whereType<SemanticEntity>().toList();
 
-    final actions = (json['actions'] as List? ?? []).map((a) {
-      if (a is! Map) return null;
-      final action = a.cast<String, dynamic>();
-      final target = action['targetEntity'] as String? ??
-          action['targetEntityId'] as String?;
-      final name = action['name'] as String? ?? action['id'] as String?;
-      if (target == null || name == null) return null;
-      return SemanticAction(
-        id: _normalizeId(action['id'] as String? ?? name),
-        name: name,
-        targetEntityId: _normalizeId(target),
-        actionType: _parseActionType(action['type'] as String? ?? 'create'),
-        derivedEffect: action['derivedEffect'] as String?,
-      );
+    final actions = _asList(json['actions']).map((a) {
+      try {
+        if (a is! Map) return null;
+        final action = a.cast<String, dynamic>();
+        final target = str(action['targetEntity']) ?? str(action['targetEntityId']);
+        final name = str(action['name']) ?? str(action['id']);
+        if (target == null || name == null) return null;
+        return SemanticAction(
+          id: _normalizeId(str(action['id']) ?? name),
+          name: name,
+          targetEntityId: _normalizeId(target),
+          actionType: _parseActionType(str(action['type']) ?? 'create'),
+          derivedEffect: str(action['derivedEffect']),
+        );
+      } catch (_) {
+        return null;
+      }
     }).whereType<SemanticAction>().toList();
 
-    final derivedValues = (json['derivedValues'] as List? ?? []).map((d) {
-      if (d is! Map) return null;
-      final dv = d.cast<String, dynamic>();
-      final name = dv['name'] as String? ?? dv['id'] as String?;
-      final source =
-          dv['sourceEntity'] as String? ?? dv['sourceEntityId'] as String?;
-      if (name == null || source == null) return null;
-      return SemanticDerivedValue(
-        id: _normalizeId(dv['id'] as String? ?? name),
-        name: name,
-        sourceEntityId: _normalizeId(source),
-        operation: _parseOperation(dv['operation'] as String? ?? 'count'),
-        fieldId: dv['fieldId'] as String?,
-        description: dv['description'] as String? ?? '',
-      );
+    final derivedValues = _asList(json['derivedValues']).map((d) {
+      try {
+        if (d is! Map) return null;
+        final dv = d.cast<String, dynamic>();
+        final name = str(dv['name']) ?? str(dv['id']);
+        final source = str(dv['sourceEntity']) ?? str(dv['sourceEntityId']);
+        if (name == null || source == null) return null;
+        return SemanticDerivedValue(
+          id: _normalizeId(str(dv['id']) ?? name),
+          name: name,
+          sourceEntityId: _normalizeId(source),
+          operation: _parseOperation(str(dv['operation']) ?? 'count'),
+          fieldId: str(dv['fieldId']),
+          description: str(dv['description']) ?? '',
+        );
+      } catch (_) {
+        return null;
+      }
     }).whereType<SemanticDerivedValue>().toList();
 
-    final views = (json['views'] as List? ?? []).map((v) {
-      if (v is! Map) return null;
-      final view = v.cast<String, dynamic>();
-      final viewName = view['name'] as String? ?? view['id'] as String?;
-      if (viewName == null) return null;
-      final sections = (view['sections'] as List? ?? []).map((s) {
-        if (s is! Map) return null;
-        final section = s.cast<String, dynamic>();
-        final purpose = section['purpose'] as String? ??
-            section['name'] as String? ??
-            section['id'] as String?;
-        if (purpose == null) return null;
-        return SemanticViewSection(
-          id: _normalizeId(section['id'] as String? ?? purpose),
-          purpose: purpose,
-          sourceEntityId: section['sourceEntity'] != null
-              ? _normalizeId(section['sourceEntity'] as String)
-              : null,
-          sectionType: _parseSectionType(section['type'] as String? ?? 'list'),
-        );
-      }).whereType<SemanticViewSection>().toList();
+    final views = _asList(json['views']).map((v) {
+      try {
+        if (v is! Map) return null;
+        final view = v.cast<String, dynamic>();
+        final viewName = str(view['name']) ?? str(view['id']);
+        if (viewName == null) return null;
+        final sections = _asList(view['sections']).map((s) {
+          try {
+            if (s is! Map) return null;
+            final section = s.cast<String, dynamic>();
+            final purpose = str(section['purpose']) ??
+                str(section['name']) ??
+                str(section['id']);
+            if (purpose == null) return null;
+            final sSource = str(section['sourceEntity']);
+            return SemanticViewSection(
+              id: _normalizeId(str(section['id']) ?? purpose),
+              purpose: purpose,
+              sourceEntityId: sSource != null ? _normalizeId(sSource) : null,
+              sectionType: _parseSectionType(str(section['type']) ?? 'list'),
+            );
+          } catch (_) {
+            return null;
+          }
+        }).whereType<SemanticViewSection>().toList();
 
-      return SemanticView(
-        id: _normalizeId(view['id'] as String? ?? viewName),
-        name: viewName,
-        purpose: view['purpose'] as String? ?? viewName,
-        sourceEntityId: view['sourceEntity'] != null
-            ? _normalizeId(view['sourceEntity'] as String)
-            : null,
-        viewType: _parseViewType(view['type'] as String? ?? 'list'),
-        sections: sections,
-        isDefault: view['isDefault'] as bool? ?? false,
-      );
+        final vSource = str(view['sourceEntity']);
+        return SemanticView(
+          id: _normalizeId(str(view['id']) ?? viewName),
+          name: viewName,
+          purpose: str(view['purpose']) ?? viewName,
+          sourceEntityId: vSource != null ? _normalizeId(vSource) : null,
+          viewType: _parseViewType(str(view['type']) ?? 'list'),
+          sections: sections,
+          isDefault: view['isDefault'] as bool? ?? false,
+        );
+      } catch (_) {
+        return null;
+      }
     }).whereType<SemanticView>().toList();
 
+    final network = json['networkConfig'];
     return SemanticApp(
-      name: json['name'] as String? ?? json['title'] as String? ?? 'App',
-      purpose: json['purpose'] as String? ?? '',
+      name: str(json['name']) ?? str(json['title']) ?? 'App',
+      purpose: str(json['purpose']) ?? '',
       entities: entities,
       actions: actions,
       derivedValues: derivedValues,
       views: views,
-      tags: (json['tags'] as List?)?.cast<String>() ?? [],
-      archetypes: (json['archetypes'] as List?)?.cast<String>() ?? [],
+      tags: _asList(json['tags']).whereType<String>().toList(),
+      archetypes: _asList(json['archetypes']).whereType<String>().toList(),
       requiredCapabilities:
-          (json['requiredCapabilities'] as List?)?.cast<String>() ?? [],
-      knowledgeNeeds: (json['knowledgeNeeds'] as List? ?? []).map((k) {
-        final kr = k as Map<String, dynamic>;
+          _asList(json['requiredCapabilities']).whereType<String>().toList(),
+      knowledgeNeeds: _asList(json['knowledgeNeeds']).map((k) {
+        if (k is! Map) return null;
+        final kr = k.cast<String, dynamic>();
         return SynthesisKnowledgeRequirement(
           id:
-              kr['id'] as String? ??
+              str(kr['id']) ??
               'req-${DateTime.now().millisecondsSinceEpoch}',
-          purpose: kr['purpose'] as String? ?? kr['objective'] as String? ?? '',
-          query: kr['query'] as String? ?? kr['objective'] as String? ?? '',
+          purpose: str(kr['purpose']) ?? str(kr['objective']) ?? '',
+          query: str(kr['query']) ?? str(kr['objective']) ?? '',
           required: kr['required'] as bool? ?? false,
-          resourceType: kr['resourceType'] as String? ?? 'domainKnowledge',
-          queryHints: (kr['queryHints'] as List?)?.cast<String>() ?? [],
+          resourceType: str(kr['resourceType']) ?? 'domainKnowledge',
+          queryHints: _asList(kr['queryHints']).whereType<String>().toList(),
         );
-      }).toList(),
-      networkConfig: json['networkConfig'] != null
+      }).whereType<SynthesisKnowledgeRequirement>().toList(),
+      networkConfig: network is Map
           ? BlueprintNetworkConfig(
-              purpose:
-                  (json['networkConfig'] as Map<String, dynamic>)['purpose']
-                      as String? ??
-                  'External data access',
+              purpose: str(network['purpose']) ?? 'External data access',
               allowedHosts:
-                  ((json['networkConfig']
-                              as Map<String, dynamic>)['allowedHosts']
-                          as List?)
-                      ?.cast<String>() ??
-                  [],
+                  _asList(network['allowedHosts']).whereType<String>().toList(),
             )
           : null,
     );

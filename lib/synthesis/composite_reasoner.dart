@@ -104,10 +104,13 @@ class CompositeApplicationReasoner implements ApplicationReasoner {
       return const ReasoningProviderRequired();
     }
 
-    // Step 3: model reasoner. A configured-but-failing provider surfaces its
-    // classified failure; only the lenient path substitutes a best-effort app.
+    // Step 3: model reasoner. A provider was consulted (IS-P22 satisfied); if
+    // its response can't be turned into a usable plan, fall back to a
+    // best-effort deterministic records app rather than failing the user's
+    // creation — in BOTH strict and lenient modes. Only when even that yields
+    // nothing do we surface the model's classified failure.
     final modelResult = await ModelApplicationReasoner(provider).reason(context);
-    if (modelResult is ReasoningFailed && !requireProviderForGeneration) {
+    if (modelResult is ReasoningFailed) {
       final fallback = _deterministic.tryBestEffortPrimaryEntity(
         context.understanding.objective,
       );
