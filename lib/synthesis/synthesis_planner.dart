@@ -107,6 +107,44 @@ class SynthesisPlanner {
       );
     }).toList();
 
+    // Completeness guarantee: every entity must be user-creatable. Otherwise a
+    // required reference to it (e.g. a booking's train_id / passenger_id) is a
+    // dead end — the dropdown has nothing to select and the record can never be
+    // created. If the model modelled an entity but gave it no create action
+    // (it did this for Train/Passenger in a booking app), synthesize one plus a
+    // form view so the entity gets an "Add" surface. Purely additive: entities
+    // that already have a create action are untouched.
+    final creatable = actions
+        .where((a) => a.actionType == BlueprintActionType.create)
+        .map((a) => a.targetEntityId)
+        .toSet();
+    for (final e in entities) {
+      if (creatable.contains(e.id)) continue;
+      actions.add(
+        BlueprintAction(
+          id: 'create_${e.id}',
+          name: 'Add ${e.name}',
+          targetEntityId: e.id,
+          actionType: BlueprintActionType.create,
+        ),
+      );
+      final hasForm = views.any(
+        (v) =>
+            v.sourceEntityId == e.id && v.viewType == BlueprintViewType.form,
+      );
+      if (!hasForm) {
+        views.add(
+          BlueprintView(
+            id: '${e.id}_form',
+            name: '${e.name} Form',
+            purpose: 'Add ${e.name}',
+            sourceEntityId: e.id,
+            viewType: BlueprintViewType.form,
+          ),
+        );
+      }
+    }
+
     final derivedValues = semantic.derivedValues.map((sdv) {
       return BlueprintDerivedValue(
         id: sdv.id,
