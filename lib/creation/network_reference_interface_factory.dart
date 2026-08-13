@@ -226,34 +226,36 @@ class NetworkReferenceInterfaceFactory {
     );
   }
 
-  StateSchema buildState() {
-    return const StateSchema(
+  StateSchema buildState({
+    String emptyHint = 'Enter a city or location above, then press Search.',
+  }) {
+    return StateSchema(
       variables: [
-        StateVariable(
+        const StateVariable(
           id: 'query',
           type: 'string',
           defaultValue: '',
           persistence: 'persistent',
         ),
-        StateVariable(
+        const StateVariable(
           id: 'loading',
           type: 'boolean',
           defaultValue: false,
           persistence: 'session',
         ),
-        StateVariable(
+        const StateVariable(
           id: 'loadingLabel',
           type: 'string',
           defaultValue: '',
           persistence: 'session',
         ),
-        StateVariable(
+        const StateVariable(
           id: 'error',
           type: 'string',
           defaultValue: '',
           persistence: 'session',
         ),
-        StateVariable(
+        const StateVariable(
           id: 'resultTitle',
           type: 'string',
           defaultValue: '',
@@ -262,7 +264,7 @@ class NetworkReferenceInterfaceFactory {
         StateVariable(
           id: 'resultText',
           type: 'string',
-          defaultValue: 'Enter a city or location above, then press Search.',
+          defaultValue: emptyHint,
           persistence: 'session',
         ),
         StateVariable(
@@ -422,7 +424,10 @@ class NetworkReferenceInterfaceFactory {
       manifest: package.manifest,
       interface: interface,
       behavior: _mergeBehavior(package.behavior, buildBehavior(topic: subj)),
-      state: _mergeState(package.state, buildState()),
+      state: _mergeState(
+        package.state,
+        buildState(emptyHint: 'Search above to find $subj from the web.'),
+      ),
       data: package.data,
       services: services,
       networkDeclarations: network,

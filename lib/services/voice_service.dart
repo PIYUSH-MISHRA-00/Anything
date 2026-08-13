@@ -68,6 +68,14 @@ class VoiceInputService extends ChangeNotifier {
     return status.isGranted;
   }
 
+  /// True when the mic permission is permanently denied — the system dialog no
+  /// longer appears, so the only way back is the app's settings page.
+  Future<bool> isPermissionPermanentlyDenied() =>
+      Permission.microphone.isPermanentlyDenied;
+
+  /// Open the OS app-settings page so the user can re-enable the microphone.
+  Future<void> openSettings() => openAppSettings();
+
   /// Start listening for speech.
   Future<void> startListening() async {
     if (_state == VoiceState.listening) return;

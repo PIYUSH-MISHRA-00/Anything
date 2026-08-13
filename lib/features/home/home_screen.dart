@@ -727,8 +727,32 @@ class HomeScreenState extends State<HomeScreen> {
   Future<void> _handleVoiceTap() async {
     if (_isListening) {
       await _voiceService.stopListening();
-    } else {
-      await _voiceService.startListening();
+      return;
+    }
+    await _voiceService.startListening();
+    if (!mounted) return;
+    // The mic used to fail SILENTLY when the permission was denied or speech
+    // recognition was unavailable — the icon looked dead. Surface why, and
+    // offer the settings page when the OS won't re-prompt.
+    if (_voiceService.state == VoiceState.error ||
+        _voiceService.state == VoiceState.unavailable) {
+      final message = _voiceService.errorMessage ?? 'Voice input is unavailable.';
+      final permanentlyDenied =
+          message.toLowerCase().contains('permission') &&
+          await _voiceService.isPermissionPermanentlyDenied();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          showCloseIcon: true,
+          action: permanentlyDenied
+              ? SnackBarAction(
+                  label: 'Settings',
+                  onPressed: _voiceService.openSettings,
+                )
+              : null,
+        ),
+      );
     }
   }
 
