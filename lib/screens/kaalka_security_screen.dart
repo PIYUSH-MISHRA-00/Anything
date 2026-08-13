@@ -27,7 +27,7 @@ class _KaalkaSecurityScreenState extends ConsumerState<KaalkaSecurityScreen> {
       useLiveTime: _useLiveTime,
     );
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
+      const SnackBar(showCloseIcon: true, 
         content: Text('Kaalka security settings saved.'),
         backgroundColor: Colors.blueAccent,
       ),

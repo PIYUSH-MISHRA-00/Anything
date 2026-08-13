@@ -101,7 +101,7 @@ class _DeveloperScreenState extends State<DeveloperScreen> {
     Clipboard.setData(ClipboardData(text: report.toString()));
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(const SnackBar(content: Text('Diagnostics copied')));
+    ).showSnackBar(const SnackBar(showCloseIcon: true, content: Text('Diagnostics copied')));
   }
 
   @override

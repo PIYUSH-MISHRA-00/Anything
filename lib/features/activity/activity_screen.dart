@@ -102,7 +102,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
     if (!mounted) return;
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(const SnackBar(content: Text('Activity cleared')));
+    ).showSnackBar(const SnackBar(showCloseIcon: true, content: Text('Activity cleared')));
   }
 
   @override

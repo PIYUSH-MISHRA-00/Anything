@@ -123,7 +123,7 @@ class _WorkspaceSwitcherSheetState extends State<WorkspaceSwitcherSheet> {
       if (!mounted) return;
       Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+        SnackBar(showCloseIcon: true, 
           content: Text(
             'Switched to ${name ?? 'app'}. Reopen it from Recent to view.',
           ),

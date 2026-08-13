@@ -134,7 +134,7 @@ class _ProtectionScreenState extends State<ProtectionScreen> {
     await _load();
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Default protection time: ${_pref.label}')),
+        SnackBar(showCloseIcon: true, content: Text('Default protection time: ${_pref.label}')),
       );
     }
   }

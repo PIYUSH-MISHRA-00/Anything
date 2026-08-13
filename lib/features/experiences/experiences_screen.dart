@@ -169,19 +169,19 @@ class _ExperiencesScreenState extends State<ExperiencesScreen> {
         if (mounted) {
           ScaffoldMessenger.of(
             context,
-          ).showSnackBar(SnackBar(content: Text(message)));
+          ).showSnackBar(SnackBar(showCloseIcon: true, content: Text(message)));
         }
       case OpenInvalid(:final message):
         if (mounted) {
           ScaffoldMessenger.of(
             context,
-          ).showSnackBar(SnackBar(content: Text(message)));
+          ).showSnackBar(SnackBar(showCloseIcon: true, content: Text(message)));
         }
       case OpenFailed(:final message):
         if (mounted) {
           ScaffoldMessenger.of(
             context,
-          ).showSnackBar(SnackBar(content: Text(message)));
+          ).showSnackBar(SnackBar(showCloseIcon: true, content: Text(message)));
         }
     }
   }
@@ -238,7 +238,7 @@ class _ExperiencesScreenState extends State<ExperiencesScreen> {
       } else if (openResult is OpenFailed && mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text(openResult.message)));
+        ).showSnackBar(SnackBar(showCloseIcon: true, content: Text(openResult.message)));
       }
     } else if (option == 'custom') {
       final now = DateTime.now();
@@ -282,7 +282,7 @@ class _ExperiencesScreenState extends State<ExperiencesScreen> {
       } else if (openResult is OpenFailed && mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text(openResult.message)));
+        ).showSnackBar(SnackBar(showCloseIcon: true, content: Text(openResult.message)));
       }
     }
   }
@@ -296,7 +296,7 @@ class _ExperiencesScreenState extends State<ExperiencesScreen> {
     // The result already carries a sentence fit to show a person, written
     // once in ExperiencePortability so both entry points agree.
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
+      SnackBar(showCloseIcon: true, 
         content: Text(result.description),
         duration: const Duration(seconds: 8),
       ),
@@ -330,7 +330,7 @@ class _ExperiencesScreenState extends State<ExperiencesScreen> {
 
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(SnackBar(content: Text(result.description)));
+    ).showSnackBar(SnackBar(showCloseIcon: true, content: Text(result.description)));
     if (!result.succeeded) return;
 
     await _activity.record(
@@ -605,7 +605,7 @@ class _ExperiencesScreenState extends State<ExperiencesScreen> {
     if (!mounted) return;
     if (package == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not protect this app')),
+        const SnackBar(showCloseIcon: true, content: Text('Could not protect this app')),
       );
       return;
     }
@@ -631,7 +631,7 @@ class _ExperiencesScreenState extends State<ExperiencesScreen> {
     if (!mounted) return;
     if (package == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not protect this app')),
+        const SnackBar(showCloseIcon: true, content: Text('Could not protect this app')),
       );
       return;
     }
@@ -673,7 +673,7 @@ class _ExperiencesScreenState extends State<ExperiencesScreen> {
     if (!mounted) return;
     if (package == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not protect this app')),
+        const SnackBar(showCloseIcon: true, content: Text('Could not protect this app')),
       );
       return;
     }
@@ -711,13 +711,13 @@ class _ExperiencesScreenState extends State<ExperiencesScreen> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text(successMessage)));
+        ).showSnackBar(SnackBar(showCloseIcon: true, content: Text(successMessage)));
         _loadExperiences();
       }
     } else if (result is ProtectionFailed) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not protect this app')),
+          const SnackBar(showCloseIcon: true, content: Text('Could not protect this app')),
         );
       }
     }

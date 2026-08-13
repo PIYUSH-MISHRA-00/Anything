@@ -201,7 +201,7 @@ class _ProviderPreferencesScreenState extends State<ProviderPreferencesScreen> {
     if (!mounted) return;
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(SnackBar(content: Text('${config.displayName} removed')));
+    ).showSnackBar(SnackBar(showCloseIcon: true, content: Text('${config.displayName} removed')));
   }
 
   // ------------------------------------------------------------------- build

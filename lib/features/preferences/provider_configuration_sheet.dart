@@ -289,11 +289,11 @@ class _ProviderConfigurationSheetState
     setState(() => _isSaving = false);
     if (persistWarning != null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Saved for this session. $persistWarning')),
+        SnackBar(showCloseIcon: true, content: Text('Saved for this session. $persistWarning')),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        const SnackBar(showCloseIcon: true, 
           content: Text('Provider saved'),
           duration: Duration(seconds: 2),
         ),
@@ -308,7 +308,7 @@ class _ProviderConfigurationSheetState
     if (text.isEmpty) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        const SnackBar(showCloseIcon: true, 
           content: Text('Clipboard is empty — copy your key first'),
         ),
       );
@@ -323,7 +323,7 @@ class _ProviderConfigurationSheetState
     if (!mounted) return;
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(const SnackBar(content: Text('API key pasted')));
+    ).showSnackBar(const SnackBar(showCloseIcon: true, content: Text('API key pasted')));
   }
 
   Future<void> _copyKey() async {
@@ -333,7 +333,7 @@ class _ProviderConfigurationSheetState
     if (!mounted) return;
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(const SnackBar(content: Text('API key copied')));
+    ).showSnackBar(const SnackBar(showCloseIcon: true, content: Text('API key copied')));
   }
 
   // ------------------------------------------------------------------- build

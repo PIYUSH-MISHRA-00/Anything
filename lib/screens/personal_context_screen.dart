@@ -34,7 +34,7 @@ class _PersonalContextScreenState extends ConsumerState<PersonalContextScreen> {
     await manager.savePreference('user_bio', _bioController.text.trim());
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        const SnackBar(showCloseIcon: true, 
           content: Text('Personal context saved'),
           backgroundColor: Colors.blueAccent,
         ),

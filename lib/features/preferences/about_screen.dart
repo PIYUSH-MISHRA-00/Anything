@@ -49,7 +49,7 @@ class _AboutScreenState extends State<AboutScreen> {
     Clipboard.setData(ClipboardData(text: value));
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(SnackBar(content: Text('$label copied')));
+    ).showSnackBar(SnackBar(showCloseIcon: true, content: Text('$label copied')));
   }
 
   @override

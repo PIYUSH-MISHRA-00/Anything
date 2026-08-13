@@ -67,7 +67,7 @@ class _AICommandBarState extends ConsumerState<AICommandBar>
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
+            SnackBar(showCloseIcon: true, 
               content: Text(e.toString().replaceAll('Exception: ', '')),
               backgroundColor: Colors.redAccent,
             ),
@@ -83,7 +83,7 @@ class _AICommandBarState extends ConsumerState<AICommandBar>
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
+            SnackBar(showCloseIcon: true, 
               content: Text(e.toString().replaceAll('Exception: ', '')),
               backgroundColor: Colors.redAccent,
             ),
@@ -109,7 +109,7 @@ class _AICommandBarState extends ConsumerState<AICommandBar>
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+          SnackBar(showCloseIcon: true, 
             content: Text(e.toString().replaceAll('Exception: ', '')),
             backgroundColor: Colors.redAccent,
           ),

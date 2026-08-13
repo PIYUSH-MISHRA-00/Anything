@@ -692,7 +692,7 @@ class ExperienceCreationCoordinator {
       // site so it never perturbs the builder-vs-compiler equivalence fixtures
       // that compare raw CreationEngine output directly.
       package = const NetworkReferenceInterfaceFactory().composeDiscoverTab(
-        package!,
+        package,
         subject: (package.data?.entities.isNotEmpty ?? false)
             ? package.data!.entities.first.name
             : '',

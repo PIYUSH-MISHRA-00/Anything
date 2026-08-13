@@ -660,7 +660,7 @@ class _ExperienceHostScreenState extends State<ExperienceHostScreen>
       if (mounted && sheetContext.mounted) Navigator.pop(sheetContext);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("I couldn't apply that change.")),
+          const SnackBar(showCloseIcon: true, content: Text("I couldn't apply that change.")),
         );
       }
       return;
@@ -702,7 +702,7 @@ class _ExperienceHostScreenState extends State<ExperienceHostScreen>
 
       final previousForUndo = result.previousPackage;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+        SnackBar(showCloseIcon: true, 
           content: Text('App updated to version ${result.newVersion}'),
           action: previousForUndo == null
               ? null
@@ -715,7 +715,7 @@ class _ExperienceHostScreenState extends State<ExperienceHostScreen>
     } else if (result is ModificationCoordinatorFailed) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text(result.message)));
+      ).showSnackBar(SnackBar(showCloseIcon: true, content: Text(result.message)));
     }
   }
 
@@ -787,11 +787,11 @@ class _ExperienceHostScreenState extends State<ExperienceHostScreen>
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Change undone')));
+      ).showSnackBar(const SnackBar(showCloseIcon: true, content: Text('Change undone')));
     } else if (result is ModificationCoordinatorFailed) {
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Couldn't undo: ${result.message}")),
+        SnackBar(showCloseIcon: true, content: Text("Couldn't undo: ${result.message}")),
       );
     }
   }
@@ -935,10 +935,10 @@ class _ExperienceHostScreenState extends State<ExperienceHostScreen>
     if (result is ProtectionSucceeded) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('App protected')));
+      ).showSnackBar(const SnackBar(showCloseIcon: true, content: Text('App protected')));
     } else if (result is ProtectionFailed) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not protect this app')),
+        const SnackBar(showCloseIcon: true, content: Text('Could not protect this app')),
       );
     }
   }
@@ -969,12 +969,12 @@ class _ExperienceHostScreenState extends State<ExperienceHostScreen>
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text('App protected')));
+        ).showSnackBar(const SnackBar(showCloseIcon: true, content: Text('App protected')));
       }
     } else if (result is ProtectionFailed) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not protect this app')),
+          const SnackBar(showCloseIcon: true, content: Text('Could not protect this app')),
         );
       }
     }
@@ -1031,7 +1031,7 @@ class _ExperienceHostScreenState extends State<ExperienceHostScreen>
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+          SnackBar(showCloseIcon: true, 
             content: Text(
               'App protected with time ${customDateTime.month}/${customDateTime.day}/${customDateTime.year}',
             ),
@@ -1041,7 +1041,7 @@ class _ExperienceHostScreenState extends State<ExperienceHostScreen>
     } else if (result is ProtectionFailed) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not protect this app')),
+          const SnackBar(showCloseIcon: true, content: Text('Could not protect this app')),
         );
       }
     }
@@ -1367,7 +1367,7 @@ class _ExperienceHostScreenState extends State<ExperienceHostScreen>
                 _isCreateAction(eventId)) {
               if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
+                  const SnackBar(showCloseIcon: true, 
                     content: Text(
                       'This app has no form for adding items. Re-create it to '
                       'get a working version.',

@@ -123,7 +123,7 @@ class _MemoryDashboardScreenState extends ConsumerState<MemoryDashboardScreen> {
                         await manager.deleteConversation(item['id'] as int);
                         if (!mounted) return;
                         ScaffoldMessenger.of(this.context).showSnackBar(
-                          const SnackBar(
+                          const SnackBar(showCloseIcon: true, 
                             content: Text('Memory deleted'),
                             backgroundColor: Colors.redAccent,
                           ),
