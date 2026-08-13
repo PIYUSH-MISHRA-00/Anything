@@ -247,13 +247,26 @@ class ModelApplicationReasoner implements ApplicationReasoner {
   }
 
   SemanticApp _parseSemanticApp(Map<String, dynamic> json) {
+    // Every required string is read null-safely with a fallback, and any
+    // sub-item missing the identity it structurally needs (an entity/field with
+    // no name, an action with no target, a derived value with no source) is
+    // SKIPPED rather than thrown on. A capable model still varies its key names
+    // and omits optional fields; one such variance must not abort the whole
+    // plan (it used to surface as "Could not understand the model response").
     final entities = (json['entities'] as List? ?? []).map((e) {
-      final entity = e as Map<String, dynamic>;
+      if (e is! Map) return null;
+      final entity = e.cast<String, dynamic>();
+      final entityName =
+          entity['name'] as String? ?? entity['id'] as String?;
+      if (entityName == null) return null;
       final fields = (entity['fields'] as List? ?? []).map((f) {
-        final field = f as Map<String, dynamic>;
+        if (f is! Map) return null;
+        final field = f.cast<String, dynamic>();
+        final fieldName = field['name'] as String? ?? field['id'] as String?;
+        if (fieldName == null) return null;
         return SemanticField(
-          id: _normalizeId(field['id'] as String? ?? field['name'] as String),
-          name: field['name'] as String,
+          id: _normalizeId(field['id'] as String? ?? fieldName),
+          name: fieldName,
           type: _parseFieldType(field['type'] as String? ?? 'text'),
           required: field['required'] as bool? ?? false,
           defaultValue: field['defaultValue'] as String?,
@@ -264,60 +277,76 @@ class ModelApplicationReasoner implements ApplicationReasoner {
           referenceEntityId: field['referenceEntityId'] as String?,
           description: field['description'] as String? ?? '',
         );
-      }).toList();
+      }).whereType<SemanticField>().toList();
 
       return SemanticEntity(
-        id: _normalizeId(entity['id'] as String? ?? entity['name'] as String),
-        name: entity['name'] as String,
+        id: _normalizeId(entity['id'] as String? ?? entityName),
+        name: entityName,
         description: entity['description'] as String? ?? '',
         fields: fields,
         displayField: entity['displayField'] as String? ?? '',
       );
-    }).toList();
+    }).whereType<SemanticEntity>().toList();
 
     final actions = (json['actions'] as List? ?? []).map((a) {
-      final action = a as Map<String, dynamic>;
+      if (a is! Map) return null;
+      final action = a.cast<String, dynamic>();
+      final target = action['targetEntity'] as String? ??
+          action['targetEntityId'] as String?;
+      final name = action['name'] as String? ?? action['id'] as String?;
+      if (target == null || name == null) return null;
       return SemanticAction(
-        id: _normalizeId(action['id'] as String? ?? action['name'] as String),
-        name: action['name'] as String,
-        targetEntityId: _normalizeId(action['targetEntity'] as String),
+        id: _normalizeId(action['id'] as String? ?? name),
+        name: name,
+        targetEntityId: _normalizeId(target),
         actionType: _parseActionType(action['type'] as String? ?? 'create'),
         derivedEffect: action['derivedEffect'] as String?,
       );
-    }).toList();
+    }).whereType<SemanticAction>().toList();
 
     final derivedValues = (json['derivedValues'] as List? ?? []).map((d) {
-      final dv = d as Map<String, dynamic>;
+      if (d is! Map) return null;
+      final dv = d.cast<String, dynamic>();
+      final name = dv['name'] as String? ?? dv['id'] as String?;
+      final source =
+          dv['sourceEntity'] as String? ?? dv['sourceEntityId'] as String?;
+      if (name == null || source == null) return null;
       return SemanticDerivedValue(
-        id: _normalizeId(dv['id'] as String? ?? dv['name'] as String),
-        name: dv['name'] as String,
-        sourceEntityId: _normalizeId(dv['sourceEntity'] as String),
+        id: _normalizeId(dv['id'] as String? ?? name),
+        name: name,
+        sourceEntityId: _normalizeId(source),
         operation: _parseOperation(dv['operation'] as String? ?? 'count'),
         fieldId: dv['fieldId'] as String?,
         description: dv['description'] as String? ?? '',
       );
-    }).toList();
+    }).whereType<SemanticDerivedValue>().toList();
 
     final views = (json['views'] as List? ?? []).map((v) {
-      final view = v as Map<String, dynamic>;
+      if (v is! Map) return null;
+      final view = v.cast<String, dynamic>();
+      final viewName = view['name'] as String? ?? view['id'] as String?;
+      if (viewName == null) return null;
       final sections = (view['sections'] as List? ?? []).map((s) {
-        final section = s as Map<String, dynamic>;
+        if (s is! Map) return null;
+        final section = s.cast<String, dynamic>();
+        final purpose = section['purpose'] as String? ??
+            section['name'] as String? ??
+            section['id'] as String?;
+        if (purpose == null) return null;
         return SemanticViewSection(
-          id: _normalizeId(
-            section['id'] as String? ?? section['purpose'] as String,
-          ),
-          purpose: section['purpose'] as String,
+          id: _normalizeId(section['id'] as String? ?? purpose),
+          purpose: purpose,
           sourceEntityId: section['sourceEntity'] != null
               ? _normalizeId(section['sourceEntity'] as String)
               : null,
           sectionType: _parseSectionType(section['type'] as String? ?? 'list'),
         );
-      }).toList();
+      }).whereType<SemanticViewSection>().toList();
 
       return SemanticView(
-        id: _normalizeId(view['id'] as String? ?? view['name'] as String),
-        name: view['name'] as String,
-        purpose: view['purpose'] as String,
+        id: _normalizeId(view['id'] as String? ?? viewName),
+        name: viewName,
+        purpose: view['purpose'] as String? ?? viewName,
         sourceEntityId: view['sourceEntity'] != null
             ? _normalizeId(view['sourceEntity'] as String)
             : null,
@@ -325,11 +354,11 @@ class ModelApplicationReasoner implements ApplicationReasoner {
         sections: sections,
         isDefault: view['isDefault'] as bool? ?? false,
       );
-    }).toList();
+    }).whereType<SemanticView>().toList();
 
     return SemanticApp(
-      name: json['name'] as String,
-      purpose: json['purpose'] as String,
+      name: json['name'] as String? ?? json['title'] as String? ?? 'App',
+      purpose: json['purpose'] as String? ?? '',
       entities: entities,
       actions: actions,
       derivedValues: derivedValues,

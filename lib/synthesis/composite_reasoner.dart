@@ -72,7 +72,12 @@ class CompositeApplicationReasoner implements ApplicationReasoner {
         final modelResult =
             await ModelApplicationReasoner(provider).reason(context);
         if (modelResult is ReasoningReady) return modelResult;
-        if (requireProviderForGeneration) return modelResult;
+        // A provider WAS consulted (IS-P22 satisfied) but its response didn't
+        // parse into a usable plan. Fall back to the real, structured
+        // deterministic records app we already built — in BOTH strict and
+        // lenient modes — rather than failing the whole creation on a transient
+        // model-formatting hiccup. The user still gets a working app; a provider
+        // is still required to reach this path.
       }
       return deterministicResult;
     }
