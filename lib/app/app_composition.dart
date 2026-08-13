@@ -72,6 +72,7 @@ import 'package:anything/storage/intent_repository.dart';
 import 'package:anything/storage/knowledge_repository.dart';
 import 'package:anything/storage/sqlite_experience_repository.dart';
 import 'package:anything/storage/world_model_repository.dart';
+import 'package:anything/synthesis/composite_reasoner.dart';
 import 'package:anything/world_model/world_model_coordinator.dart';
 
 /// Every HTTPS host a generated Experience's `httpClient`/`http` capability
@@ -402,7 +403,7 @@ class AppComposition {
   /// Constructor injection remains the way to supply a different graph — see
   /// [freshForTesting].
   factory AppComposition.production() =>
-      _production ??= AppComposition._build();
+      _production ??= AppComposition._build(requireProviderForGeneration: true);
 
   /// A brand-new, independent graph that the caller owns and must close.
   ///
@@ -410,7 +411,8 @@ class AppComposition {
   /// need their own; closing the shared one would leave every later caller
   /// in the same isolate holding a closed database.
   @visibleForTesting
-  factory AppComposition.freshForTesting() => AppComposition._build();
+  factory AppComposition.freshForTesting() =>
+      AppComposition._build(requireProviderForGeneration: false);
 
   /// Forgets the shared graph so the next [production] call builds a new one.
   ///
@@ -426,7 +428,7 @@ class AppComposition {
   /// is the SAME canonical implementation MIS-1 Part 1/2 already identified
   /// â€” this constructor wires them together, it does not invent any of
   /// them.
-  factory AppComposition._build() {
+  factory AppComposition._build({bool requireProviderForGeneration = true}) {
     final experienceRepository = SqliteExperienceRepository();
 
     // IS-R57: the ONE activity repository. Every coordinator and screen that
@@ -621,6 +623,13 @@ class AppComposition {
       knowledgeEngine: knowledgeEngine,
       worldModel: worldModel,
       softwareCognition: softwareCognition,
+      // IS-P22: production requires an AI provider for app generation; the
+      // testing composition stays lenient so pipeline-mechanics tests need no
+      // live model.
+      reasoner: CompositeApplicationReasoner(
+        providerRegistry: providerRegistry,
+        requireProviderForGeneration: requireProviderForGeneration,
+      ),
     );
 
     final engineeringMemory = EngineeringMemoryRepository(

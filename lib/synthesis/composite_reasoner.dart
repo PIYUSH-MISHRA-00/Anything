@@ -23,56 +23,70 @@ class CompositeApplicationReasoner implements ApplicationReasoner {
   final DeterministicReasoner _deterministic;
   final ModelProviderRegistry? _providerRegistry;
 
+  /// IS-P22 policy: application generation REQUIRES a configured AI provider.
+  /// When true (production), a records/collection/network app is NEVER built
+  /// deterministically as a silent substitute for AI — the user is told to
+  /// connect a provider. Trivial LOCAL tools (calculator/timer) still build.
+  /// Defaults to FALSE so the large pipeline-mechanics test corpus (which drives
+  /// the deterministic path with no live model) keeps working. PRODUCTION
+  /// (`AppComposition.production`) opts into strict — that is the path the
+  /// owner's app runs, so the policy is enforced where it matters and verified
+  /// explicitly by `p22_ai_required_policy_test`.
+  final bool requireProviderForGeneration;
+
   CompositeApplicationReasoner({
     DeterministicReasoner? deterministic,
     ModelProviderRegistry? providerRegistry,
+    this.requireProviderForGeneration = false,
   }) : _deterministic = deterministic ?? const DeterministicReasoner(),
        _providerRegistry = providerRegistry;
 
   @override
   Future<AppReasoningResult> reason(ApplicationReasoningContext context) async {
+    final provider = _providerRegistry?.activeProvider;
+    final hasProvider = provider != null && provider.isConfigured;
+
     // Step 1: Try deterministic reasoning
     final deterministicResult = await _deterministic.reason(context);
 
-    // If deterministic succeeded: use it for simple cases. When a model is
-    // configured and deterministic only built a multi-entity "managed-records"
-    // shell, prefer the model's richer SemanticApp (Stage 11 / open-world AI).
+    // IS-P22 POLICY: application generation REQUIRES AI. A deterministic
+    // records/collection/network app must NEVER be silently substituted for
+    // AI generation — that is what made every app look templated. Only trivial
+    // LOCAL tools (calculator, timer — tagged 'capability-shell') may be built
+    // without a provider; everything else must connect an AI provider first.
     if (deterministicResult is ReasoningReady) {
-      final managed = deterministicResult.semanticApp.tags.contains(
-        'managed-records',
-      );
-      final provider = _providerRegistry?.activeProvider;
-      if (managed && provider != null && provider.isConfigured) {
-        final modelResult = await ModelApplicationReasoner(
-          provider,
-        ).reason(context);
+      final app = deterministicResult.semanticApp;
+      final isLocalTool = app.tags.contains('capability-shell');
+      if (isLocalTool) return deterministicResult;
+      // App generation.
+      if (hasProvider) {
+        final modelResult =
+            await ModelApplicationReasoner(provider).reason(context);
         if (modelResult is ReasoningReady) return modelResult;
+        // Model configured but failed.
+        if (requireProviderForGeneration) return modelResult;
+        return deterministicResult; // lenient (tests): keep the shell
       }
-      return deterministicResult;
+      // No provider.
+      if (requireProviderForGeneration) return const ReasoningProviderRequired();
+      return deterministicResult; // lenient (tests)
     }
 
-    // If deterministic needs clarification, pass through
     if (deterministicResult is ReasoningClarificationRequired) {
       return deterministicResult;
     }
-
-    // If deterministic requests knowledge, pass through
     if (deterministicResult is ReasoningKnowledgeRequired) {
       return deterministicResult;
     }
-
-    // If deterministic failed (not just provider required), propagate error
     if (deterministicResult is ReasoningFailed) {
       return deterministicResult;
     }
 
-    // Step 2: Deterministic returned ReasoningProviderRequired — try model
-    final provider = _providerRegistry?.activeProvider;
-    if (provider == null || !provider.isConfigured) {
-      // IS-P27: no working provider. Rather than hard-fail an unfamiliar but
-      // record-shaped domain ("restaurant booking application") with
-      // "Could not plan this app", build an honest, usable single-entity
-      // records/reservation manager. Genuinely vague prompts still escalate.
+    // Step 2: Deterministic returned ReasoningProviderRequired.
+    if (!hasProvider) {
+      if (requireProviderForGeneration) return const ReasoningProviderRequired();
+      // Lenient (tests): honest best-effort records app so pipeline mechanics
+      // can be exercised without a live model.
       final fallback = _deterministic.tryBestEffortPrimaryEntity(
         context.understanding.objective,
       );
@@ -80,21 +94,10 @@ class CompositeApplicationReasoner implements ApplicationReasoner {
       return const ReasoningProviderRequired();
     }
 
-    // Step 3: Use model reasoner
-    //
-    // IS-P07: this used to overwrite EVERY failure with "Unable to create
-    // this type of app. Please try rephrasing." The redaction was right in
-    // intent and wrong in reach — `ModelApplicationReasoner` now performs it
-    // at the only place raw exception text exists, and returns a curated
-    // sentence for classified provider failures. Overwriting again here
-    // discards the one thing the user needed to know.
-    final modelResult = await ModelApplicationReasoner(
-      provider,
-    ).reason(context);
-    // IS-P27: a configured-but-failing provider (e.g. HTTP 401) must not leave
-    // a record-shaped request with nothing. Fall back to the honest best-effort
-    // app; only genuinely vague prompts keep the provider-failure message.
-    if (modelResult is ReasoningFailed) {
+    // Step 3: model reasoner. A configured-but-failing provider surfaces its
+    // classified failure; only the lenient path substitutes a best-effort app.
+    final modelResult = await ModelApplicationReasoner(provider).reason(context);
+    if (modelResult is ReasoningFailed && !requireProviderForGeneration) {
       final fallback = _deterministic.tryBestEffortPrimaryEntity(
         context.understanding.objective,
       );

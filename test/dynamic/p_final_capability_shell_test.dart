@@ -8,6 +8,7 @@ import 'package:anything/core/contracts/intent.dart';
 import 'package:anything/core/contracts/model_provider.dart';
 import 'package:anything/creation/app_capabilities.dart';
 import 'package:anything/kernel/anything_kernel.dart';
+import 'package:anything/synthesis/composite_reasoner.dart';
 import 'package:anything/storage/sqlite_experience_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -92,17 +93,27 @@ class _NoAi implements ModelProviderRegistry {
   Future<ProviderConfig?> getDefaultConfig() async => null;
 }
 
-Future<CreationCreated> _create(String prompt) async {
+Future<CreationResult> _route(String prompt) async {
   SharedPreferences.setMockInitialValues({});
-  final result = await ExperienceCreationCoordinator(
+  return ExperienceCreationCoordinator(
+    // Strict (production) policy: app generation requires an AI provider; local
+    // capability shells (calc/timer/weather) still build.
     kernel: AnythingKernel(
       providerRegistry: _NoAi(),
       capabilityRegistry: _reg(),
+      reasoner: CompositeApplicationReasoner(
+        providerRegistry: _NoAi(),
+        requireProviderForGeneration: true,
+      ),
     ),
     repository: SqliteExperienceRepository(
       dbName: 'p_final_${DateTime.now().microsecondsSinceEpoch}.db',
     ),
   ).createFromIntent(Intent.create(expression: prompt));
+}
+
+Future<CreationCreated> _create(String prompt) async {
+  final result = await _route(prompt);
   expect(
     result,
     isA<CreationCreated>(),
@@ -152,26 +163,16 @@ void main() {
     );
   });
 
-  test('task manager without AI → CRUD collection entity', () async {
-    final created = await _create('Create a professional task manager.');
-    final entities = created.package.data?.entities ?? const [];
-    expect(entities, isNotEmpty);
-    expect(entities.first.id.toLowerCase(), contains('task'));
-    expect(created.package.interface.screens, isNotEmpty);
-    expect(
-      created.package.behavior.nodes.any(
-        (n) =>
-            n.type.toLowerCase().contains('create') ||
-            n.id.toLowerCase().contains('create'),
-      ),
-      isTrue,
-    );
+  // IS-P22: records apps are application GENERATION and now require an AI
+  // provider — they are no longer built deterministically as a silent
+  // substitute (that is what made every app look templated).
+  test('task manager without AI → requires an AI provider', () async {
+    final result = await _route('Create a professional task manager.');
+    expect(result, isA<CreationProviderRequired>());
   });
 
-  test('expense tracker without AI → CRUD collection entity', () async {
-    final created = await _create('Create a professional expense tracker.');
-    final entities = created.package.data?.entities ?? const [];
-    expect(entities, isNotEmpty);
-    expect(entities.first.id.toLowerCase(), contains('expense'));
+  test('expense tracker without AI → requires an AI provider', () async {
+    final result = await _route('Create a professional expense tracker.');
+    expect(result, isA<CreationProviderRequired>());
   });
 }

@@ -97,8 +97,11 @@ void main() {
     test(
       'restaurant booking plans instead of ReasoningProviderRequired',
       () async {
-        // No provider registry → the model path is unavailable.
-        final composite = CompositeApplicationReasoner();
+        // IS-P22: production REQUIRES an AI provider for app generation; the
+        // best-effort records fallback survives only in lenient (test) mode.
+        final composite = CompositeApplicationReasoner(
+          requireProviderForGeneration: false,
+        );
         final result = await composite.reason(
           _ctx('Create a professional restaurant booking application'),
         );
