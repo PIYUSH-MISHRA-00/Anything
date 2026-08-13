@@ -464,6 +464,7 @@ class HomeScreenState extends State<HomeScreen> {
           SnackBar(
             content: Text(safe ?? 'Something went wrong creating this app.'),
             duration: const Duration(seconds: 10),
+            showCloseIcon: true,
             action: SnackBarAction(
               label: 'Retry',
               onPressed: () => _handleSubmit(creationRequest.rawPrompt),
@@ -508,6 +509,7 @@ class HomeScreenState extends State<HomeScreen> {
           SnackBar(
             content: Text(result.message),
             duration: const Duration(seconds: 10),
+            showCloseIcon: true,
             action: SnackBarAction(
               label: 'Retry',
               onPressed: () => _handleSubmit(creationRequest.rawPrompt),
@@ -527,6 +529,7 @@ class HomeScreenState extends State<HomeScreen> {
           SnackBar(
             content: Text(result.message),
             duration: const Duration(seconds: 8),
+            showCloseIcon: true,
             action: widget.onOpenSettings == null
                 ? null
                 : SnackBarAction(

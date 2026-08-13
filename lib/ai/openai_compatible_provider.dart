@@ -26,6 +26,7 @@ library;
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:crypto/crypto.dart';
 import 'package:http/http.dart' as http;
 
 import '../core/contracts/model_provider.dart';
@@ -53,6 +54,12 @@ class OpenAiCompatibleProvider implements ModelProvider {
   int _requestCounter = 0;
 
   String _nextRequestId() => '${descriptor.id}-${++_requestCounter}';
+
+  /// A short, non-reversible fingerprint of the key for diagnostics. Two
+  /// requests with the same key share a fingerprint; a changed one means the
+  /// stored/sent key changed. Never logs or exposes the key itself.
+  static String _fingerprint(String key) =>
+      sha256.convert(utf8.encode(key)).toString().substring(0, 8);
 
   /// Overrides [ProviderDescriptor.baseUrl] for providers whose address the
   /// user supplies (local servers, custom endpoints).
@@ -306,7 +313,12 @@ class OpenAiCompatibleProvider implements ModelProvider {
     _logger?.info(
       LogCategory.aiProvider,
       'generation requested: ${descriptor.name}/$modelId, '
-      '${request.messages.length} message(s)',
+      '${request.messages.length} message(s), '
+      // Sanitized credential diagnostics (Part 5): NEVER the key itself.
+      // Proves the right, clean key reaches the request — a length that does
+      // not match the console or a changing fingerprint points at storage.
+      'keyLen=${apiKey?.length ?? 0}, '
+      'keyFp=${apiKey == null ? 'none' : _fingerprint(apiKey)}',
       requestId: requestId,
     );
 
@@ -360,10 +372,16 @@ class OpenAiCompatibleProvider implements ModelProvider {
         body: response.body,
         providerName: descriptor.name,
       );
+      // The provider's own error body names the real cause (invalid_api_key vs
+      // rate_limit_exceeded vs model_decommissioned). It contains no secret —
+      // the key is in the request header, never echoed in the response.
+      final snippet = response.body.length > 300
+          ? response.body.substring(0, 300)
+          : response.body;
       _logger?.error(
         LogCategory.aiProvider,
         'generation failed after ${started.elapsedMilliseconds}ms: '
-        'HTTP ${response.statusCode}, ${classified.failure.name}',
+        'HTTP ${response.statusCode}, ${classified.failure.name}; body=$snippet',
         requestId: requestId,
       );
       throw classified;
