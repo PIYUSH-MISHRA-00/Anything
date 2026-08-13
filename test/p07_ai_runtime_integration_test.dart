@@ -632,6 +632,39 @@ void main() {
       },
     );
   });
+
+  group('IS-P22 — a pasted key is trimmed so generation does not 401', () {
+    test('trailing whitespace in the saved key never reaches the header', () async {
+      String? sentAuth;
+      final provider = OpenAiCompatibleProvider(
+        descriptor: ProviderCatalogue.groq,
+        client: MockClient((request) async {
+          sentAuth = request.headers['Authorization'];
+          return http.Response(
+            jsonEncode({
+              'choices': [
+                {
+                  'message': {'content': 'ok'},
+                },
+              ],
+            }),
+            200,
+          );
+        }),
+      );
+
+      // A paste commonly carries a trailing newline/space. testConnection trims,
+      // so the user sees success; generation must send the SAME clean key.
+      await provider.saveApiKey('gsk_realkey123\n ');
+
+      await provider.generate(
+        const ModelRequest(messages: [ModelMessage.user('hi')]),
+      );
+
+      expect(sentAuth, 'Bearer gsk_realkey123',
+          reason: 'a whitespace-corrupted Bearer header is what Groq 401s on');
+    });
+  });
 }
 
 const String _decommissionedStreamBody =

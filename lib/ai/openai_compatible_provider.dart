@@ -128,7 +128,12 @@ class OpenAiCompatibleProvider implements ModelProvider {
 
   Future<void> _readStoredKey() async {
     try {
-      _cachedApiKey = await _vault.get(_keyPurpose);
+      // Normalise on read: a key pasted with a trailing newline/space passes
+      // `testConnection` (which trims) but was stored raw, so generation sent
+      // `Bearer <key>\n` and Groq answered 401 — "the key works but the app
+      // says it's invalid". Trimming here repairs an already-stored key on the
+      // next read, with no re-entry.
+      _cachedApiKey = (await _vault.get(_keyPurpose))?.trim();
     } catch (_) {
       // A keystore that cannot be read must not stop the app starting.
     }
@@ -544,11 +549,15 @@ class OpenAiCompatibleProvider implements ModelProvider {
 
   @override
   Future<void> saveApiKey(String apiKey) async {
+    // Trim before storing: a trailing newline/space from a paste corrupts the
+    // `Bearer <key>` header and yields a 401 at generation time even though the
+    // key is valid (and `testConnection` — which trims — reported success).
+    final key = apiKey.trim();
     // Cache first so Test / model refresh can use the key even when the
     // Android keystore is wedged (vault save would otherwise block BYOK).
-    _cachedApiKey = apiKey;
+    _cachedApiKey = key;
     _priming = Future<void>.value();
-    await _vault.save(_keyPurpose, apiKey);
+    await _vault.save(_keyPurpose, key);
   }
 
   @override
