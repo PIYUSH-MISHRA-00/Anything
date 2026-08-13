@@ -9,9 +9,26 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import 'package:anything/app/experience_modification_coordinator.dart';
+import 'package:anything/capabilities/builtin/ai_capability.dart';
+import 'package:anything/creation/experience_package.dart';
 import 'package:anything/runtime/golden_paths/calculator_package.dart';
 import 'package:anything/storage/sqlite_experience_repository.dart';
 import 'package:anything/world_model/world_model_coordinator.dart';
+
+/// Returns a canned response (or throws) — stands in for the BYOK model so the
+/// AI modification path is exercised without a network call.
+class _FakeAi implements AiProvider {
+  final String? reply;
+  const _FakeAi([this.reply]);
+  @override
+  Future<String> generate(String prompt, {String? systemPrompt}) async {
+    if (reply == null) throw StateError('model unavailable');
+    return reply!;
+  }
+}
+
+int _nodeCount(ExperiencePackage pkg) =>
+    pkg.interface.screens.fold<int>(0, (n, s) => n + s.children.length);
 
 void main() {
   setUpAll(() {
@@ -66,6 +83,63 @@ void main() {
       );
 
       expect(result, isA<ModificationCoordinatorSucceeded>());
+      await repository.close();
+    },
+  );
+
+  test(
+    'AI planner turns a free-text request (no "percentage" keyword) into a real op the deterministic parser could not produce',
+    () async {
+      final repository = SqliteExperienceRepository(
+        dbName: 'mod_coord_${DateTime.now().microsecondsSinceEpoch}.db',
+      );
+      final calculator = createCalculatorPackage();
+      await repository.savePackage(calculator);
+      final before = _nodeCount(calculator);
+
+      // Model reply wrapped in prose + a ```json fence, to prove extraction.
+      final coordinator = ExperienceModificationCoordinator(
+        repository: repository,
+        worldModel: WorldModelCoordinator(),
+        aiProvider: const _FakeAi(
+          'Sure! Here you go:\n```json\n'
+          '[{"type":"addUiNode","params":{"label":"Discount"}}]\n```',
+        ),
+      );
+      final plan = await coordinator.planEvolution(
+        experienceId: calculator.manifest.experienceId,
+        modificationExpression: 'give me a way to apply a discount',
+      );
+
+      expect(plan, isNotNull);
+      final candidate = plan!.candidatePackage!;
+      expect(_nodeCount(candidate), before + 1);
+      await repository.close();
+    },
+  );
+
+  test(
+    'falls back to the deterministic parser when the model throws — "percentage" still works',
+    () async {
+      final repository = SqliteExperienceRepository(
+        dbName: 'mod_coord_${DateTime.now().microsecondsSinceEpoch}.db',
+      );
+      final calculator = createCalculatorPackage();
+      await repository.savePackage(calculator);
+      final before = _nodeCount(calculator);
+
+      final coordinator = ExperienceModificationCoordinator(
+        repository: repository,
+        worldModel: WorldModelCoordinator(),
+        aiProvider: const _FakeAi(), // throws
+      );
+      final plan = await coordinator.planEvolution(
+        experienceId: calculator.manifest.experienceId,
+        modificationExpression: 'add a percentage button',
+      );
+
+      expect(plan, isNotNull);
+      expect(_nodeCount(plan!.candidatePackage!), greaterThan(before));
       await repository.close();
     },
   );

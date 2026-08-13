@@ -587,8 +587,14 @@ class OpenAiCompatibleProvider implements ModelProvider {
 
   @override
   Future<void> deleteApiKey() async {
-    await _vault.delete(_keyPurpose);
+    // Cache-first, mirroring saveApiKey: clear the in-memory key so the provider
+    // reports unconfigured IMMEDIATELY, then let the Android keystore delete run
+    // in the background. Awaiting the vault made "Delete provider" hang for
+    // seconds whenever the keystore wedged (the same wedge saveApiKey routes
+    // around). A failed background delete only risks an orphaned key, which the
+    // registry already treats as non-fatal.
     _cachedApiKey = null;
     _priming = Future<void>.value();
+    unawaited(_vault.delete(_keyPurpose).catchError((_) {}));
   }
 }

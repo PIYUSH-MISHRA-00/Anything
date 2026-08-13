@@ -1,7 +1,10 @@
 /// Experience Modification Coordinator — connects product UI to ModificationEngine.
 library;
 
+import 'dart:convert';
+
 import 'package:anything/app/experience_commit.dart';
+import 'package:anything/capabilities/builtin/ai_capability.dart';
 import 'package:anything/creation/experience_package.dart';
 import 'package:anything/creation/experience_package_diff.dart';
 import 'package:anything/creation/package_validator.dart';
@@ -72,13 +75,24 @@ class ExperienceModificationCoordinator {
   /// terminate inside the commit framework.
   final ExperienceCommitFramework _commits;
 
+  /// The active AI provider (BYOK), read via the same `ModelProviderAiAdapter`
+  /// the generation pipeline uses. Optional and null-by-default: when absent
+  /// (no provider configured, or a test/caller that doesn't inject one),
+  /// [_planOperations] degrades to the deterministic keyword parser exactly as
+  /// before. When present, free-text "change this app" requests are translated
+  /// into real [ModificationOperation]s by the model — the same AI that builds
+  /// apps now edits them.
+  final AiProvider? _aiProvider;
+
   ExperienceModificationCoordinator({
     SqliteExperienceRepository? repository,
     ActivityRepository? activity,
     WorldModelCoordinator? worldModel,
     EngineeringMemoryRepository? engineeringMemory,
     ExperienceCommitFramework? commitFramework,
-  }) : _repository = repository ?? SqliteExperienceRepository(),
+    AiProvider? aiProvider,
+  }) : _aiProvider = aiProvider,
+       _repository = repository ?? SqliteExperienceRepository(),
        _commits =
            commitFramework ??
            ExperienceCommitFramework(
@@ -127,7 +141,7 @@ class ExperienceModificationCoordinator {
       targetExperienceId: experienceId,
       basePackageVersion: currentPackage.manifest.version,
       objective: modificationExpression,
-      operations: _parseOperations(modificationExpression),
+      operations: await _planOperations(currentPackage, modificationExpression),
     );
 
     // 3. Execute ModificationEngine
@@ -234,7 +248,7 @@ class ExperienceModificationCoordinator {
       targetExperienceId: experienceId,
       basePackageVersion: currentPackage.manifest.version,
       objective: modificationExpression,
-      operations: _parseOperations(modificationExpression),
+      operations: await _planOperations(currentPackage, modificationExpression),
     );
 
     final result = await _engine.modify(currentPackage, spec);
@@ -451,6 +465,116 @@ class ExperienceModificationCoordinator {
       newVersion: previousPackage.manifest.version,
       previousPackage: currentPackage,
     );
+  }
+
+  /// Translate a free-text change request into concrete
+  /// [ModificationOperation]s. Uses the active AI provider when one is
+  /// configured (the real "edit the app with AI" path the owner asked for),
+  /// and falls back to the deterministic [_parseOperations] keyword parser
+  /// when there is no provider or the model returns nothing usable — so the
+  /// flow never regresses below its previous behavior.
+  Future<List<ModificationOperation>> _planOperations(
+    ExperiencePackage package,
+    String expression,
+  ) async {
+    final ai = _aiProvider;
+    if (ai == null) return _parseOperations(expression);
+    try {
+      final raw = await ai.generate(
+        _modificationPrompt(package, expression),
+        systemPrompt:
+            'You edit an existing app by emitting a JSON array of operations. '
+            'Reply with ONLY the JSON array, no prose, no markdown fences.',
+      );
+      final ops = _parseOperationsJson(raw);
+      // A model that produced zero valid operations (refusal, empty array,
+      // unparseable) must not silently no-op the user's request — fall back
+      // to the deterministic parser so "add a percentage button" etc. still
+      // work even when the model misbehaves.
+      return ops.isEmpty ? _parseOperations(expression) : ops;
+    } catch (_) {
+      return _parseOperations(expression);
+    }
+  }
+
+  /// Compact, current structure of [package] the model edits against — screen
+  /// + node ids are what `modifyUiNode`/`removeUiNode` target, so they must be
+  /// real ids from the live package, never invented.
+  String _modificationPrompt(ExperiencePackage package, String expression) {
+    final screens = package.interface.screens
+        .map(
+          (s) => {
+            'screenId': s.id,
+            'title': s.title,
+            'nodes': s.children
+                .map(
+                  (n) => {
+                    'nodeId': n.id,
+                    'type': n.type,
+                    'label': n.properties['label'],
+                  },
+                )
+                .toList(),
+          },
+        )
+        .toList();
+    final state = package.state.variables
+        .map((v) => {'id': v.id, 'type': v.type})
+        .toList();
+    final entities = package.data?.entities
+        .map((e) => {'name': e.name, 'fields': e.fields.map((f) => f.name).toList()})
+        .toList();
+
+    return jsonEncode({
+      'request': expression,
+      'currentApp': {
+        'screens': screens,
+        'state': state,
+        'entities': entities,
+      },
+      'allowedOperations': {
+        'addUiNode': {'screenId': '?', 'nodeType': 'button|text|input', 'label': 'string'},
+        'modifyUiNode': {'nodeId': 'existing id', 'properties': {'label': 'string'}},
+        'removeUiNode': {'nodeId': 'existing id'},
+        'addBehavior': {'nodeType': 'string', 'config': {}},
+        'addState': {'id': 'string', 'type': 'string|number|bool', 'defaultValue': '?'},
+        'addEntity': {'name': 'string', 'fields': [{'name': 'string', 'type': 'string'}]},
+      },
+      'instructions':
+          'Return a JSON array of {"type": <opName>, "params": {...}} using ONLY '
+          'the operations above and ONLY nodeIds/screenIds that appear in '
+          'currentApp. Emit the minimal set of operations that satisfies the '
+          'request.',
+    });
+  }
+
+  /// Parse the model's JSON array into typed operations, dropping anything
+  /// whose type isn't a known [ModificationType]. Tolerant of ```json fences
+  /// and leading/trailing prose (extracts the outermost [ ... ]).
+  List<ModificationOperation> _parseOperationsJson(String raw) {
+    final start = raw.indexOf('[');
+    final end = raw.lastIndexOf(']');
+    if (start < 0 || end <= start) return const [];
+    final decoded = jsonDecode(raw.substring(start, end + 1));
+    if (decoded is! List) return const [];
+
+    final byName = {for (final t in ModificationType.values) t.name: t};
+    final ops = <ModificationOperation>[];
+    for (final item in decoded) {
+      if (item is! Map) continue;
+      final type = byName[item['type']];
+      if (type == null) continue;
+      final params = item['params'];
+      ops.add(
+        ModificationOperation(
+          type: type,
+          params: params is Map
+              ? Map<String, dynamic>.from(params)
+              : const {},
+        ),
+      );
+    }
+    return ops;
   }
 
   List<ModificationOperation> _parseOperations(String expression) {

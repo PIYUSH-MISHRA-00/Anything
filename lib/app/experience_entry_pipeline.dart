@@ -57,6 +57,7 @@ library;
 
 import 'package:flutter/material.dart' hide Intent;
 
+import '../capabilities/builtin/ai_capability.dart';
 import '../capabilities/platform/capability_platform.dart';
 import '../core/contracts/intent.dart';
 import '../core/contracts/protection_provider.dart';
@@ -87,6 +88,7 @@ class ExperienceEntryPipeline {
   final EventBus? eventBus;
   final WorkspaceRuntimeSupervisor? runtimeSupervisor;
   final WorkspaceSchedulingEngine? scheduler;
+  final AiProvider? aiProvider;
 
   const ExperienceEntryPipeline({
     required this.intentExecutionPipeline,
@@ -100,6 +102,7 @@ class ExperienceEntryPipeline {
     this.eventBus,
     this.runtimeSupervisor,
     this.scheduler,
+    this.aiProvider,
   });
 
   /// Create New Experience — a thin, real forward to the existing,
@@ -176,6 +179,7 @@ class ExperienceEntryPipeline {
           eventBus: eventBus,
           runtimeSupervisor: runtimeSupervisor,
           scheduler: scheduler,
+          aiProvider: aiProvider,
         ),
       ),
     );

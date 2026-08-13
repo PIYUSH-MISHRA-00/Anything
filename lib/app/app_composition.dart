@@ -739,6 +739,7 @@ class AppComposition {
       eventBus: eventBus,
       runtimeSupervisor: workspaceRuntimeSupervisor,
       scheduler: workspaceSchedulingEngine,
+      aiProvider: ModelProviderAiAdapter(providerRegistry),
     );
 
     return AppComposition._(

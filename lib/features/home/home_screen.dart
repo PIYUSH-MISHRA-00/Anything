@@ -6,6 +6,7 @@ library;
 import 'package:flutter/material.dart';
 
 import 'package:anything/app/app_composition.dart';
+import 'package:anything/capabilities/adapters/model_provider_ai_adapter.dart';
 import 'package:anything/app/autonomous_workspace_runtime.dart';
 import 'package:anything/app/creation_coordinator.dart';
 import 'package:anything/app/experience_activation_manager.dart';
@@ -341,6 +342,7 @@ class HomeScreenState extends State<HomeScreen> {
           eventBus: _eventBus,
           runtimeSupervisor: _runtimeSupervisor,
           scheduler: _scheduler,
+          aiProvider: ModelProviderAiAdapter(_composition.providerRegistry),
         );
     _repository = _composition.experienceRepository;
     _intentRepository = _composition.intentRepository;

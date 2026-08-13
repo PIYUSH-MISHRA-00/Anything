@@ -13,12 +13,14 @@ import '../app/workspace_event_publisher.dart';
 import '../app/workspace_lifecycle_policy_engine.dart';
 import '../app/workspace_runtime_supervisor.dart';
 import '../app/workspace_scheduling_engine.dart';
+import '../capabilities/builtin/ai_capability.dart';
 import '../capabilities/platform/capability_platform.dart';
 import '../core/events/events.dart';
 import '../creation/experience_package.dart';
 import '../storage/activity_repository.dart';
 import '../storage/engineering_memory_repository.dart';
 import '../security/protection_service.dart';
+import '../services/voice_service.dart';
 import '../world_model/world_model_coordinator.dart';
 import 'anything_runtime.dart';
 import 'experience_renderer.dart';
@@ -158,6 +160,12 @@ class ExperienceHostScreen extends StatefulWidget {
   /// otherwise so no existing caller breaks.
   final ActivityRepository? activity;
 
+  /// Active AI provider (BYOK), threaded from the composition root so
+  /// "Change this app" edits go through the same model that builds apps.
+  /// Null-by-default: when omitted, `ExperienceModificationCoordinator` falls
+  /// back to its deterministic keyword parser, exactly as before.
+  final AiProvider? aiProvider;
+
   const ExperienceHostScreen({
     super.key,
     required this.package,
@@ -169,6 +177,7 @@ class ExperienceHostScreen extends StatefulWidget {
     this.capabilityPlatform,
     this.engineeringMemory,
     this.modificationCoordinator,
+    this.aiProvider,
     this.workspaceManager,
     this.workspaceRuntime,
     this.eventBus,
@@ -291,6 +300,7 @@ class _ExperienceHostScreenState extends State<ExperienceHostScreen>
         ExperienceModificationCoordinator(
           worldModel: widget.worldModel,
           engineeringMemory: widget.engineeringMemory,
+          aiProvider: widget.aiProvider,
         );
     _activity = widget.activity ?? const ActivityRepository();
     _protectionService =
@@ -517,6 +527,15 @@ class _ExperienceHostScreenState extends State<ExperienceHostScreen>
 
   void _showModificationIntent() {
     final controller = TextEditingController();
+    // Voice input for the "describe what you want to change" field — the same
+    // dictation the Home composer offers. Recognized speech flows straight into
+    // the controller (the TextField is bound to it, so it updates live).
+    final voice = VoiceInputService();
+    void onVoiceText() {
+      if (voice.currentText.isNotEmpty) controller.text = voice.currentText;
+    }
+
+    voice.addListener(onVoiceText);
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -549,9 +568,37 @@ class _ExperienceHostScreenState extends State<ExperienceHostScreen>
                 TextField(
                   controller: controller,
                   enabled: !_isModifying,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     hintText: 'Add a percentage button',
-                    border: OutlineInputBorder(),
+                    border: const OutlineInputBorder(),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        voice.isListening ? Icons.mic : Icons.mic_none,
+                        color: voice.isListening
+                            ? Theme.of(sheetContext).colorScheme.error
+                            : null,
+                      ),
+                      tooltip: voice.isListening ? 'Stop dictation' : 'Speak',
+                      onPressed: _isModifying
+                          ? null
+                          : () async {
+                              if (voice.isListening) {
+                                await voice.stopListening();
+                              } else {
+                                await voice.startListening();
+                              }
+                              if (voice.errorMessage != null &&
+                                  sheetContext.mounted) {
+                                ScaffoldMessenger.of(sheetContext).showSnackBar(
+                                  SnackBar(
+                                    content: Text(voice.errorMessage!),
+                                    showCloseIcon: true,
+                                  ),
+                                );
+                              }
+                              setSheetState(() {});
+                            },
+                    ),
                   ),
                 ),
                 if (_isModifying) ...[
@@ -621,7 +668,11 @@ class _ExperienceHostScreenState extends State<ExperienceHostScreen>
           );
         },
       ),
-    );
+    ).whenComplete(() {
+      voice.removeListener(onVoiceText);
+      voice.dispose();
+      controller.dispose();
+    });
   }
 
   /// Real progress-stage label (Implementation Milestone R7) — updated at
