@@ -73,6 +73,31 @@ keeping only the calc/timer capability shells deterministic. Then migrate the 16
 affected tests to assert the honest failure. This is a focused, mechanical change
 once AI is confirmed working — but doing it blind would be reckless.
 
+## 2b. Booking → search shell on the WORKING-KEY path — FIXED
+
+The earlier train→records fix covered the no-key deterministic path. The owner
+still saw the "City or location" search shell **with a working key** — a
+different (model) path. Root-caused to two generic sites (commit `b9e87df`):
+
+1. **`app_capabilities`**: a model may over-declare `networkData` on a booking
+   app. That made `networkData` a REQUIRED capability, which cascades into
+   required `refresh`/`resultDisplay` surfaces that only the reference search
+   shell provides — so the records app was either replaced by the shell or
+   failed validation. A records-PRIMARY app (entities + CRUD, or collection/
+   tracker archetype) now treats external data as **optional** and drops the
+   `networkData`/`webData` requirement.
+2. **`deterministic_repair`**: the repair pass injected the search shell
+   (wholesale interface replacement) on any networkData gap, clobbering a good
+   model-built records app. It now **skips the shell whenever a records surface
+   exists** (entity list/form); the shell is only for pure reference apps.
+
+**Verified** by an end-to-end test (`test/p07_ai_runtime_integration_test.dart`
+→ "a booking app from the model is NOT turned into a search shell"): a scripted
+model returning a booking app *with* networkData now yields a records app, not
+the `reference_main` shell. Weather/news (reference-primary) still get the shell.
+Deterministic path re-confirmed on device (moto g31, release): "professional
+train ticket booking application" → records booking app, no shell, no crash.
+
 ## 3. Honest blockers
 
 - **AI generation still unverified end-to-end from here.** The 401 root cause is
