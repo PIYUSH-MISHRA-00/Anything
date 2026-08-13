@@ -10,6 +10,7 @@
 library;
 
 import 'dart:async';
+import 'dart:developer' as developer;
 
 import 'package:anything/core/contracts/intent.dart';
 import 'package:anything/core/contracts/model_provider.dart';
@@ -47,6 +48,7 @@ import 'package:anything/design_review/review_approval.dart';
 import 'package:anything/design_review/review_context.dart';
 import 'package:anything/design_review/review_history.dart';
 import 'package:anything/design_review/review_memory.dart';
+import 'package:anything/design_review/review_types.dart' show ReviewSeverity;
 import 'package:anything/evolution/evolution_context.dart';
 import 'package:anything/evolution/evolution_engine.dart';
 import 'package:anything/evolution/evolution_history.dart';
@@ -462,6 +464,14 @@ class AnythingKernel {
         history: _reviewHistory,
       );
       if (!reviewOutcome.approved) {
+        final crit = reviewOutcome.session.result.finalIteration.issues
+            .where((i) => i.severity == ReviewSeverity.critical)
+            .map((i) => '${i.id} (${i.reason})')
+            .toList();
+        developer.log(
+          '[anything:review] blocked by critical: ${crit.join(' | ')}',
+          name: 'review',
+        );
         return PlanningFailed(
           error: const ReviewApproval().denialReason(
             reviewOutcome.session.result,
