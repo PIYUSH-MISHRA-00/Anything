@@ -36,8 +36,11 @@ void main() {
     expect(pkg.manifest.tags, contains('collection'));
     expect(pkg.data!.entities.length, greaterThanOrEqualTo(2),
         reason: 'the listed subjects become entities, generically');
-    // Records app, not the network-reference search shell.
-    expect(pkg.manifest.requiredCapabilities, isNot(contains('networkData')));
+    // A records app (keeps its own list/form tabs), not the network-reference
+    // search shell. It also gains a WebWeaveX "Discover" tab (networkData),
+    // but its records surface is intact and it is not the reference_main shell.
+    expect(pkg.interface.screens.any((s) => s.id == 'reference_main'), isFalse);
+    expect(pkg.interface.screens.any((s) => s.id != 'discover'), isTrue);
   });
 
   test('non-records domain honestly requires AI, not a wrong records app', () async {

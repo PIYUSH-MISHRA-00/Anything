@@ -129,11 +129,14 @@ class NetworkReferenceInterfaceFactory {
   InterfaceDefinition buildInterface({
     required String title,
     String purpose = '',
+    String queryLabel = 'City or location',
+    String queryHint = 'Enter a city, then press Search',
+    String screenId = 'reference_main',
   }) {
     return InterfaceDefinition(
       screens: [
         InterfaceScreen(
-          id: 'reference_main',
+          id: screenId,
           title: title,
           appBarTitle: title,
           children: [
@@ -150,12 +153,12 @@ class NetworkReferenceInterfaceFactory {
               // in a scroll Column and hides result/error text (IS-P11).
               properties: {'spacing': 8},
               children: [
-                const InterfaceNode(
+                InterfaceNode(
                   type: 'input',
                   id: 'query_input',
                   properties: {
-                    'label': 'City or location',
-                    'hint': 'Enter a city, then press Search',
+                    'label': queryLabel,
+                    'hint': queryHint,
                     'width': 'expand',
                     'flex': 3,
                   },
@@ -324,6 +327,133 @@ class NetworkReferenceInterfaceFactory {
         BehaviorEdge(from: 'refreshData', to: 'refreshData_invoke'),
       ],
     );
+  }
+
+  /// The Discover browse tab's screen id (idempotency guard).
+  static const discoverScreenId = 'discover';
+
+  /// Compose a WebWeaveX "Discover" browse tab onto a records app so the user
+  /// can find real-world data from the web (real restaurants/trains/books/…),
+  /// not only hand-enter records. Additive: the app's own list/form tabs are
+  /// untouched. Skips apps with no entities (calculator/timer) and apps that
+  /// already ARE a browse surface (weather/news reference shells).
+  ///
+  /// ponytail: the Discover screen shows ONE summarized web result (title +
+  /// image + text + source) — the existing reference UI. A scrollable list of
+  /// results is the upgrade path if single-result browse proves too thin.
+  ExperiencePackage composeDiscoverTab(
+    ExperiencePackage package, {
+    required String subject,
+  }) {
+    final entities = package.data?.entities ?? const [];
+    if (entities.isEmpty) return package;
+    final screens = package.interface.screens;
+    if (screens.any(
+      (s) => s.id == discoverScreenId || s.id == 'reference_main',
+    )) {
+      return package;
+    }
+
+    final subj = subject.trim().isEmpty ? 'results' : subject.trim();
+    final discover = buildInterface(
+      title: 'Discover',
+      purpose: 'Find real $subj from the web',
+      queryLabel: 'Search $subj',
+      queryHint: 'e.g. best $subj near me',
+      screenId: discoverScreenId,
+    ).screens.first;
+
+    // A bottom nav with the app's existing tabs (or its list screens) + Discover.
+    final existing =
+        package.interface.navigation?.items ?? _listNavItems(screens);
+    final interface = InterfaceDefinition(
+      screens: [...screens, discover],
+      navigation: NavigationDefinition(
+        type: 'bottomNavigation',
+        items: [
+          ...existing,
+          const NavigationItem(
+            label: 'Discover',
+            icon: 'search',
+            screenId: discoverScreenId,
+          ),
+        ],
+      ),
+    );
+
+    final services = [
+      ...package.services,
+      if (!package.services.any((s) => s.type == 'knowledgeRetrieval'))
+        const ServiceDefinition(id: 'knowledge', type: 'knowledgeRetrieval'),
+    ];
+    final caps = [
+      ...package.capabilityDeclarations,
+      if (!package.capabilityDeclarations.any((c) => c.capabilityId == 'knowledge'))
+        const CapabilityDeclaration(capabilityId: 'knowledge', isRequired: true),
+      if (!package.capabilityDeclarations.any(
+        (c) => c.capabilityId == 'networkData',
+      ))
+        const CapabilityDeclaration(
+          capabilityId: 'networkData',
+          isRequired: true,
+        ),
+    ];
+    final network = package.networkDeclarations.isEmpty
+        ? [
+            const NetworkDeclaration(
+              purpose: 'Discover real-world data',
+              requiresCredential: false,
+            ),
+          ]
+        : package.networkDeclarations;
+    final manifest = ExperienceManifest(
+      experienceId: package.manifest.experienceId,
+      name: package.manifest.name,
+      description: package.manifest.description,
+      version: package.manifest.version,
+      createdAt: package.manifest.createdAt,
+      updatedAt: package.manifest.updatedAt,
+      networkMode: NetworkMode.required,
+      storageMode: package.manifest.storageMode,
+      requiredCapabilities: {
+        ...package.manifest.requiredCapabilities,
+        'knowledge',
+        'networkData',
+      }.toList(),
+      category: package.manifest.category,
+      tags: package.manifest.tags,
+    );
+
+    return ExperiencePackage(
+      packageVersion: package.packageVersion,
+      manifest: manifest,
+      interface: interface,
+      behavior: _mergeBehavior(package.behavior, buildBehavior(topic: subj)),
+      state: _mergeState(package.state, buildState()),
+      data: package.data,
+      services: services,
+      networkDeclarations: network,
+      capabilityDeclarations: caps,
+      permissionDeclarations: package.permissionDeclarations,
+      protection: package.protection,
+      provenance: package.provenance,
+      integrity: package.integrity,
+    );
+  }
+
+  /// Nav items for the app's list screens (any screen containing an
+  /// entityList), used when the app had no bottom nav yet (single-list app).
+  List<NavigationItem> _listNavItems(List<InterfaceScreen> screens) {
+    bool walk(InterfaceNode n) =>
+        n.type == 'entityList' || n.children.any(walk);
+    final lists = screens.where((s) => s.children.any(walk)).toList();
+    final chosen = lists.isNotEmpty
+        ? lists
+        : (screens.isEmpty ? <InterfaceScreen>[] : [screens.first]);
+    return [
+      for (final s in chosen)
+        NavigationItem(label: s.title, icon: 'list', screenId: s.id),
+    ];
   }
 
   StateSchema _mergeState(StateSchema existing, StateSchema extra) {

@@ -58,18 +58,23 @@ class CompositeApplicationReasoner implements ApplicationReasoner {
       final app = deterministicResult.semanticApp;
       final isLocalTool = app.tags.contains('capability-shell');
       if (isLocalTool) return deterministicResult;
-      // App generation.
-      if (hasProvider) {
+      // App generation without a provider → require one (IS-P22 policy).
+      // Lenient mode keeps the deterministic app for pipeline-mechanics tests.
+      if (!hasProvider) {
+        return requireProviderForGeneration
+            ? const ReasoningProviderRequired()
+            : deterministicResult;
+      }
+      // Provider present: prefer the model's richer, dynamic SemanticApp when
+      // deterministic only built a multi-entity "managed-records" shell. Simple
+      // single-entity apps stay deterministic (zero-knowledge invariant).
+      if (app.tags.contains('managed-records')) {
         final modelResult =
             await ModelApplicationReasoner(provider).reason(context);
         if (modelResult is ReasoningReady) return modelResult;
-        // Model configured but failed.
         if (requireProviderForGeneration) return modelResult;
-        return deterministicResult; // lenient (tests): keep the shell
       }
-      // No provider.
-      if (requireProviderForGeneration) return const ReasoningProviderRequired();
-      return deterministicResult; // lenient (tests)
+      return deterministicResult;
     }
 
     if (deterministicResult is ReasoningClarificationRequired) {
