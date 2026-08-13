@@ -74,12 +74,13 @@ class SynthesisPlanner {
   /// This is the core conversion from semantic domain to technology-independent
   /// blueprint. Used by the Kernel after reasoning completes.
   AppBlueprint convertToBlueprint(SemanticApp semantic) {
+    final entityIds = semantic.entities.map((e) => e.id).toSet();
     final entities = semantic.entities.map((se) {
       return BlueprintEntity(
         id: se.id,
         name: se.name,
         description: se.description,
-        fields: se.fields.map(_convertField).toList(),
+        fields: se.fields.map((f) => _convertField(f, entityIds)).toList(),
         displayField: se.displayField,
       );
     }).toList();
@@ -194,7 +195,18 @@ class SynthesisPlanner {
     );
   }
 
-  BlueprintField _convertField(SemanticField sf) {
+  BlueprintField _convertField(SemanticField sf, Set<String> entityIds) {
+    // A model often types a field `reference` but omits which entity it targets
+    // (it named it `train_id` and expected that to be obvious). Without a target
+    // the runtime dropdown has no entity to query and can never be selected, so
+    // a required reference becomes an uncompletable form. Infer the target from
+    // the field name (`train_id` -> train, `schedule_id` -> train_schedule).
+    var refId = sf.referenceEntityId;
+    if ((refId == null || refId.isEmpty) &&
+        sf.type == BlueprintFieldType.reference) {
+      refId = _inferReferenceTarget(sf.name, entityIds) ??
+          _inferReferenceTarget(sf.id, entityIds);
+    }
     return BlueprintField(
       id: sf.id,
       name: sf.name,
@@ -206,9 +218,31 @@ class SynthesisPlanner {
       minLength: sf.minLength,
       maxLength: sf.maxLength,
       allowedValues: sf.allowedValues,
-      referenceEntityId: sf.referenceEntityId,
+      referenceEntityId: refId,
       description: sf.description,
     );
+  }
+
+  /// Resolve `train_id` -> `train`, `user_id` -> `user`,
+  /// `schedule_id` -> `train_schedule` against the app's actual entity ids.
+  String? _inferReferenceTarget(String raw, Set<String> entityIds) {
+    final base = raw
+        .toLowerCase()
+        .replaceAll(RegExp(r'[_\s-]?id$'), '')
+        .replaceAll(RegExp(r'[^a-z0-9]+'), '_')
+        .replaceAll(RegExp(r'^_+|_+$'), '');
+    if (base.isEmpty) return null;
+    if (entityIds.contains(base)) return base;
+    if (entityIds.contains('${base}s')) return '${base}s';
+    if (base.endsWith('s') &&
+        entityIds.contains(base.substring(0, base.length - 1))) {
+      return base.substring(0, base.length - 1);
+    }
+    // Compound entity ids: `schedule` matches `train_schedule`.
+    for (final id in entityIds) {
+      if (id.endsWith('_$base') || base.endsWith('_$id')) return id;
+    }
+    return null;
   }
 
   BlueprintViewSection _convertSection(SemanticViewSection svs) {
