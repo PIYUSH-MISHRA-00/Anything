@@ -115,8 +115,56 @@ placed in source, logs, screenshots, or this report; if the previously
 supplied key was ever used it should be treated as compromised and
 rotated (owner action).
 
+## Follow-up mission: "train booking → generic search shell" (CRITICAL)
+
+The reported vision defect — `Create a train ticket booking app` producing a
+generic **"City or location" search shell** (search + refresh) instead of a
+booking app — was **reproduced on device** and **root-caused via device
+forensics**, then fixed generically (no domain factory).
+
+**Forensics.** The offline/deterministic path already builds a correct records
+app for train booking (host + a debug-build device pull both showed
+`tags:[collection, best-effort]`, entity `train_ticket_booking`, List/Form/Edit,
+`networkMode:none`). The failure came from an online path that inferred the
+`networkData` capability, after which `creation_engine` **wholesale-replaced**
+the records interface with `NetworkReferenceInterfaceFactory` — whose UI
+hardcodes the weather-vestige label **"City or location"**.
+
+**Three generic fixes** (commit `3883046`):
+1. `creation_engine` — the user's own words decide the interaction model. A
+   durable **collection/management** intent ("book", "manage", "tracker",
+   "reservation", …) keeps its records UI and is never replaced by the
+   reference search shell, even if planning produced a reference-shaped
+   blueprint. Weather/news/lookup intents are unaffected.
+2. `app_capabilities` — bare **"search"** is a records list operator, not a
+   network signal (every records app has a search box); only genuine
+   external-knowledge words infer `networkData`.
+3. `experience_host_screen` — a generated `NavigationBar` with a single
+   destination crashed the whole screen (Material asserts `>= 2`); guarded.
+
+**Device-verified (release build):**
+- `Create a train ticket booking app.` → a **booking records app** (Search /
+  "No items yet" / Add Train Ticket Booking). Created & persisted a booking
+  ("Delhi to Mumbai - Aug 20"). No search shell.
+- `marine equipment rental management application …` (novel, blind) → a
+  **multi-entity manager** with Equipment inventory / Customers / Reservations /
+  Maintenance tracking tabs — through the same generic machinery, no marine
+  factory, 4-tab nav renders without crash.
+- Non-records domains (messaging, volunteer coordination) **honestly return
+  "needs an AI model"** with the prompt preserved — never a wrong records/search
+  substitute. This is correct degraded behaviour under the Groq-401 block, not a
+  failure to install unrelated software.
+
+Regression guards: `test/dynamic/p17_capability_resolution_test.dart` (booking +
+"search" stays records), `test/dynamic/p29_open_world_routing_test.dart`
+(novel record-shaped domain → multi-entity records; messaging → honest
+provider-required).
+
 ## Verdict
 
+- The critical "train booking → search shell" architecture defect is **fixed and
+  device-verified**; booking/management/novel record-shaped domains now build
+  the right app through generic machinery (no domain factory).
 - Two real runtime defects found by first-time-user testing were
   **root-caused and fixed**, and the fixes are **verified end-to-end on
   the physical device** (create → persist → display → survive restart;
