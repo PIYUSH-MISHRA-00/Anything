@@ -120,7 +120,33 @@ class AppCapabilityInferrer {
     // utility alone caused stopwatch → calculator substitution.
     // Calculation / timers are inferred from explicit caps or structure below.
 
-    if (blueprint.archetypes.contains(AppArchetype.reference) ||
+    // A durable records/management app (entities + CRUD, or a collection/
+    // tracker archetype) is records-PRIMARY. External data is optional
+    // enrichment there, not a REQUIRED capability — so a model that attaches a
+    // networkConfig to a booking app must not drag in the required network
+    // cascade (refresh/resultDisplay), which only the reference search shell
+    // satisfies and which would replace the records UI with a search box.
+    final recordsPrimary =
+        blueprint.entities.isNotEmpty &&
+        (blueprint.archetypes.contains(AppArchetype.collection) ||
+            blueprint.archetypes.contains(AppArchetype.tracker) ||
+            blueprint.actions.any(
+              (a) =>
+                  a.actionType == BlueprintActionType.create ||
+                  a.actionType == BlueprintActionType.update ||
+                  a.actionType == BlueprintActionType.delete,
+            ));
+
+    if (recordsPrimary) {
+      // A model may over-declare networkData on a booking/records app. External
+      // data is optional enrichment here — keeping it REQUIRED forces the
+      // reference search shell (which owns the refresh/resultDisplay surfaces)
+      // and fails validation for a records UI. Drop it so the records app is
+      // valid and keeps its own list/form UI.
+      caps.remove(AppCapabilityIds.networkData);
+      caps.remove(AppCapabilityIds.webData);
+      caps.remove(AppCapabilityIds.webKnowledge);
+    } else if (blueprint.archetypes.contains(AppArchetype.reference) ||
         blueprint.networkConfig != null ||
         blueprint.offlinePolicy == OfflinePolicy.networkRequired) {
       caps.add(AppCapabilityIds.networkData);

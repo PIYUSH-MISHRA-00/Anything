@@ -143,7 +143,15 @@ class DeterministicCapabilityRepair {
           gapIds.contains(AppCapabilityIds.loadingState) ||
           gapIds.contains(AppCapabilityIds.errorState);
       final probe = PackageCapabilityProbe(current);
-      if (needsNetworkShell && (networkGaps || !probe.hasKnowledgeService)) {
+      // Never replace a records/booking app's UI with the reference search
+      // shell. A records surface means the app IS a management app (a booking
+      // app has a search STEP, it is not a search app); filling an optional
+      // networkData gap must not clobber it. The shell is only for pure
+      // reference apps (weather/news) that have no records UI.
+      final hasRecordsSurface = probe.hasEntityList || probe.hasEntityForm;
+      if (needsNetworkShell &&
+          !hasRecordsSurface &&
+          (networkGaps || !probe.hasKnowledgeService)) {
         current = const NetworkReferenceInterfaceFactory().applyToPackage(
           current,
           name: blueprint?.name ?? current.manifest.name,
@@ -175,7 +183,10 @@ class DeterministicCapabilityRepair {
           gapIds.contains(AppCapabilityIds.loadingState) ||
           gapIds.contains(AppCapabilityIds.errorState);
       final probe = PackageCapabilityProbe(current);
-      if (needsNetworkShell && (networkGaps || !probe.hasKnowledgeService)) {
+      final hasRecordsSurface = probe.hasEntityList || probe.hasEntityForm;
+      if (needsNetworkShell &&
+          !hasRecordsSurface &&
+          (networkGaps || !probe.hasKnowledgeService)) {
         current = const NetworkReferenceInterfaceFactory().applyToPackage(
           current,
           name: blueprint?.name ?? current.manifest.name,

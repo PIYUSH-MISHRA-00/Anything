@@ -38,6 +38,7 @@ import 'package:anything/ai/provider_catalogue.dart';
 import 'package:anything/ai/provider_error.dart';
 import 'package:anything/app/app_composition.dart';
 import 'package:anything/app/creation_coordinator.dart';
+import 'package:anything/creation/app_capabilities.dart';
 import 'package:anything/core/contracts/intent.dart';
 import 'package:anything/core/contracts/model_provider.dart';
 
@@ -185,6 +186,103 @@ class _ScriptedModelProvider implements ModelProvider {
     'requiredCapabilities': <String>[],
     'knowledgeNeeds': <String>[],
     'networkConfig': null,
+  });
+}
+
+/// A model that returns a booking records app but ALSO asks for networkData /
+/// a networkConfig — exactly the working-key output that used to be clobbered
+/// into the "City or location" search shell by the repair pass (owner report).
+class _BookingModelProvider implements ModelProvider {
+  @override
+  String get providerId => 'scripted';
+  @override
+  String get providerName => 'Scripted';
+  @override
+  bool get isConfigured => true;
+  @override
+  Future<List<ModelInfo>> listModels() async =>
+      const [ModelInfo(id: 's', name: 's', provider: 'scripted')];
+  @override
+  Future<bool> testConnection(String apiKey) async => true;
+  @override
+  Future<ModelResponse> generate(ModelRequest request) async {
+    final understanding =
+        request.messages.first.content.contains('Intent Understanding engine');
+    return ModelResponse(
+      text: understanding ? _understanding : _booking,
+      modelId: 's',
+    );
+  }
+
+  @override
+  Stream<String> generateStream(ModelRequest request) async* {
+    yield (await generate(request)).text;
+  }
+
+  @override
+  Future<void> saveApiKey(String apiKey) async {}
+  @override
+  Future<String?> getApiKey() async => 'k';
+  @override
+  Future<void> deleteApiKey() async {}
+
+  static final String _understanding = jsonEncode({
+    'objective': 'search, book and manage train tickets',
+    'category': 'create',
+    'desiredOutcome': 'book and manage train tickets',
+    'constraints': <String>[],
+    'requiredInputs': <String>[],
+    'assumptions': <String>[],
+    'confidence': 0.9,
+    'networkNeed': 'realtime',
+    'creationNeed': 'definitelyNeeded',
+    'modificationNeed': 'notNeeded',
+  });
+
+  static final String _booking = jsonEncode({
+    'name': 'Train Ticket Booking',
+    'purpose': 'Search, book and manage train tickets',
+    'entities': [
+      {
+        'name': 'Booking',
+        'description': 'A train ticket booking',
+        'displayField': 'route',
+        'fields': [
+          {'name': 'route', 'type': 'text', 'required': true},
+          {'name': 'travelDate', 'type': 'dateTime', 'required': true},
+          {'name': 'passengers', 'type': 'integer', 'required': true},
+        ],
+      },
+    ],
+    'actions': [
+      {'name': 'addBooking', 'type': 'create', 'targetEntity': 'Booking'},
+      {'name': 'cancelBooking', 'type': 'delete', 'targetEntity': 'Booking'},
+    ],
+    'views': [
+      {
+        'name': 'My Bookings',
+        'purpose': 'All bookings',
+        'type': 'list',
+        'sourceEntity': 'Booking',
+        'isDefault': true,
+        'sections': [
+          {'purpose': 'bookings', 'sourceEntity': 'Booking', 'type': 'list'},
+        ],
+      },
+      {
+        'name': 'New Booking',
+        'purpose': 'Book a ticket',
+        'type': 'form',
+        'sourceEntity': 'Booking',
+        'sections': <Map<String, dynamic>>[],
+      },
+    ],
+    'tags': ['booking'],
+    'archetypes': ['collection'],
+    // The trigger: the model thinks live schedules are useful.
+    'requiredCapabilities': ['networkData'],
+    'knowledgeNeeds': <String>[],
+    'networkConfig': {'purpose': 'live train schedules', 'allowedHosts': <String>[]},
   });
 }
 
@@ -431,6 +529,38 @@ void main() {
               'Telling a user something is missing without telling them '
               'where to fix it is the defect, not the fix.',
         );
+      },
+    );
+
+    // Owner report: with a working key, "train ticket booking app" rendered as
+    // the "City or location" search shell. The model returns a proper booking
+    // records app but also asks for networkData; the repair pass then replaced
+    // the records UI with the reference shell. It must stay a records app.
+    test(
+      'a booking app from the model is NOT turned into a search shell',
+      () async {
+        final composition = AppComposition.freshForTesting();
+        addTearDown(() => composition.experienceRepository.close());
+        composition.providerRegistry.registerProvider(_BookingModelProvider());
+        await composition.providerRegistry.setActiveProvider('scripted');
+
+        final result = await composition.intentRouter.route(
+          Intent.create(
+            expression: 'Create a professional train ticket booking app.',
+          ),
+        );
+        final outcome = result.creationResult;
+        expect(outcome, isA<CreationCreated>(),
+            reason: outcome is CreationFailed
+                ? '${outcome.error} / ${outcome.message}'
+                : 'got ${outcome.runtimeType}');
+        final probe =
+            PackageCapabilityProbe((outcome as CreationCreated).package);
+        expect(probe.hasEntityList || probe.hasEntityForm, isTrue,
+            reason: 'a booking app must keep its records UI');
+        final screenIds = outcome.package.interface.screens.map((s) => s.id);
+        expect(screenIds, isNot(contains('reference_main')),
+            reason: 'must not be replaced by the City-or-location shell');
       },
     );
   });

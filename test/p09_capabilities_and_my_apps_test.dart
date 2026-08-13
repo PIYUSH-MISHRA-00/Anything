@@ -312,6 +312,65 @@ void main() {
         isTrue,
       );
     });
+
+    // Regression (owner report): a booking/records app must NOT be clobbered
+    // into the "City or location" search shell by the repair pass when a
+    // networkData gap exists. A records surface (entity list/form) means the
+    // app IS a manager; repair may enrich it but must never replace its UI.
+    test('repair does not replace a records surface with the search shell', () {
+      final now = DateTime.now();
+      final base = ExperiencePackage(
+        manifest: ExperienceManifest(
+          experienceId: 'exp-booking',
+          name: 'Train Ticket Booking',
+          description: 'search, book and manage train tickets',
+          createdAt: now,
+          updatedAt: now,
+        ),
+        interface: const InterfaceDefinition(
+          screens: [
+            InterfaceScreen(
+              id: 'list',
+              title: 'Bookings',
+              children: [
+                InterfaceNode(
+                  type: 'entityList',
+                  id: 'booking_list',
+                  properties: {'entityId': 'booking'},
+                ),
+                InterfaceNode(
+                  type: 'entityForm',
+                  id: 'booking_form',
+                  properties: {'entityId': 'booking'},
+                ),
+              ],
+            ),
+          ],
+        ),
+        behavior: const BehaviorGraph(nodes: [], edges: []),
+        state: const StateSchema(variables: []),
+        provenance: const PackageProvenance(
+          creationEngineVersion: '1.0.0',
+          specVersion: 1,
+          planVersion: 1,
+        ),
+        integrity: PackageIntegrity(contentHash: 'x', computedAt: now),
+      );
+      final repaired = const DeterministicCapabilityRepair().repair(
+        package: base,
+        requiredCapabilities: {
+          AppCapabilityIds.networkData,
+          AppCapabilityIds.crud,
+          AppCapabilityIds.collection,
+        },
+      );
+      final probe = PackageCapabilityProbe(repaired.package);
+      expect(probe.hasEntityList, isTrue,
+          reason: 'the records list must survive repair');
+      expect(probe.hasEntityForm, isTrue,
+          reason: 'the records form must survive repair');
+      expect(repaired.appliedFixes, isNot(contains('injected_network_reference_shell')));
+    });
   });
 
   group('Model reasoner open-world coercion', () {
