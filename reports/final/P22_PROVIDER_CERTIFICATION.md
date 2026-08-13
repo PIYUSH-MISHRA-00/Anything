@@ -98,6 +98,39 @@ the `reference_main` shell. Weather/news (reference-primary) still get the shell
 Deterministic path re-confirmed on device (moto g31, release): "professional
 train ticket booking application" → records booking app, no shell, no crash.
 
+## 2c. End-to-end AI generation — VERIFIED on device with a real key
+
+With the owner's Groq key on a diagnostic debug build, the full path was
+verified on the device (moto g31), logs + screenshots:
+
+- **AI runs and succeeds**: `keyLen=56`, both/all Groq calls complete
+  (understanding + architecture, ~2300–3000 tokens each). No 401. The trim fix
+  resolved it — the key was valid, the request was corrupted by trailing
+  whitespace.
+- **Real relational full-stack app**: "Train Ticket Booking App" with
+  Booking + Train + Route/User/Schedule entities and reference fields — genuine
+  AI software generation, not a search shell or generic CRUD.
+- **Completeness fix** (commit trail): every entity now has a navigable list
+  tab + Add (Train List "Add train" confirmed) — referenced entities are no
+  longer dead ends.
+- **Create + persist**: added a train (T-101 / Rajdhani Express) — it persisted
+  and survived app regeneration (same experience DB).
+- **Reference inference fix**: the booking's `train_id` dropdown — previously
+  empty because the model left `referenceEntityId` null — now **populates with
+  the persisted train and is selectable**. A booking's references can be filled.
+
+`adb install -r` (debug builds share a signing key) preserves the vault, so
+iterating no longer wipes the key.
+
+## Known remaining polish (non-blocking)
+- Reference dropdown shows the record id (`rec-…`) instead of the entity's
+  display field (e.g. "Rajdhani Express") — `getRecordLabel` not resolving the
+  display field for these entities.
+- A generated form field with a long description triggers a debug-only
+  RenderFlex overflow (release clips it; no functional impact).
+- "No app without an AI key" policy still not enforced (deterministic fallback
+  still generates offline). Safe to enforce now that AI is confirmed working.
+
 ## 3. Honest blockers
 
 - **AI generation still unverified end-to-end from here.** The 401 root cause is
