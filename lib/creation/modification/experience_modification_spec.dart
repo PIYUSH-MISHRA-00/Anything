@@ -45,4 +45,12 @@ enum ModificationType {
   addCapability,
   addPermission,
   updateMetadata,
+
+  /// Add a live WebWeaveX "Discover" browse surface to a records app —
+  /// applied by [ExperienceModificationCoordinator] via
+  /// `NetworkReferenceInterfaceFactory.composeDiscoverTab`, NOT by
+  /// [ModificationEngine] (it spans services + capability declarations the
+  /// engine's per-slice ops don't touch). `params['subject']` names what to
+  /// browse (e.g. "trains"). No-op on apps without entities.
+  addWebBrowse,
 }

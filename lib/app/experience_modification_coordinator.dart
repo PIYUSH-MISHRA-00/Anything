@@ -10,6 +10,7 @@ import 'package:anything/creation/experience_package_diff.dart';
 import 'package:anything/creation/package_validator.dart';
 import 'package:anything/creation/modification/modification_engine.dart';
 import 'package:anything/creation/modification/experience_modification_spec.dart';
+import 'package:anything/creation/network_reference_interface_factory.dart';
 import 'package:anything/evolution/evolution_diff_plan.dart';
 import 'package:anything/storage/engineering_memory_repository.dart';
 import 'package:anything/storage/sqlite_experience_repository.dart';
@@ -149,10 +150,16 @@ class ExperienceModificationCoordinator {
 
     switch (result) {
       case ModificationReady():
-        // 4. Validate candidate with full validator
-        final validation = ExperiencePackageValidator.validate(
+        // WebWeaveX-informed edit: compose a live web browse surface when the
+        // planner asked for one (same flow creation uses).
+        final candidate = _applyWebBrowse(
           result.updatedPackage,
+          spec.operations,
+          modificationExpression,
         );
+
+        // 4. Validate candidate with full validator
+        final validation = ExperiencePackageValidator.validate(candidate);
         if (!validation.isValid) {
           return const ModificationCoordinatorFailed(
             message: "I couldn't apply that change.",
@@ -164,7 +171,7 @@ class ExperienceModificationCoordinator {
         await _commits.commit(
           experienceId: experienceId,
           origin: CommitOrigin.modification,
-          package: result.updatedPackage,
+          package: candidate,
         );
 
         // 5.5. World Model ingestion (Implementation Milestone R4): every
@@ -178,7 +185,7 @@ class ExperienceModificationCoordinator {
         // line, so the World Graph is never mutated on rejection —
         // proven directly in this milestone's tests.
         try {
-          _worldModel.ingestExperience(metadata, result.updatedPackage);
+          _worldModel.ingestExperience(metadata, candidate);
         } catch (_) {
           // Deliberately swallowed — see comment above.
         }
@@ -196,10 +203,10 @@ class ExperienceModificationCoordinator {
         );
 
         return ModificationCoordinatorSucceeded(
-          newPackage: result.updatedPackage,
+          newPackage: candidate,
           experienceId: experienceId,
           experienceName: metadata.name,
-          newVersion: result.updatedPackage.manifest.version,
+          newVersion: candidate.manifest.version,
         );
 
       case ModificationFailed():
@@ -254,9 +261,17 @@ class ExperienceModificationCoordinator {
     final result = await _engine.modify(currentPackage, spec);
     if (result is! ModificationReady) return null;
 
+    // WebWeaveX-informed edit: if the planner asked for a live web browse
+    // surface, compose it onto the candidate now (same flow creation uses).
+    final candidatePackage = _applyWebBrowse(
+      result.updatedPackage,
+      spec.operations,
+      modificationExpression,
+    );
+
     final experienceDiff = const ExperienceDiffer().diff(
       currentPackage,
-      result.updatedPackage,
+      candidatePackage,
     );
 
     // Implementation Milestone R5: surface real, persisted engineering
@@ -285,7 +300,7 @@ class ExperienceModificationCoordinator {
       experienceId: experienceId,
       experienceDiff: experienceDiff,
       historicalEngineeringMemory: historicalMemory,
-      candidatePackage: result.updatedPackage,
+      candidatePackage: candidatePackage,
     );
   }
 
@@ -497,6 +512,35 @@ class ExperienceModificationCoordinator {
     }
   }
 
+  /// Apply any `addWebBrowse` operation the planner requested by composing a
+  /// real WebWeaveX "Discover" tab onto [candidate] (the SAME
+  /// `composeDiscoverTab` the creation pipeline uses — live web browse via the
+  /// canonical `knowledgeRetrieval` service, never a second pathway). No-op
+  /// when no such op was requested, or when the app has no entities to browse
+  /// (`composeDiscoverTab` returns the package unchanged). Mirrors creation:
+  /// integrity is left as the engine set it — the validator doesn't hard-check
+  /// the content hash, so re-hashing here would be dead code.
+  ExperiencePackage _applyWebBrowse(
+    ExperiencePackage candidate,
+    List<ModificationOperation> operations,
+    String requestFallbackSubject,
+  ) {
+    final browseOps = operations.where(
+      (o) => o.type == ModificationType.addWebBrowse,
+    );
+    if (browseOps.isEmpty) return candidate;
+    final requested = (browseOps.first.params['subject'] as String?)?.trim();
+    final subject = (requested != null && requested.isNotEmpty)
+        ? requested
+        : (candidate.data?.entities.isNotEmpty ?? false)
+            ? candidate.data!.entities.first.name
+            : requestFallbackSubject;
+    return const NetworkReferenceInterfaceFactory().composeDiscoverTab(
+      candidate,
+      subject: subject,
+    );
+  }
+
   /// Compact, current structure of [package] the model edits against — screen
   /// + node ids are what `modifyUiNode`/`removeUiNode` target, so they must be
   /// real ids from the live package, never invented.
@@ -539,12 +583,15 @@ class ExperienceModificationCoordinator {
         'addBehavior': {'nodeType': 'string', 'config': {}},
         'addState': {'id': 'string', 'type': 'string|number|bool', 'defaultValue': '?'},
         'addEntity': {'name': 'string', 'fields': [{'name': 'string', 'type': 'string'}]},
+        'addWebBrowse': {'subject': 'what to browse, e.g. trains'},
       },
       'instructions':
           'Return a JSON array of {"type": <opName>, "params": {...}} using ONLY '
           'the operations above and ONLY nodeIds/screenIds that appear in '
           'currentApp. Emit the minimal set of operations that satisfies the '
-          'request.',
+          'request. Use addWebBrowse when the user wants to search/browse/find '
+          'real-world or live data from the web (adds a Discover tab powered by '
+          'live web search).',
     });
   }
 
