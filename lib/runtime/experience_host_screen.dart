@@ -681,9 +681,16 @@ class _ExperienceHostScreenState extends State<ExperienceHostScreen>
         },
       ),
     ).whenComplete(() {
+      // Only detach the voice listener. Do NOT dispose `controller` or `voice`
+      // here: `whenComplete` fires as the sheet route tears down, and disposing
+      // the controller then races the closing TextField's own teardown — its
+      // internal AnimatedBuilder(Listenable.merge([focusNode, controller]))
+      // re-listens to the just-disposed controller, red-screening the runtime
+      // ("TextEditingController used after being disposed"). This dialog opens
+      // rarely and its controller/notifier are GC'd once this closure releases,
+      // so the leak is negligible — the same lifetime the field had before a
+      // dispose() was ever added here.
       voice.removeListener(onVoiceText);
-      voice.dispose();
-      controller.dispose();
     });
   }
 
