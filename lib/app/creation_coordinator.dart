@@ -685,18 +685,12 @@ class ExperienceCreationCoordinator {
         package = candidate;
       }
 
-      // WebWeaveX "Discover" tab: every records Experience can browse real-world
-      // data from the web (real restaurants/trains/books/…), not only
-      // hand-entered records. Additive; no-op for calculators/timers (no
-      // entities) and reference shells. Applied here — the ONE production commit
-      // site — so it never perturbs the builder-vs-compiler equivalence fixtures
-      // that compare raw CreationEngine output directly.
-      package = const NetworkReferenceInterfaceFactory().composeDiscoverTab(
-        package!,
-        subject: (package.data?.entities.isNotEmpty ?? false)
-            ? package.data!.entities.first.name
-            : '',
-      );
+      // WebWeaveX "Discover" tab (composeDiscoverTab) is built and unit-tested
+      // but NOT wired in here yet: enabling it made opening a records Experience
+      // hang a widget-test's pumpAndSettle (an async operation on the open path
+      // never settles — root cause not yet found). Re-enable once that is
+      // understood; shipping a hanging open path is worse than local-only CRUD.
+      package = package!;
 
       // Persist
       _state = CreationState.persisting;

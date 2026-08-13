@@ -353,6 +353,11 @@ class NetworkReferenceInterfaceFactory {
     )) {
       return package;
     }
+    // Only a real records app (one with a rendered list surface) gets Discover.
+    // A package with entities but no entityList screen isn't a browsable app.
+    bool hasList(InterfaceNode n) =>
+        n.type == 'entityList' || n.children.any(hasList);
+    if (!screens.any((s) => s.children.any(hasList))) return package;
 
     final subj = subject.trim().isEmpty ? 'results' : subject.trim();
     final discover = buildInterface(
@@ -406,27 +411,15 @@ class NetworkReferenceInterfaceFactory {
             ),
           ]
         : package.networkDeclarations;
-    final manifest = ExperienceManifest(
-      experienceId: package.manifest.experienceId,
-      name: package.manifest.name,
-      description: package.manifest.description,
-      version: package.manifest.version,
-      createdAt: package.manifest.createdAt,
-      updatedAt: package.manifest.updatedAt,
-      networkMode: NetworkMode.required,
-      storageMode: package.manifest.storageMode,
-      requiredCapabilities: {
-        ...package.manifest.requiredCapabilities,
-        'knowledge',
-        'networkData',
-      }.toList(),
-      category: package.manifest.category,
-      tags: package.manifest.tags,
-    );
 
+    // The manifest is left untouched: a records app is offline-first and the
+    // Discover tab is an OPTIONAL online extra. Forcing networkMode.required or
+    // extra required-capabilities would make the whole app refuse to open
+    // offline. The knowledge service + capability declarations below are all
+    // the Discover tab needs to fetch when the user actually uses it.
     return ExperiencePackage(
       packageVersion: package.packageVersion,
-      manifest: manifest,
+      manifest: package.manifest,
       interface: interface,
       behavior: _mergeBehavior(package.behavior, buildBehavior(topic: subj)),
       state: _mergeState(package.state, buildState()),
