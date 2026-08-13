@@ -128,6 +128,25 @@ class SynthesisPlanner {
           actionType: BlueprintActionType.create,
         ),
       );
+      // A LIST view gives the entity a navigable tab whose "Add" button reaches
+      // the create action. Without it the create action has no reachable
+      // surface (this run had no Train/Passenger tab, so their Add was
+      // unreachable and the booking's required references stayed a dead end).
+      final hasList = views.any(
+        (v) =>
+            v.sourceEntityId == e.id && v.viewType == BlueprintViewType.list,
+      );
+      if (!hasList) {
+        views.add(
+          BlueprintView(
+            id: '${e.id}_list',
+            name: '${e.name} List',
+            purpose: 'All ${e.name}',
+            sourceEntityId: e.id,
+            viewType: BlueprintViewType.list,
+          ),
+        );
+      }
       final hasForm = views.any(
         (v) =>
             v.sourceEntityId == e.id && v.viewType == BlueprintViewType.form,
