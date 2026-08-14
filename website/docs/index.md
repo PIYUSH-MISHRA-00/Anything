@@ -57,6 +57,30 @@ features:
     linkText: Contribute
 ---
 
+<div class="axn">
+  <div class="axn-head">
+    <h2>See it in action</h2>
+    <p>Describe an app. Use the real, full-stack app Anything builds. Then change it by talking to it — all on your device.</p>
+  </div>
+  <div class="axn-hero">
+    <div class="axn-phone axn-phone--lg">
+      <img src="/screenshots/demo.gif" alt="Anything demo — open an AI-built app, browse the live web inside it, and change the app by describing the change" loading="lazy" />
+    </div>
+    <div class="axn-steps">
+      <div class="axn-step"><span>1</span><div><strong>Describe</strong><p>Type an outcome in your own words — <em>“a grocery list”</em>, <em>“find nearby restaurants”</em>.</p></div></div>
+      <div class="axn-step"><span>2</span><div><strong>Use</strong><p>A real full-stack app: add records, and browse <strong>live web data</strong> in the built-in Discover tab, powered by WebWeaveX.</p></div></div>
+      <div class="axn-step"><span>3</span><div><strong>Change it</strong><p>Say <em>“add a favourite button”</em> — scoped to the screen you’re on, or the whole app if you ask.</p></div></div>
+      <a class="axn-cta" href="https://buymeacoffee.com/piyushmishra00" target="_blank" rel="noopener">☕ Buy me a coffee</a>
+    </div>
+  </div>
+  <div class="axn-grid">
+    <figure><div class="axn-phone"><img src="/screenshots/01_home.png" alt="Home screen — 'What do you want?'" loading="lazy"/></div><figcaption>Describe an intent</figcaption></figure>
+    <figure><div class="axn-phone"><img src="/screenshots/02_generated_app.png" alt="A generated full-stack grocery app" loading="lazy"/></div><figcaption>The app it builds</figcaption></figure>
+    <figure><div class="axn-phone"><img src="/screenshots/03_webweavex_discover.png" alt="WebWeaveX Discover — a real Walmart.com product with a rendered image" loading="lazy"/></div><figcaption>Real web data, inside your app</figcaption></figure>
+    <figure><div class="axn-phone"><img src="/screenshots/04_change_app.png" alt="Change this app — scoped to the current screen, with voice input" loading="lazy"/></div><figcaption>Change it by talking to it</figcaption></figure>
+  </div>
+</div>
+
 <div style="max-width: 860px; margin: 4rem auto 0; padding: 0 1.5rem;">
 
 ## Project status: pre-release

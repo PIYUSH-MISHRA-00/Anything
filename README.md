@@ -15,18 +15,26 @@ Describe what you need. Anything builds it, runs it, and keeps it.
 [![Invariants](https://img.shields.io/badge/certified%20invariants-102-blueviolet)](docs/audit/ARCHITECTURE_INVARIANT_MATRIX.md)
 [![Version](https://img.shields.io/badge/version-2.0.0%2B1-informational)](pubspec.yaml)
 
-[**Website**](https://piyush-mishra-00.github.io/Anything/) · [Quick Start](#quick-start) · [Architecture](ARCHITECTURE.md) · [Vision](VISION.md) · [Roadmap](ROADMAP.md) · [Contributing](CONTRIBUTING.md) · [FAQ](docs/FAQ.md)
+[**Website**](https://piyush-mishra-00.github.io/Anything/) · [Quick Start](#quick-start) · [See it in action](#see-it-in-action) · [Architecture](ARCHITECTURE.md) · [Roadmap](ROADMAP.md) · [Contributing](CONTRIBUTING.md) · [FAQ](docs/FAQ.md)
+
+<br/>
+
+<img src="assets/screenshots/demo.gif" alt="Anything demo — open an AI-built app, browse the real web inside it, and change the app by describing the change" width="300"/>
+
+<br/><br/>
+
+[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-support%20the%20project-FFDD00?style=for-the-badge&logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/piyushmishra00)
 
 </div>
 
 ---
 
-> **Project status: pre-release — NOT production complete (P21).**
-> Version `2.0.0+1`. Analyzer **0/0/0**. P21 adds typed `IntentContract`
-> (stopwatch≠calculator, scientific≠basic), hardcoding probe, provider
-> independence tests, and novel-domain astronomy generation. Device matrix,
-> WebWeaveX/Kaalka/import device cert, and Play Store remain **OPEN** until
-> signed — see `Desktop/Anything_P21_FINAL/` and [ROADMAP.md](ROADMAP.md).
+> **Project status: pre-release, active development.**
+> Version `2.0.0`. Analyzer **0/0/0**. Creation, native execution, WebWeaveX
+> (build-time + in-app), AI-driven "Change this app", and Kaalka protection are
+> device-proven; app-creation reliability and the full Play-Store release are
+> being hardened. See [ROADMAP.md](ROADMAP.md). This is open source you can run
+> today — not a finished consumer product.
 
 ## What is Anything?
 
@@ -39,6 +47,24 @@ The generated thing is called an **Experience**. It is not a chat response and
 not a script: it is a structured, versioned, validated package with its own
 interface, behaviour, state schema and declared capabilities, which the
 Anything runtime executes natively.
+
+## See it in action
+
+**Three steps, all on-device:**
+
+1. **Describe** what you want on the home screen — *"a grocery list"*, *"find nearby restaurants"*.
+2. **Use** the real, full-stack app Anything builds — add records, and browse **real data from the live web** with the built-in **Discover** tab (powered by WebWeaveX).
+3. **Change it** by describing the change in plain words — *"add a favourite button"* — scoped to the screen you're on, or the whole app if you say so.
+
+| Describe an intent | The app Anything built |
+|:---:|:---:|
+| <img src="assets/screenshots/01_home.png" width="260" alt="Home — 'What do you want?' with two AI-built apps in Recent"/> | <img src="assets/screenshots/02_generated_app.png" width="260" alt="A generated full-stack grocery app with list, search and add"/> |
+| **Real web data, inside your app** | **Change the app by talking to it** |
+| <img src="assets/screenshots/03_webweavex_discover.png" width="260" alt="WebWeaveX Discover tab showing a real Walmart.com product with a rendered image"/> | <img src="assets/screenshots/04_change_app.png" width="260" alt="'Change this app' sheet, scoped to the current screen, with voice input"/> |
+
+> **Try asking for:** `a water intake tracker` · `a calculator that does unit
+> conversions` · `find nearby coffee shops` · `a reading list` · `a habit
+> tracker with a weekly streak`. Then open the app and tell it what to change.
 
 ## Why does it exist?
 
@@ -219,7 +245,13 @@ Start with [CONTRIBUTING.md](CONTRIBUTING.md). By participating you agree to the
 - **Bugs and features** — [GitHub Issues](https://github.com/PIYUSH-MISHRA-00/Anything/issues)
 - **Questions and ideas** — [GitHub Discussions](https://github.com/PIYUSH-MISHRA-00/Anything/discussions)
 - **Security** — see [SECURITY.md](SECURITY.md); please do not open a public issue
-- **Support the work** — [GitHub Sponsors / Buy Me a Coffee](.github/FUNDING.yml)
+
+### ☕ Support the work
+
+Anything is built in the open by one developer. If it's useful to you — or you
+just like where it's going — a coffee keeps it moving:
+
+<a href="https://buymeacoffee.com/piyushmishra00"><img src="https://img.shields.io/badge/Buy%20Me%20a%20Coffee-piyushmishra00-FFDD00?style=for-the-badge&logo=buymeacoffee&logoColor=black" alt="Buy Me a Coffee"/></a>
 
 ## License
 

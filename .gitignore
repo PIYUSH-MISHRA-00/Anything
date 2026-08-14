@@ -69,3 +69,6 @@ Desktop/
 
 # Stray artifact archives (regenerable)
 /*.zip
+
+# VitePress local build cache
+website/docs/.vitepress/cache/
