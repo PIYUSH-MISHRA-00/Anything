@@ -63,3 +63,12 @@ android/key.properties
 website/node_modules/
 website/docs/.vitepress/dist/
 website/docs/.vitepress/cache/
+
+# ── Local reports (kept on Desktop, not committed) ──────────────────────────
+Desktop/
+
+# Stray artifact archives (regenerable)
+/*.zip
+
+# VitePress local build cache
+website/docs/.vitepress/cache/

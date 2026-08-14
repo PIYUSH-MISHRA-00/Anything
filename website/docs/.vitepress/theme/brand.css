@@ -60,3 +60,100 @@
     letter-spacing: -0.02em;
   }
 }
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * "See it in action" showcase — the product proof: real device screenshots
+ * in phone frames, on a brand-gradient field. Self-contained; no default-theme
+ * selectors touched.
+ * ───────────────────────────────────────────────────────────────────────── */
+.axn {
+  max-width: 1120px;
+  margin: 5rem auto 0;
+  padding: 3rem 1.5rem;
+}
+.axn-head { text-align: center; max-width: 720px; margin: 0 auto 2.5rem; }
+.axn-head h2 {
+  font-size: clamp(1.9rem, 4vw, 2.6rem);
+  line-height: 1.1;
+  border: 0;
+  margin: 0 0 0.6rem;
+  background: linear-gradient(120deg, var(--anything-violet), var(--anything-teal));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.axn-head p { color: var(--vp-c-text-2); font-size: 1.075rem; margin: 0; }
+
+.axn-hero {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2.5rem;
+  align-items: center;
+  padding: 2.5rem;
+  border-radius: 24px;
+  background:
+    radial-gradient(120% 120% at 0% 0%, rgba(108, 92, 231, 0.16), transparent 60%),
+    radial-gradient(120% 120% at 100% 100%, rgba(0, 184, 169, 0.16), transparent 60%),
+    var(--vp-c-bg-soft);
+  border: 1px solid var(--vp-c-divider);
+}
+@media (min-width: 860px) {
+  .axn-hero { grid-template-columns: minmax(240px, 320px) 1fr; gap: 3.5rem; }
+}
+
+.axn-steps { display: flex; flex-direction: column; gap: 1.4rem; }
+.axn-step { display: flex; gap: 1rem; align-items: flex-start; }
+.axn-step span {
+  flex: 0 0 auto;
+  width: 2rem; height: 2rem;
+  display: grid; place-items: center;
+  border-radius: 50%;
+  font-weight: 700; font-size: 0.95rem; color: #fff;
+  background: linear-gradient(135deg, var(--anything-violet), var(--anything-teal));
+  box-shadow: 0 4px 14px rgba(108, 92, 231, 0.35);
+}
+.axn-step strong { display: block; font-size: 1.1rem; margin-bottom: 0.15rem; }
+.axn-step p { margin: 0; color: var(--vp-c-text-2); font-size: 0.975rem; line-height: 1.5; }
+
+.axn-cta {
+  align-self: flex-start;
+  margin-top: 0.5rem;
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  padding: 0.7rem 1.4rem;
+  border-radius: 999px;
+  font-weight: 700; text-decoration: none;
+  color: #1a1a1a;
+  background: #ffdd00;
+  box-shadow: 0 6px 20px rgba(255, 221, 0, 0.4);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.axn-cta:hover { transform: translateY(-2px); box-shadow: 0 10px 26px rgba(255, 221, 0, 0.5); }
+
+/* Phone frame — a soft bezel that makes screenshots read as a real device. */
+.axn-phone {
+  border-radius: 28px;
+  padding: 8px;
+  background: linear-gradient(160deg, rgba(108, 92, 231, 0.5), rgba(0, 184, 169, 0.5));
+  box-shadow: 0 18px 50px rgba(11, 11, 16, 0.28);
+  max-width: 300px;
+  margin: 0 auto;
+}
+.axn-phone img { display: block; width: 100%; border-radius: 22px; }
+.axn-phone--lg { max-width: 300px; }
+
+.axn-grid {
+  margin-top: 3rem;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.75rem 1.25rem;
+}
+@media (min-width: 880px) { .axn-grid { grid-template-columns: repeat(4, 1fr); } }
+.axn-grid figure { margin: 0; }
+.axn-grid figcaption {
+  margin-top: 0.9rem;
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--vp-c-text-2);
+  font-weight: 500;
+}
+.axn-grid .axn-phone { max-width: 240px; }
