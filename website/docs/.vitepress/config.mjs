@@ -19,7 +19,7 @@ export default defineConfig({
   ignoreDeadLinks: false,
 
   head: [
-    ['link', { rel: 'icon', href: `${base}logo.svg`, type: 'image/svg+xml' }],
+    ['link', { rel: 'icon', href: `${base}app_icon.png`, type: 'image/png' }],
     ['meta', { name: 'theme-color', content: '#6C5CE7' }],
     ['meta', { property: 'og:type', content: 'website' }],
     ['meta', { property: 'og:title', content: 'Anything' }],
@@ -36,7 +36,7 @@ export default defineConfig({
   ],
 
   themeConfig: {
-    logo: '/logo.svg',
+    logo: '/app_icon.png',
     siteTitle: 'Anything',
 
     nav: [

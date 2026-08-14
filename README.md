@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="assets/branding/logo.svg" alt="Anything" width="120" height="120">
+<img src="assets/branding/app_icon.png" alt="Anything" width="120" height="120">
 
 # Anything
 

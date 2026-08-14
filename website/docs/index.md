@@ -6,7 +6,7 @@ hero:
   text: An operating system for software that does not exist yet
   tagline: Describe what you need. Anything builds it, runs it, and keeps it — on your device, with no account and no server.
   image:
-    src: /logo.svg
+    src: /app_icon.png
     alt: Anything
   actions:
     - theme: brand
