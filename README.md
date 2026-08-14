@@ -1,6 +1,13 @@
-# Anything
+# Anything <sub>v1.0.0</sub>
 
 **Anything** is an AI-first Flutter application. Unlike traditional apps where users navigate through hardcoded menus and buttons, *Anything* allows you to express your intent natively through natural language. The app dynamically assembles the interface, tools, and widgets you need in real-time.
+
+[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-support%20the%20project-FFDD00?style=for-the-badge&logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/piyushmishra00)
+
+> 📦 **This is the `v1.0.0` line.** For the current architecture (native
+> Experiences, WebWeaveX in-app web data, AI-driven "Change this app") see the
+> **[`v2.0.0` branch](../../tree/v2.0.0)** and the
+> **[website](https://piyush-mishra-00.github.io/Anything/)**.
 
 ## Features
 
@@ -63,3 +70,14 @@ When you first launch the app, you will be taken through the onboarding process.
 ## Contributing
 
 Contributions, issues, and feature requests are welcome!
+
+## ☕ Support the work
+
+Anything is built in the open by one developer. If it's useful to you, a coffee
+keeps it moving:
+
+<a href="https://buymeacoffee.com/piyushmishra00"><img src="https://img.shields.io/badge/Buy%20Me%20a%20Coffee-piyushmishra00-FFDD00?style=for-the-badge&logo=buymeacoffee&logoColor=black" alt="Buy Me a Coffee"/></a>
+
+## License
+
+[Apache License 2.0](LICENSE).
