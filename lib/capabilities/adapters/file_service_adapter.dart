@@ -55,6 +55,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart' as picker_pkg;
+import 'package:flutter/services.dart' show MethodChannel;
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
@@ -340,12 +341,33 @@ class RealFileService implements FileService {
         final unique = _uniqueFileName(dir, name);
         final file = File(p.join(dir.path, unique));
         file.writeAsStringSync(contents);
+        // A raw write to Download/ lands on disk but stays invisible to the
+        // Files/Downloads apps (which list MediaStore, not the filesystem)
+        // until it is scanned — which is why "Export successful" pointed at a
+        // file the user could not find. Register it now.
+        await _scanIntoMediaStore(file.path);
         return file;
       } catch (_) {
         // Scoped storage or permission — try next candidate.
       }
     }
     return null;
+  }
+
+  static const MethodChannel _mediaChannel = MethodChannel(
+    'com.anything.anything/media',
+  );
+
+  /// Best-effort MediaStore registration so an exported file shows up in file
+  /// browsers immediately (Android only). Never throws: the file is already
+  /// written; scanning only affects discoverability.
+  Future<void> _scanIntoMediaStore(String path) async {
+    if (!Platform.isAndroid) return;
+    try {
+      await _mediaChannel.invokeMethod('scanFile', {'path': path});
+    } catch (_) {
+      // No native handler / older engine — the file is still on disk.
+    }
   }
 
   Future<File?> _trySaveViaPicker(String name, String contents) async {
