@@ -77,9 +77,13 @@ android {
         // with no local signal. Pinning makes the number a reviewable decision
         // in a diff.
         //
-        // 35 = Android 15, which is the version this build was verified on
-        // (moto g45 5G, API 35, IS-P04 device test).
-        targetSdk = 35
+        // 36 = Android 16. Google Play's target API level requirement
+        // (deadline 31 Aug 2026) rejects apps targeting below 36, so the pin
+        // must track the floor. compileSdk inherits 36 from Flutter. Last
+        // on-device verification was API 35 (moto g45 5G, IS-P04); re-verify
+        // on device after this bump -- API 36 makes edge-to-edge mandatory
+        // (no opt-out), which is the main behaviour change.
+        targetSdk = 36
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
