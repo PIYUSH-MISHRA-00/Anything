@@ -39,19 +39,21 @@
 
 /* The status tables on the landing page carry a lot of the site's honesty.
  * Give them room to breathe rather than letting them read as fine print. */
-.vp-doc table {
-  display: table;
-  width: 100%;
-}
-
 .vp-doc td,
 .vp-doc th {
   padding: 0.6rem 0.9rem;
 }
 
 /* Wide tables must scroll inside themselves rather than pushing the page
- * sideways on a phone. */
+ * sideways on a phone. This VitePress build renders <table tabindex="0">
+ * WITHOUT the .table-wrapper div, so the theme's wrapper rule never applies.
+ * Make the table itself the scroll container (the GitHub approach): a block
+ * that is at most the viewport width and scrolls any wider content, instead
+ * of a display:table that stretches the page and forces a mobile zoom-out. */
+.vp-doc table,
 .vp-doc .table-wrapper {
+  display: block;
+  max-width: 100%;
   overflow-x: auto;
 }
 
