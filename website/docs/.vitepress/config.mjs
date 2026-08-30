@@ -39,8 +39,15 @@ export default defineConfig({
           'Describe what you need. Anything builds it, runs it, and keeps it. Local-first, open source.',
       },
     ],
-    ['meta', { property: 'og:image', content: `${base}social-card.svg` }],
+    // PNG, not the SVG that used to be here. X, LinkedIn, Slack, WhatsApp and
+    // Facebook all silently refuse an SVG og:image — the card simply does not
+    // render, and nothing tells you. The SVG stays as the source of truth.
+    ['meta', { property: 'og:image', content: `${base}social-card.png` }],
+    ['meta', { property: 'og:image:width', content: '1280' }],
+    ['meta', { property: 'og:image:height', content: '640' }],
+    ['meta', { property: 'og:image:alt', content: 'Anything — an operating system for software that does not exist yet' }],
     ['meta', { name: 'twitter:card', content: 'summary_large_image' }],
+    ['meta', { name: 'twitter:image', content: `${base}social-card.png` }],
   ],
 
   themeConfig: {

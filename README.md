@@ -11,11 +11,13 @@ Describe what you need. Anything builds it, runs it, and keeps it.
 [![CI](https://github.com/PIYUSH-MISHRA-00/Anything/actions/workflows/ci.yml/badge.svg)](https://github.com/PIYUSH-MISHRA-00/Anything/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![Flutter](https://img.shields.io/badge/Flutter-3.44-02569B?logo=flutter)](https://flutter.dev)
-[![Tests](https://img.shields.io/badge/tests-P18%20CI%3A%202%2C317%20passing-success)](docs/audit/)
+[![Tests](https://img.shields.io/badge/tests-2%2C357%20passing-success)](test/)
 [![Invariants](https://img.shields.io/badge/certified%20invariants-102-blueviolet)](docs/audit/ARCHITECTURE_INVARIANT_MATRIX.md)
-[![Version](https://img.shields.io/badge/version-2.0.0%2B1-informational)](pubspec.yaml)
+[![Version](https://img.shields.io/badge/version-2.0.0%2B3-informational)](pubspec.yaml)
+[![Android](https://img.shields.io/badge/Android-17%20%C2%B7%20API%2037-3DDC84?logo=android&logoColor=white)](android/app/build.gradle.kts)
+[![Google Play](https://img.shields.io/badge/Google%20Play-closed%20testing-34A853?logo=googleplay&logoColor=white)](website/docs/guide/installation.md)
 
-[**Website**](https://piyush-mishra-00.github.io/Anything/) · [Quick Start](#quick-start) · [See it in action](#see-it-in-action) · [Architecture](ARCHITECTURE.md) · [Roadmap](ROADMAP.md) · [Contributing](CONTRIBUTING.md) · [FAQ](docs/FAQ.md)
+[**Docs**](website/docs/guide/what-is-anything.md) · [Quick Start](#quick-start) · [See it in action](#see-it-in-action) · [Architecture](ARCHITECTURE.md) · [Roadmap](ROADMAP.md) · [Contributing](CONTRIBUTING.md) · [FAQ](docs/FAQ.md)
 
 <br/>
 
@@ -164,7 +166,7 @@ home screen.
 ### Verify your checkout
 
 ```bash
-flutter test                                                  # P17 baseline: 2325; P18 may add more
+flutter test                                                  # 2,357 passing
 flutter test test/r46_architectural_integrity_certification_test.dart   # 102 invariants
 bash tool/analyze_gate.sh                                     # analyzer regression gate
 ```
@@ -205,7 +207,7 @@ lib/
   solution_reasoning/ design_review/ evolution/
   runtime_intelligence/ world_model/         the nine intelligence engines
 
-test/             2325+ tests (P17 baseline), 0 skipped
+test/             2,350+ tests
 docs/             architecture, audits, ADRs, guides
 tool/             analyze gate, reachability analysis
 examples/         runnable examples
@@ -226,12 +228,12 @@ Detail per directory: [ARCHITECTURE.md](ARCHITECTURE.md).
 | report a vulnerability | [SECURITY.md](SECURITY.md) |
 | get help | [SUPPORT.md](SUPPORT.md) · [docs/FAQ.md](docs/FAQ.md) |
 | see what changed | [CHANGELOG.md](CHANGELOG.md) |
-| browse it as a website | [piyush-mishra-00.github.io/Anything](https://piyush-mishra-00.github.io/Anything/) |
+| read the full documentation | [`website/docs/`](website/docs/) — a VitePress site that also reads fine on GitHub |
 
 ## Contributing
 
 Contributions are genuinely welcome, and the project is unusually easy to
-contribute to safely: **102 certified invariants and 2325+ tests will tell you
+contribute to safely: **102 certified invariants and 2,350+ tests will tell you
 immediately if a change breaks an architectural rule**, so you do not need to
 hold the whole system in your head.
 
