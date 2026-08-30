@@ -1,9 +1,16 @@
 name: Website
 
-# Builds the VitePress site and publishes it to GitHub Pages.
+# Builds the VitePress site and proves it is publishable. It does NOT deploy.
+#
+# Deployment moved to Cloudflare Pages, which builds this same directory
+# straight from the private repository. GitHub Pages cannot serve it: on the
+# Free plan `POST /repos/.../pages` answers 422, "Your current plan does not
+# support GitHub Pages for this repository", and this repository is private by
+# choice. Leaving the deploy steps in place only produced a red X on every
+# push.
 #
 # The build runs on every push and PR touching the site, so a broken page is
-# caught in review. Deployment happens only from the default branch.
+# caught in review rather than in production.
 #
 # `ignoreDeadLinks: false` in the VitePress config means a dead internal link
 # FAILS THE BUILD. That is deliberate: a dead link in documentation is a broken
@@ -21,17 +28,8 @@ on:
       - '.github/workflows/website.yml'
   workflow_dispatch:
 
-# Pages needs these; nothing else in this repository does.
 permissions:
   contents: read
-  pages: write
-  id-token: write
-
-# Never let two deployments race. Queue instead of cancelling, so a merged
-# change is not silently dropped by a later one.
-concurrency:
-  group: pages
-  cancel-in-progress: false
 
 jobs:
   build:
@@ -63,33 +61,13 @@ jobs:
           pages=$(find "$dist" -name '*.html' | wc -l)
           echo "Rendered $pages pages."
           [ "$pages" -ge 10 ] || { echo "Only $pages pages — the site is incomplete."; exit 1; }
-          # The site is served from /Anything/. A missing base breaks every
-          # asset URL in a way that looks fine locally and 404s in production.
-          grep -q '/Anything/assets/' "$dist/index.html" \
-            || { echo "Assets are not prefixed with the GitHub Pages base path."; exit 1; }
+          # The site is served from the ROOT of its host, so assets must be
+          # /assets/... and never /<repo>/assets/... . A wrong base looks fine
+          # locally and 404s every stylesheet in production.
+          if ! grep -q '"/assets/' "$dist/index.html"; then
+            echo "Assets are not served from the root base path."; exit 1
+          fi
+          if grep -q '"/Anything/assets/' "$dist/index.html"; then
+            echo "Assets still carry the old GitHub Pages /Anything/ base."; exit 1
+          fi
           echo "OK."
-
-      - uses: actions/configure-pages@v5
-        if: github.ref == 'refs/heads/main'
-        with:
-          # Auto-enable Pages (source = GitHub Actions) on the first run so the
-          # deploy doesn't fail with "Get Pages site failed / Not Found" before
-          # Pages has been turned on in repo settings.
-          enablement: true
-
-      - uses: actions/upload-pages-artifact@v3
-        if: github.ref == 'refs/heads/main'
-        with:
-          path: website/docs/.vitepress/dist
-
-  deploy:
-    name: Deploy to GitHub Pages
-    if: github.ref == 'refs/heads/main'
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - id: deployment
-        uses: actions/deploy-pages@v4

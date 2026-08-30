@@ -1,10 +1,18 @@
 import { defineConfig } from 'vitepress'
 
-// The site is served from https://<user>.github.io/Anything/, so every
-// absolute asset path needs the repository name as a base. Getting this wrong
-// is the single most common reason a VitePress site 404s its own CSS on
-// GitHub Pages.
-const base = '/Anything/'
+// The site is served from the ROOT of its own host (Cloudflare Pages), not
+// from a /<repo>/ subpath.
+//
+// GitHub Pages is not an option and cannot be made one without changing the
+// repository: it refuses a PRIVATE repository on the Free plan --
+// `POST /repos/.../pages` answers 422, "Your current plan does not support
+// GitHub Pages for this repository" -- and this repository is private by
+// choice.
+//
+// If the site ever moves to a project-site subpath, this is the one value to
+// change. Getting it wrong is the single most common reason a VitePress site
+// 404s its own CSS.
+const base = '/'
 
 export default defineConfig({
   title: 'Anything',
@@ -122,7 +130,7 @@ export default defineConfig({
 
     footer: {
       message:
-        'Apache-2.0 licensed. Experiences you create with Anything are yours. <a href="/Anything/privacy">Privacy policy</a>',
+        'Apache-2.0 licensed. Experiences you create with Anything are yours. <a href="/privacy">Privacy policy</a>',
       copyright: 'Copyright © 2026 Piyush Mishra and the Anything contributors',
     },
 
