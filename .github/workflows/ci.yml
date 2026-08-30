@@ -195,8 +195,12 @@ jobs:
       - name: Install the pinned Android platform
         run: |
           set -e
-          yes | sdkmanager --licenses > /dev/null 2>&1 || true
-          sdkmanager "platforms;android-37.0" "build-tools;37.0.0"
+          # sdkmanager is not on PATH on the runner image; only ANDROID_HOME is.
+          sdkmanager="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          test -x "$sdkmanager" || { echo "sdkmanager not at $sdkmanager"; exit 1; }
+          yes | "$sdkmanager" --licenses > /dev/null 2>&1 || true
+          "$sdkmanager" "platforms;android-37.0" "build-tools;37.0.0"
+          test -d "$ANDROID_HOME/platforms/android-37.0" || { echo "android-37.0 did not install."; exit 1; }
 
       - name: Install dependencies
         run: flutter pub get
