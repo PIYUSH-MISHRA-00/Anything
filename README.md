@@ -8,9 +8,15 @@
 
 **Describe what you need. Anything builds it, runs it, and keeps it — on your device, with no account and no server.**
 
-[![Website](https://img.shields.io/badge/website-live-6c5ce7?style=for-the-badge)](https://piyush-mishra-00.github.io/Anything/)
+[![Google Play](https://img.shields.io/badge/Google%20Play-closed%20testing-34A853?style=for-the-badge&logo=googleplay&logoColor=white)](website/docs/guide/installation.md)
 [![Get the code](https://img.shields.io/badge/code-v2.0.0%20branch-00b8a9?style=for-the-badge&logo=github&logoColor=white)](../../tree/v2.0.0)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue?style=for-the-badge)](LICENSE)
+
+[![Android](https://img.shields.io/badge/Android-17%20%C2%B7%20API%2037-3DDC84?logo=android&logoColor=white)](../../tree/v2.0.0/android)
+[![Flutter](https://img.shields.io/badge/Flutter-3.44-02569B?logo=flutter&logoColor=white)](https://flutter.dev)
+[![Tests](https://img.shields.io/badge/tests-2%2C357%20passing-success)](../../tree/v2.0.0/test)
+[![Invariants](https://img.shields.io/badge/certified%20invariants-102-blueviolet)](website/docs/architecture/certification.md)
+[![Local first](https://img.shields.io/badge/data-100%25%20on--device-6c5ce7)](website/docs/privacy.md)
 
 <br/>
 
@@ -68,10 +74,15 @@ runtime executes directly.
 
 ## Explore
 
-- 🌐 **[Live website](https://piyush-mishra-00.github.io/Anything/)** — the full story, guides, and architecture
+- 📖 **[What is Anything?](website/docs/guide/what-is-anything.md)** — the full story, in one page
+- 📲 **[Get it](website/docs/guide/installation.md)** — the Google Play closed test, or a build from source
 - 💻 **[Source code (`v2.0.0`)](../../tree/v2.0.0)** — clone, run, and contribute
-- 🗺️ **[Roadmap](https://piyush-mishra-00.github.io/Anything/guide/roadmap)** — what works, what's next, and what's out of scope
-- 🤝 **[Contributing](CONTRIBUTING.md)** — the highest-value work right now is product & release engineering, not architecture
+- 🏛️ **[Architecture](website/docs/architecture/overview.md)** · **[Certification](website/docs/architecture/certification.md)** — how 102 invariants keep it honest
+- 🗺️ **[Roadmap](website/docs/guide/roadmap.md)** — what works, what's next, and what's out of scope
+- 🤝 **[Contributing](CONTRIBUTING.md)** — the highest-value work right now is accessibility and localisation, not architecture
+
+> The documentation in `website/` is a VitePress site. It reads fine on GitHub;
+> a hosted version is coming.
 
 ### Run it yourself
 

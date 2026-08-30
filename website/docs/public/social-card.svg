@@ -24,5 +24,5 @@
   <text x="96" y="524" font-family="Inter, Segoe UI, system-ui, sans-serif"
         font-size="26" font-weight="500" fill="#00B8A9">Describe what you need. Anything builds it, runs it, and keeps it.</text>
   <text x="96" y="586" font-family="Inter, Segoe UI, system-ui, sans-serif"
-        font-size="22" fill="#6E6A80">Apache-2.0 &#183; Flutter &#183; 102 certified invariants &#183; 2,141 tests</text>
+        font-size="22" fill="#6E6A80">Apache-2.0 &#183; Flutter &#183; Android 17 &#183; 102 certified invariants &#183; 2,357 tests</text>
 </svg>
