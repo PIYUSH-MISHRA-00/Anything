@@ -29,12 +29,13 @@ Describe what you need. Anything builds it, runs it, and keeps it.
 
 ---
 
-> **Project status: pre-release, active development.**
-> Version `2.0.0`. Analyzer **0/0/0**. Creation, native execution, WebWeaveX
-> (build-time + in-app), AI-driven "Change this app", and Kaalka protection are
-> device-proven; app-creation reliability and the full Play-Store release are
-> being hardened. See [ROADMAP.md](ROADMAP.md). This is open source you can run
-> today — not a finished consumer product.
+> **Project status: complete — on Google Play in closed testing.**
+> Version `2.0.0`, targeting **Android 17 (API 37)**. Analyzer **0/0/0**.
+> Creation, native execution, WebWeaveX (build-time + in-app), AI-driven
+> "Change this app", Kaalka protection and export/import are all device-proven.
+> The signed App Bundle is live on Google Play's closed testing track; the
+> public listing follows once the required tester period completes. See
+> [ROADMAP.md](ROADMAP.md).
 
 ## What is Anything?
 

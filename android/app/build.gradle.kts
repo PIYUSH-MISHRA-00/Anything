@@ -37,7 +37,12 @@ configurations.all {
 
 android {
     namespace = "com.anything.anything"
-    compileSdk = flutter.compileSdkVersion
+    // PINNED IN IS-P29, previously `flutter.compileSdkVersion` (36).
+    //
+    // compileSdk must be >= targetSdk, and targetSdk is pinned at 37 below.
+    // Flutter 3.44 still defaults to 36, so inheriting it would cap the
+    // target one level below the newest stable API.
+    compileSdk = 37
     // speech_to_text requests 28.2.13676358. P18 re-installed a complete
     // NDK 28.2.13676358 (source.properties present) so the project pins the
     // plugin-required version rather than suppressing the mismatch.
@@ -77,13 +82,19 @@ android {
         // with no local signal. Pinning makes the number a reviewable decision
         // in a diff.
         //
-        // 36 = Android 16. Google Play's target API level requirement
-        // (deadline 31 Aug 2026) rejects apps targeting below 36, so the pin
-        // must track the floor. compileSdk inherits 36 from Flutter. Last
-        // on-device verification was API 35 (moto g45 5G, IS-P04); re-verify
-        // on device after this bump -- API 36 makes edge-to-edge mandatory
-        // (no opt-out), which is the main behaviour change.
-        targetSdk = 36
+        // 37 = Android 17, the newest stable API level (IS-P29).
+        //
+        // Play's rule is "within one year of the latest Android release", and
+        // it bites on a yearly deadline: 31 Aug 2026 needs >= 36, 31 Aug 2027
+        // needs >= 37. Targeting the floor buys twelve months and another
+        // warning mail; targeting the newest level buys two years, which is
+        // why this is 37 rather than the 36 the deadline demands.
+        //
+        // Behaviour changes carried by the 35 -> 37 move: API 36 makes
+        // edge-to-edge mandatory (no opt-out) and API 37 keeps it that way.
+        // Last on-device verification was API 35 (moto g45 5G, IS-P04);
+        // re-verify on device after this bump.
+        targetSdk = 37
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }

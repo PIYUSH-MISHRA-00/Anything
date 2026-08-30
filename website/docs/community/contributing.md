@@ -1,7 +1,7 @@
 # Contributing
 
 Contributions are genuinely welcome, and this project is unusually safe to
-contribute to: **102 certified invariants and 2,141 tests will tell you
+contribute to: **102 certified invariants and 2,350+ tests will tell you
 immediately if a change breaks an architectural rule.**
 
 Full guide: [CONTRIBUTING.md](https://github.com/PIYUSH-MISHRA-00/Anything/blob/v2.0.0/CONTRIBUTING.md).
@@ -28,7 +28,7 @@ None of these require understanding the whole architecture:
 | **Golden tests** | Zero exist. The renderer has no regression protection at all |
 | **A second AI provider** | The abstraction exists and has never had a second implementation |
 | **G-40 diagnosis** | A reproducible test-database contention bug, unresolved for five milestones |
-| **Screenshots** | Genuinely blocked on someone running the app on a device |
+| **Testing on hardware we do not have** | Join the [closed test](/guide/installation) and report what breaks on your device |
 
 ## If a certification test fails
 

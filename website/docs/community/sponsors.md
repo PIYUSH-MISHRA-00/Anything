@@ -2,8 +2,9 @@
 
 Anything is free, open source under Apache-2.0, and has no company behind it.
 
-If it is useful to you — or if you would like it to reach a Play Store release
-sooner — you can support the work:
+If it is useful to you — or if you would like the public Play Store release and
+the gaps on the [roadmap](/guide/roadmap) closed sooner — you can support the
+work:
 
 - [**GitHub Sponsors**](https://github.com/sponsors/PIYUSH-MISHRA-00)
 - [**Buy Me a Coffee**](https://www.buymeacoffee.com/piyushmishra00)
@@ -24,5 +25,5 @@ held back for sponsors.
 |---|---|
 | **Contribute** | [Where help is most useful](/community/contributing) — accessibility and localisation need no architectural knowledge |
 | **Report honestly** | A precise bug report is worth more than a vague star |
-| **Run it and say what broke** | Nobody has verified Anything on a physical device yet. That is a real contribution |
+| **Join the closed test** | Ask in [Discussions](https://github.com/PIYUSH-MISHRA-00/Anything/discussions) — more testers on more hardware is the single most useful thing right now |
 | **Star the repository** | It genuinely helps others find it |

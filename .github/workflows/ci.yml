@@ -187,6 +187,17 @@ jobs:
           flutter-version: '3.44.8'
           channel: 'stable'
 
+      # compileSdk/targetSdk are pinned at 37 and the runner image does not
+      # ship that platform. From API 37 Google publishes MINOR-VERSIONED
+      # platforms, so the package is `android-37.0` and the directory AGP
+      # looks for is `android-37.0` too -- `platforms;android-37` does not
+      # exist and installing it silently succeeds while resolving nothing.
+      - name: Install the pinned Android platform
+        run: |
+          set -e
+          yes | sdkmanager --licenses > /dev/null 2>&1 || true
+          sdkmanager "platforms;android-37.0" "build-tools;37.0.0"
+
       - name: Install dependencies
         run: flutter pub get
 

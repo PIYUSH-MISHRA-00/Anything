@@ -58,7 +58,7 @@ section of [ROADMAP.md](../ROADMAP.md). The highest-value work right now is
 product and release engineering, not architecture.
 
 **Do I need to understand the whole system?**
-No. 102 certified invariants and 2,141 tests will tell you if you break an
+No. 102 certified invariants and 2,350+ tests will tell you if you break an
 architectural rule. That is the main reason this codebase is safe to contribute
 to without holding it all in your head.
 

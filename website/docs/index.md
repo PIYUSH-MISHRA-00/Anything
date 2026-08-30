@@ -83,29 +83,44 @@ features:
 
 <div style="max-width: 860px; margin: 4rem auto 0; padding: 0 1.5rem;">
 
-## Project status: pre-release
+## Project status: complete, in closed testing
 
-**Anything is not shipped yet.** This page describes software that is real,
-tested and running in development — not something you can install from a store
-today.
-
-What works right now:
+**Anything is finished software.** Every capability described on this site is
+built, tested and running on real Android hardware — not a prototype and not a
+plan. It is on Google Play right now in **closed testing**, which is the stage
+Google requires before a public listing.
 
 | | |
 |---|---|
 | Describe an intent and get a working Experience | ✅ |
 | Run it natively — interface, behaviour, state | ✅ |
 | Several Experiences as a workspace, with scheduling | ✅ |
-| Modify and evolve an existing Experience | ✅ |
-| Protect one with time-keyed encryption | ✅ |
-| **Export and import an Experience as a file** | ✅ *(new)* |
+| Modify and evolve an existing Experience by talking to it | ✅ |
+| Live web data inside a generated app (WebWeaveX) | ✅ |
+| Protect one with time-keyed encryption (Kaalka) | ✅ |
+| Export and import an Experience as a file | ✅ |
 | Persistent knowledge acquisition from the web | ✅ |
-| Published Android build | ⚠️ not yet — [roadmap](/guide/roadmap) |
+| Verified on physical Android devices | ✅ |
+| Signed Android App Bundle, targeting Android 17 (API 37) | ✅ |
+| **On Google Play — closed testing** | ✅ |
+| Public Play Store listing | 🔜 after the closed test completes |
 | Accessibility and localisation | ⚠️ minimal — [help wanted](/community/contributing) |
 | Marketplace, cloud sync, accounts | ❌ out of scope, permanently |
 
-The [roadmap](/guide/roadmap) is specific about what does not work and why.
-If you are deciding whether to contribute, start there.
+The [roadmap](/guide/roadmap) records what is deliberately out of scope and
+where help is most useful.
+
+## Getting it
+
+**On Google Play (closed testing).** The build is live on the closed track. Places
+on the tester list are limited while the test runs — ask for one in
+[Discussions](https://github.com/PIYUSH-MISHRA-00/Anything/discussions), then
+opt in at
+[play.google.com/apps/testing/com.anything.anything](https://play.google.com/apps/testing/com.anything.anything).
+The public listing follows once the closed test finishes.
+
+**From source.** Everything is Apache-2.0 and builds from a clean checkout —
+see below.
 
 ## Try it in two minutes
 
@@ -119,7 +134,7 @@ flutter run
 Then verify the checkout is healthy — this is exactly what CI runs:
 
 ```bash
-flutter test                                                          # 2,141 tests
+flutter test                                                          # 2,350+ tests
 flutter test test/r46_architectural_integrity_certification_test.dart  # 102 invariants
 bash tool/analyze_gate.sh                                             # analyzer baseline
 ```

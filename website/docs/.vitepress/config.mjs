@@ -122,7 +122,7 @@ export default defineConfig({
 
     footer: {
       message:
-        'Apache-2.0 licensed. Experiences you create with Anything are yours.',
+        'Apache-2.0 licensed. Experiences you create with Anything are yours. <a href="/Anything/privacy">Privacy policy</a>',
       copyright: 'Copyright © 2026 Piyush Mishra and the Anything contributors',
     },
 
