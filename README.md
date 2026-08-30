@@ -87,11 +87,15 @@ has a free tier), and type an intent on the home screen.
 
 ## Project status
 
-**Pre-release, active development.** Creation, native execution, WebWeaveX
-(build-time + in-app), AI-driven "Change this app", and Kaalka protection are
-device-proven. App-creation reliability and the full Play-Store release are
-being hardened. This is open source you can run today — not a finished consumer
-product yet.
+**Complete — on Google Play in closed testing.** Version `2.0.0`, targeting
+**Android 17 (API 37)**. Creation, native execution, WebWeaveX (build-time +
+in-app), AI-driven "Change this app", Kaalka protection and export/import are
+all device-proven. The signed App Bundle is live on Google Play's closed
+testing track; the public listing follows once the required tester period
+completes.
+
+Want to test it on your device? Ask for a place on the tester list in
+[Discussions](https://github.com/PIYUSH-MISHRA-00/Anything/discussions).
 
 ## ☕ Support the work
 

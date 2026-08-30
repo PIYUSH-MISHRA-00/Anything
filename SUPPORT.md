@@ -30,8 +30,7 @@ These are already tracked; you do not need to report them:
 
 | Issue | Status |
 |---|---|
-| Experiences cannot be imported or exported | Built but not wired — [ROADMAP](ROADMAP.md) |
-| No published Play Store build | In progress |
+| Not on the public Play Store yet | On Google Play in **closed testing**; the public listing follows |
 | `ProviderRequired` with no AI key | Expected — add a key in Settings |
 | A test occasionally fails in a full run and passes on re-run | Known as **G-40**, unresolved |
 | Accessibility is minimal | Known; help welcome |

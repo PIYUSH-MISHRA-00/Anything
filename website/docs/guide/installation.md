@@ -1,9 +1,25 @@
 # Installation
 
-Anything is **pre-release**. There is no Play Store build yet — see the
-[roadmap](/guide/roadmap). Today you run it from source.
+Anything is complete and running on real devices. There are two ways to get it:
+the Google Play closed test, or a build from source.
 
-## Prerequisites
+## From Google Play (closed testing)
+
+The signed App Bundle is live on Google Play's **closed testing** track while the
+required tester period completes. A public listing follows.
+
+1. Ask for a place on the tester list in
+   [Discussions](https://github.com/PIYUSH-MISHRA-00/Anything/discussions) —
+   include the Google account email you use on the Play Store.
+2. Once you are added, opt in at
+   [play.google.com/apps/testing/com.anything.anything](https://play.google.com/apps/testing/com.anything.anything).
+3. Install from Google Play as normal. Updates arrive the usual way.
+
+Requires Android 7.0 (API 24) or newer. The build targets Android 17 (API 37).
+
+## From source
+
+### Prerequisites
 
 - **Flutter 3.44 or newer** — [install guide](https://docs.flutter.dev/get-started/install)
 - **An AI provider key** — currently [Groq](https://console.groq.com/keys),
@@ -12,7 +28,7 @@ Anything is **pre-release**. There is no Play Store build yet — see the
 Without a key, Anything still runs. It reports `ProviderRequired` rather than
 crashing or inventing an answer — but it cannot generate an Experience.
 
-## Run it
+### Run it
 
 ```bash
 git clone https://github.com/PIYUSH-MISHRA-00/Anything.git
@@ -23,13 +39,13 @@ flutter run
 
 Then open **Settings → AI Provider** and paste your key.
 
-## Verify your checkout
+### Verify your checkout
 
 These three commands are exactly what CI runs. A green local run means a green
 CI run.
 
 ```bash
-flutter test                                                          # 2,141 tests
+flutter test                                                          # 2,350+ tests
 flutter test test/r46_architectural_integrity_certification_test.dart  # 102 invariants
 bash tool/analyze_gate.sh                                             # analyzer baseline
 ```
@@ -41,7 +57,7 @@ worth [reporting](https://github.com/PIYUSH-MISHRA-00/Anything/issues/new/choose
 
 | Platform | State |
 |---|---|
-| Android | Builds a signed release App Bundle; not published |
+| Android | **Shipped** — signed App Bundle on Google Play closed testing, targeting API 37, device-verified |
 | Windows / macOS / Linux | Flutter targets exist, unexercised |
 | iOS | Not attempted |
 | Web | Flutter target exists, unexercised |

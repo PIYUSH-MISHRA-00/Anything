@@ -24,8 +24,7 @@ You do not need to report these:
 
 | Issue | Status |
 |---|---|
-| No published Play Store build | In progress |
-| Never verified on a physical device | Next milestone |
+| Not on the public Play Store yet | On Google Play in **closed testing**; the public listing follows |
 | `ProviderRequired` with no AI key | Expected — add a key in Settings |
 | A test occasionally fails in a full run and passes on re-run | **G-40**, unresolved |
 | Accessibility is minimal | Known; [help welcome](/community/contributing) |
