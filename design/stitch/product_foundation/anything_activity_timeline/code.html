@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Anything - Activity</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-error-container": "#93000a",
+                        "outline-variant": "#c5c5d4",
+                        "inverse-surface": "#313030",
+                        "surface-bright": "#fcf9f8",
+                        "on-primary-fixed": "#00105a",
+                        "tertiary-fixed": "#e5e3d9",
+                        "surface-container-low": "#f6f3f2",
+                        "primary-fixed-dim": "#bac3ff",
+                        "outline": "#757683",
+                        "surface-dim": "#dcd9d9",
+                        "on-tertiary-fixed-variant": "#474741",
+                        "tertiary": "#34342e",
+                        "surface-container-lowest": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "background": "#fcf9f8",
+                        "secondary-container": "#e0e0dc",
+                        "secondary": "#5e5f5c",
+                        "surface-container-highest": "#e5e2e1",
+                        "primary-container": "#2e41a1",
+                        "on-tertiary-container": "#bcbbb2",
+                        "on-primary": "#ffffff",
+                        "tertiary-fixed-dim": "#c8c7be",
+                        "secondary-fixed": "#e3e2df",
+                        "surface-variant": "#e5e2e1",
+                        "on-surface": "#1c1b1b",
+                        "on-secondary-fixed": "#1b1c1a",
+                        "surface-container": "#f0eded",
+                        "on-tertiary": "#ffffff",
+                        "on-error": "#ffffff",
+                        "surface-tint": "#4456b6",
+                        "secondary-fixed-dim": "#c7c7c3",
+                        "error": "#ba1a1a",
+                        "on-tertiary-fixed": "#1b1c17",
+                        "on-background": "#1c1b1b",
+                        "primary-fixed": "#dee0ff",
+                        "on-surface-variant": "#454652",
+                        "on-secondary-container": "#626360",
+                        "tertiary-container": "#4b4b44",
+                        "primary": "#11278a",
+                        "surface-container-high": "#eae7e7",
+                        "on-secondary": "#ffffff",
+                        "inverse-on-surface": "#f3f0ef",
+                        "on-primary-fixed-variant": "#2a3d9d",
+                        "surface": "#fcf9f8",
+                        "on-secondary-fixed-variant": "#464744",
+                        "on-primary-container": "#aab6ff",
+                        "inverse-primary": "#bac3ff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "1rem",
+                        "lg": "2rem",
+                        "xl": "3rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "gutter": "24px",
+                        "stack-lg": "64px",
+                        "unit": "8px",
+                        "stack-md": "32px",
+                        "container-padding": "32px",
+                        "stack-sm": "16px"
+                    },
+                    "fontFamily": {
+                        "headline-md": ["Public Sans"],
+                        "headline-lg": ["Public Sans"],
+                        "label-sm": ["Inter"],
+                        "headline-lg-mobile": ["Public Sans"],
+                        "body-md": ["Inter"],
+                        "body-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-md": ["24px", { "lineHeight": "1.3", "letterSpacing": "0em", "fontWeight": "500" }],
+                        "headline-lg": ["48px", { "lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+                        "label-sm": ["12px", { "lineHeight": "1.2", "letterSpacing": "0.08em", "fontWeight": "600" }],
+                        "headline-lg-mobile": ["32px", { "lineHeight": "1.2", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "body-md": ["16px", { "lineHeight": "1.5", "letterSpacing": "0.01em", "fontWeight": "400" }],
+                        "body-lg": ["18px", { "lineHeight": "1.6", "letterSpacing": "0.01em", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { background-color: theme('colors.background'); color: theme('colors.on-background'); }
+        .glass-panel { background: rgba(252, 249, 248, 0.7); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.3); }
+        .ambient-shadow { box-shadow: 0 10px 30px -10px rgba(17, 39, 138, 0.1); }
+        .activity-card { transition: transform 0.3s ease, box-shadow 0.3s ease; }
+        .activity-card:hover { transform: translateY(-2px); box-shadow: 0 15px 40px -10px rgba(17, 39, 138, 0.15); }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="antialiased min-h-screen flex flex-col pb-32">
+<!-- Top App Bar -->
+<header class="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b border-surface-variant/30 hidden md:block">
+<div class="flex justify-between items-center px-container-padding py-stack-sm w-full max-w-[1440px] mx-auto">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full overflow-hidden bg-surface-container-high flex items-center justify-center">
+<img class="w-full h-full object-cover" data-alt="A minimal, elegant user profile avatar representing a sophisticated individual. High key lighting, soft neutral background, conveying a serene and modern light-mode aesthetic aligned with a premium AI assistant lifestyle." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDpCBM2BeQXfOTnaFnV9cJGqctixKKTIpFNF_3-x56cO-3ypJJfDkeLS9ONll9AFe0K6nWfyKKb9W9mf0Omi_ZZ_1PY8V9P54v61cAfjslm4iTo9JxDZ35eNuu6NOfF-coPbwmtVQWFZ_jO4k60wxXFSub0rXYQjt0mX5eFPfvFfmlzRVP_1MLUe-0qxLbzh3jHrw0WicYzkWnd0D3MGe0SS9cB8hocK73gkaihLUvH796UrU4Hc0Dg-h6XToj-fkMVbttTrZHcSeI"/>
+</div>
+<span class="font-headline-md text-headline-md font-semibold text-primary">Anything</span>
+</div>
+<!-- Desktop Nav -->
+<nav class="flex items-center gap-8">
+<a class="font-body-md text-body-md text-secondary hover:text-primary transition-colors flex items-center gap-2 group" href="#">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform">home</span> Home
+                </a>
+<a class="font-body-md text-body-md text-secondary hover:text-primary transition-colors flex items-center gap-2 group" href="#">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform">apps</span> My Apps
+                </a>
+<a class="font-body-md text-body-md text-on-surface flex items-center gap-2 relative" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">history</span> Activity
+                    <div class="absolute -bottom-6 left-0 right-0 h-0.5 bg-primary rounded-t-full"></div>
+</a>
+<a class="font-body-md text-body-md text-secondary hover:text-primary transition-colors flex items-center gap-2 group" href="#">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform">workspaces</span> Workspace
+                </a>
+</nav>
+<button class="w-10 h-10 rounded-full hover:bg-surface-container transition-colors flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined">settings</span>
+</button>
+</div>
+</header>
+<!-- Mobile Header (Minimal) -->
+<header class="md:hidden pt-12 pb-6 px-container-padding flex justify-between items-center bg-background">
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile text-primary">Activity</h1>
+<div class="w-10 h-10 rounded-full overflow-hidden bg-surface-container-high">
+<img class="w-full h-full object-cover" data-alt="A minimal, elegant user profile avatar representing a sophisticated individual. High key lighting, soft neutral background, conveying a serene and modern light-mode aesthetic aligned with a premium AI assistant lifestyle." src="https://lh3.googleusercontent.com/aida-public/AB6AXuADb5e3oogkSgP7yTKXi5YCb-IBFirS4oeflHTWXOFtgX0-3MUlSkTLDarkxL96Q6ZFsP03aBzxtBYv_CygnVj9h8VLFYnKOL-2d4JI3MzF42RZNuokmqH5FQ36lv1qzoS02wgxnI3PGssZ7-QDXd1Rl-jLy7xwvx-xXkU9EIk1vGQGu17JF8HRGVG8toM4i4Z7pU9zvVaB60qD6pQ3ktEbcPrr-FVx1ST_Yu6BH88wlb2Bo38Gs_7vXwzcbhKpwYvMY7jTwjwwqSI"/>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-grow w-full max-w-[1024px] mx-auto px-5 md:px-container-padding pt-6 md:pt-16 flex flex-col gap-stack-lg">
+<!-- Header Area (Desktop) -->
+<section class="hidden md:flex flex-col gap-4 text-center items-center">
+<h1 class="font-headline-lg text-headline-lg text-primary max-w-2xl">Your recent Activity</h1>
+<p class="font-body-lg text-body-lg text-secondary max-w-xl">A serene timeline of everything that has unfolded in your intelligent environment.</p>
+</section>
+<!-- Timeline / Activity Feed -->
+<section class="flex flex-col gap-6 relative before:absolute before:inset-y-0 before:left-[27px] md:before:left-1/2 md:before:-ml-px before:w-px before:bg-gradient-to-b before:from-transparent before:via-surface-variant before:to-transparent">
+<!-- Activity Item 1 -->
+<article class="relative flex flex-col md:flex-row items-start md:items-center justify-between gap-6 md:gap-12 w-full md:even:flex-row-reverse group">
+<!-- Timeline Node -->
+<div class="absolute left-6 md:left-1/2 w-3 h-3 rounded-full bg-primary -ml-[5px] md:-ml-[6px] shadow-[0_0_0_4px_theme(colors.background)] z-10"></div>
+<!-- Spacer for layout -->
+<div class="hidden md:block w-[calc(50%-24px)]"></div>
+<!-- Card Content -->
+<div class="w-full md:w-[calc(50%-24px)] pl-12 md:pl-0 activity-card bg-surface-container-lowest rounded-3xl p-6 ambient-shadow border border-surface-container-high relative overflow-hidden">
+<div class="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2"></div>
+<div class="flex items-center gap-4 mb-4">
+<div class="w-12 h-12 rounded-full bg-primary-container/20 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'FILL' 1;">account_balance_wallet</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-surface">You created Budget Planner</h3>
+</div>
+<p class="font-body-md text-body-md text-secondary leading-relaxed">Your financial tracking environment is now active and securely analyzing your recent inputs to provide personalized insights.</p>
+</div>
+</article>
+<!-- Activity Item 2 -->
+<article class="relative flex flex-col md:flex-row items-start md:items-center justify-between gap-6 md:gap-12 w-full md:even:flex-row-reverse group mt-4">
+<div class="absolute left-6 md:left-1/2 w-3 h-3 rounded-full bg-surface-variant -ml-[5px] md:-ml-[6px] shadow-[0_0_0_4px_theme(colors.background)] z-10 group-hover:bg-primary transition-colors duration-500"></div>
+<div class="hidden md:block w-[calc(50%-24px)]"></div>
+<div class="w-full md:w-[calc(50%-24px)] pl-12 md:pl-0 md:pr-0 md:even:pl-0 md:even:pr-12 activity-card bg-surface-container-lowest rounded-3xl p-6 ambient-shadow border border-surface-container-high relative overflow-hidden">
+<div class="absolute bottom-0 left-0 w-40 h-40 bg-surface-tint/5 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2"></div>
+<div class="flex items-center gap-4 mb-4">
+<div class="w-12 h-12 rounded-full bg-secondary-container/30 flex items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'FILL' 1;">travel_explore</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-surface">Research is ready</h3>
+</div>
+<p class="font-body-md text-body-md text-secondary leading-relaxed">The synthesis of market trends you requested has been beautifully compiled and is waiting for your review.</p>
+</div>
+</article>
+<!-- Activity Item 3 -->
+<article class="relative flex flex-col md:flex-row items-start md:items-center justify-between gap-6 md:gap-12 w-full md:even:flex-row-reverse group mt-4">
+<div class="absolute left-6 md:left-1/2 w-3 h-3 rounded-full bg-surface-variant -ml-[5px] md:-ml-[6px] shadow-[0_0_0_4px_theme(colors.background)] z-10 group-hover:bg-primary transition-colors duration-500"></div>
+<div class="hidden md:block w-[calc(50%-24px)]"></div>
+<div class="w-full md:w-[calc(50%-24px)] pl-12 md:pl-0 activity-card bg-surface-container-lowest rounded-3xl p-6 ambient-shadow border border-surface-container-high relative overflow-hidden">
+<div class="absolute top-0 right-0 w-full h-full bg-gradient-to-br from-transparent to-primary/5 opacity-50"></div>
+<div class="flex items-center gap-4 mb-4">
+<div class="w-12 h-12 rounded-full bg-tertiary-container/20 flex items-center justify-center text-tertiary">
+<span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'FILL' 1;">shield_locked</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-surface">Protection enabled</h3>
+</div>
+<p class="font-body-md text-body-md text-secondary leading-relaxed">Enhanced privacy protocols have been activated across your workspace, ensuring a quiet, secure sanctuary for your data.</p>
+</div>
+</article>
+</section>
+</main>
+<!-- Bottom Nav Bar (Mobile & Tablet) -->
+<nav class="md:hidden fixed bottom-8 left-0 right-0 z-50 flex justify-around items-center px-container-padding py-2 max-w-md mx-auto bg-surface-bright/80 dark:bg-surface-dim/80 backdrop-blur-xl border border-white/10 shadow-lg shadow-primary/10 rounded-full w-[calc(100%-64px)]">
+<!-- Home -->
+<a class="flex flex-col items-center justify-center text-secondary dark:text-secondary-fixed-dim hover:text-primary dark:hover:text-primary-fixed transition-colors" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="font-label-sm text-label-sm mt-1">Home</span>
+</a>
+<!-- My Apps -->
+<a class="flex flex-col items-center justify-center text-secondary dark:text-secondary-fixed-dim hover:text-primary dark:hover:text-primary-fixed transition-colors" href="#">
+<span class="material-symbols-outlined">apps</span>
+<span class="font-label-sm text-label-sm mt-1">Apps</span>
+</a>
+<!-- Activity (Active) -->
+<a class="flex flex-col items-center justify-center bg-primary dark:bg-primary-container text-on-primary dark:text-on-primary-container rounded-full w-14 h-14 -translate-y-2 shadow-lg shadow-primary/30" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">history</span>
+<span class="font-label-sm text-[10px] mt-0.5">Activity</span>
+</a>
+<!-- Workspace -->
+<a class="flex flex-col items-center justify-center text-secondary dark:text-secondary-fixed-dim hover:text-primary dark:hover:text-primary-fixed transition-colors" href="#">
+<span class="material-symbols-outlined">workspaces</span>
+<span class="font-label-sm text-label-sm mt-1">Space</span>
+</a>
+<!-- Preferences -->
+<a class="flex flex-col items-center justify-center text-secondary dark:text-secondary-fixed-dim hover:text-primary dark:hover:text-primary-fixed transition-colors" href="#">
+<span class="material-symbols-outlined">tune</span>
+<span class="font-label-sm text-label-sm mt-1">Prefs</span>
+</a>
+</nav>
+</body></html>

@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Anything - Capability Resilience</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&amp;family=Public+Sans:wght@500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "outline-variant": "#c5c5d4",
+                    "surface-variant": "#e5e2e1",
+                    "on-tertiary-fixed-variant": "#474741",
+                    "on-surface": "#1c1b1b",
+                    "on-secondary-fixed": "#1b1c1a",
+                    "on-error": "#ffffff",
+                    "secondary": "#5e5f5c",
+                    "primary-fixed": "#dee0ff",
+                    "surface-tint": "#4456b6",
+                    "secondary-fixed": "#e3e2df",
+                    "on-tertiary": "#ffffff",
+                    "on-primary-fixed": "#00105a",
+                    "secondary-fixed-dim": "#c7c7c3",
+                    "inverse-primary": "#bac3ff",
+                    "surface-dim": "#dcd9d9",
+                    "surface-container-high": "#eae7e7",
+                    "inverse-surface": "#313030",
+                    "primary-fixed-dim": "#bac3ff",
+                    "on-secondary-container": "#626360",
+                    "surface-container-highest": "#e5e2e1",
+                    "primary": "#11278a",
+                    "on-tertiary-fixed": "#1b1c17",
+                    "error": "#ba1a1a",
+                    "tertiary-fixed-dim": "#c8c7be",
+                    "surface-container-lowest": "#ffffff",
+                    "on-tertiary-container": "#bcbbb2",
+                    "secondary-container": "#e0e0dc",
+                    "on-primary-container": "#aab6ff",
+                    "on-error-container": "#93000a",
+                    "surface-container": "#f0eded",
+                    "outline": "#757683",
+                    "tertiary-container": "#4b4b44",
+                    "surface-container-low": "#f6f3f2",
+                    "tertiary-fixed": "#e5e3d9",
+                    "surface": "#fcf9f8",
+                    "on-surface-variant": "#454652",
+                    "on-primary-fixed-variant": "#2a3d9d",
+                    "on-secondary-fixed-variant": "#464744",
+                    "tertiary": "#34342e",
+                    "on-secondary": "#ffffff",
+                    "background": "#fcf9f8",
+                    "on-primary": "#ffffff",
+                    "on-background": "#1c1b1b",
+                    "primary-container": "#2e41a1",
+                    "inverse-on-surface": "#f3f0ef",
+                    "error-container": "#ffdad6",
+                    "surface-bright": "#fcf9f8"
+            },
+            "borderRadius": {
+                    "DEFAULT": "1rem",
+                    "lg": "2rem",
+                    "xl": "3rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "container-padding": "32px",
+                    "unit": "8px",
+                    "stack-md": "32px",
+                    "stack-sm": "16px",
+                    "stack-lg": "64px",
+                    "gutter": "24px"
+            },
+            "fontFamily": {
+                    "label-sm": [
+                            "Inter"
+                    ],
+                    "body-lg": [
+                            "Inter"
+                    ],
+                    "body-md": [
+                            "Inter"
+                    ],
+                    "headline-lg": [
+                            "Public Sans"
+                    ],
+                    "headline-md": [
+                            "Public Sans"
+                    ],
+                    "headline-lg-mobile": [
+                            "Public Sans"
+                    ]
+            },
+            "fontSize": {
+                    "label-sm": [
+                            "12px",
+                            {
+                                    "lineHeight": "1.2",
+                                    "letterSpacing": "0.08em",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "body-lg": [
+                            "18px",
+                            {
+                                    "lineHeight": "1.6",
+                                    "letterSpacing": "0.01em",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "body-md": [
+                            "16px",
+                            {
+                                    "lineHeight": "1.5",
+                                    "letterSpacing": "0.01em",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "headline-lg": [
+                            "48px",
+                            {
+                                    "lineHeight": "1.1",
+                                    "letterSpacing": "-0.02em",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "headline-md": [
+                            "24px",
+                            {
+                                    "lineHeight": "1.3",
+                                    "letterSpacing": "0em",
+                                    "fontWeight": "500"
+                            }
+                    ],
+                    "headline-lg-mobile": [
+                            "32px",
+                            {
+                                    "lineHeight": "1.2",
+                                    "letterSpacing": "-0.01em",
+                                    "fontWeight": "600"
+                            }
+                    ]
+            }
+    },
+        },
+      }
+    </script>
+<style>
+        body {
+            background-color: theme('colors.background');
+            color: theme('colors.on-background');
+        }
+        
+        .glass-card {
+            background: linear-gradient(145deg, rgba(255,255,255,0.9) 0%, rgba(240,237,237,0.7) 100%);
+            backdrop-filter: blur(20px);
+            border: 1px solid theme('colors.surface-container-high');
+            box-shadow: 0 10px 40px -10px rgba(17, 39, 138, 0.05), inset 0 1px 0 rgba(255,255,255,0.5);
+        }
+
+        .ambient-glow {
+            position: absolute;
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, theme('colors.primary-fixed-dim') 0%, transparent 70%);
+            opacity: 0.15;
+            filter: blur(40px);
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .timeline-line {
+            width: 2px;
+            background: linear-gradient(to bottom, theme('colors.primary-container'), theme('colors.surface-container-high'));
+        }
+
+        .fade-in-up {
+            animation: fadeInUp 0.8s ease-out forwards;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        @keyframes fadeInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .delay-100 { animation-delay: 100ms; }
+        .delay-200 { animation-delay: 200ms; }
+        .delay-300 { animation-delay: 300ms; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="min-h-screen overflow-x-hidden selection:bg-primary-fixed selection:text-on-primary-fixed">
+<!-- TopAppBar -->
+<header class="bg-surface/80 dark:bg-surface/80 backdrop-blur-md text-primary dark:text-inverse-primary font-headline-md text-headline-md docked full-width top-0 sticky shadow-sm z-50">
+<div class="flex justify-between items-center px-container-padding h-20 w-full max-w-[1440px] mx-auto">
+<!-- Leading: Avatar -->
+<div class="flex items-center gap-4 hover:scale-105 transition-transform duration-200 cursor-pointer">
+<img alt="User Avatar" class="w-10 h-10 rounded-full object-cover border-2 border-surface-container" data-alt="A small, circular profile picture placeholder with a soft gray background. It represents a user avatar in a modern light-mode UI, designed with a clean, minimalist aesthetic and smooth edges." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBtB3CmQTZsy4rL1JIMzbdJ051WZ4vWKJZXKhFZVGnZf_iESMkha2gfoyDN3fRIeK3DdZgy71wrQrqyJ5klwy-iINZSsJU9NEPlbycGh9AOl8wd5y8zXTyZC-NYdztEeVYnZ7osdvZoXwSCC7vypPlzQV1lQKzbhGl5_A1MgXFqS3iZcSldrJPaKi_mVgzJns0RYuhyLDge5vdFUMi3AsCcHASwBrvBO7nahxmuJL4DYaE9Tv8Vjnd2rXfgIJkwQdJcP_9Bqs-tbcI"/>
+</div>
+<!-- Headline / Brand -->
+<div class="font-headline-md text-headline-md font-semibold text-primary dark:text-inverse-primary tracking-tight">
+                Anything
+            </div>
+<!-- Trailing: Icon -->
+<div class="hover:scale-105 transition-transform duration-200 cursor-pointer text-on-surface-variant dark:text-on-surface-variant hover:text-primary active:scale-95 transition-all">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">dark_mode</span>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="max-w-[1440px] mx-auto px-5 md:px-8 lg:px-16 pt-stack-md pb-32 relative">
+<div class="ambient-glow top-20 left-10"></div>
+<div class="ambient-glow bottom-40 right-20" style="background: radial-gradient(circle, theme('colors.secondary-container') 0%, transparent 70%);"></div>
+<!-- Page Header -->
+<div class="max-w-3xl mx-auto mb-stack-lg text-center fade-in-up">
+<h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface mb-stack-sm">Activity Timeline</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-xl mx-auto">Tracking kernel operations and recovery pathways.</p>
+</div>
+<!-- Timeline Container -->
+<div class="max-w-4xl mx-auto relative pl-8 md:pl-0">
+<!-- Continuous Line -->
+<div class="absolute left-0 md:left-1/2 top-0 bottom-0 md:-ml-[1px] timeline-line rounded-full opacity-30 z-0"></div>
+<!-- Event 1: Initial Request -->
+<div class="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between mb-stack-lg fade-in-up delay-100 group">
+<div class="hidden md:block w-[45%] text-right pr-12">
+<span class="font-label-sm text-label-sm text-on-surface-variant">10:42 AM</span>
+<h3 class="font-body-md text-body-md text-on-surface mt-2">Request Initiated</h3>
+</div>
+<!-- Node -->
+<div class="absolute left-[-24px] md:left-1/2 md:-ml-3 w-6 h-6 rounded-full bg-surface-container-high border-2 border-surface flex items-center justify-center transition-colors group-hover:bg-primary-container group-hover:border-primary-fixed">
+<span class="w-2 h-2 rounded-full bg-on-surface-variant group-hover:bg-primary"></span>
+</div>
+<div class="w-full md:w-[45%] pl-6 md:pl-12">
+<div class="bg-surface-container-low rounded-lg p-6 border border-surface-container">
+<p class="font-body-md text-body-md text-on-surface">"Synthesize recent market reports for Project Alpha."</p>
+</div>
+</div>
+</div>
+<!-- Event 2: The Recovery Card (Bento/Glassmorphism Focus) -->
+<div class="relative z-10 flex flex-col items-center justify-center mb-stack-lg fade-in-up delay-200">
+<!-- Node -->
+<div class="absolute left-[-24px] md:left-1/2 md:-ml-4 top-10 w-8 h-8 rounded-full bg-primary-container flex items-center justify-center shadow-sm">
+<span class="material-symbols-outlined text-[18px] text-on-primary-container" style="font-variation-settings: 'FILL' 1;">alt_route</span>
+</div>
+<div class="w-full md:w-[85%] lg:w-[75%] pl-6 md:pl-0 mt-8 md:mt-0">
+<div class="glass-card rounded-[32px] p-8 md:p-12 relative overflow-hidden group hover:scale-[1.01] transition-transform duration-500">
+<!-- Decorative background element for the card -->
+<div class="absolute -right-20 -top-20 w-64 h-64 bg-primary-fixed rounded-full opacity-20 blur-3xl"></div>
+<div class="flex items-start gap-6 relative z-10">
+<div class="w-12 h-12 rounded-full bg-surface text-primary flex items-center justify-center shadow-sm flex-shrink-0">
+<span class="material-symbols-outlined text-[24px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+<div>
+<h2 class="font-headline-md text-headline-md text-on-surface mb-4">I found another way.</h2>
+<p class="font-body-lg text-body-lg text-on-surface-variant leading-relaxed max-w-2xl">
+                                    A preferred resource was unavailable, so I used alternative research capabilities to complete your request without delay.
+                                </p>
+</div>
+</div>
+<!-- Embedded Result Card (Materialized App Card) -->
+<div class="mt-8 pt-8 border-t border-surface-container-highest">
+<div class="bg-surface rounded-lg p-6 flex flex-col md:flex-row items-center gap-6 hover:bg-surface-container-low transition-colors cursor-pointer border border-surface-container-highest shadow-sm">
+<div class="w-full md:w-32 h-32 rounded-lg overflow-hidden flex-shrink-0 bg-surface-container">
+<img class="w-full h-full object-cover" data-alt="A clean, abstract data visualization representing market analysis. It features soft, overlapping translucent geometric shapes in hues of calm indigo and light gray, set against a pristine white background. The style is modern, minimalist, and conveys intelligence and structured information." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBxg3PF4LhKaaVBcKoRAwOMpFUagu0Ges9jjL2tscb0p8nQduie0Q4ufavF-6wS6MiHY4HqqgLLT7JOCbTgL8klqK4R8AA4h-jtXlOCdl_dXPc8glJKJFXI_k_otJ8mfGlFdnSYo71fvMSgICSbmWN5XoyZ7mlnHprC-JdLebJNQM-OaEGvKVE-il8N4sMaWsIzlWXz_ct8AOAc7x5VWotQxjQJSCd69y2iIv5m7N1u4v3xpP6jgPb1ukKlhfVSv6IyJ0Mmed3SgI8"/>
+</div>
+<div class="flex-grow">
+<span class="inline-block px-3 py-1 rounded-full bg-primary-fixed text-on-primary-fixed font-label-sm text-label-sm mb-3">Result Ready</span>
+<h4 class="font-body-lg text-body-lg font-semibold text-on-surface mb-2">Project Alpha: Market Synthesis</h4>
+<p class="font-body-md text-body-md text-on-surface-variant">Compiled from 4 alternative data streams.</p>
+</div>
+<div class="flex-shrink-0 hidden md:block">
+<button class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center hover:bg-surface-container-high transition-colors text-on-surface">
+<span class="material-symbols-outlined text-[20px]">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Event 3: Final State -->
+<div class="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between fade-in-up delay-300 group">
+<div class="hidden md:block w-[45%] text-right pr-12">
+<span class="font-label-sm text-label-sm text-on-surface-variant">10:43 AM</span>
+</div>
+<!-- Node -->
+<div class="absolute left-[-24px] md:left-1/2 md:-ml-3 w-6 h-6 rounded-full bg-surface-container-high border-2 border-surface flex items-center justify-center transition-colors group-hover:bg-primary-container group-hover:border-primary-fixed">
+<span class="w-2 h-2 rounded-full bg-on-surface-variant group-hover:bg-primary"></span>
+</div>
+<div class="w-full md:w-[45%] pl-6 md:pl-12">
+<p class="font-body-md text-body-md text-on-surface-variant">Awaiting next instruction.</p>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar (Hidden on Desktop, Visible on Mobile) -->
+<!-- Assuming "Home" as the closest active state for an activity timeline/dashboard -->
+<nav class="md:hidden bg-surface/90 dark:bg-surface/90 backdrop-blur-xl font-label-sm text-label-sm fixed bottom-0 w-full z-50 rounded-t-lg bg-surface-container-low dark:bg-surface-container-lowest shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
+<div class="fixed bottom-0 left-0 w-full flex justify-around items-center px-4 py-4">
+<!-- Home (Active) -->
+<a class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full px-6 py-2 scale-110 transition-transform duration-300 group" href="#">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 1;">home</span>
+<span>Home</span>
+</a>
+<!-- Create -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-secondary-container/50 transition-colors rounded-lg px-4 py-2 group" href="#">
+<span class="material-symbols-outlined mb-1 group-hover:scale-110 transition-transform" style="font-variation-settings: 'FILL' 0;">add_circle</span>
+<span>Create</span>
+</a>
+<!-- Library -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-secondary-container/50 transition-colors rounded-lg px-4 py-2 group" href="#">
+<span class="material-symbols-outlined mb-1 group-hover:scale-110 transition-transform" style="font-variation-settings: 'FILL' 0;">apps</span>
+<span>Library</span>
+</a>
+<!-- Settings -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-secondary-container/50 transition-colors rounded-lg px-4 py-2 group" href="#">
+<span class="material-symbols-outlined mb-1 group-hover:scale-110 transition-transform" style="font-variation-settings: 'FILL' 0;">settings</span>
+<span>Settings</span>
+</a>
+</div>
+</nav>
+</body></html>

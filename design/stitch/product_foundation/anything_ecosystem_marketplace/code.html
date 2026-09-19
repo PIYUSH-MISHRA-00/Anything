@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Capability Marketplace &amp; Ecosystem - Anything AI OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary-fixed-dim": "#a8c8fa",
+                        "error-container": "#ffdad6",
+                        "error": "#ba1a1a",
+                        "surface-tint": "#40608b",
+                        "inverse-on-surface": "#eff1f3",
+                        "on-background": "#191c1e",
+                        "surface-bright": "#f7f9fb",
+                        "primary-container": "#002b54",
+                        "on-primary-fixed-variant": "#264872",
+                        "on-tertiary-container": "#8393ab",
+                        "on-secondary-container": "#efefff",
+                        "on-error": "#ffffff",
+                        "on-tertiary": "#ffffff",
+                        "on-secondary-fixed-variant": "#0035be",
+                        "on-primary-container": "#7493c2",
+                        "on-secondary": "#ffffff",
+                        "inverse-surface": "#2d3133",
+                        "secondary-fixed-dim": "#b8c3ff",
+                        "tertiary-fixed": "#d3e4fe",
+                        "secondary": "#0040e0",
+                        "secondary-container": "#2e5bff",
+                        "on-secondary-fixed": "#001356",
+                        "on-tertiary-fixed": "#0b1c30",
+                        "surface-container-low": "#f2f4f6",
+                        "tertiary-fixed-dim": "#b7c8e1",
+                        "on-tertiary-fixed-variant": "#38485d",
+                        "on-error-container": "#93000a",
+                        "on-surface": "#191c1e",
+                        "on-surface-variant": "#43474f",
+                        "surface-container-lowest": "#ffffff",
+                        "inverse-primary": "#a8c8fa",
+                        "surface": "#f7f9fb",
+                        "outline-variant": "#c3c6d0",
+                        "surface-container-highest": "#e0e3e5",
+                        "surface-container": "#eceef0",
+                        "surface-variant": "#e0e3e5",
+                        "surface-container-high": "#e6e8ea",
+                        "primary-fixed": "#d4e3ff",
+                        "on-primary": "#ffffff",
+                        "tertiary": "#06172a",
+                        "on-primary-fixed": "#001c3a",
+                        "background": "#f7f9fb",
+                        "surface-dim": "#d8dadc",
+                        "outline": "#73777f",
+                        "tertiary-container": "#1c2c40",
+                        "primary": "#001631",
+                        "secondary-fixed": "#dde1ff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "unit": "4px",
+                        "gutter-grid": "24px",
+                        "indent-team": "48px",
+                        "indent-dept": "24px",
+                        "margin-page": "32px"
+                    },
+                    "fontFamily": {
+                        "label-sm": ["Public Sans"],
+                        "headline-lg": ["Public Sans"],
+                        "body-lg": ["Public Sans"],
+                        "headline-lg-mobile": ["Public Sans"],
+                        "body-md": ["Public Sans"],
+                        "display-xl": ["Public Sans"],
+                        "title-md": ["Public Sans"],
+                        "mono-label": ["JetBrains Mono"]
+                    },
+                    "fontSize": {
+                        "label-sm": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "display-xl": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "title-md": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "mono-label": ["12px", { "lineHeight": "16px", "fontWeight": "500" }]
+                    }
+                },
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined[data-weight="fill"] {
+            font-variation-settings: 'FILL' 1;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface min-h-screen flex flex-col md:flex-row antialiased">
+<!-- TopAppBar (Mobile Only - Simplified for Layout) -->
+<header class="md:hidden w-full top-0 sticky bg-surface-container-lowest border-b border-outline-variant flex justify-between items-center px-margin-page h-20 z-40">
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 rounded-full bg-primary text-on-primary flex items-center justify-center font-bold">O</div>
+<span class="font-headline-lg-mobile text-headline-lg-mobile text-primary">Anything AI OS</span>
+</div>
+<span class="material-symbols-outlined cursor-pointer active:opacity-80 text-on-surface-variant">apps</span>
+</header>
+<!-- NavigationDrawer (Desktop Only) -->
+<nav class="hidden md:flex h-full w-64 left-0 fixed bg-surface border-r border-outline-variant flex-col gap-unit py-6 px-4 z-40">
+<div class="mb-8 px-4">
+<div class="font-title-md text-title-md text-primary mb-2">SYSTEM MENU</div>
+</div>
+<a class="text-on-surface-variant hover:bg-surface-container-low hover:bg-surface-container-high transition-all duration-200 ease-in-out flex items-center gap-3 px-4 py-3 rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="font-label-sm text-label-sm">Personal Space</span>
+</a>
+<a class="bg-secondary-container text-on-secondary-container rounded-lg flex items-center gap-3 px-4 py-3" href="#">
+<span class="material-symbols-outlined" data-icon="storefront">storefront</span>
+<span class="font-label-sm text-label-sm">Marketplace</span>
+</a>
+<a class="text-on-surface-variant hover:bg-surface-container-low hover:bg-surface-container-high transition-all duration-200 ease-in-out flex items-center gap-3 px-4 py-3 rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="corporate_fare">corporate_fare</span>
+<span class="font-label-sm text-label-sm">Organization</span>
+</a>
+<a class="text-on-surface-variant hover:bg-surface-container-low hover:bg-surface-container-high transition-all duration-200 ease-in-out flex items-center gap-3 px-4 py-3 rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="gavel">gavel</span>
+<span class="font-label-sm text-label-sm">Governance</span>
+</a>
+<a class="text-on-surface-variant hover:bg-surface-container-low hover:bg-surface-container-high transition-all duration-200 ease-in-out flex items-center gap-3 px-4 py-3 rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-label-sm text-label-sm">Settings</span>
+</a>
+</nav>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="md:hidden fixed bottom-0 w-full z-50 bg-surface-container border-t border-outline-variant shadow-lg flex justify-around items-center h-16 px-2">
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-highest active:scale-95 transition-transform w-16 h-14 rounded-xl" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="home">home</span>
+<span class="font-label-sm text-label-sm">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full px-4 py-1 hover:bg-surface-container-highest active:scale-95 transition-transform w-16 h-14" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="search">search</span>
+<span class="font-label-sm text-label-sm">Browse</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-highest active:scale-95 transition-transform w-16 h-14 rounded-xl" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="admin_panel_settings">admin_panel_settings</span>
+<span class="font-label-sm text-label-sm">Admin</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-highest active:scale-95 transition-transform w-16 h-14 rounded-xl" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="fact_check">fact_check</span>
+<span class="font-label-sm text-label-sm">Audit</span>
+</a>
+</nav>
+<!-- Main Content Area -->
+<main class="flex-1 md:ml-64 pb-20 md:pb-0 min-h-screen">
+<!-- TopAppBar (Desktop - Functional Top Area) -->
+<div class="hidden md:flex bg-surface-container-lowest border-b border-outline-variant justify-between items-center px-margin-page h-20 w-full sticky top-0 z-30">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-primary text-on-primary flex items-center justify-center font-bold text-lg">O</div>
+<h1 class="font-headline-lg text-headline-lg text-primary">Capability Marketplace</h1>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+<input class="pl-10 pr-4 py-2 bg-surface-container-low border-0 border-b-2 border-transparent focus:border-primary focus:ring-0 rounded-t-sm w-64 transition-colors font-body-md text-body-md placeholder-on-surface-variant" placeholder="Search capabilities..." type="text"/>
+</div>
+<span class="material-symbols-outlined cursor-pointer hover:bg-surface-container-high p-2 rounded-full transition-colors text-on-surface-variant">notifications</span>
+</div>
+</div>
+<div class="p-gutter-grid max-w-[1440px] mx-auto space-y-8">
+<!-- Hero / Discovery Header -->
+<section class="bg-surface-container-lowest border border-outline-variant rounded-lg p-8 relative overflow-hidden flex flex-col md:flex-row gap-8 items-center">
+<div class="flex-1 z-10 space-y-4">
+<h2 class="font-display-xl text-display-xl text-primary">Expand Your Ecosystem</h2>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl">Discover, deploy, and manage certified third-party skills, specialist agents, and pre-configured automation templates designed for enterprise-scale integration.</p>
+<div class="flex gap-4 pt-4">
+<button class="bg-primary text-on-primary font-label-sm text-label-sm px-6 py-3 rounded hover:opacity-90 transition-opacity">Explore Verified Extensions</button>
+<button class="border border-outline-variant text-primary font-label-sm text-label-sm px-6 py-3 rounded hover:bg-surface-container-low transition-colors">Request Capability</button>
+</div>
+</div>
+<div class="w-full md:w-1/3 h-48 relative rounded-lg overflow-hidden bg-surface-container-low">
+<div class="w-full h-full bg-cover bg-center opacity-80 mix-blend-multiply" data-alt="Abstract 3D rendering of glowing interconnected nodes and data streams in a pristine white environment, representing seamless integration and marketplace connectivity. High key lighting, modern corporate aesthetic, deep blues and crisp whites. Clean lines, systemic design feeling." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuD01Xhxf6V6D1Gzf8B3FWIIvnoM7VDtJNqtrRRfNa8KKzw5iX2-VRPw9Uk4IawscvD4bCWBy9u-dUB4glblnzkyhARbqXupRT75f4bCC9aeY1zNPn6pH62Yzz2zxIN7rzZIQtE2jTs8iS0_MS3iytGOFsd9WAV9u6SAtv2szOErWau5EuU2MAoN4e964SdoYZFECw28xXGYDdqUpiatWasTQk3RczQVarCryM_AGbSJTgWmMhWJ6FzXlrqiHfIbOnlkILrTcVH1U68')"></div>
+</div>
+</section>
+<!-- Enterprise Extensions Bento -->
+<section class="space-y-4">
+<div class="flex justify-between items-end border-b border-outline-variant pb-2">
+<h3 class="font-title-md text-title-md text-primary flex items-center gap-2">
+<span class="material-symbols-outlined">extension</span>
+                        Enterprise Extensions
+                    </h3>
+<a class="font-label-sm text-label-sm text-secondary hover:underline" href="#">View All</a>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<!-- Card 1 -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-6 hover:shadow-[0_4px_12px_rgba(0,43,84,0.08)] transition-shadow group flex flex-col h-full">
+<div class="flex justify-between items-start mb-4">
+<div class="w-12 h-12 rounded bg-secondary-container text-secondary flex items-center justify-center">
+<span class="material-symbols-outlined text-2xl" data-icon="database">database</span>
+</div>
+<span class="inline-flex items-center gap-1 bg-surface-container-low text-primary px-2 py-1 rounded-full font-mono-label text-mono-label border border-outline-variant">
+<span class="w-2 h-2 rounded-full bg-[#059669]"></span> Platform Certified
+                            </span>
+</div>
+<h4 class="font-title-md text-title-md text-primary mb-2 group-hover:text-secondary transition-colors">Data Lake Connector Pro</h4>
+<p class="font-body-md text-body-md text-on-surface-variant mb-6 flex-1">High-throughput bidirectional synchronization for enterprise data lakes. Supports custom schema mapping and live streaming.</p>
+<div class="flex justify-between items-center pt-4 border-t border-outline-variant">
+<span class="font-label-sm text-label-sm text-surface-tint">v2.4.1 • Compatible</span>
+<button class="bg-primary text-on-primary px-4 py-2 rounded font-label-sm text-label-sm hover:opacity-90">Install</button>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-6 hover:shadow-[0_4px_12px_rgba(0,43,84,0.08)] transition-shadow group flex flex-col h-full">
+<div class="flex justify-between items-start mb-4">
+<div class="w-12 h-12 rounded bg-surface-container-high text-on-surface-variant flex items-center justify-center">
+<span class="material-symbols-outlined text-2xl" data-icon="security">security</span>
+</div>
+<span class="inline-flex items-center gap-1 bg-surface-container-low text-on-surface-variant px-2 py-1 rounded-full font-mono-label text-mono-label border border-outline-variant">
+<span class="w-2 h-2 rounded-full bg-[#3B82F6]"></span> Verified Developer
+                            </span>
+</div>
+<h4 class="font-title-md text-title-md text-primary mb-2 group-hover:text-secondary transition-colors">Identity Access Gateway</h4>
+<p class="font-body-md text-body-md text-on-surface-variant mb-6 flex-1">Advanced IAM integration with zero-trust architecture support. Includes pre-configured compliance reporting modules.</p>
+<div class="flex justify-between items-center pt-4 border-t border-outline-variant">
+<span class="font-label-sm text-label-sm text-[#059669] flex items-center gap-1"><span class="material-symbols-outlined text-[16px]">check_circle</span> Installed</span>
+<button class="border border-outline-variant text-on-surface-variant px-4 py-2 rounded font-label-sm text-label-sm hover:bg-surface-container-low">Manage</button>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-6 hover:shadow-[0_4px_12px_rgba(0,43,84,0.08)] transition-shadow group flex flex-col h-full">
+<div class="flex justify-between items-start mb-4">
+<div class="w-12 h-12 rounded bg-tertiary-container text-on-tertiary-container flex items-center justify-center">
+<span class="material-symbols-outlined text-2xl" data-icon="insights">insights</span>
+</div>
+<span class="inline-flex items-center gap-1 bg-surface-container-low text-primary px-2 py-1 rounded-full font-mono-label text-mono-label border border-outline-variant">
+<span class="w-2 h-2 rounded-full bg-[#059669]"></span> Platform Certified
+                            </span>
+</div>
+<h4 class="font-title-md text-title-md text-primary mb-2 group-hover:text-secondary transition-colors">Analytics Engine V3</h4>
+<p class="font-body-md text-body-md text-on-surface-variant mb-6 flex-1">Deep learning predictive models for operational telemetry. Requires dedicated GPU node allocation.</p>
+<div class="flex justify-between items-center pt-4 border-t border-outline-variant">
+<span class="font-label-sm text-label-sm text-error flex items-center gap-1" title="Requires OS Update"><span class="material-symbols-outlined text-[16px]">warning</span> Incompatible</span>
+<button class="bg-surface-container-high text-on-surface-variant px-4 py-2 rounded font-label-sm text-label-sm cursor-not-allowed opacity-50" disabled="">Install</button>
+</div>
+</div>
+</div>
+</section>
+</div>
+</main>
+</body></html>

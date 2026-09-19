@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Anything - Workspace</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@500;600&amp;family=Inter:wght@400;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-error-container": "#93000a",
+                        "outline-variant": "#c5c5d4",
+                        "inverse-surface": "#313030",
+                        "surface-bright": "#fcf9f8",
+                        "on-primary-fixed": "#00105a",
+                        "tertiary-fixed": "#e5e3d9",
+                        "surface-container-low": "#f6f3f2",
+                        "primary-fixed-dim": "#bac3ff",
+                        "outline": "#757683",
+                        "surface-dim": "#dcd9d9",
+                        "on-tertiary-fixed-variant": "#474741",
+                        "tertiary": "#34342e",
+                        "surface-container-lowest": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "background": "#fcf9f8",
+                        "secondary-container": "#e0e0dc",
+                        "secondary": "#5e5f5c",
+                        "surface-container-highest": "#e5e2e1",
+                        "primary-container": "#2e41a1",
+                        "on-tertiary-container": "#bcbbb2",
+                        "on-primary": "#ffffff",
+                        "tertiary-fixed-dim": "#c8c7be",
+                        "secondary-fixed": "#e3e2df",
+                        "surface-variant": "#e5e2e1",
+                        "on-surface": "#1c1b1b",
+                        "on-secondary-fixed": "#1b1c1a",
+                        "surface-container": "#f0eded",
+                        "on-tertiary": "#ffffff",
+                        "on-error": "#ffffff",
+                        "surface-tint": "#4456b6",
+                        "secondary-fixed-dim": "#c7c7c3",
+                        "error": "#ba1a1a",
+                        "on-tertiary-fixed": "#1b1c17",
+                        "on-background": "#1c1b1b",
+                        "primary-fixed": "#dee0ff",
+                        "on-surface-variant": "#454652",
+                        "on-secondary-container": "#626360",
+                        "tertiary-container": "#4b4b44",
+                        "primary": "#11278a",
+                        "surface-container-high": "#eae7e7",
+                        "on-secondary": "#ffffff",
+                        "inverse-on-surface": "#f3f0ef",
+                        "on-primary-fixed-variant": "#2a3d9d",
+                        "surface": "#fcf9f8",
+                        "on-secondary-fixed-variant": "#464744",
+                        "on-primary-container": "#aab6ff",
+                        "inverse-primary": "#bac3ff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "1rem",
+                        "lg": "2rem",
+                        "xl": "3rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "gutter": "24px",
+                        "stack-lg": "64px",
+                        "unit": "8px",
+                        "stack-md": "32px",
+                        "container-padding": "32px",
+                        "stack-sm": "16px"
+                    },
+                    "fontFamily": {
+                        "headline-md": ["Public Sans"],
+                        "headline-lg": ["Public Sans"],
+                        "label-sm": ["Inter"],
+                        "headline-lg-mobile": ["Public Sans"],
+                        "body-md": ["Inter"],
+                        "body-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-md": ["24px", { "lineHeight": "1.3", "letterSpacing": "0em", "fontWeight": "500" }],
+                        "headline-lg": ["48px", { "lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+                        "label-sm": ["12px", { "lineHeight": "1.2", "letterSpacing": "0.08em", "fontWeight": "600" }],
+                        "headline-lg-mobile": ["32px", { "lineHeight": "1.2", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "body-md": ["16px", { "lineHeight": "1.5", "letterSpacing": "0.01em", "fontWeight": "400" }],
+                        "body-lg": ["18px", { "lineHeight": "1.6", "letterSpacing": "0.01em", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .glass-card {
+            background: linear-gradient(145deg, rgba(255,255,255,0.9) 0%, rgba(240,237,237,0.4) 100%);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.8);
+            box-shadow: 0 8px 32px rgba(17, 39, 138, 0.04), inset 0 0 0 1px rgba(255,255,255,0.5);
+        }
+        .glow-effect {
+            position: relative;
+        }
+        .glow-effect::before {
+            content: '';
+            position: absolute;
+            top: -2px; left: -2px; right: -2px; bottom: -2px;
+            background: linear-gradient(45deg, rgba(46, 65, 161, 0.1), transparent, rgba(186, 195, 255, 0.1));
+            z-index: -1;
+            border-radius: inherit;
+            filter: blur(10px);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .glow-effect:hover::before {
+            opacity: 1;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background min-h-screen flex flex-col font-body-md pb-[100px]">
+<!-- TopAppBar -->
+<header class="bg-transparent text-primary flex justify-between items-center px-container-padding py-stack-sm w-full max-w-[1440px] mx-auto z-40 relative">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full overflow-hidden border-2 border-surface-container-high bg-surface-container flex items-center justify-center">
+<img alt="User profile" class="w-full h-full object-cover" data-alt="A subtle, minimalist avatar icon or abstract shape representing a user profile, rendered in soft indigo and white tones, matching the light-mode UI aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDvLiicyHuApxJ0Io0P20trETIyjvD30k4V9NmdbhhMveq6AfRCzHWiB97tlLP358BpfjcFN-WdEDpYfRcSR1XDOEmo8_VhnoTHflrO3I2mrMmOTWbJ_3FEtJ2Eopag8Y9VDwJUGqnniIqkhGxQ8ZhcZMQqa6JFAjgIPqMqjRfABIRUFZJIBdi2h3TlYLf0k14lA0AN04TduotGf97-J8t2mBmY_jn66xUTMKTxVaiCnwrmIy1-HG0zH1wHJbgf4m3aqguZHl1p7zY"/>
+</div>
+<h1 class="font-headline-md text-headline-md font-semibold text-primary">Anything</h1>
+</div>
+<button class="p-2 text-primary hover:scale-[1.02] transition-transform duration-300 rounded-full bg-surface-container-lowest shadow-sm hover:bg-surface-container-low">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">settings</span>
+</button>
+</header>
+<!-- Main Content -->
+<main class="flex-grow flex flex-col px-container-padding max-w-[1440px] mx-auto w-full pt-stack-md gap-stack-lg">
+<!-- Header Section -->
+<section class="flex flex-col gap-unit">
+<h2 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface">Workspace</h2>
+<p class="font-body-lg text-body-lg text-secondary">Continue exactly where you left off.</p>
+</section>
+<!-- Bento Grid for Active Work -->
+<section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-gutter">
+<!-- Card 1: Pinned Draft -->
+<article class="glass-card rounded-xl p-container-padding flex flex-col gap-stack-sm glow-effect cursor-pointer group hover:scale-[1.01] transition-transform duration-300 min-h-[280px]">
+<div class="flex justify-between items-start">
+<div class="p-3 rounded-full bg-primary-container/10 text-primary">
+<span class="material-symbols-outlined text-[28px]" style="font-variation-settings: 'FILL' 1;">description</span>
+</div>
+<span class="material-symbols-outlined text-outline-variant group-hover:text-primary transition-colors">push_pin</span>
+</div>
+<div class="mt-auto">
+<p class="font-label-sm text-label-sm text-secondary uppercase tracking-wider mb-2">Draft Proposal</p>
+<h3 class="font-headline-md text-headline-md text-on-surface mb-2">Q4 AI Strategy Integration</h3>
+<p class="font-body-md text-body-md text-on-surface-variant line-clamp-2">Last edited 2 hours ago. Needs final review on the ethical implications section before submission.</p>
+</div>
+<div class="w-full h-1 bg-surface-container-highest rounded-full mt-2 overflow-hidden">
+<div class="h-full bg-primary w-[85%] rounded-full"></div>
+</div>
+</article>
+<!-- Card 2: Recent App -->
+<article class="glass-card rounded-xl p-container-padding flex flex-col gap-stack-sm glow-effect cursor-pointer group hover:scale-[1.01] transition-transform duration-300 min-h-[280px]">
+<div class="flex justify-between items-start">
+<div class="w-14 h-14 rounded-2xl overflow-hidden shadow-sm">
+<img class="w-full h-full object-cover" data-alt="A clean, minimalist 3D icon representing a data visualization app, featuring soft glowing charts on a light background, rendered in the brand's indigo and white palette." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBN7VTDafx8QPqfYEqfX9zgRnwqMVFiGrw3j1HO63t8nbmYNID03YKmaYpg_sFUau768OWTcdT2ziuTlIe0a8YbxKziaEApxRv7cyoGZgUEg7Qgh7uCKCJkHj0zxz74oBWZiX5acXkDqxHeqEU7JUxThg0kP_lnXGC7TdhSFsENvVUIdEkHiumn9W_OGY6yK9WqOSuNJJiuNClQ_JnIGIwussaFoOrJqYX5wslbJD7qvkLUmd5wDtr3BtD22tinFEAmIQsTSbQzhRc"/>
+</div>
+</div>
+<div class="mt-auto">
+<p class="font-label-sm text-label-sm text-secondary uppercase tracking-wider mb-2">Recently Opened</p>
+<h3 class="font-headline-md text-headline-md text-on-surface mb-2">Data Synthesizer</h3>
+<p class="font-body-md text-body-md text-on-surface-variant line-clamp-2">Processing the latest customer feedback dataset. 4 tasks pending completion.</p>
+</div>
+</article>
+<!-- Card 3: Active Canvas (Spans 2 cols on tablet, 1 on desktop) -->
+<article class="glass-card rounded-xl p-container-padding flex flex-col gap-stack-sm glow-effect cursor-pointer group hover:scale-[1.01] transition-transform duration-300 min-h-[280px] md:col-span-2 lg:col-span-1 relative overflow-hidden">
+<div class="absolute top-0 right-0 w-32 h-32 bg-primary-container/5 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2"></div>
+<div class="flex justify-between items-start relative z-10">
+<div class="p-3 rounded-full bg-tertiary-container/10 text-tertiary-container">
+<span class="material-symbols-outlined text-[28px]" style="font-variation-settings: 'FILL' 1;">view_kanban</span>
+</div>
+</div>
+<div class="mt-auto relative z-10">
+<p class="font-label-sm text-label-sm text-secondary uppercase tracking-wider mb-2">Active Canvas</p>
+<h3 class="font-headline-md text-headline-md text-on-surface mb-2">Brand Identity Refresh</h3>
+<div class="flex -space-x-3 mt-4">
+<img class="w-8 h-8 rounded-full border-2 border-surface-bright object-cover" data-alt="A small, circular abstract avatar rendered in soft minimalist colors, representing a team collaborator." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBigxHMBq6lliP-F6YcovCNt9j4fkMvY4-SWt-rTLBtZEPxsQ78F0y0zFcBIkJ3OBrR0ILm340BULn_E6CwCUrGgNmuIz6c-qrfPuItyhRCJY6uw1-nD7AgqjfTclGQMOeeWGB9uSFT9hQCIg66FySTirTfv_Z3-S6TGYPfKYE6NkOcEyNh4hgdj9UPbMl6Ae3YDXPR0oJ9xxib_M1AMVlfiJ5iHtlUwCVS-69g2vubT1502FxHWosPn48442BdOIHkj12HunZsCII"/>
+<img class="w-8 h-8 rounded-full border-2 border-surface-bright object-cover" data-alt="A small, circular abstract avatar rendered in soft minimalist colors, representing a team collaborator." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCRKyOq_fC1476V4JiXg4AugXf3jA3RW72aQwn5Yppl1RFNB1c7eKWb9vds64O1RMgBWwsRfPPpBSRGYonzuohvEoeWI1-qMfl8508TC0-8CXEglSNlQ3bdalo532t9u7gig5SMX9MuXFabUlFrt5kWWPZ5z7jVITCmtaqs61xwtYFxVp6NZOIloMA2dbj1NjE6rUvXXuthp6sNLTiDVhVxnxgv5rIKKmaYkanuDKnsSGSBIQ7D477J5Qs0-5bR07tCNk7uAV3JOWA"/>
+<div class="w-8 h-8 rounded-full border-2 border-surface-bright bg-surface-container flex items-center justify-center font-label-sm text-label-sm text-secondary">+2</div>
+</div>
+</div>
+</article>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-8 left-0 right-0 z-50 flex justify-around items-center px-container-padding py-2 max-w-md mx-auto bg-surface-bright/80 backdrop-blur-xl border border-white/10 shadow-lg shadow-primary/10 rounded-full w-[calc(100%-64px)] left-1/2 -translate-x-1/2">
+<!-- Inactive: Home -->
+<button class="flex flex-col items-center justify-center text-secondary hover:text-primary transition-colors gap-1 w-12 h-12">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">home</span>
+<span class="font-label-sm text-[10px] hidden md:block">Home</span>
+</button>
+<!-- Inactive: My Apps -->
+<button class="flex flex-col items-center justify-center text-secondary hover:text-primary transition-colors gap-1 w-12 h-12">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">apps</span>
+<span class="font-label-sm text-[10px] hidden md:block">Apps</span>
+</button>
+<!-- Active: Workspace -->
+<button class="flex flex-col items-center justify-center bg-primary text-on-primary rounded-full w-14 h-14 -translate-y-2 shadow-md shadow-primary/20 scale-95 duration-200">
+<span class="material-symbols-outlined text-[24px]" style="font-variation-settings: 'FILL' 1;">workspaces</span>
+</button>
+<!-- Inactive: Activity -->
+<button class="flex flex-col items-center justify-center text-secondary hover:text-primary transition-colors gap-1 w-12 h-12">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">notifications</span>
+<span class="font-label-sm text-[10px] hidden md:block">Activity</span>
+</button>
+<!-- Inactive: Preferences -->
+<button class="flex flex-col items-center justify-center text-secondary hover:text-primary transition-colors gap-1 w-12 h-12">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">tune</span>
+<span class="font-label-sm text-[10px] hidden md:block">Prefs</span>
+</button>
+</nav>
+</body></html>

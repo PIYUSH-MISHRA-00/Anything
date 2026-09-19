@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Workspace Timeline - Sustainable Urban Mobility</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@500;600&amp;family=Inter:wght@400;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-variant": "#e5e2e1",
+                      "on-primary-fixed-variant": "#2a3d9d",
+                      "on-error": "#ffffff",
+                      "on-primary": "#ffffff",
+                      "surface-container-lowest": "#ffffff",
+                      "surface-tint": "#4456b6",
+                      "secondary-fixed": "#e3e2df",
+                      "surface-container-low": "#f6f3f2",
+                      "on-secondary-fixed-variant": "#464744",
+                      "on-secondary-fixed": "#1b1c1a",
+                      "outline-variant": "#c5c5d4",
+                      "surface-container": "#f0eded",
+                      "inverse-surface": "#313030",
+                      "tertiary-fixed": "#e5e3d9",
+                      "on-surface": "#1c1b1b",
+                      "on-error-container": "#93000a",
+                      "tertiary-container": "#4b4b44",
+                      "on-tertiary": "#ffffff",
+                      "on-secondary": "#ffffff",
+                      "background": "#fcf9f8",
+                      "inverse-primary": "#bac3ff",
+                      "surface": "#fcf9f8",
+                      "surface-container-high": "#eae7e7",
+                      "secondary": "#5e5f5c",
+                      "outline": "#757683",
+                      "tertiary-fixed-dim": "#c8c7be",
+                      "on-secondary-container": "#626360",
+                      "surface-container-highest": "#e5e2e1",
+                      "on-surface-variant": "#454652",
+                      "primary-container": "#2e41a1",
+                      "on-primary-fixed": "#00105a",
+                      "error-container": "#ffdad6",
+                      "inverse-on-surface": "#f3f0ef",
+                      "secondary-fixed-dim": "#c7c7c3",
+                      "on-background": "#1c1b1b",
+                      "error": "#ba1a1a",
+                      "primary-fixed": "#dee0ff",
+                      "primary": "#11278a",
+                      "primary-fixed-dim": "#bac3ff",
+                      "on-primary-container": "#aab6ff",
+                      "surface-bright": "#fcf9f8",
+                      "on-tertiary-fixed-variant": "#474741",
+                      "on-tertiary-fixed": "#1b1c17",
+                      "surface-dim": "#dcd9d9",
+                      "on-tertiary-container": "#bcbbb2",
+                      "tertiary": "#34342e",
+                      "secondary-container": "#e0e0dc"
+              },
+              "borderRadius": {
+                      "DEFAULT": "1rem",
+                      "lg": "2rem",
+                      "xl": "3rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "unit": "8px",
+                      "stack-sm": "16px",
+                      "gutter": "24px",
+                      "stack-md": "32px",
+                      "stack-lg": "64px",
+                      "container-padding": "32px"
+              },
+              "fontFamily": {
+                      "label-sm": [
+                              "Inter"
+                      ],
+                      "headline-lg": [
+                              "Public Sans"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "headline-md": [
+                              "Public Sans"
+                      ],
+                      "body-lg": [
+                              "Inter"
+                      ],
+                      "headline-lg-mobile": [
+                              "Public Sans"
+                      ]
+              },
+              "fontSize": {
+                      "label-sm": [
+                              "12px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "letterSpacing": "0.08em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-lg": [
+                              "48px",
+                              {
+                                      "lineHeight": "1.1",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-md": [
+                              "16px",
+                              {
+                                      "lineHeight": "1.5",
+                                      "letterSpacing": "0.01em",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-md": [
+                              "24px",
+                              {
+                                      "lineHeight": "1.3",
+                                      "letterSpacing": "0em",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "body-lg": [
+                              "18px",
+                              {
+                                      "lineHeight": "1.6",
+                                      "letterSpacing": "0.01em",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-lg-mobile": [
+                              "32px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "letterSpacing": "-0.01em",
+                                      "fontWeight": "600"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background min-h-screen antialiased selection:bg-primary-container selection:text-on-primary-container">
+<!-- Top Navigation (Mobile/Tablet) / Shell -->
+<header class="fixed top-0 w-full z-50 bg-surface/80 dark:bg-surface-container/80 backdrop-blur-xl shadow-sm transition-all duration-500 ease-out md:hidden">
+<div class="flex justify-between items-center px-gutter h-20 w-full max-w-[1440px] mx-auto">
+<button class="w-12 h-12 flex items-center justify-center rounded-full hover:bg-surface-variant/50 transition-colors">
+<span class="material-symbols-outlined text-primary dark:text-primary-fixed-dim" style="font-variation-settings: 'FILL' 0;">bubble_chart</span>
+</button>
+<h1 class="font-headline-md text-headline-md tracking-tight text-primary dark:text-primary-fixed">Anything</h1>
+<div class="w-10 h-10 rounded-full overflow-hidden border border-outline-variant/20 shadow-sm bg-surface-container">
+<img class="w-full h-full object-cover" data-alt="A subtle, high-key minimalist portrait photo of a person in a brightly lit, modern environment. Soft, diffuse lighting highlights natural features. The mood is calm, professional, and sophisticated, matching a premium 'Invisible Intelligence' brand aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC7Cy7atNk5iPfu9XNCh9KiG9LcDwOzysDYZ_l4G5VWKvqccONacTdI6Kw7FjdNEOadZ61kGl4iP1y5mUi8Q33vzNUb4wYxpjVysVebOyXx-n97ZW2raduz1T2dXTj9B1U49dCO7RNmswBKjXjPtCwlBgYAqX2Rsez576Qbi7gBujmHb8_UYxVJzXFlI5MpEnzeE6Za5NkKy1oXpbGj0DtM7onvGibAjXNbbjL-s1VEZ_8EIQrjcXIjquHypKNnIYNlOXE6sLRb7Jw"/>
+</div>
+</div>
+</header>
+<!-- Top Navigation (Desktop) -->
+<header class="fixed top-0 w-full z-50 bg-surface/80 dark:bg-surface-container/80 backdrop-blur-xl shadow-sm transition-all duration-500 ease-out hidden md:block">
+<div class="flex justify-between items-center px-gutter h-20 w-full max-w-[1440px] mx-auto">
+<div class="flex items-center gap-4">
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-variant/50 transition-colors">
+<span class="material-symbols-outlined text-primary dark:text-primary-fixed-dim" style="font-variation-settings: 'FILL' 0;">bubble_chart</span>
+</button>
+<h1 class="font-headline-md text-headline-md tracking-tight text-primary dark:text-primary-fixed">Anything</h1>
+</div>
+<nav class="flex items-center gap-8">
+<a class="text-on-surface-variant font-label-sm text-label-sm hover:scale-105 transition-transform duration-300 flex items-center gap-2" href="#">
+<span class="material-symbols-outlined text-[20px]">home_max</span>
+                    Home
+                </a>
+<a class="text-on-surface-variant font-label-sm text-label-sm hover:scale-105 transition-transform duration-300 flex items-center gap-2" href="#">
+<span class="material-symbols-outlined text-[20px]">widgets</span>
+                    My Apps
+                </a>
+<a class="text-on-surface-variant font-label-sm text-label-sm hover:scale-105 transition-transform duration-300 flex items-center gap-2" href="#">
+<span class="material-symbols-outlined text-[20px]">qr_code_2</span>
+                    Activity
+                </a>
+<a class="text-primary font-medium font-label-sm text-label-sm hover:scale-105 transition-transform duration-300 flex items-center gap-2 bg-primary-container/10 px-4 py-2 rounded-full" href="#">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">grid_view</span>
+                    Workspace
+                </a>
+<a class="text-on-surface-variant font-label-sm text-label-sm hover:scale-105 transition-transform duration-300 flex items-center gap-2" href="#">
+<span class="material-symbols-outlined text-[20px]">settings</span>
+                    Settings
+                </a>
+</nav>
+<div class="flex items-center">
+<div class="w-10 h-10 rounded-full overflow-hidden border border-outline-variant/20 shadow-sm bg-surface-container">
+<img class="w-full h-full object-cover" data-alt="A subtle, high-key minimalist portrait photo of a person in a brightly lit, modern environment. Soft, diffuse lighting highlights natural features. The mood is calm, professional, and sophisticated, matching a premium 'Invisible Intelligence' brand aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBUpCtcRcdb_1gu4PH6rCAa7TyoA3GdaGzazdu5xXZ6Fqnj6r6f95AV_rYYh8FXiNFsoI1kaLFQGfJKAXZew5Hk0g6KwQua2Hab0hZ5OX3gsdeoyIbnJQkb3dEHHyfn3_nDLfWoyi8Gx8pxPGbe08i5Rp4M4ciK7JkcS-PLRglniiGTZBk6eg0UXdm3XjD9RRK0FQ-hRXjCSyX2WfN21W_Gzoyhj01JEvkxs5Wj7EYz4PlajMae-DfG5Wy0MjZ1ywZZP-xHmprAOXQ"/>
+</div>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="pt-32 md:pt-40 pb-32 px-container-padding max-w-[1440px] mx-auto min-h-screen flex flex-col">
+<!-- Header Section -->
+<div class="max-w-3xl mx-auto w-full mb-stack-lg text-center md:text-left">
+<div class="inline-flex items-center justify-center md:justify-start gap-2 mb-4">
+<span class="material-symbols-outlined text-primary text-[24px]">eco</span>
+<span class="font-label-sm text-label-sm text-primary uppercase tracking-widest">Sustainable Urban Mobility</span>
+</div>
+<h2 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface mb-4">Workspace Evolution</h2>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl">A serene chronicle of progress. Observe how your workspace gracefully adapts and grows over time.</p>
+</div>
+<!-- Timeline Section -->
+<div class="max-w-3xl mx-auto w-full relative">
+<!-- Vertical Line -->
+<div class="absolute left-6 md:left-[50%] top-4 bottom-4 w-px bg-gradient-to-b from-primary/5 via-outline-variant/30 to-primary/5 -translate-x-1/2 rounded-full"></div>
+<div class="space-y-stack-md relative">
+<!-- Event 1: Today -->
+<div class="relative flex flex-col md:flex-row items-start md:items-center gap-6 md:gap-12 group cursor-pointer">
+<!-- Date/Time (Desktop: Left) -->
+<div class="hidden md:block w-1/2 text-right pr-12 opacity-80 group-hover:opacity-100 transition-opacity duration-300">
+<div class="font-label-sm text-label-sm text-primary mb-1">Today</div>
+<div class="font-body-md text-body-md text-on-surface-variant">10:45 AM</div>
+</div>
+<!-- Icon/Node -->
+<div class="absolute left-6 md:left-1/2 -translate-x-1/2 w-12 h-12 rounded-full bg-surface shadow-[0_4px_24px_rgba(17,39,138,0.08)] flex items-center justify-center z-10 border border-surface-variant group-hover:scale-110 group-hover:bg-primary-container group-hover:border-primary/20 transition-all duration-300 ease-out">
+<span class="material-symbols-outlined text-primary group-hover:text-on-primary-container transition-colors" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+</div>
+<!-- Content Card (Right/Full) -->
+<div class="pl-16 md:pl-12 md:w-1/2 w-full">
+<div class="bg-surface-container-lowest rounded-3xl p-6 shadow-[0_8px_32px_rgba(17,39,138,0.04)] border border-outline-variant/10 hover:shadow-[0_12px_48px_rgba(17,39,138,0.08)] transition-all duration-500 transform group-hover:-translate-y-1 relative overflow-hidden">
+<!-- Soft Gradient Background -->
+<div class="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+<div class="relative z-10">
+<div class="md:hidden font-label-sm text-label-sm text-primary mb-2">Today, 10:45 AM</div>
+<h3 class="font-headline-md text-headline-md text-on-surface mb-2">Traffic Simulator Materialized</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">A refined, higher-fidelity simulation model was autonomously generated based on recent data patterns.</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Event 2: Yesterday -->
+<div class="relative flex flex-col md:flex-row items-start md:items-center gap-6 md:gap-12 group cursor-pointer">
+<div class="hidden md:block w-1/2 text-right pr-12 opacity-80 group-hover:opacity-100 transition-opacity duration-300">
+<div class="font-label-sm text-label-sm text-secondary mb-1">Yesterday</div>
+<div class="font-body-md text-body-md text-on-surface-variant">Afternoon</div>
+</div>
+<div class="absolute left-6 md:left-1/2 -translate-x-1/2 w-10 h-10 rounded-full bg-surface-container shadow-sm flex items-center justify-center z-10 border border-surface-variant group-hover:scale-110 group-hover:bg-secondary-container transition-all duration-300 ease-out mt-1 md:mt-0">
+<span class="material-symbols-outlined text-secondary group-hover:text-on-secondary-container text-[20px]" style="font-variation-settings: 'FILL' 0;">library_books</span>
+</div>
+<div class="pl-16 md:pl-12 md:w-1/2 w-full">
+<div class="bg-surface-container-low rounded-[2rem] p-6 border border-outline-variant/5 hover:bg-surface-container transition-colors duration-300">
+<div class="md:hidden font-label-sm text-label-sm text-secondary mb-2">Yesterday</div>
+<h3 class="font-headline-md text-[20px] text-on-surface mb-2">8 New References Added</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">Anything quietly gathered relevant documentation from trusted external sources to enrich the knowledge base.</p>
+</div>
+</div>
+</div>
+<!-- Event 3: Oct 24 -->
+<div class="relative flex flex-col md:flex-row items-start md:items-center gap-6 md:gap-12 group cursor-pointer">
+<div class="hidden md:block w-1/2 text-right pr-12 opacity-80 group-hover:opacity-100 transition-opacity duration-300">
+<div class="font-label-sm text-label-sm text-secondary mb-1">Oct 24</div>
+<div class="font-body-md text-body-md text-on-surface-variant">12:00 PM</div>
+</div>
+<div class="absolute left-6 md:left-1/2 -translate-x-1/2 w-10 h-10 rounded-full bg-surface-container shadow-sm flex items-center justify-center z-10 border border-surface-variant group-hover:scale-110 group-hover:bg-tertiary-container transition-all duration-300 ease-out mt-1 md:mt-0">
+<span class="material-symbols-outlined text-tertiary group-hover:text-on-tertiary text-[20px]" style="font-variation-settings: 'FILL' 1;">shield_lock</span>
+</div>
+<div class="pl-16 md:pl-12 md:w-1/2 w-full">
+<div class="bg-surface-container-low rounded-[2rem] p-6 border border-outline-variant/5 hover:bg-surface-container transition-colors duration-300">
+<div class="md:hidden font-label-sm text-label-sm text-secondary mb-2">Oct 24, 12:00 PM</div>
+<h3 class="font-headline-md text-[20px] text-on-surface mb-2">Protection Enabled</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">The workspace was secured with advanced Kaalka encryption protocols, ensuring absolute privacy.</p>
+</div>
+</div>
+</div>
+<!-- Event 4: Oct 22 -->
+<div class="relative flex flex-col md:flex-row items-start md:items-center gap-6 md:gap-12 group cursor-pointer">
+<div class="hidden md:block w-1/2 text-right pr-12 opacity-60 group-hover:opacity-100 transition-opacity duration-300">
+<div class="font-label-sm text-label-sm text-secondary mb-1">Oct 22</div>
+<div class="font-body-md text-body-md text-on-surface-variant">Genesis</div>
+</div>
+<div class="absolute left-6 md:left-1/2 -translate-x-1/2 w-8 h-8 rounded-full bg-surface-variant flex items-center justify-center z-10 group-hover:scale-110 transition-all duration-300 ease-out mt-2 md:mt-0">
+<div class="w-2 h-2 rounded-full bg-outline"></div>
+</div>
+<div class="pl-16 md:pl-12 md:w-1/2 w-full">
+<div class="p-4 opacity-70 hover:opacity-100 transition-opacity duration-300">
+<div class="md:hidden font-label-sm text-label-sm text-secondary mb-1">Oct 22</div>
+<h3 class="font-headline-md text-[18px] text-on-surface mb-1">Workspace Created</h3>
+<p class="font-body-md text-body-md text-on-surface-variant text-sm">The journey for sustainable urban mobility began.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Bottom Navigation (Mobile) -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-container-padding pb-8 pt-4 bg-surface/90 dark:bg-surface-container-highest/90 backdrop-blur-2xl rounded-t-xl shadow-[0_-4px_24px_rgba(17,39,138,0.05)] md:hidden">
+<button class="flex flex-col items-center justify-center gap-1 text-on-surface-variant hover:bg-surface-variant/50 transition-colors rounded-lg p-2">
+<span class="material-symbols-outlined text-[24px]">home_max</span>
+<span class="font-label-sm text-label-sm">Home</span>
+</button>
+<button class="flex flex-col items-center justify-center gap-1 text-on-surface-variant hover:bg-surface-variant/50 transition-colors rounded-lg p-2">
+<span class="material-symbols-outlined text-[24px]">widgets</span>
+<span class="font-label-sm text-label-sm">My Apps</span>
+</button>
+<button class="flex flex-col items-center justify-center gap-1 text-on-surface-variant hover:bg-surface-variant/50 transition-colors rounded-lg p-2">
+<span class="material-symbols-outlined text-[24px]">qr_code_2</span>
+<span class="font-label-sm text-label-sm">Activity</span>
+</button>
+<button class="flex flex-col items-center justify-center gap-1 text-primary dark:text-primary-fixed-dim bg-primary-container/20 rounded-full px-6 py-2 hover:bg-surface-variant/50 transition-colors transform scale-95 duration-200">
+<span class="material-symbols-outlined text-[24px]" style="font-variation-settings: 'FILL' 1;">grid_view</span>
+<span class="font-label-sm text-label-sm">Workspace</span>
+</button>
+<button class="flex flex-col items-center justify-center gap-1 text-on-surface-variant hover:bg-surface-variant/50 transition-colors rounded-lg p-2">
+<span class="material-symbols-outlined text-[24px]">settings</span>
+<span class="font-label-sm text-label-sm">Settings</span>
+</button>
+</nav>
+<script>
+        // Subtle entry animation for timeline items
+        document.addEventListener('DOMContentLoaded', () => {
+            const items = document.querySelectorAll('.group');
+            items.forEach((item, index) => {
+                item.style.opacity = '0';
+                item.style.transform = 'translateY(20px)';
+                item.style.transition = 'all 0.6s cubic-bezier(0.16, 1, 0.3, 1)';
+                
+                setTimeout(() => {
+                    item.style.opacity = '1';
+                    item.style.transform = 'translateY(0)';
+                }, 100 * (index + 1));
+            });
+        });
+    </script>
+</body></html>

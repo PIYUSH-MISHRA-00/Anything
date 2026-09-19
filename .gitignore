@@ -72,3 +72,6 @@ Desktop/
 
 # VitePress local build cache
 website/docs/.vitepress/cache/
+
+# Android generated registration asset
+/android/app/src/main/assets/adi-registration.properties

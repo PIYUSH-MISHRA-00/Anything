@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Flutter Design System Implementation</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&amp;family=Public+Sans:wght@500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-tertiary-container": "#bcbbb2",
+                    "on-secondary": "#ffffff",
+                    "tertiary-fixed": "#e5e3d9",
+                    "inverse-on-surface": "#f3f0ef",
+                    "surface-tint": "#4456b6",
+                    "on-tertiary-fixed-variant": "#474741",
+                    "background": "#fcf9f8",
+                    "primary-fixed-dim": "#bac3ff",
+                    "error": "#ba1a1a",
+                    "on-primary-fixed": "#00105a",
+                    "on-error": "#ffffff",
+                    "primary": "#11278a",
+                    "on-tertiary": "#ffffff",
+                    "on-primary-container": "#aab6ff",
+                    "on-background": "#1c1b1b",
+                    "surface-container-high": "#eae7e7",
+                    "secondary": "#5e5f5c",
+                    "on-surface-variant": "#454652",
+                    "tertiary": "#34342e",
+                    "surface-bright": "#fcf9f8",
+                    "surface-dim": "#dcd9d9",
+                    "tertiary-fixed-dim": "#c8c7be",
+                    "secondary-fixed-dim": "#c7c7c3",
+                    "error-container": "#ffdad6",
+                    "on-primary": "#ffffff",
+                    "surface-container": "#f0eded",
+                    "surface-container-lowest": "#ffffff",
+                    "on-primary-fixed-variant": "#2a3d9d",
+                    "on-secondary-fixed": "#1b1c1a",
+                    "surface-variant": "#e5e2e1",
+                    "primary-fixed": "#dee0ff",
+                    "secondary-container": "#e0e0dc",
+                    "surface": "#fcf9f8",
+                    "on-secondary-container": "#626360",
+                    "surface-container-highest": "#e5e2e1",
+                    "surface-container-low": "#f6f3f2",
+                    "on-error-container": "#93000a",
+                    "on-surface": "#1c1b1b",
+                    "inverse-primary": "#bac3ff",
+                    "on-secondary-fixed-variant": "#464744",
+                    "primary-container": "#2e41a1",
+                    "on-tertiary-fixed": "#1b1c17",
+                    "outline-variant": "#c5c5d4",
+                    "outline": "#757683",
+                    "tertiary-container": "#4b4b44",
+                    "secondary-fixed": "#e3e2df",
+                    "inverse-surface": "#313030"
+            },
+            "borderRadius": {
+                    "DEFAULT": "1rem",
+                    "lg": "2rem",
+                    "xl": "3rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "stack-md": "32px",
+                    "stack-sm": "16px",
+                    "stack-lg": "64px",
+                    "unit": "8px",
+                    "gutter": "24px",
+                    "container-padding": "32px"
+            },
+            "fontFamily": {
+                    "headline-md": [
+                            "Public Sans"
+                    ],
+                    "body-md": [
+                            "Inter"
+                    ],
+                    "headline-lg": [
+                            "Public Sans"
+                    ],
+                    "label-sm": [
+                            "Inter"
+                    ],
+                    "body-lg": [
+                            "Inter"
+                    ],
+                    "headline-lg-mobile": [
+                            "Public Sans"
+                    ]
+            },
+            "fontSize": {
+                    "headline-md": [
+                            "24px",
+                            {
+                                    "lineHeight": "1.3",
+                                    "letterSpacing": "0em",
+                                    "fontWeight": "500"
+                            }
+                    ],
+                    "body-md": [
+                            "16px",
+                            {
+                                    "lineHeight": "1.5",
+                                    "letterSpacing": "0.01em",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "headline-lg": [
+                            "48px",
+                            {
+                                    "lineHeight": "1.1",
+                                    "letterSpacing": "-0.02em",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "label-sm": [
+                            "12px",
+                            {
+                                    "lineHeight": "1.2",
+                                    "letterSpacing": "0.08em",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "body-lg": [
+                            "18px",
+                            {
+                                    "lineHeight": "1.6",
+                                    "letterSpacing": "0.01em",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "headline-lg-mobile": [
+                            "32px",
+                            {
+                                    "lineHeight": "1.2",
+                                    "letterSpacing": "-0.01em",
+                                    "fontWeight": "600"
+                            }
+                    ]
+            }
+    },
+        },
+      }
+    </script>
+<style>
+        body {
+            background-color: theme('colors.background');
+            color: theme('colors.on-background');
+        }
+        
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 8px 32px 0 rgba(17, 39, 138, 0.05);
+        }
+
+        .ambient-shadow {
+            box-shadow: 0 20px 40px -10px rgba(17, 39, 138, 0.08);
+        }
+
+        .motion-card {
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.4s ease;
+        }
+
+        .motion-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 25px 50px -12px rgba(17, 39, 138, 0.12);
+        }
+        
+        /* Skeleton loading animation for missing content areas */
+        @keyframes pulse-subtle {
+            0%, 100% { opacity: 0.8; }
+            50% { opacity: 0.4; }
+        }
+        .skeleton-block {
+            animation: pulse-subtle 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="min-h-screen font-body-md text-body-md flex flex-col items-center pb-32 md:pb-16 selection:bg-primary/20">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-surface/80 dark:bg-surface-container/80 backdrop-blur-xl shadow-sm transition-all duration-500 ease-out">
+<div class="flex justify-between items-center px-gutter h-20 w-full max-w-[1440px] mx-auto">
+<div class="flex items-center gap-4 cursor-pointer hover:scale-105 transition-transform duration-300">
+<span class="material-symbols-outlined text-primary dark:text-primary-fixed-dim" style="font-variation-settings: 'FILL' 1;">bubble_chart</span>
+<span class="font-headline-md text-headline-md tracking-tight text-primary dark:text-primary-fixed">Anything</span>
+</div>
+<!-- Desktop Nav (Hidden on Mobile) -->
+<nav class="hidden md:flex items-center gap-8">
+<a class="text-on-surface-variant hover:text-primary transition-colors" href="#">Components</a>
+<a class="text-primary font-medium" href="#">Design System</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors" href="#">Settings</a>
+</nav>
+<div class="flex items-center cursor-pointer hover:scale-105 transition-transform duration-300">
+<div class="w-10 h-10 rounded-full bg-surface-container-highest overflow-hidden border border-outline-variant/30 flex items-center justify-center text-primary font-label-sm">
+                    US
+                </div>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="w-full max-w-[1440px] px-5 md:px-gutter pt-32 pb-stack-lg flex flex-col gap-stack-lg">
+<!-- Hero Section -->
+<section class="flex flex-col items-start max-w-4xl pt-stack-sm md:pt-stack-md">
+<div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary-container/10 text-primary mb-stack-sm border border-primary/10">
+<span class="material-symbols-outlined text-sm">flutter_dash</span>
+<span class="font-label-sm text-label-sm">Flutter Implementation</span>
+</div>
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile md:font-headline-lg md:text-headline-lg text-on-surface mb-stack-sm leading-tight">
+                Designing for <br/><span class="text-primary">Invisible Intelligence</span>
+</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl">
+                A serene, high-end lifestyle experience built with Flutter. Showcasing fluid grids, physics-based motion, and adaptive components.
+            </p>
+</section>
+<!-- Bento Grid Layout -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-6 auto-rows-min">
+<!-- Adaptive Layout Grid (Large Span) -->
+<div class="md:col-span-8 glass-panel rounded-xl p-8 flex flex-col gap-6 ambient-shadow">
+<div class="flex items-center justify-between">
+<div>
+<h2 class="font-headline-md text-headline-md text-on-surface">Adaptive Layout Grid</h2>
+<p class="text-on-surface-variant mt-1 text-sm">Responding to constraints gracefully</p>
+</div>
+<span class="material-symbols-outlined text-primary/40 text-3xl">view_quilt</span>
+</div>
+<div class="flex-1 rounded-lg bg-surface-container border border-outline-variant/20 relative overflow-hidden min-h-[300px] flex items-center justify-center p-6">
+<div class="w-full max-w-md bg-surface rounded-lg shadow-sm p-4 flex flex-col gap-4 transition-all duration-700 ease-in-out border border-outline-variant/10" id="resizable-mockup">
+<div class="h-4 w-1/3 bg-surface-variant rounded skeleton-block"></div>
+<div class="h-24 w-full bg-primary/5 rounded-lg border border-primary/10"></div>
+<div class="flex gap-4">
+<div class="h-12 w-12 bg-surface-variant rounded-full skeleton-block"></div>
+<div class="flex-1 h-12 bg-surface-variant rounded-lg skeleton-block delay-75"></div>
+</div>
+</div>
+<!-- Resize Handle visual hint -->
+<div class="absolute right-4 bottom-4 flex gap-1 text-outline">
+<span class="material-symbols-outlined text-sm">arrows_outward</span>
+</div>
+</div>
+</div>
+<!-- Accessibility Audit (Small Span) -->
+<div class="md:col-span-4 glass-panel rounded-xl p-8 flex flex-col gap-6 ambient-shadow">
+<div class="flex items-center gap-3 mb-2">
+<div class="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center">
+<span class="material-symbols-outlined">accessibility_new</span>
+</div>
+<h2 class="font-headline-md text-headline-md text-on-surface text-lg">Audit Status</h2>
+</div>
+<div class="flex flex-col gap-4">
+<div class="flex justify-between items-center p-3 rounded-lg bg-surface-container-lowest border border-outline-variant/10">
+<span class="text-on-surface-variant">Screen Readers</span>
+<span class="px-3 py-1 bg-emerald-100 text-emerald-800 rounded-full font-label-sm text-xs">100% PASS</span>
+</div>
+<div class="flex justify-between items-center p-3 rounded-lg bg-surface-container-lowest border border-outline-variant/10">
+<span class="text-on-surface-variant">Dynamic Text</span>
+<span class="px-3 py-1 bg-emerald-100 text-emerald-800 rounded-full font-label-sm text-xs">READY</span>
+</div>
+<div class="flex justify-between items-center p-3 rounded-lg bg-surface-container-lowest border border-outline-variant/10">
+<span class="text-on-surface-variant">Contrast Ratios</span>
+<span class="px-3 py-1 bg-amber-100 text-amber-800 rounded-full font-label-sm text-xs">WARNING (2)</span>
+</div>
+</div>
+<div class="mt-auto pt-4">
+<div class="h-1 w-full bg-surface-variant rounded-full overflow-hidden">
+<div class="h-full bg-emerald-500 w-11/12 rounded-full"></div>
+</div>
+<p class="text-xs text-on-surface-variant mt-2 text-right">92% Compliance Score</p>
+</div>
+</div>
+<!-- Typography Scale -->
+<div class="md:col-span-12 glass-panel rounded-xl p-8 flex flex-col md:flex-row gap-12 ambient-shadow">
+<div class="md:w-1/3 flex flex-col gap-2">
+<h2 class="font-headline-md text-headline-md text-on-surface">Typography Scale</h2>
+<p class="text-on-surface-variant">Mapped to Flutter TextStyle with strict semantic application.</p>
+</div>
+<div class="md:w-2/3 flex flex-col gap-6">
+<div class="flex items-baseline gap-8 border-b border-outline-variant/10 pb-4">
+<span class="w-24 text-xs font-label-sm text-outline">Headline L</span>
+<span class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface">Invisible</span>
+</div>
+<div class="flex items-baseline gap-8 border-b border-outline-variant/10 pb-4">
+<span class="w-24 text-xs font-label-sm text-outline">Headline M</span>
+<span class="font-headline-md text-headline-md text-on-surface">Intelligence</span>
+</div>
+<div class="flex items-baseline gap-8 border-b border-outline-variant/10 pb-4">
+<span class="w-24 text-xs font-label-sm text-outline">Body L</span>
+<span class="font-body-lg text-body-lg text-on-surface">A serene, high-end lifestyle experience.</span>
+</div>
+<div class="flex items-baseline gap-8">
+<span class="w-24 text-xs font-label-sm text-outline">Label S</span>
+<span class="font-label-sm text-label-sm text-primary uppercase tracking-widest">Metadata</span>
+</div>
+</div>
+</div>
+<!-- Motion Library -->
+<div class="md:col-span-12 mt-stack-md mb-4">
+<h2 class="font-headline-md text-headline-md text-on-surface mb-2">Motion Library</h2>
+<p class="text-on-surface-variant max-w-xl">Fluid, physics-based motion indicators translating UI intent into spatial awareness.</p>
+</div>
+<div class="md:col-span-4 motion-card glass-panel rounded-xl p-6 cursor-pointer group">
+<div class="h-32 bg-surface-container rounded-lg mb-6 relative overflow-hidden flex items-center justify-center">
+<div class="w-12 h-12 bg-primary rounded-full group-hover:scale-[3] group-hover:opacity-10 transition-all duration-700 ease-out"></div>
+<div class="absolute w-12 h-12 bg-primary text-on-primary flex items-center justify-center rounded-full shadow-lg group-hover:scale-110 transition-transform duration-300">
+<span class="material-symbols-outlined">animation</span>
+</div>
+</div>
+<h3 class="font-headline-md text-lg text-on-surface">Hero Transitions</h3>
+<p class="text-sm text-on-surface-variant mt-2">Shared element routing with custom FlightShuttleBuilder.</p>
+</div>
+<div class="md:col-span-4 motion-card glass-panel rounded-xl p-6 cursor-pointer group">
+<div class="h-32 bg-surface-container rounded-lg mb-6 relative overflow-hidden flex flex-col gap-2 p-4 justify-center">
+<div class="h-4 w-3/4 bg-primary/20 rounded group-hover:-translate-x-full transition-transform duration-500 ease-in-out delay-100"></div>
+<div class="h-4 w-full bg-primary/20 rounded group-hover:-translate-x-full transition-transform duration-500 ease-in-out delay-200"></div>
+<div class="h-4 w-5/6 bg-primary/20 rounded group-hover:-translate-x-full transition-transform duration-500 ease-in-out delay-300"></div>
+</div>
+<h3 class="font-headline-md text-lg text-on-surface">Staggered Lists</h3>
+<p class="text-sm text-on-surface-variant mt-2">Implicit animations for fluid entry and exit choreography.</p>
+</div>
+<div class="md:col-span-4 motion-card glass-panel rounded-xl p-6 cursor-pointer group">
+<div class="h-32 bg-surface-container rounded-lg mb-6 relative overflow-hidden flex items-center justify-center p-4">
+<div class="w-16 h-16 border-2 border-primary/30 rounded-full flex items-center justify-center group-hover:scale-150 transition-transform duration-[800ms] ease-[cubic-bezier(0.34,1.56,0.64,1)]">
+<div class="w-8 h-8 bg-primary rounded-full"></div>
+</div>
+</div>
+<h3 class="font-headline-md text-lg text-on-surface">Spring Physics</h3>
+<p class="text-sm text-on-surface-variant mt-2">SpringSimulation driven interactions for organic feel.</p>
+</div>
+<!-- Component Catalog -->
+<div class="md:col-span-12 mt-stack-md glass-panel rounded-xl p-8 ambient-shadow overflow-hidden relative">
+<!-- Abstract decorative element -->
+<div class="absolute -right-32 -top-32 w-96 h-96 bg-primary-fixed/20 rounded-full blur-3xl opacity-50 pointer-events-none"></div>
+<div class="mb-8 relative z-10">
+<h2 class="font-headline-md text-headline-md text-on-surface">Component Catalog</h2>
+<p class="text-on-surface-variant">Core Flutter widgets instantiated with design tokens.</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-8 relative z-10">
+<!-- ExperienceCard -->
+<div class="flex flex-col gap-4">
+<div class="text-xs font-label-sm text-outline uppercase tracking-wider mb-2">ExperienceCard</div>
+<div class="bg-surface rounded-xl p-6 border border-outline-variant/10 shadow-sm hover:shadow-md transition-shadow">
+<div class="flex items-center gap-4 mb-4">
+<div class="w-10 h-10 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center">
+<span class="material-symbols-outlined">spa</span>
+</div>
+<div>
+<div class="font-medium text-on-surface">Daily Reflection</div>
+<div class="text-xs text-on-surface-variant">Just now</div>
+</div>
+</div>
+<p class="text-sm text-on-surface-variant line-clamp-2">How are you feeling today? Take a moment to center yourself before beginning your tasks.</p>
+</div>
+</div>
+<!-- IntentTextField -->
+<div class="flex flex-col gap-4">
+<div class="text-xs font-label-sm text-outline uppercase tracking-wider mb-2">IntentTextField</div>
+<div class="flex flex-col justify-center h-full">
+<div class="relative w-full">
+<input class="w-full bg-surface border-0 rounded-full px-6 py-4 text-on-surface placeholder:text-on-surface-variant/50 focus:ring-2 focus:ring-primary/20 shadow-sm shadow-primary/5 transition-all outline-none" placeholder="Ask Anything..." type="text"/>
+<button class="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-primary text-on-primary flex items-center justify-center hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-sm">arrow_upward</span>
+</button>
+</div>
+</div>
+</div>
+<!-- KernelButton -->
+<div class="flex flex-col gap-4">
+<div class="text-xs font-label-sm text-outline uppercase tracking-wider mb-2">KernelButton</div>
+<div class="flex flex-col gap-4 justify-center items-start h-full">
+<button class="px-8 py-3 rounded-full bg-primary text-on-primary font-medium hover:scale-[1.02] transition-transform shadow-sm flex items-center gap-2">
+                                Initialize Sequence
+                            </button>
+<button class="px-8 py-3 rounded-full bg-transparent border border-outline-variant/40 text-on-surface font-medium hover:bg-surface-variant/30 transition-colors flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">settings</span>
+                                Configure
+                            </button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar (Visible on Mobile) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-container-padding pb-8 pt-4 bg-surface/90 dark:bg-surface-container-highest/90 backdrop-blur-2xl border-t border-outline-variant/10 shadow-[0_-4px_24px_rgba(17,39,138,0.05)] rounded-t-xl">
+<button class="flex flex-col items-center justify-center gap-1 text-on-surface-variant hover:bg-surface-variant/50 transition-colors p-2 rounded-lg">
+<span class="material-symbols-outlined">home_max</span>
+<span class="font-label-sm text-label-sm text-[10px]">Home</span>
+</button>
+<button class="flex flex-col items-center justify-center gap-1 text-primary dark:text-primary-fixed-dim bg-primary-container/20 rounded-full px-6 py-2 Active: scale-95 duration-200">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">widgets</span>
+<span class="font-label-sm text-label-sm text-[10px]">System</span>
+</button>
+<button class="flex flex-col items-center justify-center gap-1 text-on-surface-variant hover:bg-surface-variant/50 transition-colors p-2 rounded-lg">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-sm text-label-sm text-[10px]">Settings</span>
+</button>
+</nav>
+<script>
+        // Simple mock interaction for the Adaptive Layout Grid to show "responsiveness"
+        const mockup = document.getElementById('resizable-mockup');
+        let isExpanded = false;
+        
+        setInterval(() => {
+            if(mockup) {
+                if(isExpanded) {
+                    mockup.style.maxWidth = '24rem'; // narrow
+                } else {
+                    mockup.style.maxWidth = '100%'; // wide
+                }
+                isExpanded = !isExpanded;
+            }
+        }, 3000);
+    </script>
+</body></html>

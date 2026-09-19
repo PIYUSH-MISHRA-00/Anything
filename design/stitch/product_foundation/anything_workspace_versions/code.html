@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Workspace Versions &amp; Improvements</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Public+Sans:wght@500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-variant": "#e5e2e1",
+                        "on-primary-fixed-variant": "#2a3d9d",
+                        "on-error": "#ffffff",
+                        "on-primary": "#ffffff",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-tint": "#4456b6",
+                        "secondary-fixed": "#e3e2df",
+                        "surface-container-low": "#f6f3f2",
+                        "on-secondary-fixed-variant": "#464744",
+                        "on-secondary-fixed": "#1b1c1a",
+                        "outline-variant": "#c5c5d4",
+                        "surface-container": "#f0eded",
+                        "inverse-surface": "#313030",
+                        "tertiary-fixed": "#e5e3d9",
+                        "on-surface": "#1c1b1b",
+                        "on-error-container": "#93000a",
+                        "tertiary-container": "#4b4b44",
+                        "on-tertiary": "#ffffff",
+                        "on-secondary": "#ffffff",
+                        "background": "#fcf9f8",
+                        "inverse-primary": "#bac3ff",
+                        "surface": "#fcf9f8",
+                        "surface-container-high": "#eae7e7",
+                        "secondary": "#5e5f5c",
+                        "outline": "#757683",
+                        "tertiary-fixed-dim": "#c8c7be",
+                        "on-secondary-container": "#626360",
+                        "surface-container-highest": "#e5e2e1",
+                        "on-surface-variant": "#454652",
+                        "primary-container": "#2e41a1",
+                        "on-primary-fixed": "#00105a",
+                        "error-container": "#ffdad6",
+                        "inverse-on-surface": "#f3f0ef",
+                        "secondary-fixed-dim": "#c7c7c3",
+                        "on-background": "#1c1b1b",
+                        "error": "#ba1a1a",
+                        "primary-fixed": "#dee0ff",
+                        "primary": "#11278a",
+                        "primary-fixed-dim": "#bac3ff",
+                        "on-primary-container": "#aab6ff",
+                        "surface-bright": "#fcf9f8",
+                        "on-tertiary-fixed-variant": "#474741",
+                        "on-tertiary-fixed": "#1b1c17",
+                        "surface-dim": "#dcd9d9",
+                        "on-tertiary-container": "#bcbbb2",
+                        "tertiary": "#34342e",
+                        "secondary-container": "#e0e0dc"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "1rem",
+                        "lg": "2rem",
+                        "xl": "3rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "unit": "8px",
+                        "stack-sm": "16px",
+                        "gutter": "24px",
+                        "stack-md": "32px",
+                        "stack-lg": "64px",
+                        "container-padding": "32px"
+                    },
+                    "fontFamily": {
+                        "label-sm": ["Inter"],
+                        "headline-lg": ["Public Sans"],
+                        "body-md": ["Inter"],
+                        "headline-md": ["Public Sans"],
+                        "body-lg": ["Inter"],
+                        "headline-lg-mobile": ["Public Sans"]
+                    },
+                    "fontSize": {
+                        "label-sm": ["12px", { "lineHeight": "1.2", "letterSpacing": "0.08em", "fontWeight": "600" }],
+                        "headline-lg": ["48px", { "lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+                        "body-md": ["16px", { "lineHeight": "1.5", "letterSpacing": "0.01em", "fontWeight": "400" }],
+                        "headline-md": ["24px", { "lineHeight": "1.3", "letterSpacing": "0em", "fontWeight": "500" }],
+                        "body-lg": ["18px", { "lineHeight": "1.6", "letterSpacing": "0.01em", "fontWeight": "400" }],
+                        "headline-lg-mobile": ["32px", { "lineHeight": "1.2", "letterSpacing": "-0.01em", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            background-color: theme('colors.background');
+            color: theme('colors.on-background');
+        }
+        .glass-card {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(246, 243, 242, 0.8) 100%);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 8px 32px -4px rgba(17, 39, 138, 0.08);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="min-h-screen font-body-md text-body-md antialiased overflow-x-hidden selection:bg-primary-container selection:text-on-primary-container">
+<!-- Top Navigation Shell -->
+<header class="fixed top-0 w-full z-50 bg-surface/80 dark:bg-surface-container/80 backdrop-blur-xl shadow-sm transition-all duration-500 ease-out hidden md:flex">
+<div class="flex justify-between items-center px-gutter h-20 w-full max-w-[1440px] mx-auto">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-primary text-2xl" data-icon="bubble_chart" style="font-variation-settings: 'FILL' 1;">bubble_chart</span>
+<span class="font-headline-md text-headline-md tracking-tight text-primary dark:text-primary-fixed">History &amp; Evolution</span>
+</div>
+<nav class="hidden md:flex items-center gap-8">
+<a class="text-on-surface-variant hover:scale-105 transition-transform duration-300" href="#">Home</a>
+<a class="text-on-surface-variant hover:scale-105 transition-transform duration-300" href="#">My Apps</a>
+<a class="text-on-surface-variant hover:scale-105 transition-transform duration-300" href="#">Activity</a>
+<a class="text-primary font-medium hover:scale-105 transition-transform duration-300" href="#">Workspace</a>
+<a class="text-on-surface-variant hover:scale-105 transition-transform duration-300" href="#">Settings</a>
+</nav>
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center overflow-hidden">
+<img alt="User profile" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBpFPFTLes9yVF0NM1s-fhAGwy07mWJ0tGMwiG1GggH6yJmYWuAIzazuSOIgzADz0yg3dp87hWGFzUUXLjT4_vAFS7dgleVRzK8DrjJmz3UkIeKdAF38fpkANidUlKSXXtr68eUWYKZqHlxAtie6A4MRDLJArLISND2z7V08hSXcV4LwoGIy92DkmqYOUqkOCu-OL1Lx4LAJA4YnrvucFvr5ymxlRR3SwBio8WxqOgxrCsr0Z6sU7NZ8ywF8VxjOR0OTarfIZ9zDq8"/>
+</div>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="w-full max-w-[1440px] mx-auto px-5 md:px-8 pt-28 md:pt-36 pb-32">
+<!-- Live Improvements Section (Priority) -->
+<section class="mb-stack-lg max-w-4xl mx-auto">
+<div class="glass-card rounded-3xl p-8 md:p-10 relative overflow-hidden group hover:-translate-y-1 transition-transform duration-500">
+<!-- Decorative background elements -->
+<div class="absolute top-0 right-0 w-64 h-64 bg-primary-container/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4 group-hover:scale-110 transition-transform duration-700"></div>
+<div class="absolute bottom-0 left-0 w-48 h-48 bg-tertiary-container/10 rounded-full blur-2xl translate-y-1/3 -translate-x-1/4"></div>
+<div class="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+<div class="flex items-start gap-4">
+<div class="w-12 h-12 rounded-full bg-primary-container/20 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-primary" data-icon="auto_awesome">auto_awesome</span>
+</div>
+<div>
+<span class="inline-block px-3 py-1 bg-surface-variant text-on-surface-variant font-label-sm text-label-sm rounded-full mb-3 tracking-widest uppercase">Live Intelligence</span>
+<h2 class="font-headline-md text-headline-md text-on-surface mb-2">I found a better way to visualize the data.</h2>
+<p class="font-body-md text-body-md text-on-surface-variant max-w-xl">Our analysis suggests a restructured view could improve your insight discovery rate by 14%.</p>
+</div>
+</div>
+<div class="flex flex-row md:flex-col gap-3 w-full md:w-auto shrink-0 mt-4 md:mt-0">
+<button class="flex-1 md:flex-none px-6 py-3 bg-primary text-on-primary rounded-full font-body-md font-medium hover:scale-[1.02] transition-transform duration-300 shadow-md shadow-primary/20">Review</button>
+<button class="flex-1 md:flex-none px-6 py-3 border border-outline-variant text-on-surface rounded-full font-body-md hover:bg-surface-variant/50 transition-colors duration-300">Later</button>
+</div>
+</div>
+</div>
+</section>
+<!-- Timeline / Checkpoints Section -->
+<section class="max-w-4xl mx-auto">
+<h3 class="font-headline-md text-headline-md text-on-surface mb-8 ml-4">Snapshots &amp; Checkpoints</h3>
+<div class="relative">
+<!-- Vertical connection line -->
+<div class="absolute left-[27px] top-8 bottom-8 w-[2px] bg-outline-variant/30 hidden md:block"></div>
+<div class="flex flex-col gap-6">
+<!-- Current Version -->
+<div class="flex gap-6 group relative">
+<!-- Timeline marker -->
+<div class="hidden md:flex flex-col items-center z-10 mt-2">
+<div class="w-[14px] h-[14px] rounded-full bg-primary ring-4 ring-surface"></div>
+</div>
+<div class="glass-card rounded-2xl p-6 w-full border-l-4 border-l-primary transition-all duration-300 hover:shadow-[0_8px_32px_-4px_rgba(17,39,138,0.12)] cursor-pointer">
+<div class="flex justify-between items-start mb-2">
+<h4 class="font-headline-md text-headline-md text-on-surface text-xl">Current Version</h4>
+<span class="px-3 py-1 bg-secondary-container text-on-secondary-container font-label-sm text-label-sm rounded-full">Active &amp; Protected</span>
+</div>
+<p class="text-on-surface-variant text-sm flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]" data-icon="sync">sync</span>
+                                Auto-saving in progress...
+                            </p>
+</div>
+</div>
+<!-- Checkpoint Alpha -->
+<div class="flex gap-6 group relative opacity-80 hover:opacity-100 transition-opacity">
+<!-- Timeline marker -->
+<div class="hidden md:flex flex-col items-center z-10 mt-8">
+<div class="w-[14px] h-[14px] rounded-full bg-outline-variant ring-4 ring-surface group-hover:bg-primary-fixed-dim transition-colors"></div>
+</div>
+<div class="bg-surface-container-lowest rounded-2xl p-6 w-full border border-outline-variant/20 hover:border-primary-fixed-dim transition-colors cursor-pointer group-hover:shadow-sm">
+<div class="flex justify-between items-start mb-2">
+<h4 class="font-headline-md text-headline-md text-on-surface text-xl">Checkpoint Alpha</h4>
+<button aria-label="More options" class="w-8 h-8 rounded-full hover:bg-surface-variant flex items-center justify-center transition-colors text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="more_vert">more_vert</span>
+</button>
+</div>
+<p class="text-on-surface-variant text-sm mb-4">Before Simulator Update (2 hours ago)</p>
+<div class="flex items-center gap-3">
+<button class="px-4 py-1.5 text-sm font-medium text-primary bg-primary-fixed/30 rounded-full hover:bg-primary-fixed/50 transition-colors">Restore</button>
+<button class="px-4 py-1.5 text-sm font-medium text-on-surface-variant hover:bg-surface-variant rounded-full transition-colors">Preview</button>
+</div>
+</div>
+</div>
+<!-- Initial Setup -->
+<div class="flex gap-6 group relative opacity-70 hover:opacity-100 transition-opacity">
+<!-- Timeline marker -->
+<div class="hidden md:flex flex-col items-center z-10 mt-8">
+<div class="w-[14px] h-[14px] rounded-full bg-outline-variant ring-4 ring-surface group-hover:bg-primary-fixed-dim transition-colors"></div>
+</div>
+<div class="bg-surface-container-lowest rounded-2xl p-6 w-full border border-outline-variant/20 hover:border-primary-fixed-dim transition-colors cursor-pointer group-hover:shadow-sm">
+<div class="flex justify-between items-start mb-2">
+<h4 class="font-headline-md text-headline-md text-on-surface text-xl">Initial Setup</h4>
+<button aria-label="More options" class="w-8 h-8 rounded-full hover:bg-surface-variant flex items-center justify-center transition-colors text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="more_vert">more_vert</span>
+</button>
+</div>
+<p class="text-on-surface-variant text-sm mb-4">Original Research Import (3 days ago)</p>
+<div class="flex items-center gap-3">
+<button class="px-4 py-1.5 text-sm font-medium text-primary bg-primary-fixed/30 rounded-full hover:bg-primary-fixed/50 transition-colors">Restore</button>
+<button class="px-4 py-1.5 text-sm font-medium text-on-surface-variant hover:bg-surface-variant rounded-full transition-colors">Preview</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Bottom Navigation Shell (Mobile Only) -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-container-padding pb-8 pt-4 bg-surface/90 dark:bg-surface-container-highest/90 backdrop-blur-2xl md:hidden shadow-[0_-4px_24px_rgba(17,39,138,0.05)] rounded-t-xl">
+<a class="flex flex-col items-center justify-center gap-1 text-on-surface-variant hover:bg-surface-variant/50 transition-colors rounded-lg p-2" href="#">
+<span class="material-symbols-outlined" data-icon="home_max">home_max</span>
+<span class="font-label-sm text-label-sm hidden sm:block">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center gap-1 text-on-surface-variant hover:bg-surface-variant/50 transition-colors rounded-lg p-2" href="#">
+<span class="material-symbols-outlined" data-icon="widgets">widgets</span>
+<span class="font-label-sm text-label-sm hidden sm:block">My Apps</span>
+</a>
+<a class="flex flex-col items-center justify-center gap-1 text-on-surface-variant hover:bg-surface-variant/50 transition-colors rounded-lg p-2" href="#">
+<span class="material-symbols-outlined" data-icon="Receipt_Long">qr_code_2</span>
+<span class="font-label-sm text-label-sm hidden sm:block">Activity</span>
+</a>
+<a class="flex flex-col items-center justify-center gap-1 text-primary dark:text-primary-fixed-dim bg-primary-container/20 rounded-full px-6 py-2 scale-95 duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="grid_view" style="font-variation-settings: 'FILL' 1;">grid_view</span>
+<span class="font-label-sm text-label-sm">Workspace</span>
+</a>
+<a class="flex flex-col items-center justify-center gap-1 text-on-surface-variant hover:bg-surface-variant/50 transition-colors rounded-lg p-2" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-label-sm text-label-sm hidden sm:block">Settings</span>
+</a>
+</nav>
+</body></html>

@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Model Registry &amp; Provider Abstraction</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-lowest": "#ffffff",
+                        "primary": "#11278a",
+                        "on-background": "#0b1c30",
+                        "on-tertiary-container": "#b6bbc5",
+                        "surface": "#f8f9ff",
+                        "on-secondary-fixed-variant": "#2f2ebe",
+                        "on-error-container": "#93000a",
+                        "on-secondary": "#ffffff",
+                        "surface-dim": "#cbdbf5",
+                        "on-secondary-container": "#fffbff",
+                        "tertiary-fixed": "#dee2ed",
+                        "on-tertiary": "#ffffff",
+                        "surface-bright": "#f8f9ff",
+                        "surface-container-low": "#eff4ff",
+                        "surface-container-high": "#dce9ff",
+                        "on-tertiary-fixed-variant": "#424750",
+                        "inverse-surface": "#213145",
+                        "primary-container": "#2e41a1",
+                        "error": "#ba1a1a",
+                        "secondary-fixed-dim": "#c0c1ff",
+                        "on-surface": "#0b1c30",
+                        "primary-fixed-dim": "#bac3ff",
+                        "on-surface-variant": "#454652",
+                        "tertiary-fixed-dim": "#c2c6d1",
+                        "on-secondary-fixed": "#07006c",
+                        "secondary": "#4648d4",
+                        "on-primary-container": "#aab6ff",
+                        "inverse-primary": "#bac3ff",
+                        "on-error": "#ffffff",
+                        "tertiary-container": "#464b54",
+                        "surface-variant": "#d3e4fe",
+                        "tertiary": "#2f343d",
+                        "on-primary-fixed": "#00105a",
+                        "background": "#f8f9ff",
+                        "outline": "#757683",
+                        "on-tertiary-fixed": "#171c23",
+                        "secondary-fixed": "#e1e0ff",
+                        "on-primary-fixed-variant": "#2a3d9d",
+                        "error-container": "#ffdad6",
+                        "outline-variant": "#c5c5d4",
+                        "on-primary": "#ffffff",
+                        "surface-container-highest": "#d3e4fe",
+                        "inverse-on-surface": "#eaf1ff",
+                        "secondary-container": "#6063ee",
+                        "surface-tint": "#4456b6",
+                        "surface-container": "#e5eeff",
+                        "primary-fixed": "#dee0ff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "1rem",
+                        "lg": "2rem",
+                        "xl": "3rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "margin-desktop": "40px",
+                        "margin-mobile": "16px",
+                        "gutter": "24px",
+                        "container-max": "1280px",
+                        "unit": "8px"
+                    },
+                    "fontFamily": {
+                        "headline-md": ["Public Sans"],
+                        "label-sm": ["Public Sans"],
+                        "display-lg": ["Public Sans"],
+                        "link-relationship": ["Public Sans"],
+                        "display-lg-mobile": ["Public Sans"],
+                        "body-md": ["Public Sans"]
+                    },
+                    "fontSize": {
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "label-sm": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "link-relationship": ["14px", { "lineHeight": "20px", "fontWeight": "500" }],
+                        "display-lg-mobile": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { font-family: 'Public Sans', sans-serif; }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+        .glow-active {
+            box-shadow: 0px 4px 20px rgba(46, 65, 161, 0.15);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background min-h-screen pb-32">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-surface/80 dark:bg-surface-dim/80 backdrop-blur-md">
+<div class="flex justify-between items-center px-container-padding h-16 max-w-[1440px] mx-auto px-6">
+<div class="flex items-center gap-4">
+<img alt="User profile photo" class="w-10 h-10 rounded-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDviDLSga4tGbSNhGk0OFs9YaM6HKhns1VZxMXn6at0jWdvqnG61n6rpF5LEs4fFYlCFo5xYmmRt02rAsZeRyN3QiuduVNUPFOWz9Vbf14Y2mDWShrlUOmE87_znGL6jr6moiocmqQU9CEejob54YpPMAROF0k_d5djgPIxF8RfnN-G857Zvl6v9iMzA5OAUVJoN-pTD2I3l3GXbsWPwgCxsGifdjFnmjz5VhetW955GcX3_hyCz5s7ip4mnnEBzgj3scyPgQ8p2_s"/>
+<h1 class="font-headline-md text-headline-md font-semibold text-primary dark:text-primary-fixed">Anything</h1>
+</div>
+<button class="w-10 h-10 flex items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-primary dark:text-primary-fixed hover:scale-[1.02] transition-transform duration-300">light_mode</span>
+</button>
+</div>
+</header>
+<!-- Main Canvas -->
+<main class="pt-24 px-margin-mobile md:px-margin-desktop max-w-container-max mx-auto">
+<div class="mb-12">
+<h2 class="font-display-lg-mobile md:font-display-lg text-primary mb-2">Model Registry</h2>
+<p class="font-body-md text-on-surface-variant max-w-2xl">Manage Intelligence Resources and Provider Abstractions. The Kernel automatically routes intents to the optimal integrated model.</p>
+</div>
+<!-- Discovery Section -->
+<section class="mb-12">
+<div class="glass-panel rounded-lg p-6 glow-active border-primary/20 relative overflow-hidden">
+<div class="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent z-0 pointer-events-none"></div>
+<div class="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+<div>
+<div class="flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-secondary" style="font-variation-settings: 'FILL' 1;">radar</span>
+<h3 class="font-headline-md text-headline-md text-primary">Discovery Active</h3>
+</div>
+<p class="font-body-md text-on-surface-variant">Kernel is automatically scanning and ranking providers based on current system intent and availability.</p>
+</div>
+<div class="flex gap-4">
+<div class="bg-surface-container-low rounded-full px-4 py-2 flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-secondary animate-pulse"></span>
+<span class="font-label-sm text-label-sm text-on-surface">3 NEW FOUND</span>
+</div>
+<button class="bg-primary text-on-primary rounded-full px-6 py-2 font-link-relationship hover:bg-primary-container transition-colors">
+                            Scan Now
+                        </button>
+</div>
+</div>
+</div>
+</section>
+<!-- Model Providers Grid -->
+<section>
+<h3 class="font-headline-md text-headline-md text-on-background mb-6">Integrated Providers</h3>
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-gutter">
+<!-- Provider Card 1 -->
+<div class="glass-panel rounded-lg p-6 border-primary/30 glow-active flex flex-col gap-6">
+<div class="flex justify-between items-start">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-full bg-surface-container-high flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-3xl">cloud</span>
+</div>
+<div>
+<h4 class="font-headline-md text-headline-md text-on-background text-lg">Universal Cloud-7</h4>
+<span class="font-label-sm text-label-sm text-secondary bg-secondary/10 px-2 py-1 rounded-full">ACTIVE · DEFAULT</span>
+</div>
+</div>
+<div class="text-right">
+<div class="font-headline-md text-headline-md text-primary text-xl">98%</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant">TRUST SCORE</div>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div class="bg-surface-container-lowest rounded-md p-3 border border-outline-variant/30">
+<div class="font-label-sm text-label-sm text-on-surface-variant mb-1">MODALITIES</div>
+<div class="flex gap-2">
+<span class="material-symbols-outlined text-primary text-sm" title="Text">description</span>
+<span class="material-symbols-outlined text-primary text-sm" title="Image">image</span>
+<span class="material-symbols-outlined text-primary text-sm" title="Code">code</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest rounded-md p-3 border border-outline-variant/30">
+<div class="font-label-sm text-label-sm text-on-surface-variant mb-1">CAPACITY</div>
+<div class="font-body-md text-on-background text-sm">128k Context</div>
+</div>
+</div>
+<div class="flex flex-wrap gap-2 mt-auto pt-4 border-t border-outline-variant/20">
+<div class="flex items-center gap-1 bg-surface-container px-3 py-1.5 rounded-full">
+<span class="material-symbols-outlined text-[14px] text-primary">lock</span>
+<span class="font-label-sm text-label-sm text-on-surface">Zero Data Retention</span>
+</div>
+<div class="flex items-center gap-1 bg-surface-container px-3 py-1.5 rounded-full">
+<span class="material-symbols-outlined text-[14px] text-primary">cloud_off</span>
+<span class="font-label-sm text-label-sm text-on-surface">Cloud Only</span>
+</div>
+</div>
+</div>
+<!-- Provider Card 2 -->
+<div class="glass-panel rounded-lg p-6 border-outline-variant/20 flex flex-col gap-6">
+<div class="flex justify-between items-start">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-full bg-surface-container-high flex items-center justify-center">
+<span class="material-symbols-outlined text-on-surface-variant text-3xl">memory</span>
+</div>
+<div>
+<h4 class="font-headline-md text-headline-md text-on-background text-lg">Local Core-v2</h4>
+<span class="font-label-sm text-label-sm text-on-surface-variant bg-surface-variant px-2 py-1 rounded-full">STANDBY</span>
+</div>
+</div>
+<div class="text-right">
+<div class="font-headline-md text-headline-md text-on-background text-xl">100%</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant">TRUST SCORE</div>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div class="bg-surface-container-lowest rounded-md p-3 border border-outline-variant/30">
+<div class="font-label-sm text-label-sm text-on-surface-variant mb-1">MODALITIES</div>
+<div class="flex gap-2">
+<span class="material-symbols-outlined text-primary text-sm" title="Text">description</span>
+<span class="material-symbols-outlined text-primary text-sm" title="Code">code</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest rounded-md p-3 border border-outline-variant/30">
+<div class="font-label-sm text-label-sm text-on-surface-variant mb-1">CAPACITY</div>
+<div class="font-body-md text-on-background text-sm">32k Context</div>
+</div>
+</div>
+<div class="flex flex-wrap gap-2 mt-auto pt-4 border-t border-outline-variant/20">
+<div class="flex items-center gap-1 bg-surface-container px-3 py-1.5 rounded-full">
+<span class="material-symbols-outlined text-[14px] text-primary">security</span>
+<span class="font-label-sm text-label-sm text-on-surface">End-to-End Encrypted</span>
+</div>
+<div class="flex items-center gap-1 bg-secondary/10 px-3 py-1.5 rounded-full">
+<span class="material-symbols-outlined text-[14px] text-secondary">offline_bolt</span>
+<span class="font-label-sm text-label-sm text-secondary">Full Offline Support</span>
+</div>
+</div>
+</div>
+<!-- Provider Card 3 -->
+<div class="glass-panel rounded-lg p-6 border-outline-variant/20 flex flex-col gap-6">
+<div class="flex justify-between items-start">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-full bg-surface-container-high flex items-center justify-center">
+<span class="material-symbols-outlined text-on-surface-variant text-3xl">visibility</span>
+</div>
+<div>
+<h4 class="font-headline-md text-headline-md text-on-background text-lg">Specialist Vision-X</h4>
+<span class="font-label-sm text-label-sm text-on-surface-variant bg-surface-variant px-2 py-1 rounded-full">SPECIALIST</span>
+</div>
+</div>
+<div class="text-right">
+<div class="font-headline-md text-headline-md text-on-background text-xl">85%</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant">TRUST SCORE</div>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div class="bg-surface-container-lowest rounded-md p-3 border border-outline-variant/30">
+<div class="font-label-sm text-label-sm text-on-surface-variant mb-1">MODALITIES</div>
+<div class="flex gap-2">
+<span class="material-symbols-outlined text-primary text-sm" title="Image">image</span>
+<span class="material-symbols-outlined text-primary text-sm" title="Video">movie</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest rounded-md p-3 border border-outline-variant/30">
+<div class="font-label-sm text-label-sm text-on-surface-variant mb-1">CAPACITY</div>
+<div class="font-body-md text-on-background text-sm">8k Context</div>
+</div>
+</div>
+<div class="flex flex-wrap gap-2 mt-auto pt-4 border-t border-outline-variant/20">
+<div class="flex items-center gap-1 bg-surface-container px-3 py-1.5 rounded-full">
+<span class="material-symbols-outlined text-[14px] text-primary">policy</span>
+<span class="font-label-sm text-label-sm text-on-surface">Strict Processing Limits</span>
+</div>
+<div class="flex items-center gap-1 bg-surface-container px-3 py-1.5 rounded-full">
+<span class="material-symbols-outlined text-[14px] text-primary">cloud_off</span>
+<span class="font-label-sm text-label-sm text-on-surface">Cloud Only</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-8 left-0 w-full z-50 flex justify-center items-center pointer-events-none md:hidden">
+<div class="pointer-events-auto bg-surface/40 dark:bg-surface-dim/40 backdrop-blur-xl shadow-lg shadow-primary/10 rounded-full w-auto min-w-[280px] p-2 flex justify-around">
+<a class="flex items-center justify-center text-on-surface-variant dark:text-on-surface-variant w-12 h-12 hover:bg-surface-container-high transition-colors duration-300 rounded-full" href="#">
+<span class="material-symbols-outlined">home</span>
+</a>
+<a class="flex items-center justify-center text-on-surface-variant dark:text-on-surface-variant w-12 h-12 hover:bg-surface-container-high transition-colors duration-300 rounded-full" href="#">
+<span class="material-symbols-outlined">auto_awesome</span>
+</a>
+<a class="flex items-center justify-center text-on-surface-variant dark:text-on-surface-variant w-12 h-12 hover:bg-surface-container-high transition-colors duration-300 rounded-full" href="#">
+<span class="material-symbols-outlined">history</span>
+</a>
+<a class="flex items-center justify-center bg-primary dark:bg-primary-container text-on-primary dark:text-on-primary-container rounded-full w-12 h-12 hover:bg-surface-container-high transition-colors duration-300 hover:scale-[1.02] active:scale-90 transition-all" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">settings</span>
+</a>
+</div>
+</nav>
+</body></html>

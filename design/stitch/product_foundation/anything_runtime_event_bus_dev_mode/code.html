@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Anything - Runtime Event Bus (Developer Mode)</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "on-secondary": "#ffffff",
+                        "on-secondary-fixed-variant": "#2f2ebe",
+                        "on-secondary-fixed": "#07006c",
+                        "tertiary-fixed-dim": "#c2c6d1",
+                        "primary-fixed-dim": "#bac3ff",
+                        "surface-container-high": "#dce9ff",
+                        "on-surface": "#0b1c30",
+                        "surface-variant": "#d3e4fe",
+                        "surface-container-highest": "#d3e4fe",
+                        "on-secondary-container": "#fffbff",
+                        "inverse-surface": "#213145",
+                        "primary-container": "#2e41a1",
+                        "on-error-container": "#93000a",
+                        "primary": "#11278a",
+                        "on-tertiary-fixed-variant": "#424750",
+                        "error": "#ba1a1a",
+                        "on-error": "#ffffff",
+                        "surface-container": "#e5eeff",
+                        "tertiary": "#2f343d",
+                        "outline-variant": "#c5c5d4",
+                        "primary-fixed": "#dee0ff",
+                        "on-tertiary-container": "#b6bbc5",
+                        "secondary-container": "#6063ee",
+                        "tertiary-container": "#464b54",
+                        "surface-container-low": "#eff4ff",
+                        "outline": "#757683",
+                        "surface-dim": "#cbdbf5",
+                        "secondary": "#4648d4",
+                        "on-primary": "#ffffff",
+                        "surface": "#f8f9ff",
+                        "on-tertiary-fixed": "#171c23",
+                        "on-primary-fixed-variant": "#2a3d9d",
+                        "surface-tint": "#4456b6",
+                        "on-tertiary": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "secondary-fixed-dim": "#c0c1ff",
+                        "inverse-primary": "#bac3ff",
+                        "inverse-on-surface": "#eaf1ff",
+                        "on-surface-variant": "#454652",
+                        "tertiary-fixed": "#dee2ed",
+                        "secondary-fixed": "#e1e0ff",
+                        "background": "#0b1c30", /* Dark mode background override for dev mode */
+                        "on-background": "#eaf1ff",
+                        "on-primary-container": "#aab6ff",
+                        "surface-bright": "#f8f9ff",
+                        "on-primary-fixed": "#00105a",
+                        "surface-container-lowest": "#ffffff"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "1rem",
+                        "lg": "2rem",
+                        "xl": "3rem",
+                        "full": "9999px"
+                    },
+                    spacing: {
+                        "container-max": "1280px",
+                        "margin-mobile": "16px",
+                        "gutter": "24px",
+                        "unit": "8px",
+                        "margin-desktop": "40px"
+                    },
+                    fontFamily: {
+                        "headline-md": ["Public Sans"],
+                        "display-lg": ["Public Sans"],
+                        "link-relationship": ["Public Sans"],
+                        "body-md": ["Public Sans"],
+                        "label-sm": ["Public Sans"],
+                        "display-lg-mobile": ["Public Sans"],
+                        "mono": ["JetBrains Mono", "monospace"]
+                    },
+                    fontSize: {
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "link-relationship": ["14px", { "lineHeight": "20px", "fontWeight": "500" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "label-sm": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "display-lg-mobile": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { background-color: #0b1c30; color: #eaf1ff; } /* Enforce dark mode base */
+        .glass-panel {
+            background: rgba(33, 49, 69, 0.4);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .neon-text {
+            color: #bac3ff;
+            text-shadow: 0 0 10px rgba(186, 195, 255, 0.5);
+        }
+        .stream-line {
+            border-left: 2px solid rgba(46, 65, 161, 0.3);
+            margin-left: 12px;
+            padding-left: 16px;
+            position: relative;
+        }
+        .stream-node {
+            position: absolute;
+            left: -5px;
+            top: 5px;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #2e41a1;
+            box-shadow: 0 0 8px rgba(46, 65, 161, 0.8);
+        }
+        .stream-node.critical { background-color: #ba1a1a; box-shadow: 0 0 8px rgba(186, 26, 26, 0.8); }
+        .stream-node.success { background-color: #4456b6; box-shadow: 0 0 8px rgba(68, 86, 182, 0.8); }
+        
+        /* Topology Graph Styles */
+        .topology-node {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: rgba(33, 49, 69, 0.8);
+            border: 2px solid #2e41a1;
+            box-shadow: 0 0 15px rgba(46, 65, 161, 0.3);
+            z-index: 10;
+            position: relative;
+        }
+        .topology-node.hub {
+            width: 140px;
+            height: 140px;
+            border-color: #bac3ff;
+            box-shadow: 0 0 25px rgba(186, 195, 255, 0.4);
+        }
+        .topology-line {
+            position: absolute;
+            height: 2px;
+            background: linear-gradient(90deg, rgba(46, 65, 161, 0.1), rgba(186, 195, 255, 0.8), rgba(46, 65, 161, 0.1));
+            z-index: 1;
+            transform-origin: left center;
+        }
+        
+        @keyframes pulse-line {
+            0% { opacity: 0.3; }
+            50% { opacity: 1; box-shadow: 0 0 10px #bac3ff; }
+            100% { opacity: 0.3; }
+        }
+        .animate-pulse-line { animation: pulse-line 2s infinite; }
+        
+        /* Hide scrollbar for stream */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="font-body-md min-h-screen flex flex-col antialiased">
+<!-- TopAppBar (Customized for Dev Mode) -->
+<header class="fixed top-0 w-full z-50 glass-panel border-b-0 h-16 max-w-full px-6 flex justify-between items-center">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-inverse-primary" data-icon="terminal">terminal</span>
+<h1 class="font-headline-md text-headline-md font-bold text-on-background tracking-tight">Anything <span class="text-on-surface-variant font-normal text-sm ml-2">RUNTIME EVENT BUS (DEV MODE)</span></h1>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-secondary-container animate-pulse"></span>
+<span class="font-mono text-xs text-on-primary-container">SYS_OK</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant hover:text-inverse-primary cursor-pointer transition-colors" data-icon="close">close</span>
+</div>
+</header>
+<main class="flex-grow pt-24 pb-8 px-6 max-w-[1600px] mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-6">
+<!-- Left Column: Event Stream -->
+<section class="lg:col-span-5 flex flex-col gap-4 h-[calc(100vh-8rem)]">
+<div class="flex justify-between items-end mb-2">
+<h2 class="font-headline-md text-headline-md text-on-background">Event Stream</h2>
+<div class="flex gap-2">
+<span class="px-3 py-1 rounded-full bg-surface-container-high/20 text-on-primary-container font-label-sm text-label-sm border border-outline/30 cursor-pointer hover:bg-surface-container-high/40 transition-colors">ALL</span>
+<span class="px-3 py-1 rounded-full bg-transparent text-on-surface-variant font-label-sm text-label-sm border border-transparent cursor-pointer hover:text-on-background transition-colors">CRIT</span>
+</div>
+</div>
+<div class="glass-panel rounded-2xl p-6 flex-grow overflow-y-auto no-scrollbar relative" id="event-stream">
+<!-- Stream Items -->
+<div class="stream-line mb-6">
+<div class="stream-node success"></div>
+<div class="flex justify-between items-start">
+<span class="font-mono text-xs text-on-surface-variant">14:32:01.045</span>
+<span class="font-mono text-[10px] text-surface-tint border border-surface-tint/30 px-1 rounded">SYS</span>
+</div>
+<div class="font-mono text-sm text-on-background mt-1 neon-text">EXPERIENCE_CREATED</div>
+<div class="font-mono text-xs text-on-tertiary-container mt-1">id: exp_98a7f2, owner: sys_core</div>
+</div>
+<div class="stream-line mb-6">
+<div class="stream-node"></div>
+<div class="flex justify-between items-start">
+<span class="font-mono text-xs text-on-surface-variant">14:32:01.112</span>
+<span class="font-mono text-[10px] text-primary-fixed-dim border border-primary-fixed-dim/30 px-1 rounded">NLU</span>
+</div>
+<div class="font-mono text-sm text-on-background mt-1">INTENT_PARSED</div>
+<div class="font-mono text-xs text-on-tertiary-container mt-1">confidence: 0.98, intent: "retrieve_memory"</div>
+</div>
+<div class="stream-line mb-6">
+<div class="stream-node"></div>
+<div class="flex justify-between items-start">
+<span class="font-mono text-xs text-on-surface-variant">14:32:01.150</span>
+<span class="font-mono text-[10px] text-secondary-fixed-dim border border-secondary-fixed-dim/30 px-1 rounded">KG</span>
+</div>
+<div class="font-mono text-sm text-on-background mt-1">KNOWLEDGE_GRAPH_QUERY</div>
+<div class="font-mono text-xs text-on-tertiary-container mt-1">nodes_traversed: 42, latency: 12ms</div>
+</div>
+<div class="stream-line mb-6">
+<div class="stream-node critical"></div>
+<div class="flex justify-between items-start">
+<span class="font-mono text-xs text-on-surface-variant">14:32:01.201</span>
+<span class="font-mono text-[10px] text-error border border-error/30 px-1 rounded">SEC</span>
+</div>
+<div class="font-mono text-sm text-error mt-1">ACCESS_DENIED_WARNING</div>
+<div class="font-mono text-xs text-on-tertiary-container mt-1">resource: memory_fragment_x9, reason: context_mismatch</div>
+</div>
+<div class="stream-line mb-6">
+<div class="stream-node success"></div>
+<div class="flex justify-between items-start">
+<span class="font-mono text-xs text-on-surface-variant">14:32:01.255</span>
+<span class="font-mono text-[10px] text-surface-tint border border-surface-tint/30 px-1 rounded">EXEC</span>
+</div>
+<div class="font-mono text-sm text-on-background mt-1">CAPABILITY_INVOKED</div>
+<div class="font-mono text-xs text-on-tertiary-container mt-1">target: ui_render_engine, payload_size: 4kb</div>
+</div>
+<div class="stream-line mb-6">
+<div class="stream-node"></div>
+<div class="flex justify-between items-start">
+<span class="font-mono text-xs text-on-surface-variant">14:32:01.280</span>
+<span class="font-mono text-[10px] text-primary-fixed-dim border border-primary-fixed-dim/30 px-1 rounded">SYS</span>
+</div>
+<div class="font-mono text-sm text-on-background mt-1">STATE_MUTATION_COMMITTED</div>
+<div class="font-mono text-xs text-on-tertiary-container mt-1">hash: 0x9f8e7d...</div>
+</div>
+</div>
+</section>
+<!-- Right Column: Dashboard -->
+<section class="lg:col-span-7 flex flex-col gap-6">
+<!-- Resource Allocation -->
+<div class="glass-panel rounded-2xl p-6">
+<h2 class="font-headline-md text-headline-md text-on-background mb-6">Resource Allocation</h2>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<!-- CPU -->
+<div class="flex flex-col">
+<div class="flex justify-between mb-2">
+<span class="font-mono text-sm text-on-surface-variant">CORE_LOGIC</span>
+<span class="font-mono text-sm text-inverse-primary">42%</span>
+</div>
+<div class="w-full h-2 bg-inverse-surface rounded-full overflow-hidden">
+<div class="h-full bg-primary-container rounded-full" style="width: 42%;"></div>
+</div>
+</div>
+<!-- Memory -->
+<div class="flex flex-col">
+<div class="flex justify-between mb-2">
+<span class="font-mono text-sm text-on-surface-variant">MEMORY_HEAP</span>
+<span class="font-mono text-sm text-inverse-primary">2.4GB</span>
+</div>
+<div class="w-full h-2 bg-inverse-surface rounded-full overflow-hidden">
+<div class="h-full bg-secondary-container rounded-full" style="width: 68%;"></div>
+</div>
+</div>
+<!-- AI Accel -->
+<div class="flex flex-col">
+<div class="flex justify-between mb-2">
+<span class="font-mono text-sm text-on-surface-variant">NPU_COMPUTE</span>
+<span class="font-mono text-sm text-inverse-primary">89%</span>
+</div>
+<div class="w-full h-2 bg-inverse-surface rounded-full overflow-hidden">
+<div class="h-full bg-surface-tint rounded-full relative" style="width: 89%;">
+<div class="absolute right-0 top-0 bottom-0 w-4 bg-white/50 blur-sm"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Runtime Topology Graph -->
+<div class="glass-panel rounded-2xl p-6 flex-grow relative overflow-hidden flex flex-col">
+<h2 class="font-headline-md text-headline-md text-on-background mb-2">Runtime Topology</h2>
+<p class="font-mono text-xs text-on-surface-variant mb-8">EVENT_BUS_ROUTING_MAP_V2.1</p>
+<div class="relative flex-grow flex items-center justify-center min-h-[300px]">
+<!-- Connections (Absolute positioning for demo purposes) -->
+<!-- Kernel to Bus -->
+<div class="topology-line animate-pulse-line" style="width: 120px; left: 20%; top: 50%; transform: translateY(-50%);"></div>
+<!-- Bus to Model -->
+<div class="topology-line animate-pulse-line" style="width: 120px; right: 20%; top: 30%; transform: rotate(-30deg);"></div>
+<!-- Bus to Knowledge -->
+<div class="topology-line animate-pulse-line" style="width: 120px; right: 20%; top: 70%; transform: rotate(30deg);"></div>
+<!-- Nodes -->
+<div class="absolute left-[10%] top-1/2 -translate-y-1/2 topology-node">
+<span class="material-symbols-outlined text-on-surface-variant mb-1" data-icon="memory">memory</span>
+<span class="font-mono text-[10px] text-on-background">KERNEL</span>
+</div>
+<div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 topology-node hub">
+<span class="material-symbols-outlined text-inverse-primary mb-2 text-3xl" data-icon="hub">hub</span>
+<span class="font-mono text-xs text-on-background font-bold text-center">EVENT<br/>BUS</span>
+</div>
+<div class="absolute right-[10%] top-[20%] topology-node">
+<span class="material-symbols-outlined text-on-surface-variant mb-1" data-icon="psychology">psychology</span>
+<span class="font-mono text-[10px] text-on-background text-center">MODEL<br/>ENGINE</span>
+</div>
+<div class="absolute right-[10%] top-[80%] -translate-y-full topology-node">
+<span class="material-symbols-outlined text-on-surface-variant mb-1" data-icon="account_tree">account_tree</span>
+<span class="font-mono text-[10px] text-on-background text-center">KNOWLEDGE<br/>ENGINE</span>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Suppressed Bottom Navigation for Developer Mode (Intent Fallback: Hide Shell for highly technical/focused dead-end views like Dev Mode, unless it explicitly maps to a top-level nav like Settings, which this does not perfectly align with as a primary user journey). -->
+</body></html>

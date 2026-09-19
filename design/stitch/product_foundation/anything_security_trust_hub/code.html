@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Security &amp; Privacy - Anything</title>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind Config injected from instructions -->
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "outline": "#757683",
+                      "on-secondary-fixed": "#07006c",
+                      "outline-variant": "#c5c5d4",
+                      "surface-tint": "#4456b6",
+                      "on-background": "#0b1c30",
+                      "secondary": "#4648d4",
+                      "primary-fixed": "#dee0ff",
+                      "on-tertiary-fixed-variant": "#424750",
+                      "on-tertiary-fixed": "#171c23",
+                      "surface-container": "#e5eeff",
+                      "surface-container-highest": "#d3e4fe",
+                      "surface-container-high": "#dce9ff",
+                      "on-surface-variant": "#454652",
+                      "inverse-surface": "#213145",
+                      "error": "#ba1a1a",
+                      "on-primary-fixed-variant": "#2a3d9d",
+                      "on-primary-fixed": "#00105a",
+                      "tertiary-container": "#464b54",
+                      "surface-dim": "#cbdbf5",
+                      "error-container": "#ffdad6",
+                      "background": "#f8f9ff",
+                      "on-secondary-container": "#fffbff",
+                      "on-secondary": "#ffffff",
+                      "inverse-on-surface": "#eaf1ff",
+                      "on-error": "#ffffff",
+                      "on-secondary-fixed-variant": "#2f2ebe",
+                      "secondary-container": "#6063ee",
+                      "on-primary": "#ffffff",
+                      "primary-fixed-dim": "#bac3ff",
+                      "on-error-container": "#93000a",
+                      "on-surface": "#0b1c30",
+                      "secondary-fixed": "#e1e0ff",
+                      "on-tertiary": "#ffffff",
+                      "surface-variant": "#d3e4fe",
+                      "surface-container-low": "#eff4ff",
+                      "tertiary-fixed": "#dee2ed",
+                      "tertiary": "#2f343d",
+                      "surface-bright": "#f8f9ff",
+                      "secondary-fixed-dim": "#c0c1ff",
+                      "surface-container-lowest": "#ffffff",
+                      "on-tertiary-container": "#b6bbc5",
+                      "primary-container": "#2e41a1",
+                      "surface": "#f8f9ff",
+                      "inverse-primary": "#bac3ff",
+                      "on-primary-container": "#aab6ff",
+                      "tertiary-fixed-dim": "#c2c6d1",
+                      "primary": "#11278a"
+              },
+              "borderRadius": {
+                      "DEFAULT": "1rem",
+                      "lg": "2rem",
+                      "xl": "3rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "container-max": "1280px",
+                      "margin-mobile": "16px",
+                      "unit": "8px",
+                      "margin-desktop": "40px",
+                      "gutter": "24px"
+              },
+              "fontFamily": {
+                      "link-relationship": ["Public Sans"],
+                      "display-lg": ["Public Sans"],
+                      "headline-md": ["Public Sans"],
+                      "display-lg-mobile": ["Public Sans"],
+                      "body-md": ["Public Sans"],
+                      "label-sm": ["Public Sans"]
+              },
+              "fontSize": {
+                      "link-relationship": ["14px", {"lineHeight": "20px", "fontWeight": "500"}],
+                      "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                      "display-lg-mobile": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                      "label-sm": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}]
+              }
+            }
+          }
+        }
+    </script>
+<style>
+        body {
+            background-color: theme('colors.background');
+            color: theme('colors.on-background');
+        }
+        
+        /* Glassmorphism Utilities */
+        .glass-surface {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+        
+        .glass-card {
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(0, 0, 0, 0.03);
+            box-shadow: 0 4px 24px -8px rgba(0,0,0,0.05);
+        }
+
+        .active-glow {
+            box-shadow: 0px 4px 20px rgba(46, 65, 161, 0.15);
+            border-color: theme('colors.primary');
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="min-h-screen pb-24 md:pb-0">
+<!-- Ambient Background Element -->
+<div class="fixed inset-0 z-[-1] overflow-hidden pointer-events-none">
+<div class="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-surface-container rounded-full blur-[100px] opacity-70 mix-blend-multiply"></div>
+<div class="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-surface-container-high rounded-full blur-[120px] opacity-60 mix-blend-multiply"></div>
+</div>
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-surface/80 backdrop-blur-xl border-b border-black/5 flex items-center justify-between px-margin-mobile h-16 md:px-margin-desktop">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-primary cursor-pointer hover:opacity-80 transition-opacity">vaccines</span>
+</div>
+<div class="font-headline-md text-headline-md font-bold tracking-tight text-primary absolute left-1/2 -translate-x-1/2">
+            Anything
+        </div>
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:opacity-80 transition-opacity">settings_brightness</span>
+</div>
+</header>
+<!-- Desktop Navigation (Hidden on Mobile) -->
+<nav class="hidden md:flex fixed left-0 top-16 bottom-0 w-64 glass-surface flex-col py-margin-desktop border-r border-black/5 z-40">
+<div class="flex flex-col gap-2 px-4 mt-8">
+<a class="flex items-center gap-4 px-4 py-3 rounded-full text-on-surface-variant hover:bg-surface-container transition-colors" href="#">
+<span class="material-symbols-outlined">tap_and_play</span>
+<span class="font-body-md text-body-md font-medium">Home</span>
+</a>
+<a class="flex items-center gap-4 px-4 py-3 rounded-full bg-primary-container text-on-primary-container transition-colors" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">security</span>
+<span class="font-body-md text-body-md font-medium">Security &amp; Privacy</span>
+</a>
+<a class="flex items-center gap-4 px-4 py-3 rounded-full text-on-surface-variant hover:bg-surface-container transition-colors" href="#">
+<span class="material-symbols-outlined">apps</span>
+<span class="font-body-md text-body-md font-medium">My Apps</span>
+</a>
+<a class="flex items-center gap-4 px-4 py-3 rounded-full text-on-surface-variant hover:bg-surface-container transition-colors" href="#">
+<span class="material-symbols-outlined">insights</span>
+<span class="font-body-md text-body-md font-medium">Activity</span>
+</a>
+<a class="flex items-center gap-4 px-4 py-3 rounded-full text-on-surface-variant hover:bg-surface-container transition-colors" href="#">
+<span class="material-symbols-outlined">grid_view</span>
+<span class="font-body-md text-body-md font-medium">Workspace</span>
+</a>
+</div>
+</nav>
+<!-- Main Content Canvas -->
+<main class="pt-24 px-margin-mobile md:px-margin-desktop md:ml-64 max-w-container-max mx-auto flex flex-col gap-8 pb-12">
+<!-- Header Section -->
+<section class="flex flex-col gap-2 mt-4 md:mt-8">
+<h1 class="font-display-lg-mobile text-display-lg-mobile md:font-display-lg md:text-display-lg text-primary">Sanctuary</h1>
+<p class="font-body-md text-body-md text-on-surface-variant max-w-2xl">Your digital spaces are protected. Ambient verification keeps your data safe while remaining invisible.</p>
+</section>
+<!-- System Health Overview (Active Glow) -->
+<section class="glass-card rounded-xl p-6 md:p-8 active-glow flex flex-col md:flex-row items-center justify-between gap-6 border-2">
+<div class="flex items-center gap-6">
+<div class="w-16 h-16 rounded-full bg-primary-container flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-on-primary-container text-3xl" style="font-variation-settings: 'FILL' 1;">shield_locked</span>
+</div>
+<div>
+<h2 class="font-headline-md text-headline-md text-on-background">System Health</h2>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1">All Workspaces Protected</p>
+</div>
+</div>
+<div class="flex gap-2">
+<span class="inline-flex items-center px-3 py-1 rounded-full bg-surface-container-low text-primary font-label-sm text-label-sm border border-primary-fixed">
+<span class="w-2 h-2 rounded-full bg-primary mr-2 animate-pulse"></span> Active Monitoring
+                </span>
+</div>
+</section>
+<!-- Bento Grid Layout -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+<!-- Protected Experiences -->
+<section class="glass-card rounded-xl p-6 lg:col-span-2 flex flex-col gap-6">
+<div class="flex items-center justify-between">
+<h3 class="font-headline-md text-headline-md text-on-background flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">verified_user</span>
+                        Protected Experiences
+                    </h3>
+<button class="font-link-relationship text-link-relationship text-primary hover:opacity-80 transition-opacity">View All</button>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+<!-- Experience Node 1 -->
+<div class="bg-surface-container-lowest rounded-lg p-4 border border-outline-variant hover:border-primary transition-colors cursor-pointer flex flex-col gap-3">
+<div class="flex justify-between items-start">
+<div class="w-10 h-10 rounded-full bg-surface-container-highest flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-sm">finance</span>
+</div>
+<span class="font-label-sm text-label-sm text-primary bg-primary-fixed px-2 py-1 rounded-full">Active</span>
+</div>
+<div>
+<h4 class="font-body-md text-body-md font-semibold text-on-background">Financial Forecast v2</h4>
+<p class="font-label-sm text-label-sm text-on-surface-variant mt-1">Last verified 2m ago</p>
+</div>
+</div>
+<!-- Experience Node 2 -->
+<div class="bg-surface-container-lowest rounded-lg p-4 border border-outline-variant hover:border-primary transition-colors cursor-pointer flex flex-col gap-3">
+<div class="flex justify-between items-start">
+<div class="w-10 h-10 rounded-full bg-surface-container-highest flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-sm">folder_shared</span>
+</div>
+<span class="font-label-sm text-label-sm text-primary bg-primary-fixed px-2 py-1 rounded-full">Active</span>
+</div>
+<div>
+<h4 class="font-body-md text-body-md font-semibold text-on-background">Client Vault Alpha</h4>
+<p class="font-label-sm text-label-sm text-on-surface-variant mt-1">Last verified 1hr ago</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Kaalka Protection (Time-based concept) -->
+<section class="glass-card rounded-xl p-6 flex flex-col gap-6 relative overflow-hidden bg-gradient-to-br from-surface-container-highest to-surface">
+<!-- Decorative blurred shape -->
+<div class="absolute -right-10 -bottom-10 w-40 h-40 bg-primary-fixed-dim rounded-full blur-3xl opacity-50"></div>
+<div class="relative z-10">
+<h3 class="font-headline-md text-headline-md text-on-background flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">schedule</span>
+                        Kaalka Protection
+                    </h3>
+<p class="font-body-md text-body-md text-on-surface-variant mt-2 text-sm leading-relaxed">
+                        Ambient verification bound to your presence in time.
+                    </p>
+</div>
+<div class="flex flex-col gap-3 relative z-10 mt-auto">
+<button class="w-full bg-primary text-on-primary font-link-relationship text-link-relationship py-3 px-4 rounded-full flex items-center justify-center gap-2 hover:opacity-90 transition-opacity">
+<span class="material-symbols-outlined text-sm">nest_clock_farsight_analog</span>
+                        Use Current Time
+                    </button>
+<button class="w-full bg-surface-container-lowest border border-primary text-primary font-link-relationship text-link-relationship py-3 px-4 rounded-full flex items-center justify-center gap-2 hover:bg-surface-container-low transition-colors">
+<span class="material-symbols-outlined text-sm">more_time</span>
+                        Choose a Time
+                    </button>
+</div>
+</section>
+<!-- Secret Management (Dormant/Protected State) -->
+<section class="glass-card rounded-xl p-6 lg:col-span-3 flex flex-col gap-6 bg-tertiary border-none">
+<div class="flex items-center justify-between">
+<h3 class="font-headline-md text-headline-md text-on-tertiary flex items-center gap-2">
+<span class="material-symbols-outlined text-primary-fixed-dim">lock</span>
+                        Secret Management
+                    </h3>
+<span class="font-label-sm text-label-sm text-on-tertiary-container bg-tertiary-container px-3 py-1 rounded-full">Protected Area</span>
+</div>
+<p class="font-body-md text-body-md text-on-tertiary-container max-w-2xl">
+                    Your most sensitive verifications are stored here, visually blurred and protected until explicitly required by an active workspace.
+                </p>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-2">
+<!-- Protected Item 1 -->
+<div class="bg-tertiary-container/50 rounded-lg p-4 border border-white/5 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-on-tertiary-container">vpn_key</span>
+<div class="flex flex-col">
+<span class="font-body-md text-body-md text-on-tertiary blur-sm select-none transition-all duration-300 hover:blur-none">AWS Production</span>
+<span class="font-label-sm text-label-sm text-on-tertiary-container">Verification Token</span>
+</div>
+</div>
+</div>
+<!-- Protected Item 2 -->
+<div class="bg-tertiary-container/50 rounded-lg p-4 border border-white/5 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-on-tertiary-container">vpn_key</span>
+<div class="flex flex-col">
+<span class="font-body-md text-body-md text-on-tertiary blur-sm select-none transition-all duration-300 hover:blur-none">Stripe Connect</span>
+<span class="font-label-sm text-label-sm text-on-tertiary-container">Verification Token</span>
+</div>
+</div>
+</div>
+<!-- Protected Item 3 -->
+<div class="bg-tertiary-container/50 rounded-lg p-4 border border-white/5 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-on-tertiary-container">vpn_key</span>
+<div class="flex flex-col">
+<span class="font-body-md text-body-md text-on-tertiary blur-sm select-none transition-all duration-300 hover:blur-none">OpenAI Access</span>
+<span class="font-label-sm text-label-sm text-on-tertiary-container">Verification Token</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+</div>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="md:hidden fixed bottom-6 left-0 right-0 z-50 flex justify-around items-center p-2 mx-auto w-[90%] max-w-md rounded-full bg-surface-container-lowest/70 backdrop-blur-2xl border border-black/5 shadow-lg">
+<a class="flex flex-col items-center justify-center text-on-surface-variant/70 px-4 py-1.5 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">tap_and_play</span>
+<span class="font-label-sm text-label-sm mt-1">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-primary text-on-primary rounded-full px-4 py-1.5 transition-all duration-300 scale-90" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">security</span>
+<span class="font-label-sm text-label-sm mt-1">Security</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant/70 px-4 py-1.5 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">insights</span>
+<span class="font-label-sm text-label-sm mt-1">Activity</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant/70 px-4 py-1.5 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">grid_view</span>
+<span class="font-label-sm text-label-sm mt-1">Workspace</span>
+</a>
+</nav>
+<script>
+        // Simple ambient interaction: Cards tilt slightly towards mouse on desktop
+        document.querySelectorAll('.glass-card').forEach(card => {
+            card.addEventListener('mousemove', e => {
+                const rect = card.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                const centerX = rect.width / 2;
+                const centerY = rect.height / 2;
+                
+                const rotateX = ((y - centerY) / centerY) * -2;
+                const rotateY = ((x - centerX) / centerX) * 2;
+                
+                card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+                card.style.transition = 'none';
+            });
+            
+            card.addEventListener('mouseleave', () => {
+                card.style.transform = 'perspective(1000px) rotateX(0) rotateY(0)';
+                card.style.transition = 'transform 0.5s ease';
+            });
+        });
+    </script>
+</body></html>
