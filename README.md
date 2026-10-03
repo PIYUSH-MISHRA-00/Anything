@@ -8,7 +8,7 @@
 
 **Describe what you need. Anything builds it, runs it, and keeps it — on your device, with no account and no server.**
 
-[![Google Play](https://img.shields.io/badge/Google%20Play-closed%20testing-34A853?style=for-the-badge&logo=googleplay&logoColor=white)](website/docs/guide/installation.md)
+[![Google Play](https://img.shields.io/badge/Google%20Play-Available-34A853?style=for-the-badge&logo=googleplay&logoColor=white)](https://play.google.com/store/apps/details?id=com.anything.anything)
 [![Get the code](https://img.shields.io/badge/code-v2.0.0%20branch-00b8a9?style=for-the-badge&logo=github&logoColor=white)](../../tree/v2.0.0)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue?style=for-the-badge)](LICENSE)
 
@@ -75,7 +75,7 @@ runtime executes directly.
 ## Explore
 
 - 📖 **[What is Anything?](website/docs/guide/what-is-anything.md)** — the full story, in one page
-- 📲 **[Get it](website/docs/guide/installation.md)** — the Google Play closed test, or a build from source
+- 📲 **[Get it](website/docs/guide/installation.md)** — available on Google Play, or a build from source
 - 💻 **[Source code (`v2.0.0`)](../../tree/v2.0.0)** — clone, run, and contribute
 - 🏛️ **[Architecture](website/docs/architecture/overview.md)** · **[Certification](website/docs/architecture/certification.md)** — how 102 invariants keep it honest
 - 🗺️ **[Roadmap](website/docs/guide/roadmap.md)** — what works, what's next, and what's out of scope
@@ -84,7 +84,7 @@ runtime executes directly.
 > The documentation in `website/` is a VitePress site. It reads fine on GitHub;
 > a hosted version is coming.
 
-### Run it yourself
+## Run it yourself
 
 ```bash
 git clone -b v2.0.0 https://github.com/PIYUSH-MISHRA-00/Anything.git
@@ -93,30 +93,32 @@ flutter pub get
 flutter run
 ```
 
-Then **Settings → AI Provider** to add a key ([Groq](https://console.groq.com/keys)
-has a free tier), and type an intent on the home screen.
+Then go to **Settings → AI Provider** to add a key
+([Groq](https://console.groq.com/keys) has a free tier), and type an intent on
+the home screen.
 
 ## Project status
 
-**Complete — on Google Play in closed testing.** Version `2.0.0`, targeting
-**Android 17 (API 37)**. Creation, native execution, WebWeaveX (build-time +
-in-app), AI-driven "Change this app", Kaalka protection and export/import are
-all device-proven. The signed App Bundle is live on Google Play's closed
-testing track; the public listing follows once the required tester period
-completes.
+**Live on Google Play.** Version `2.0.0`, targeting Android 17 (API 37).
+Creation, native execution, WebWeaveX (build-time + in-app), AI-driven
+"Change this app", Kaalka protection and export/import are all device-proven.
+The signed App Bundle is live on Google Play.
 
-Want to test it on your device? Ask for a place on the tester list in
-[Discussions](https://github.com/PIYUSH-MISHRA-00/Anything/discussions).
+📲 **[Get Anything on Google Play →](https://play.google.com/store/apps/details?id=com.anything.anything)**
+
+Want to test the app? Get it directly from
+[Google Play](https://play.google.com/store/apps/details?id=com.anything.anything).
+Want to build it from source? See the [`v2.0.0` source](../../tree/v2.0.0).
 
 ## ☕ Support the work
 
 Anything is built in the open by one developer. If it's useful to you — or you
-just like where it's going — a coffee keeps it moving, and helps it reach a Play
-Store release sooner:
+just like where it's going — a coffee keeps it moving:
 
 <a href="https://buymeacoffee.com/piyushmishra00"><img src="https://img.shields.io/badge/Buy%20Me%20a%20Coffee-piyushmishra00-FFDD00?style=for-the-badge&logo=buymeacoffee&logoColor=black" alt="Buy Me a Coffee"/></a>
 
-Prefer GitHub? [**Sponsor here**](https://github.com/sponsors/PIYUSH-MISHRA-00). Sponsorship never gates a feature — every line is Apache-2.0, always.
+Prefer GitHub? [Sponsor here](https://github.com/sponsors/PIYUSH-MISHRA-00).
+Sponsorship never gates a feature — every line is Apache-2.0, always.
 
 ## Community
 
@@ -128,10 +130,13 @@ Prefer GitHub? [**Sponsor here**](https://github.com/sponsors/PIYUSH-MISHRA-00).
 ## License
 
 [Apache License 2.0](LICENSE) — permissive, with an explicit patent grant. The
-Experiences you create with Anything are **yours**; the license covers this
+Experiences you create with Anything are yours; the license covers this
 software, not the apps you generate with it.
 
 <div align="center">
+
 <br/>
+
 <sub>Built with Flutter · Powered by <a href="https://pub.dev/packages/webweavex">WebWeaveX</a> + <a href="https://pub.dev/packages/kaalka">Kaalka</a> · Made with ☕ by <a href="https://github.com/PIYUSH-MISHRA-00">Piyush Mishra</a></sub>
+
 </div>
